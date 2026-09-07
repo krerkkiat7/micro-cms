@@ -105,11 +105,11 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 
 ## หมายเหตุ / ความไม่สอดคล้องที่ควรรู้
 
-- **`.env.example` ยังเป็นค่า default ของ Laravel** (`DB_CONNECTION=sqlite`, `SESSION_DRIVER=database`,
-  `CACHE_STORE=database`, `REDIS_CLIENT=phpredis`). `.env` จริงตั้งเป็น MySQL + `SESSION_DRIVER=redis` +
-  `REDIS_CLIENT=predis` แล้ว แต่ `CACHE_STORE` ยังเป็น `database` และ `QUEUE_CONNECTION=database`
-  หากต้องการ cache บน Redis ตามเป้าหมายโปรเจกต์ ให้ตั้ง `CACHE_STORE=redis`
-- `config/app.php` locale default = `en` (จาก `APP_LOCALE`) แต่ `SetLocale` middleware default = `th`
+- `.env.example` สะท้อน stack เป้าหมายแล้ว: MySQL 8 (`my_cms`) + Redis สำหรับ session/cache +
+  `REDIS_CLIENT=predis` + `QUEUE_CONNECTION=database` (ค่า DB/Redis ตรงกับ `docker-compose.yml`)
+- `.env` จริงในเครื่อง dev ปัจจุบันยัง `CACHE_STORE=database` — ปรับเป็น `redis` ให้ตรง `.env.example` ได้
+- `config/app.php` locale default = `en` (จาก `APP_LOCALE` ใน `.env` เครื่อง dev) แต่ `.env.example`
+  และ `SetLocale` middleware ใช้ `th` เป็นค่าเริ่มต้น
 - `resources/js/Layouts/Admin/AdminLayout.vue` เป็นไฟล์ว่าง (ยังไม่ได้ใช้ — หลังบ้านใช้ `AuthenticatedLayout.vue`)
 - database มีไฟล์ `database/database.sqlite` ค้างอยู่ (gitignore แล้ว; ไม่ได้ใช้เมื่อรันบน MySQL)
 - `Admin/PostController.php` ยังเป็นไฟล์ว่าง (placeholder สำหรับโมดูลเนื้อหาที่จะทำ)
