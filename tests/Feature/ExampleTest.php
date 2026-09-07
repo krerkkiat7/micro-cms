@@ -1,7 +1,7 @@
 <?php
 
-it('returns a successful response', function () {
+it('redirects the root path to the default language', function () {
     $response = $this->get('/');
 
-    $response->assertStatus(200);
+    $response->assertRedirect('/th');
 });

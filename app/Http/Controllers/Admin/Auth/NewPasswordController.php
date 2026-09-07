@@ -23,7 +23,7 @@ class NewPasswordController extends Controller
     {
         return Inertia::render('Admin/Auth/ResetPassword', [
             'email' => $request->email,
-            'token' => $request->route('admin.token'),
+            'token' => $request->route('token'),
         ]);
     }
 

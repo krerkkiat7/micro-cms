@@ -68,6 +68,10 @@ class User extends Authenticatable
 
     public function getPermissionsArray() : array
     {
-        return $this->group->actions->pluck('code')->toArray(); 
+        if (!$this->group) {
+            return [];
+        }
+
+        return $this->group->actions->pluck('code')->toArray();
     }
 }
