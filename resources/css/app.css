@@ -6,7 +6,7 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 
 @theme {
-    --font-sans: 'Figtree', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+    --font-sans: 'Sarabun', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
         sans-serif;
 
     /* Brand palette (โทนน้ำเงินสไตล์ TailAdmin) */
