@@ -65,7 +65,7 @@ Controllers:
 
 Vue pages / layouts:
 - `resources/js/Pages/Admin/` + `resources/js/Layouts/Admin/` — หลังบ้าน
-- `resources/js/Pages/Front/` + `resources/js/Layouts/FrontLayout.vue` — หน้าบ้าน
+- `resources/js/Pages/Front/` + `resources/js/Layouts/Front/` — หน้าบ้าน
 - `resources/js/Components/` — component ที่ใช้ร่วมกัน (มาจาก Breeze)
 
 Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin/...`, ใน `Front/` แบบ `Front/...`

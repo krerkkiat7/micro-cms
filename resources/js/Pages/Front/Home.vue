@@ -1,5 +1,5 @@
 <script setup>
-import FrontLayout from '@/Layouts/FrontLayout.vue';
+import FrontLayout from '@/Layouts/Front/FrontLayout.vue';
 import { Link } from '@inertiajs/vue3';
 
 defineProps({
