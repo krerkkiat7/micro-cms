@@ -71,9 +71,6 @@ Vue pages / layouts:
 Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin/...`, ใน `Front/` แบบ `Front/...`
 (เช่น `Inertia::render('Admin/Dashboard', ...)`, `Inertia::render('Front/Home', ...)`)
 
-> ไฟล์ Breeze เดิมที่ยังไม่ได้ย้าย/ลบ: `resources/js/Pages/Dashboard.vue`, `Pages/Welcome.vue`
-> ให้ใช้เวอร์ชันใน `Admin/` แทน
-
 ## ระบบสิทธิ์ (Permissions)
 
 ตารางทั้งหมดขึ้นต้นด้วย `sys_` (กำหนดในไฟล์ migration เดียว: `database/migrations/0001_01_01_000000_create_users_table.php`)
@@ -87,8 +84,8 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 | `sys_usergroup_action` | (pivot) | เชื่อม usergroup ↔ action |
 
 การเช็กสิทธิ์:
-- `$user->hasPermission('system.user.view')` — คืน `bool`
-- `$user->getPermissionsArray()` — คืน array ของ action codes
+- `$user->hasPermission('system.user.view')` — คืน `bool` (คืน `false` ถ้า user ไม่มี usergroup)
+- `$user->getPermissionsArray()` — คืน array ของ action codes (คืน `[]` ถ้าไม่มี usergroup)
 - share ไป frontend ผ่าน `HandleInertiaRequests::share()` → `auth.user.permissions`
 - ฝั่ง Controller: ส่ง `can` เป็น props (ดู `Admin/DashboardController`) แล้วเช็ก `v-if="can.xxx"` ใน Vue
 
@@ -100,7 +97,10 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 - Vue หลังบ้าน: `<script setup lang="ts">` + `defineProps<{...}>()`
 - Vue หน้าบ้าน: ปัจจุบันบางไฟล์ยังเป็น `<script setup>` ธรรมดา (`Front/Home.vue`) — เขียนใหม่ให้เป็น TypeScript
 - Path alias: `@/` → `resources/js/` (ตั้งใน `tsconfig.json` + Vite)
-- ลิงก์ภายในหลังบ้านใช้ `route('admin.xxx')` (Ziggy) — หน้าบ้านบางที่ยัง hardcode `/th`, `/en`
+- ลิงก์/ชื่อ route ทั้งหมดในหลังบ้านใช้ `route('admin.xxx')` (Ziggy) ให้ครบ prefix `admin.` เสมอ —
+  หน้าบ้านบางที่ยัง hardcode `/th`, `/en`
+- อีเมล reset password: URL ผูกกับ `route('admin.password.reset')` ผ่าน
+  `ResetPassword::createUrlUsing()` ใน `AppServiceProvider::boot()` (Laravel default ใช้ `password.reset` ที่ไม่มี)
 - comment ในโค้ดเป็นภาษาไทยได้ (โปรเจกต์ใช้อยู่แล้ว)
 
 ## หมายเหตุ / ความไม่สอดคล้องที่ควรรู้
@@ -110,15 +110,20 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   `REDIS_CLIENT=predis` แล้ว แต่ `CACHE_STORE` ยังเป็น `database` และ `QUEUE_CONNECTION=database`
   หากต้องการ cache บน Redis ตามเป้าหมายโปรเจกต์ ให้ตั้ง `CACHE_STORE=redis`
 - `config/app.php` locale default = `en` (จาก `APP_LOCALE`) แต่ `SetLocale` middleware default = `th`
-- ไม่มี route ชื่อ `login`/`password.request` (มีแต่ `admin.*`) — โค้ด Breeze บางส่วนที่อ้าง
-  `Route::has('password.request')` / `Route::has('login')` จะได้ `false` เสมอ
-- `resources/js/Layouts/Admin/AdminLayout.vue` และ `Pages/Front/About.vue` เป็นไฟล์ว่าง
-- `migration down()` มี typo (`sys_usergrouop`)
-- database มีไฟล์ `database/database.sqlite` ค้างอยู่ (ไม่ได้ใช้เมื่อรันบน MySQL)
-- ยังไม่มี `git` repository ในโฟลเดอร์นี้
+- `resources/js/Layouts/Admin/AdminLayout.vue` เป็นไฟล์ว่าง (ยังไม่ได้ใช้ — หลังบ้านใช้ `AuthenticatedLayout.vue`)
+- database มีไฟล์ `database/database.sqlite` ค้างอยู่ (gitignore แล้ว; ไม่ได้ใช้เมื่อรันบน MySQL)
+- `Admin/PostController.php` ยังเป็นไฟล์ว่าง (placeholder สำหรับโมดูลเนื้อหาที่จะทำ)
+- Git remote: `https://github.com/krerkkiat7/micro-cms` (private) — branch `main`
+
+### ประเด็นที่แก้ไปแล้ว (ประวัติ อย่าทำซ้ำ)
+- ชื่อ route ทุกจุดในโค้ด/เทสปรับเป็น `admin.*` ครบแล้ว (เดิม Breeze อ้าง `login`/`dashboard`/`password.*` ที่ไม่มี)
+- `migration down()` แก้ typo `sys_usergrouop` → `sys_usergroup` + เรียง drop ให้ปลอดภัยกับ FK แล้ว
+- ลบไฟล์ Breeze ที่ตายแล้ว: `Pages/Welcome.vue`, `Pages/Dashboard.vue`, `Pages/Front/About.vue`
 
 ## ทดสอบ
 
-- เทสอยู่ใน `tests/Feature/Auth/*` และ `tests/Feature/ProfileTest.php` (มาจาก Breeze, ใช้ Pest)
-- เทสเหล่านี้อ้าง route/หน้าแบบเดิม (`/login`, `/register`, `Auth/Login`) — **จะ fail** จนกว่าจะปรับให้ตรงกับ prefix `/admin` และ page path `Admin/Auth/*`
+- เทสอยู่ใน `tests/Feature/Auth/*` และ `tests/Feature/ProfileTest.php` (มาจาก Breeze, ใช้ Pest) —
+  ปรับให้ใช้ prefix `/admin` + route `admin.*` แล้ว ปัจจุบัน **ผ่านทั้งหมด**
+- `tests/Feature/Auth/EmailVerificationTest.php` ถูก `->skip()` ไว้ — `User` ยังไม่ implements
+  `MustVerifyEmail` (ถ้าจะเปิดฟีเจอร์ verify email ต้อง implement contract ก่อน แล้วปลด skip)
 - PHPUnit override เป็น SQLite `:memory:`, `CACHE_STORE=array`, `SESSION_DRIVER=array`, `QUEUE_CONNECTION=sync` — ไม่แตะ MySQL/Redis จริง
