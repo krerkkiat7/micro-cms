@@ -81,11 +81,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('sys_user');
-        Schema::dropIfExists('sys_usergrouop');
         Schema::dropIfExists('sys_usergroup_action');
-        Schema::dropIfExists('sys_action_group');
+        Schema::dropIfExists('sys_user');
+        Schema::dropIfExists('sys_usergroup');
         Schema::dropIfExists('sys_action');
+        Schema::dropIfExists('sys_action_group');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
     }
