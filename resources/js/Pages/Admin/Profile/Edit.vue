@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AuthenticatedLayout from '@/Layouts/Admin/AuthenticatedLayout.vue';
+import AdminLayout from '@/Layouts/Admin/AdminLayout.vue';
 import DeleteUserForm from './Partials/DeleteUserForm.vue';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue';
@@ -12,41 +12,29 @@ defineProps<{
 </script>
 
 <template>
-    <Head title="Profile" />
+    <Head title="โปรไฟล์" />
 
-    <AuthenticatedLayout>
+    <AdminLayout>
         <template #header>
-            <h2
-                class="text-xl font-semibold leading-tight text-gray-800"
-            >
-                Profile
-            </h2>
+            <h1 class="text-xl font-semibold text-gray-800">โปรไฟล์</h1>
+            <p class="mt-1 text-sm text-gray-500">จัดการข้อมูลบัญชีและรหัสผ่านของคุณ</p>
         </template>
 
-        <div class="py-12">
-            <div class="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-                <div
-                    class="bg-white p-4 shadow sm:rounded-lg sm:p-8"
-                >
-                    <UpdateProfileInformationForm
-                        :must-verify-email="mustVerifyEmail"
-                        :status="status"
-                        class="max-w-xl"
-                    />
-                </div>
+        <div class="max-w-3xl space-y-6">
+            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8">
+                <UpdateProfileInformationForm
+                    :must-verify-email="mustVerifyEmail"
+                    :status="status"
+                />
+            </div>
 
-                <div
-                    class="bg-white p-4 shadow sm:rounded-lg sm:p-8"
-                >
-                    <UpdatePasswordForm class="max-w-xl" />
-                </div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8">
+                <UpdatePasswordForm />
+            </div>
 
-                <div
-                    class="bg-white p-4 shadow sm:rounded-lg sm:p-8"
-                >
-                    <DeleteUserForm class="max-w-xl" />
-                </div>
+            <div class="rounded-2xl border border-red-200 bg-white p-6 shadow-xs lg:p-8">
+                <DeleteUserForm />
             </div>
         </div>
-    </AuthenticatedLayout>
+    </AdminLayout>
 </template>
