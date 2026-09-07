@@ -1,3 +1,29 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@plugin '@tailwindcss/forms';
+
+/* แหล่งที่ Tailwind ต้องสแกนหา class เพิ่มเติมนอกจาก auto-detect */
+@source '../views';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+
+@theme {
+    --font-sans: 'Figtree', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+        sans-serif;
+
+    /* Brand palette (โทนน้ำเงินสไตล์ TailAdmin) */
+    --color-brand-50: #ecf3ff;
+    --color-brand-100: #dde9ff;
+    --color-brand-200: #c2d6ff;
+    --color-brand-300: #9cb9ff;
+    --color-brand-400: #7592ff;
+    --color-brand-500: #465fff;
+    --color-brand-600: #3641f5;
+    --color-brand-700: #2a31d8;
+    --color-brand-800: #252dae;
+    --color-brand-900: #262e89;
+
+    /* โทนมืดของ chrome หลังบ้าน (sidebar / header) */
+    --color-admin-900: #101828;
+    --color-admin-800: #1d2939;
+    --color-admin-700: #344054;
+    --color-admin-border: rgba(255, 255, 255, 0.08);
+}
