@@ -13,8 +13,9 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 | ส่วน | เทคโนโลยี |
 |------|-----------|
 | Backend | Laravel 12, PHP 8.2 |
-| Frontend | Inertia.js 2 + Vue 3 (`<script setup>` + TypeScript) + Tailwind CSS 3 |
-| Build | Vite 7, `laravel-vite-plugin`, `vue-tsc` |
+| Frontend | Inertia.js 2 + Vue 3 (`<script setup>` + TypeScript) + Tailwind CSS **v4** (CSS-first config ใน `resources/css/app.css`) |
+| Build | Vite 7, `laravel-vite-plugin`, `@tailwindcss/vite`, `vue-tsc` — ไม่มี `postcss.config.js`/`tailwind.config.js` |
+| Icons | `@lucide/vue` (ใช้ในหลังบ้าน) |
 | Database | MySQL 8+ (dev ผ่าน `docker-compose.yml`) |
 | Session / Cache | Redis (client = `predis`, ไม่ใช่ ext-phpredis) |
 | Queue | database |
@@ -66,10 +67,21 @@ Controllers:
 Vue pages / layouts:
 - `resources/js/Pages/Admin/` + `resources/js/Layouts/Admin/` — หลังบ้าน
 - `resources/js/Pages/Front/` + `resources/js/Layouts/Front/` — หน้าบ้าน
-- `resources/js/Components/` — component ที่ใช้ร่วมกัน (มาจาก Breeze)
+- `resources/js/Components/` — UI primitive ที่ใช้ร่วมกัน (ปุ่ม / input / modal / dropdown)
+- `resources/js/Components/Admin/` — component เฉพาะหลังบ้าน (`AppSidebar`, `AppHeader`, `SidebarItem`, `UserMenu`)
+- `resources/js/composables/` — เช่น `useSidebar.ts`
 
 Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin/...`, ใน `Front/` แบบ `Front/...`
 (เช่น `Inertia::render('Admin/Dashboard', ...)`, `Inertia::render('Front/Home', ...)`)
+
+### Layout หลังบ้าน
+- `Layouts/Admin/AdminLayout.vue` — โครงหลัก: **sidebar โทนมืดถาวร** (ซ้าย, collapse ได้บน desktop /
+  drawer บนมือถือ ผ่าน `composables/useSidebar.ts` — จำสถานะใน `localStorage`) + **header โทนมืด** +
+  พื้นที่เนื้อหาสว่าง. ทุกหน้า `Admin/*` (ยกเว้น auth) wrap `<AdminLayout>` และมี slot `#header`
+- `Layouts/Admin/AuthLayout.vue` — หน้า auth ก่อน login (Login/Register/Forgot/Reset/Confirm/VerifyEmail):
+  split-screen ฟอร์มซ้าย + branding panel มืดขวา (จอ `lg`)
+- สไตล์อ้างอิง TailAdmin Vue (MIT) — port เฉพาะโครง ไม่ได้ใช้ตัวเทมเพลตตรง ๆ (มัน vue-router SPA + Pinia);
+  **ไม่มี dark-mode toggle** (chrome มืดตายตัว เนื้อหาสว่างเสมอ)
 
 ## ระบบสิทธิ์ (Permissions)
 
@@ -97,6 +109,8 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 - Vue หลังบ้าน: `<script setup lang="ts">` + `defineProps<{...}>()`
 - Vue หน้าบ้าน: ปัจจุบันบางไฟล์ยังเป็น `<script setup>` ธรรมดา (`Front/Home.vue`) — เขียนใหม่ให้เป็น TypeScript
 - Path alias: `@/` → `resources/js/` (ตั้งใน `tsconfig.json` + Vite)
+- สี: ใช้ token `brand-*` (น้ำเงิน) เป็นสีหลัก และ `admin-900/800` เป็นโทนมืดของ sidebar/header —
+  กำหนดใน `@theme` ของ `resources/css/app.css` (ปุ่มหลัก = `Components/PrimaryButton.vue`)
 - ลิงก์/ชื่อ route ทั้งหมดในหลังบ้านใช้ `route('admin.xxx')` (Ziggy) ให้ครบ prefix `admin.` เสมอ —
   หน้าบ้านบางที่ยัง hardcode `/th`, `/en`
 - อีเมล reset password: URL ผูกกับ `route('admin.password.reset')` ผ่าน
@@ -110,7 +124,6 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 - `.env` จริงในเครื่อง dev ปัจจุบันยัง `CACHE_STORE=database` — ปรับเป็น `redis` ให้ตรง `.env.example` ได้
 - `config/app.php` locale default = `en` (จาก `APP_LOCALE` ใน `.env` เครื่อง dev) แต่ `.env.example`
   และ `SetLocale` middleware ใช้ `th` เป็นค่าเริ่มต้น
-- `resources/js/Layouts/Admin/AdminLayout.vue` เป็นไฟล์ว่าง (ยังไม่ได้ใช้ — หลังบ้านใช้ `AuthenticatedLayout.vue`)
 - database มีไฟล์ `database/database.sqlite` ค้างอยู่ (gitignore แล้ว; ไม่ได้ใช้เมื่อรันบน MySQL)
 - `Admin/PostController.php` ยังเป็นไฟล์ว่าง (placeholder สำหรับโมดูลเนื้อหาที่จะทำ)
 - Git remote: `https://github.com/krerkkiat7/micro-cms` (private) — branch `main`
@@ -119,6 +132,8 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 - ชื่อ route ทุกจุดในโค้ด/เทสปรับเป็น `admin.*` ครบแล้ว (เดิม Breeze อ้าง `login`/`dashboard`/`password.*` ที่ไม่มี)
 - `migration down()` แก้ typo `sys_usergrouop` → `sys_usergroup` + เรียง drop ให้ปลอดภัยกับ FK แล้ว
 - ลบไฟล์ Breeze ที่ตายแล้ว: `Pages/Welcome.vue`, `Pages/Dashboard.vue`, `Pages/Front/About.vue`
+- อัปเกรด Tailwind v3 → v4; เปลี่ยน layout หลังบ้านเป็นสไตล์ TailAdmin (sidebar/header มืด);
+  ลบ `AuthenticatedLayout.vue`, `GuestLayout.vue`, `Components/NavLink.vue`, `Components/ResponsiveNavLink.vue`
 
 ## ทดสอบ
 
