@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AdminLayout from '@/Layouts/Admin/AdminLayout.vue';
 import { Head } from '@inertiajs/vue3';
-import { FileText, ShieldCheck, Users } from '@lucide/vue';
+import { FileText, ShieldCheck, Users } from 'lucide-vue-next';
 
 const props = defineProps<{
     can: {

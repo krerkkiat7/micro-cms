@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
-import { LayoutGrid, UserCircle } from '@lucide/vue';
+import { LayoutGrid, UserCircle } from 'lucide-vue-next';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import SidebarItem from '@/Components/Admin/SidebarItem.vue';
 import { useSidebar } from '@/composables/useSidebar';

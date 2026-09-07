@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { ChevronDown, LogOut, UserCircle } from '@lucide/vue';
+import { ChevronDown, LogOut, UserCircle } from 'lucide-vue-next';
 import Dropdown from '@/Components/Dropdown.vue';
 
 const page = usePage();

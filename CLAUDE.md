@@ -15,7 +15,7 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 | Backend | Laravel 12, PHP 8.2 |
 | Frontend | Inertia.js 2 + Vue 3 (`<script setup>` + TypeScript) + Tailwind CSS **v4** (CSS-first config ใน `resources/css/app.css`) |
 | Build | Vite 7, `laravel-vite-plugin`, `@tailwindcss/vite`, `vue-tsc` — ไม่มี `postcss.config.js`/`tailwind.config.js` |
-| Icons | `@lucide/vue` (ใช้ในหลังบ้าน) |
+| Icons | `lucide-vue-next` (ใช้ในหลังบ้าน) |
 | Database | MySQL 8+ (dev ผ่าน `docker-compose.yml`) |
 | Session / Cache | Redis (client = `predis`, ไม่ใช่ ext-phpredis) |
 | Queue | database |

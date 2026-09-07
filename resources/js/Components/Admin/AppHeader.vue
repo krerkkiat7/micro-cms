@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Menu, PanelLeft } from '@lucide/vue';
+import { Menu, PanelLeft } from 'lucide-vue-next';
 import UserMenu from '@/Components/Admin/UserMenu.vue';
 import { useSidebar } from '@/composables/useSidebar';
 
