@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import GuestLayout from '@/Layouts/Admin/GuestLayout.vue';
+import AuthLayout from '@/Layouts/Admin/AuthLayout.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 
 defineProps<{
     status?: string;
@@ -20,47 +20,42 @@ const submit = () => {
 </script>
 
 <template>
-    <GuestLayout>
-        <Head title="Forgot Password" />
+    <AuthLayout
+        title="ลืมรหัสผ่าน"
+        description="กรอกอีเมลของคุณ ระบบจะส่งลิงก์สำหรับตั้งรหัสผ่านใหม่ให้"
+    >
+        <Head title="ลืมรหัสผ่าน" />
 
-        <div class="mb-4 text-sm text-gray-600">
-            Forgot your password? No problem. Just let us know your email
-            address and we will email you a password reset link that will allow
-            you to choose a new one.
-        </div>
-
-        <div
-            v-if="status"
-            class="mb-4 text-sm font-medium text-green-600"
-        >
+        <div v-if="status" class="mb-4 text-sm font-medium text-emerald-600">
             {{ status }}
         </div>
 
-        <form @submit.prevent="submit">
+        <form class="space-y-5" @submit.prevent="submit">
             <div>
-                <InputLabel for="email" value="Email" />
-
+                <InputLabel for="email" value="อีเมล" />
                 <TextInput
                     id="email"
                     type="email"
-                    class="mt-1 block w-full"
                     v-model="form.email"
                     required
                     autofocus
                     autocomplete="username"
                 />
-
-                <InputError class="mt-2" :message="form.errors.email" />
+                <InputError :message="form.errors.email" />
             </div>
 
-            <div class="mt-4 flex items-center justify-end">
-                <PrimaryButton
-                    :class="{ 'opacity-25': form.processing }"
-                    :disabled="form.processing"
+            <PrimaryButton class="w-full" :disabled="form.processing">
+                ส่งลิงก์ตั้งรหัสผ่านใหม่
+            </PrimaryButton>
+
+            <p class="text-center text-sm text-gray-500">
+                <Link
+                    :href="route('admin.login')"
+                    class="font-medium text-brand-600 hover:text-brand-700"
                 >
-                    Email Password Reset Link
-                </PrimaryButton>
-            </div>
+                    กลับไปหน้าเข้าสู่ระบบ
+                </Link>
+            </p>
         </form>
-    </GuestLayout>
+    </AuthLayout>
 </template>

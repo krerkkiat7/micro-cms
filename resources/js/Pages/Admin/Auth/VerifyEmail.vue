@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import GuestLayout from '@/Layouts/Admin/GuestLayout.vue';
+import AuthLayout from '@/Layouts/Admin/AuthLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
@@ -14,46 +14,36 @@ const submit = () => {
     form.post(route('admin.verification.send'));
 };
 
-const verificationLinkSent = computed(
-    () => props.status === 'verification-link-sent',
-);
+const verificationLinkSent = computed(() => props.status === 'verification-link-sent');
 </script>
 
 <template>
-    <GuestLayout>
-        <Head title="Email Verification" />
-
-        <div class="mb-4 text-sm text-gray-600">
-            Thanks for signing up! Before getting started, could you verify your
-            email address by clicking on the link we just emailed to you? If you
-            didn't receive the email, we will gladly send you another.
-        </div>
+    <AuthLayout
+        title="ยืนยันอีเมล"
+        description="กรุณายืนยันอีเมลโดยกดลิงก์ที่เราส่งไปให้ หากไม่ได้รับ กดปุ่มด้านล่างเพื่อส่งใหม่"
+    >
+        <Head title="ยืนยันอีเมล" />
 
         <div
-            class="mb-4 text-sm font-medium text-green-600"
             v-if="verificationLinkSent"
+            class="mb-4 text-sm font-medium text-emerald-600"
         >
-            A new verification link has been sent to the email address you
-            provided during registration.
+            ส่งลิงก์ยืนยันใหม่ไปที่อีเมลที่คุณใช้สมัครแล้ว
         </div>
 
-        <form @submit.prevent="submit">
-            <div class="mt-4 flex items-center justify-between">
-                <PrimaryButton
-                    :class="{ 'opacity-25': form.processing }"
-                    :disabled="form.processing"
-                >
-                    Resend Verification Email
-                </PrimaryButton>
+        <form class="space-y-4" @submit.prevent="submit">
+            <PrimaryButton class="w-full" :disabled="form.processing">
+                ส่งอีเมลยืนยันอีกครั้ง
+            </PrimaryButton>
 
-                <Link
-                    :href="route('admin.logout')"
-                    method="post"
-                    as="button"
-                    class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    >Log Out</Link
-                >
-            </div>
+            <Link
+                :href="route('admin.logout')"
+                method="post"
+                as="button"
+                class="block w-full text-center text-sm font-medium text-brand-600 hover:text-brand-700"
+            >
+                ออกจากระบบ
+            </Link>
         </form>
-    </GuestLayout>
+    </AuthLayout>
 </template>

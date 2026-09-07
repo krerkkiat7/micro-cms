@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import GuestLayout from '@/Layouts/Admin/GuestLayout.vue';
+import AuthLayout from '@/Layouts/Admin/AuthLayout.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -20,38 +20,29 @@ const submit = () => {
 </script>
 
 <template>
-    <GuestLayout>
-        <Head title="Confirm Password" />
+    <AuthLayout
+        title="ยืนยันรหัสผ่าน"
+        description="ส่วนนี้เป็นพื้นที่ปลอดภัย กรุณายืนยันรหัสผ่านก่อนดำเนินการต่อ"
+    >
+        <Head title="ยืนยันรหัสผ่าน" />
 
-        <div class="mb-4 text-sm text-gray-600">
-            This is a secure area of the application. Please confirm your
-            password before continuing.
-        </div>
-
-        <form @submit.prevent="submit">
+        <form class="space-y-5" @submit.prevent="submit">
             <div>
-                <InputLabel for="password" value="Password" />
+                <InputLabel for="password" value="รหัสผ่าน" />
                 <TextInput
                     id="password"
                     type="password"
-                    class="mt-1 block w-full"
                     v-model="form.password"
                     required
                     autocomplete="current-password"
                     autofocus
                 />
-                <InputError class="mt-2" :message="form.errors.password" />
+                <InputError :message="form.errors.password" />
             </div>
 
-            <div class="mt-4 flex justify-end">
-                <PrimaryButton
-                    class="ms-4"
-                    :class="{ 'opacity-25': form.processing }"
-                    :disabled="form.processing"
-                >
-                    Confirm
-                </PrimaryButton>
-            </div>
+            <PrimaryButton class="w-full" :disabled="form.processing">
+                ยืนยัน
+            </PrimaryButton>
         </form>
-    </GuestLayout>
+    </AuthLayout>
 </template>

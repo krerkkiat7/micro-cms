@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Checkbox from '@/Components/Checkbox.vue';
-import GuestLayout from '@/Layouts/Admin/GuestLayout.vue';
+import AuthLayout from '@/Layouts/Admin/AuthLayout.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -28,71 +28,57 @@ const submit = () => {
 </script>
 
 <template>
-    <GuestLayout>
-        <Head title="Log in" />
+    <AuthLayout title="เข้าสู่ระบบ" description="กรอกอีเมลและรหัสผ่านเพื่อเข้าสู่ระบบจัดการ">
+        <Head title="เข้าสู่ระบบ" />
 
-        <div v-if="status" class="mb-4 text-sm font-medium text-green-600">
+        <div v-if="status" class="mb-4 text-sm font-medium text-emerald-600">
             {{ status }}
         </div>
 
-        <form @submit.prevent="submit">
+        <form class="space-y-5" @submit.prevent="submit">
             <div>
-                <InputLabel for="email" value="Email" />
-
+                <InputLabel for="email" value="อีเมล" />
                 <TextInput
                     id="email"
                     type="email"
-                    class="mt-1 block w-full"
                     v-model="form.email"
                     required
                     autofocus
                     autocomplete="username"
                 />
-
-                <InputError class="mt-2" :message="form.errors.email" />
+                <InputError :message="form.errors.email" />
             </div>
 
-            <div class="mt-4">
-                <InputLabel for="password" value="Password" />
-
+            <div>
+                <InputLabel for="password" value="รหัสผ่าน" />
                 <TextInput
                     id="password"
                     type="password"
-                    class="mt-1 block w-full"
                     v-model="form.password"
                     required
                     autocomplete="current-password"
                 />
-
-                <InputError class="mt-2" :message="form.errors.password" />
+                <InputError :message="form.errors.password" />
             </div>
 
-            <div class="mt-4 block">
-                <label class="flex items-center">
+            <div class="flex items-center justify-between">
+                <label class="flex items-center gap-2">
                     <Checkbox name="remember" v-model:checked="form.remember" />
-                    <span class="ms-2 text-sm text-gray-600"
-                        >Remember me</span
-                    >
+                    <span class="text-sm text-gray-600">จดจำฉันไว้</span>
                 </label>
-            </div>
 
-            <div class="mt-4 flex items-center justify-end">
                 <Link
                     v-if="canResetPassword"
                     :href="route('admin.password.request')"
-                    class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    class="text-sm font-medium text-brand-600 hover:text-brand-700"
                 >
-                    Forgot your password?
+                    ลืมรหัสผ่าน?
                 </Link>
-
-                <PrimaryButton
-                    class="ms-4"
-                    :class="{ 'opacity-25': form.processing }"
-                    :disabled="form.processing"
-                >
-                    Log in
-                </PrimaryButton>
             </div>
+
+            <PrimaryButton class="w-full" :disabled="form.processing">
+                เข้าสู่ระบบ
+            </PrimaryButton>
         </form>
-    </GuestLayout>
+    </AuthLayout>
 </template>
