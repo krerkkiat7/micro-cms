@@ -31,6 +31,7 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
+            'user_type' => 'back',
             'status' => 'Y',
             'remember_token' => Str::random(10),
         ];
@@ -43,6 +44,26 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /**
+     * ผู้ใช้หน้าบ้าน (user_type = front)
+     */
+    public function front(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'user_type' => 'front',
+        ]);
+    }
+
+    /**
+     * บัญชีที่ถูกระงับการใช้งาน (status = N)
+     */
+    public function inactive(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'N',
         ]);
     }
 }

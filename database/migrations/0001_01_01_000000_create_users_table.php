@@ -26,7 +26,9 @@ return new class extends Migration
             $table->string('titlename', 30)->nullable(); // คำนำหน้า
             $table->string('firstname', 100);            // ชื่อ
             $table->string('lastname', 100);             // นามสกุล
-            $table->string('email', 150)->unique();
+            // email ไม่ unique ระดับ DB — ตาราง sys_user เดียวใช้ทั้งหน้าบ้าน/หลังบ้าน (user_type)
+            // และรองรับ soft delete จึงเช็ก "ห้ามซ้ำกับผู้ใช้ประเภทเดียวกันที่ยังไม่ถูกลบ" ในโค้ดแทน
+            $table->string('email', 150)->index();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->string('user_type', 20)->default('back');   // back = ผู้จัดการหลังบ้าน, front = หน้าบ้าน
@@ -36,7 +38,12 @@ return new class extends Migration
             $table->string('line', 100)->nullable();     // LINE id
             $table->string('facebook', 150)->nullable(); // facebook (url/handle)
 
-            $table->char('status', 1)->default('Y');     // Y = ใช้งาน, N = ไม่ใช้งาน
+            $table->char('status', 1)->default('Y');     // Y = ใช้งาน, N = ไม่ใช้งาน (ถูกระงับ)
+
+            // ประวัติการเข้าสู่ระบบ (ใช้ประกอบการล็อกบัญชีเมื่อ login ผิดหลายครั้ง — เกณฑ์อ่านจาก sys_setting ภายหลัง)
+            $table->timestamp('last_login_at')->nullable();              // ครั้งล่าสุดที่ login สำเร็จ
+            $table->unsignedSmallInteger('failed_login_count')->default(0); // จำนวนครั้งที่ login ไม่สำเร็จติดต่อกัน
+            $table->timestamp('last_failed_login_at')->nullable();       // ครั้งล่าสุดที่ login ไม่สำเร็จ
 
             $table->foreignId('usergroup_id')->nullable()->constrained('sys_usergroup')->nullOnDelete();
 

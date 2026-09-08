@@ -30,7 +30,12 @@ class ProfileUpdateRequest extends FormRequest
                 'lowercase',
                 'email',
                 'max:150',
-                Rule::unique(User::class)->ignore($this->user()->id),
+                // ห้ามซ้ำกับผู้ใช้ประเภทเดียวกันที่ยังไม่ถูกลบ (ยกเว้นตัวเอง)
+                Rule::unique(User::class)
+                    ->ignore($this->user()->id)
+                    ->where(fn ($query) => $query
+                        ->where('user_type', $this->user()->user_type)
+                        ->whereNull('deleted_at')),
             ],
         ];
     }

@@ -92,7 +92,7 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 
 | ตาราง | Model | หมายเหตุ |
 |-------|-------|----------|
-| `sys_user` | `App\Models\User` | ชื่อแยกเป็น `titlename`/`firstname`/`lastname` (+ accessor `name` = ชื่อเต็ม); ช่องทางติดต่อ `mobile`/`phone`/`line`/`facebook`; `user_type` (default `back`), `status` `char(1)` default `Y`, `usergroup_id`, softDeletes (คอลัมน์) |
+| `sys_user` | `App\Models\User` | ชื่อแยกเป็น `titlename`/`firstname`/`lastname` (+ accessor `name` = ชื่อเต็ม); ช่องทางติดต่อ `mobile`/`phone`/`line`/`facebook`; `user_type` (`back`/`front`, default `back`), `status` `char(1)` default `Y`; สถิติ login `last_login_at`/`failed_login_count`/`last_failed_login_at`; `usergroup_id`; **`SoftDeletes` (เปิดใช้ trait แล้ว)**. `email` **ไม่ unique ระดับ DB** |
 | `sys_usergroup` | `App\Models\UserGroup` | มี `status` `char(1)` default `Y`, softDeletes (คอลัมน์) |
 | `sys_action_group` | `App\Models\SysActionGroup` | `id` เป็น `string(20)` primary (กำหนดเอง); มี `sort_order`, `actions()` hasMany |
 | `sys_action` | `App\Models\SysAction` | `id` เป็น `string(20)` primary; มี `code` (unique) เช่น `system.user.view`, `parent_id` (tree, self-FK), `sort_order` |
@@ -131,16 +131,29 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 - database มีไฟล์ `database/database.sqlite` ค้างอยู่ (gitignore แล้ว; ไม่ได้ใช้เมื่อรันบน MySQL)
 - `Admin/PostController.php` ยังเป็นไฟล์ว่าง (placeholder สำหรับโมดูลเนื้อหาที่จะทำ)
 - `sys_setting` มี seed ตัวอย่างกลุ่ม `site` (`site_name`/`site_email`/`site_description`) — ยังไม่มีหน้า UI จัดการ
-- ตอน login ยังไม่เช็ก `sys_user.status` (`Y`/`N`) — ต้องเพิ่มในเฟสจัดการผู้ใช้
+- การล็อกบัญชีอัตโนมัติเมื่อ `failed_login_count` เกินเกณฑ์ยังไม่ทำ — รอดึงเกณฑ์จาก `sys_setting` (ดู `docs/PRD-system.md` §5)
 - Git remote: `https://github.com/krerkkiat7/micro-cms` (private) — branch `main`
+
+### การเข้าสู่ระบบหลังบ้าน (auth)
+
+- `sys_user` เดียวเก็บผู้ใช้ทั้ง `back` (หลังบ้าน) และ `front` (หน้าบ้าน) แยกด้วย `user_type`
+- `LoginRequest::authenticate()` ตรวจ `user_type = 'back'` + `status = 'Y'` เสมอ; รหัสผ่านถูกแต่ `status = 'N'`
+  → ข้อความ "บัญชีนี้ถูกระงับการใช้งาน…"; login สำเร็จ/ไม่สำเร็จ อัปเดต `last_login_at` /
+  `failed_login_count` / `last_failed_login_at` (สำเร็จ = เคลียร์ตัวนับ)
+- password reset ที่ `/admin/*` ผูก `user_type = 'back'` กับ `Password::sendResetLink` / `Password::reset`
+- `email` ไม่ unique ระดับ DB — เช็ก "ห้ามซ้ำกับ `user_type` เดียวกันที่ยังไม่ถูกลบ" ในโค้ดผ่าน
+  `Rule::unique(User::class)->where('user_type', …)->whereNull('deleted_at')` (`RegisteredUserController`,
+  `ProfileUpdateRequest`) — ถ้าเพิ่มจุดสมัคร/แก้ email ใหม่ ต้องใส่ scope นี้ด้วย
+- `User` ใช้ `SoftDeletes` — `$user->delete()` เป็น soft delete; เทสที่เกี่ยวข้องใช้ `assertSoftDeleted`
 
 ### ประเด็นที่แก้ไปแล้ว (ประวัติ อย่าทำซ้ำ)
 - ชื่อ route ทุกจุดในโค้ด/เทสปรับเป็น `admin.*` ครบแล้ว (เดิม Breeze อ้าง `login`/`dashboard`/`password.*` ที่ไม่มี)
 - `migration down()` แก้ typo `sys_usergrouop` → `sys_usergroup` + เรียง drop ให้ปลอดภัยกับ FK แล้ว
-- ปรับ schema (เฟส 0): `sys_user.name` → `titlename`/`firstname`/`lastname` + `mobile`/`phone`/`line`/`facebook`/`status`;
+- ปรับ schema (เฟส 0): `sys_user.name` → `titlename`/`firstname`/`lastname` + `mobile`/`phone`/`line`/`facebook`/`status`
+  + สถิติ login (`last_login_at`/`failed_login_count`/`last_failed_login_at`); `email` เลิก unique;
   `sys_usergroup.status`; `sys_action_group`/`sys_action` id เป็น `string(20)` + `sys_action.parent_id`/`sort_order`;
-  เพิ่มตาราง `sys_setting` — ปรับ seeder/factory/`ProfileUpdateRequest`/`RegisteredUserController`/`HandleInertiaRequests`/
-  หน้า Vue profile+register/เทส ให้ตรงแล้ว (ดู `docs/PRD-system.md` ภาคผนวก)
+  เพิ่มตาราง `sys_setting`; เปิด `SoftDeletes` บน `User` — ปรับ seeder/factory/requests/controllers auth/
+  `HandleInertiaRequests`/หน้า Vue profile+register/เทส ให้ตรงแล้ว (ดู `docs/PRD-system.md` ภาคผนวก)
 - ลบไฟล์ Breeze ที่ตายแล้ว: `Pages/Welcome.vue`, `Pages/Dashboard.vue`, `Pages/Front/About.vue`
 - อัปเกรด Tailwind v3 → v4; เปลี่ยน layout หลังบ้านเป็นสไตล์ TailAdmin (sidebar/header มืด);
   ลบ `AuthenticatedLayout.vue`, `GuestLayout.vue`, `Components/NavLink.vue`, `Components/ResponsiveNavLink.vue`

@@ -68,7 +68,7 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 
 | ส่วน | ปัจจุบัน | เป้าหมาย |
 |------|----------|----------|
-| Auth หลังบ้าน (login/register/reset/verify) | ✅ มี (Breeze ย้ายมาใต้ `/admin`) | คงไว้ + เพิ่มเช็ก `status = 'Y'` ตอน login |
+| Auth หลังบ้าน (login/register/reset/verify) | ✅ มี (Breeze ย้ายมาใต้ `/admin`) + เช็ก `user_type='back'` / `status='Y'` + บันทึกสถิติ login แล้ว | เพิ่มล็อกบัญชีอัตโนมัติเมื่อ login ผิดเกินเกณฑ์ (อ่านจาก `sys_setting`) |
 | Layout หลังบ้าน (sidebar/header มืด) | ✅ มี (สไตล์ TailAdmin) | ต่อเมนูโมดูล/จัดการระบบเข้า sidebar |
 | ระบบสิทธิ์ (`sys_*`) | ✅ ตาราง + model + `hasPermission()` + seeder ตัวอย่าง | หน้าจัดการกลุ่ม/สิทธิ์แบบ tree + middleware บังคับสิทธิ์ |
 | profile | ✅ มี (แก้ชื่อ/ช่องทางติดต่อ/อีเมล) | เพิ่มอัปโหลดรูปโปรไฟล์ (อนาคต) |
@@ -84,7 +84,7 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 
 | ตาราง | การเปลี่ยน |
 |-------|-----------|
-| `sys_user` | `name` → `titlename` (30, null) + `firstname` (100) + `lastname` (100); เพิ่ม `mobile` (20), `phone` (30), `line` (100), `facebook` (150), `status` `char(1)` default `'Y'`; `email` เหลือ 150 |
+| `sys_user` | `name` → `titlename` (30, null) + `firstname` (100) + `lastname` (100); เพิ่ม `mobile` (20), `phone` (30), `line` (100), `facebook` (150), `status` `char(1)` default `'Y'`; `last_login_at` / `failed_login_count` / `last_failed_login_at`; `email` เหลือ 150 **และเลิก unique** (เช็กในโค้ดว่าไม่ซ้ำต่อ `user_type` ที่ยังไม่ถูกลบ); เปิด `SoftDeletes` |
 | `sys_usergroup` | เพิ่ม `status` `char(1)` default `'Y'`; `name` 100, `description` 255 |
 | `sys_action_group` | `id` เป็น `string(20)` primary (แทน auto-increment) |
 | `sys_action` | `id` เป็น `string(20)` primary; เพิ่ม `parent_id` `string(20)` null (tree) + `sort_order`; `code` 100, `name` 150 |
@@ -97,8 +97,8 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 
 | เฟส | ขอบเขต |
 |-----|--------|
-| **0 — schema base** *(รอบนี้)* | ปรับ `sys_user`/`sys_usergroup`/`sys_action*` + สร้าง `sys_setting` + ปรับ seeder/factory/profile/register/เทส |
-| 1 — จัดการผู้ใช้ & สิทธิ์ | CRUD `sys_user`, `sys_usergroup`, หน้าเลือกสิทธิ์แบบ tree, middleware บังคับสิทธิ์, เช็ก `status` ตอน login |
+| **0 — schema base** *(รอบนี้)* | ปรับ `sys_user`/`sys_usergroup`/`sys_action*` + สร้าง `sys_setting` + เปิด SoftDeletes + auth หลังบ้านเช็ก `user_type`/`status` + บันทึกสถิติ login + ปรับ seeder/factory/profile/register/เทส |
+| 1 — จัดการผู้ใช้ & สิทธิ์ | CRUD `sys_user`, `sys_usergroup`, หน้าเลือกสิทธิ์แบบ tree, middleware บังคับสิทธิ์, ล็อกบัญชีเมื่อ login ผิดเกินเกณฑ์ (`sys_setting`) |
 | 2 — ตั้งค่าระบบ & template & เมนู | หน้า `sys_setting`, `sys_template`, `sys_menu` (tree) + ต่อ sidebar/หน้าบ้านให้อ่านเมนูจาก DB |
 | 3 — โมดูลเนื้อหาแรก | บทความ (article) + page (หน้าเดี่ยว) + file management (`sys_file`) |
 | 4 — โมดูลที่เหลือ | banner, popup, intropage, contact us |

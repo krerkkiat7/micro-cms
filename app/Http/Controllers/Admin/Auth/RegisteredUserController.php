@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -35,7 +36,13 @@ class RegisteredUserController extends Controller
             'titlename' => 'nullable|string|max:30',
             'firstname' => 'required|string|max:100',
             'lastname' => 'required|string|max:100',
-            'email' => 'required|string|lowercase|email|max:150|unique:'.User::class,
+            // email ห้ามซ้ำกับผู้ใช้หลังบ้าน (user_type = back) ที่ยังไม่ถูกลบ
+            'email' => [
+                'required', 'string', 'lowercase', 'email', 'max:150',
+                Rule::unique(User::class)->where(fn ($query) => $query
+                    ->where('user_type', 'back')
+                    ->whereNull('deleted_at')),
+            ],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
@@ -45,6 +52,8 @@ class RegisteredUserController extends Controller
             'lastname' => $request->lastname,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'user_type' => 'back',
+            'status' => 'Y',
         ]);
 
         event(new Registered($user));

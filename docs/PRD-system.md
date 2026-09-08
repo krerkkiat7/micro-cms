@@ -31,32 +31,60 @@
 | `titlename` | `varchar(30)` null | คำนำหน้า |
 | `firstname` | `varchar(100)` | ชื่อ |
 | `lastname` | `varchar(100)` | นามสกุล |
-| `email` | `varchar(150)` unique | ใช้ล็อกอิน |
+| `email` | `varchar(150)` **index (ไม่ unique)** | ใช้ล็อกอิน — ดู "กติกา email ไม่ซ้ำ" ด้านล่าง |
 | `email_verified_at` | timestamp null | |
 | `password` | `varchar(255)` | hash |
-| `user_type` | `varchar(20)` default `back` | `back` = ผู้ดูแล (ช่องทางเผื่อผู้ใช้หน้าบ้านในอนาคต) |
+| `user_type` | `varchar(20)` default `back` | `back` = ผู้ใช้หลังบ้าน, `front` = ผู้ใช้หน้าบ้าน — ตาราง `sys_user` เดียวใช้ทั้งสองฝั่ง |
 | `mobile` | `varchar(20)` null | เบอร์มือถือ |
 | `phone` | `varchar(30)` null | เบอร์ติดต่อ |
 | `line` | `varchar(100)` null | LINE id |
 | `facebook` | `varchar(150)` null | facebook (url/handle) |
-| `status` | `char(1)` default `Y` | `Y` = ใช้งาน, `N` = ไม่ใช้งาน |
+| `status` | `char(1)` default `Y` | `Y` = ใช้งาน, `N` = ถูกระงับ |
+| `last_login_at` | timestamp null | เวลาที่ login สำเร็จครั้งล่าสุด |
+| `failed_login_count` | `smallint unsigned` default 0 | จำนวนครั้งที่ login ไม่สำเร็จติดต่อกัน |
+| `last_failed_login_at` | timestamp null | เวลาที่ login ไม่สำเร็จครั้งล่าสุด |
 | `usergroup_id` | bigint FK → `sys_usergroup` null (nullOnDelete) | กลุ่มสิทธิ์ |
-| `remember_token`, `timestamps`, `deleted_at` | | softDeletes (คอลัมน์มี, model ยังไม่เปิดใช้ trait) |
+| `remember_token`, `timestamps`, `deleted_at` | | **soft delete เปิดใช้แล้ว** (`User` ใช้ trait `SoftDeletes`) |
 
-**Model** `App\Models\User` — accessor `name` คืน `"คำนำหน้า ชื่อ นามสกุล"` (ใช้แสดงผลใน UI/แชร์ Inertia)
+**Model** `App\Models\User` — `SoftDeletes`; accessor `name` คืน `"คำนำหน้า ชื่อ นามสกุล"`;
+cast `last_login_at` / `last_failed_login_at` เป็น datetime
+
+### กติกา email ไม่ซ้ำ (สำคัญ)
+
+`email` **ไม่มี unique constraint ระดับ DB** เพราะตาราง `sys_user` เดียวเก็บผู้ใช้ทั้งหน้าบ้าน/หลังบ้าน
+และรองรับ soft delete จึงมีกรณีที่ email ซ้ำได้อย่างถูกต้อง:
+- ผู้ใช้ `front` และ `back` ใช้ email เดียวกัน
+- บัญชีเดิมถูกลบ (soft delete) แล้วสมัครใหม่ด้วย email เดิม
+
+การเช็กทำ **ในโค้ด** ว่า "ห้ามซ้ำกับผู้ใช้ `user_type` เดียวกันที่ยังไม่ถูกลบ" ผ่าน
+`Rule::unique(...)->where('user_type', <type>)->whereNull('deleted_at')`
+(`RegisteredUserController` = `back`; `ProfileUpdateRequest` = `user_type` ของผู้ใช้ปัจจุบัน + `ignore(id)`)
+
+### การเข้าสู่ระบบหลังบ้าน (`/admin/login`)
+
+`App\Http\Requests\Auth\LoginRequest::authenticate()`:
+- ตรวจกับ `user_type = 'back'` เสมอ — ผู้ใช้ `front` (หรือ email ที่ไม่มีบัญชี back) → `auth.failed`
+- `Auth::attempt(['email', 'password', 'user_type' => 'back', 'status' => 'Y'])` — soft delete scope กันบัญชีที่ถูกลบอยู่แล้ว
+- ถ้ารหัสผ่านถูกต้องแต่ `status = 'N'` → แจ้ง **"บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ"** (ไม่นับเป็น login ไม่สำเร็จ)
+- **login สำเร็จ** → ตั้ง `failed_login_count = 0`, `last_failed_login_at = null`, `last_login_at = now()`
+- **login ไม่สำเร็จ (รหัสผ่านผิด)** → `failed_login_count += 1`, `last_failed_login_at = now()`
+- password reset (`/admin/forgot-password`, `/admin/reset-password`) ก็ผูก `user_type = 'back'` เช่นกัน
+
+> **ยังไม่ทำ:** การล็อกบัญชีอัตโนมัติเมื่อ `failed_login_count` เกินเกณฑ์ — จะทำพร้อมกับตอนดึงค่าเกณฑ์
+> จาก `sys_setting` (เช่น กลุ่ม `security`, key `max_failed_login`) มาใช้ในเฟสถัดไป
 
 **หน้าจอ**
-- `รายการผู้ใช้` — ตาราง (ชื่อ, อีเมล, กลุ่ม, สถานะ), ค้นหา, กรองตามกลุ่ม/สถานะ
-- `ฟอร์มเพิ่ม/แก้ไข` — ข้อมูลชื่อ + ช่องทางติดต่อ + กลุ่มผู้ใช้ + สถานะ + ตั้ง/รีเซ็ตรหัสผ่าน
-- ปิดการใช้งาน (ตั้ง `status = 'N'`) แทนการลบจริงเป็นค่าเริ่มต้น
+- `รายการผู้ใช้` — ตาราง (ชื่อ, อีเมล, กลุ่ม, สถานะ, login ล่าสุด), ค้นหา, กรองตามกลุ่ม/สถานะ
+- `ฟอร์มเพิ่ม/แก้ไข` — ข้อมูลชื่อ + ช่องทางติดต่อ + กลุ่มผู้ใช้ + สถานะ + ตั้ง/รีเซ็ตรหัสผ่าน + ปุ่มรีเซ็ต `failed_login_count`
+- ลบผู้ใช้ = soft delete; ระงับชั่วคราวใช้ `status = 'N'`
 
 **Permission code** — `system.user.view`, `system.user.create` (รวมแก้ไข), `system.user.delete`
 
 **Route (เสนอ)** — `admin.system.users.index|create|store|edit|update|destroy` ใต้ `/admin/system/users`
 
 **หมายเหตุ**
-- ตอน login ต้องเพิ่มเงื่อนไข `status = 'Y'` (ปัจจุบัน `LoginRequest` เช็กแค่ email/password) — ทำในเฟส 1
-- `RegisteredUserController` สร้างผู้ใช้ใหม่โดยไม่กำหนด `usergroup_id` → `getPermissionsArray()` คืน `[]` จนกว่าจะถูกจัดกลุ่ม
+- `RegisteredUserController` สร้างผู้ใช้ใหม่ด้วย `user_type = 'back'`, `status = 'Y'` แต่ไม่กำหนด `usergroup_id`
+  → `getPermissionsArray()` คืน `[]` จนกว่าจะถูกจัดกลุ่ม
 
 ---
 
@@ -195,7 +223,12 @@
 
 **Permission** — `system.log.login`, `system.log.visit`, `system.log.action`
 
-**หมายเหตุ** — พิจารณา retention (ลบอัตโนมัติเกิน N วัน) ผ่าน scheduled command
+**หมายเหตุ**
+- พิจารณา retention (ลบอัตโนมัติเกิน N วัน) ผ่าน scheduled command
+- คนละส่วนกับ `sys_user.last_login_at` / `failed_login_count` / `last_failed_login_at` — ฟิลด์บน `sys_user`
+  เก็บ "สถานะล่าสุด" ต่อผู้ใช้ (ใช้ประกอบการล็อกบัญชี) ส่วน `sys_log_login` เก็บประวัติทุกครั้งแบบ append
+- การล็อกบัญชีเมื่อ `failed_login_count` เกินเกณฑ์: อ่านเกณฑ์จาก `sys_setting` (เสนอกลุ่ม `security`,
+  key `max_failed_login`, `lockout_minutes`) — เมื่อถึงเกณฑ์ให้บล็อก login จนกว่าจะพ้นเวลา/แอดมินรีเซ็ต
 
 ---
 
@@ -293,15 +326,19 @@ primary key = `(group, name)` — Eloquent ไม่รองรับ composite
 + titlename               varchar(30)  NULL          // คำนำหน้า
 + firstname               varchar(100)               // ชื่อ
 + lastname                varchar(100)               // นามสกุล
-  email                   varchar(255) → varchar(150) unique
+  email                   varchar(255) unique → varchar(150) INDEX (ไม่ unique — เช็กในโค้ด)
   password                varchar(255)               // คงเดิม
-  user_type               varchar(20)  default 'back'// คงเดิม
+  user_type               varchar(20)  default 'back'// back = หลังบ้าน, front = หน้าบ้าน
 + mobile                  varchar(20)  NULL
 + phone                   varchar(30)  NULL
 + line                    varchar(100) NULL
 + facebook                varchar(150) NULL
-+ status                  char(1)      default 'Y'   // Y=ใช้งาน, N=ไม่ใช้งาน
++ status                  char(1)      default 'Y'   // Y=ใช้งาน, N=ถูกระงับ
++ last_login_at           timestamp    NULL          // login สำเร็จล่าสุด
++ failed_login_count      smallint unsigned default 0// login ไม่สำเร็จติดต่อกัน
++ last_failed_login_at    timestamp    NULL          // login ไม่สำเร็จล่าสุด
   usergroup_id            FK sys_usergroup nullOnDelete // คงเดิม
+  deleted_at              (softDeletes) — User ใช้ trait SoftDeletes แล้ว
 ```
 
 ### `sys_usergroup`
@@ -357,17 +394,21 @@ primary key = `(group, name)` — Eloquent ไม่รองรับ composite
 
 | ไฟล์ | การเปลี่ยน |
 |------|-----------|
-| `app/Models/User.php` | `fillable` ใหม่ + accessor `name` (คำนำหน้า+ชื่อ+นามสกุล) |
+| `app/Models/User.php` | `fillable` ใหม่ + accessor `name` + trait `SoftDeletes` + cast `last_login_at`/`last_failed_login_at` |
 | `app/Models/UserGroup.php` | `fillable` เพิ่ม `status` |
 | `app/Models/SysActionGroup.php` | `$incrementing=false`, `$keyType='string'`, `actions()` hasMany |
 | `app/Models/SysAction.php` | `$incrementing=false`, `$keyType='string'`, `group()`/`parent()`/`children()` |
 | `app/Models/SysSetting.php` | **ไฟล์ใหม่** — softDeletes, key เป็น string, ไม่ใช้ `find()` |
 | `database/seeders/DatabaseSeeder.php` | id เป็น string, `status`, ชื่อผู้ใช้แยกส่วน, seed `sys_setting` กลุ่ม `site` |
-| `database/factories/UserFactory.php` | `titlename`/`firstname`/`lastname`/`status` แทน `name` |
-| `app/Http/Requests/ProfileUpdateRequest.php` | rule ตาม field ใหม่ (`email` max 150) |
-| `app/Http/Controllers/Admin/Auth/RegisteredUserController.php` | validate/create ด้วย `firstname`/`lastname`/`titlename` |
+| `database/factories/UserFactory.php` | field ใหม่ + `user_type='back'`; state `front()` / `inactive()` |
+| `app/Http/Requests/ProfileUpdateRequest.php` | rule field ใหม่ (`email` max 150) + `unique` scope `user_type` + `whereNull('deleted_at')` |
+| `app/Http/Requests/Auth/LoginRequest.php` | `authenticate()` เช็ก `user_type='back'`+`status='Y'`, ข้อความ block, บันทึกสถิติ login สำเร็จ/ไม่สำเร็จ |
+| `app/Http/Controllers/Admin/Auth/RegisteredUserController.php` | สร้างด้วย `user_type='back'`,`status='Y'` + `unique` scope `user_type='back'` + `whereNull('deleted_at')` |
+| `app/Http/Controllers/Admin/Auth/PasswordResetLinkController.php`, `NewPasswordController.php` | ผูก `user_type='back'` กับ `Password::sendResetLink` / `Password::reset` |
 | `app/Http/Middleware/HandleInertiaRequests.php` | แชร์ `titlename`/`firstname`/`lastname`/`name`/`mobile`/`phone`/`line`/`facebook`/`permissions` |
 | `resources/js/types/index.d.ts` | `User` interface ใหม่ |
 | `resources/js/Pages/Admin/Profile/Partials/UpdateProfileInformationForm.vue` | ฟอร์มชื่อ + ช่องทางติดต่อ |
 | `resources/js/Pages/Admin/Auth/Register.vue` | ฟอร์ม คำนำหน้า/ชื่อ/นามสกุล |
-| `tests/Feature/ProfileTest.php`, `tests/Feature/Auth/RegistrationTest.php` | payload/assertion ตาม field ใหม่ |
+| `tests/Feature/ProfileTest.php` | payload field ใหม่ + `assertSoftDeleted` |
+| `tests/Feature/Auth/RegistrationTest.php` | payload field ใหม่ + เทส email ซ้ำข้าม `user_type` / หลัง soft delete |
+| `tests/Feature/Auth/AuthenticationTest.php` | เทส front user / บัญชีถูกระงับ / บันทึกสถิติ login |
