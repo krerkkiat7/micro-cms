@@ -1,38 +1,19 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { LayoutGrid, UserCircle } from 'lucide-vue-next';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import SidebarItem from '@/Components/Admin/SidebarItem.vue';
+import SidebarGroup from '@/Components/Admin/SidebarGroup.vue';
+import type { MenuGroup } from '@/types';
 import { useSidebar } from '@/composables/useSidebar';
 
 const { isExpanded, isMobileOpen, closeMobileSidebar } = useSidebar();
 
-const navGroups = [
-    {
-        title: 'เมนู',
-        items: [
-            {
-                label: 'Dashboard',
-                href: route('admin.dashboard'),
-                active: 'admin.dashboard',
-                icon: LayoutGrid,
-            },
-        ],
-    },
-    {
-        title: 'บัญชี',
-        items: [
-            {
-                label: 'โปรไฟล์',
-                href: route('admin.profile.edit'),
-                active: 'admin.profile',
-                icon: UserCircle,
-            },
-        ],
-    },
-    // { title: 'เนื้อหา', items: [ /* โมดูล CMS: บทความ / เพจ / หมวดหมู่ (ยังไม่ทำ) */ ] },
-];
+const page = usePage();
+
+// เมนูจาก DB (sys_menu_group + sys_menu) กรองตามสิทธิ์แล้วจากฝั่ง server
+const menuGroups = computed<MenuGroup[]>(() => page.props.menu ?? []);
 
 const showText = computed(() => isExpanded.value || isMobileOpen.value);
 </script>
@@ -66,22 +47,49 @@ const showText = computed(() => isExpanded.value || isMobileOpen.value);
 
         <!-- เมนู -->
         <nav class="flex-1 overflow-y-auto px-4 py-5">
-            <div v-for="group in navGroups" :key="group.title" class="mb-6 last:mb-0">
+            <!-- เมนูหลัก -->
+            <div class="mb-6">
                 <p
                     v-show="showText"
                     class="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-gray-600"
                 >
-                    {{ group.title }}
+                    เมนู
                 </p>
                 <div v-show="!showText" class="mb-2 lg:mx-3 lg:border-t lg:border-white/10"></div>
                 <div class="space-y-1">
                     <SidebarItem
-                        v-for="item in group.items"
-                        :key="item.label"
-                        :label="item.label"
-                        :href="item.href"
-                        :active="item.active"
-                        :icon="item.icon"
+                        label="Dashboard"
+                        :href="route('admin.dashboard')"
+                        active="admin.dashboard"
+                        :icon="LayoutGrid"
+                    />
+                </div>
+            </div>
+
+            <!-- เมนูจาก DB (แสดงเมื่อ sidebar กางเต็ม / drawer มือถือ) -->
+            <div v-show="showText && menuGroups.length" class="mb-6 space-y-1">
+                <SidebarGroup
+                    v-for="group in menuGroups"
+                    :key="group.id"
+                    :group="group"
+                />
+            </div>
+
+            <!-- บัญชี -->
+            <div>
+                <p
+                    v-show="showText"
+                    class="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-gray-600"
+                >
+                    บัญชี
+                </p>
+                <div v-show="!showText" class="mb-2 lg:mx-3 lg:border-t lg:border-white/10"></div>
+                <div class="space-y-1">
+                    <SidebarItem
+                        label="โปรไฟล์"
+                        :href="route('admin.profile.edit')"
+                        active="admin.profile"
+                        :icon="UserCircle"
                     />
                 </div>
             </div>

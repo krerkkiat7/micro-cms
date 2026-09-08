@@ -13,10 +13,27 @@ export interface User {
     permissions?: string[];
 }
 
+/** เมนูย่อยใน sidebar หลังบ้าน (มาจาก sys_menu) */
+export interface MenuItem {
+    id: string;
+    name: string;
+    routeName: string | null;
+    /** URL ที่ resolve แล้ว — null ถ้ายังไม่มี route จริง */
+    href: string | null;
+}
+
+/** กลุ่มเมนูหลักใน sidebar หลังบ้าน (มาจาก sys_menu_group) — กดไม่ได้ ใช้เปิด/ปิดกลุ่ม */
+export interface MenuGroup {
+    id: string;
+    name: string;
+    items: MenuItem[];
+}
+
 export type PageProps<
     T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {
     auth: {
         user: User;
     };
+    menu: MenuGroup[];
 };

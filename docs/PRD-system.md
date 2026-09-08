@@ -208,13 +208,20 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 `action_code` ของทุกเมนูตรงกับ `sys_action.code` ที่ seed ใน `DatabaseSeeder` แล้ว;
 `route_name` ยังเป็น route ที่คาดว่าจะมี (เจ้าของโปรเจกต์จะเข้าไปปรับเพิ่ม)
 
-**ที่เหลือต้องทำ** — controller/composable แชร์ menu tree (group → menu ที่ `status='Y'` +
-ผ่าน `hasPermission(action_code)`) ผ่าน Inertia แล้วให้ `AppSidebar.vue` อ่านจากตรงนั้นแทน `navGroups` ที่ฮาร์ดโค้ด;
-หน้า CRUD จัดเมนู
+**การแสดงผล (ทำแล้ว)** — `HandleInertiaRequests::adminMenu()` แชร์ prop `menu` (เฉพาะ `user_type='back'`):
+- กลุ่ม `status='Y'` เรียงตาม `sort_order`; เมนูย่อย `status='Y'` เรียงตาม `sort_order`
+- เมนูย่อยที่มี `action_code` ต้องมีสิทธิ์นั้น (`getPermissionsArray()`) ถึงจะติดมา; `action_code = null` = แสดงเสมอ
+- กลุ่มที่ไม่เหลือเมนูย่อยเลย → ตัดออก
+- `href` = resolve จาก `route_name` ถ้ามี route จริง (`Route::has`) ไม่งั้น `null`
+- `AppSidebar.vue` แสดงต่อจาก Dashboard: `SidebarGroup.vue` = หัวข้อกลุ่ม (กดไม่ได้ กด toggle เปิด/ปิด,
+  จำสถานะใน `localStorage` key `admin.sidebar.group.<id>`, กางอัตโนมัติถ้า route ปัจจุบันอยู่ในกลุ่ม) +
+  รายการเมนูย่อย (เป็น `<Link>` ถ้ามี `href`, ไม่งั้นเป็นข้อความจาง ๆ). แสดงเฉพาะตอน sidebar กางเต็ม/drawer มือถือ
 
-**Permission** — `system.menu.view`, `system.menu.create`, `system.menu.delete`
+**ที่เหลือต้องทำ** — หน้า CRUD จัดกลุ่มเมนู/เมนู; ไอคอนต่อเมนู (ยังไม่มีคอลัมน์ icon)
 
-**Route (เสนอ)** — `admin.system.menus.*` ใต้ `/admin/system/menus`
+**Permission** — `system.menu.view`, `system.menu.manage`, `system.menu.delete`
+
+**Route (เสนอ)** — `admin.system.menu.*` ใต้ `/admin/system/menu`
 
 ### 3.2 เมนูหน้าบ้าน (public nav) — 🔴 เสนอ
 
@@ -501,7 +508,10 @@ sys_menu
 | `app/Http/Controllers/Admin/Auth/RegisteredUserController.php` | สร้างด้วย `user_type='back'`,`status='Y'` + `unique` scope `user_type='back'` + `whereNull('deleted_at')` |
 | `app/Http/Controllers/Admin/Auth/PasswordResetLinkController.php`, `NewPasswordController.php` | ใช้ `Password::broker('users')` + credential `user_type='back'` |
 | `tests/Feature/Auth/PasswordResetTest.php` | เทส front user ขอ reset ไม่ได้ + โทเคน back/front ของ email เดียวกันแยกกัน |
-| `app/Http/Middleware/HandleInertiaRequests.php` | แชร์ `titlename`/`firstname`/`lastname`/`name`/`mobile`/`phone`/`line`/`facebook`/`permissions` |
+| `app/Http/Middleware/HandleInertiaRequests.php` | แชร์ข้อมูล user (`titlename`…`permissions`) + prop `menu` (`adminMenu()` — sidebar หลังบ้านกรองตามสิทธิ์) |
+| `resources/js/Components/Admin/AppSidebar.vue` | render prop `menu` ต่อจาก Dashboard |
+| `resources/js/Components/Admin/SidebarGroup.vue` | **ไฟล์ใหม่** — กลุ่มเมนูกดเปิด/ปิด (localStorage) + เมนูย่อย |
+| `resources/js/types/index.d.ts` | เพิ่ม `MenuItem`/`MenuGroup` + `menu` ใน `PageProps` |
 | `resources/js/types/index.d.ts` | `User` interface ใหม่ |
 | `resources/js/Pages/Admin/Profile/Partials/UpdateProfileInformationForm.vue` | ฟอร์มชื่อ + ช่องทางติดต่อ |
 | `resources/js/Pages/Admin/Auth/Register.vue` | ฟอร์ม คำนำหน้า/ชื่อ/นามสกุล |

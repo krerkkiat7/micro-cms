@@ -85,8 +85,10 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   split-screen ฟอร์มซ้าย + branding panel มืดขวา (จอ `lg`)
 - สไตล์อ้างอิง TailAdmin Vue (MIT) — port เฉพาะโครง ไม่ได้ใช้ตัวเทมเพลตตรง ๆ (มัน vue-router SPA + Pinia);
   **ไม่มี dark-mode toggle** (chrome มืดตายตัว เนื้อหาสว่างเสมอ)
-- `Components/Admin/AppSidebar.vue` ยัง**ฮาร์ดโค้ด** `navGroups` — แผนคือให้อ่านจาก `sys_menu_group`/`sys_menu`
-  (กรองด้วย `status='Y'` + `hasPermission(action_code)`) ผ่าน Inertia แทน (ดู `docs/PRD-system.md` §3.1)
+- `Components/Admin/AppSidebar.vue` — Dashboard + Profile ฮาร์ดโค้ด, ส่วนกลางอ่านจาก shared prop `menu`
+  (`HandleInertiaRequests::adminMenu()` — จาก `sys_menu_group`/`sys_menu`, กรอง `status='Y'` +
+  สิทธิ์ `action_code`, ตัดกลุ่มที่ว่าง). กลุ่มเมนูเป็นหัวข้อกดเปิด/ปิดใน `SidebarGroup.vue`
+  (จำสถานะ `localStorage` `admin.sidebar.group.<id>`). ดู `docs/PRD-system.md` §3.1
 
 ## ระบบสิทธิ์ (Permissions)
 
@@ -164,7 +166,8 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 - แยก password reset broker ตาม `user_type`: broker `users` → `password_reset_tokens` (back),
   broker `front` → `front_password_reset_tokens` (เตรียมไว้สำหรับ front-office auth)
 - เพิ่มตารางเมนูหลังบ้าน `sys_menu_group`/`sys_menu` (migration `2026_09_08_000001_*`) + `MenuSeeder`
-  (7 กลุ่ม + 23 เมนู, เรียกจาก `DatabaseSeeder`) — sidebar ยังไม่ได้ต่อให้อ่านจาก DB
+  (7 กลุ่ม + 23 เมนู, เรียกจาก `DatabaseSeeder`) — `AppSidebar.vue` อ่านจาก shared prop `menu` แล้ว
+  (`SidebarGroup.vue` = กลุ่มเมนูกดเปิด/ปิด, กรองตามสิทธิ์)
 - `DatabaseSeeder`/`MenuSeeder` ปรับเป็นข้อมูลจริง: 7 action group + 48 action (tree),
   กลุ่ม id ใช้ชุดเดียวกับ `sys_menu_group` (`article`/`banner`/`popup`/`intropage`/`page`/`contactus`/`system`),
   `sys_menu.action_code` ทุกตัวตรงกับ `sys_action.code`; seeder ทุกจุดเป็น `updateOrCreate`/`sync` รันซ้ำได้

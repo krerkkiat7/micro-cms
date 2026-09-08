@@ -74,7 +74,7 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 | profile | ✅ มี (แก้ชื่อ/ช่องทางติดต่อ/อีเมล) | เพิ่มอัปโหลดรูปโปรไฟล์ (อนาคต) |
 | dashboard | 🟡 placeholder (การ์ดสถิติ "—") | ต่อสถิติจริงเมื่อมีโมดูล |
 | โมดูลเนื้อหาทั้ง 6 | ❌ ยังไม่มี | ทยอยทำ |
-| จัดการเมนูหลังบ้าน (`sys_menu_group`/`sys_menu`) | 🟡 มีตาราง + seed ตัวอย่าง | ต่อ sidebar ให้อ่านจาก DB + หน้า CRUD |
+| จัดการเมนูหลังบ้าน (`sys_menu_group`/`sys_menu`) | 🟢 ตาราง + seed + `AppSidebar` อ่านจาก DB (กรองตามสิทธิ์) | หน้า CRUD จัดเมนู |
 | จัดการเมนูหน้าบ้าน / template / ประวัติ / file management | ❌ ยังไม่มี | ทยอยทำ (ดู PRD-system.md) |
 | ตั้งค่าระบบ (`sys_setting`) | 🟡 มีตาราง + seed ตัวอย่างแล้ว | หน้า UI จัดการ + helper อ่านค่า |
 
@@ -104,7 +104,7 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 |-----|--------|
 | **0 — schema base** *(รอบนี้)* | ปรับ `sys_user`/`sys_usergroup`/`sys_action*` + สร้าง `sys_setting` + เปิด SoftDeletes + auth หลังบ้านเช็ก `user_type`/`status` + บันทึกสถิติ login + ปรับ seeder/factory/profile/register/เทส |
 | 1 — จัดการผู้ใช้ & สิทธิ์ | CRUD `sys_user`, `sys_usergroup`, หน้าเลือกสิทธิ์แบบ tree, middleware บังคับสิทธิ์, ล็อกบัญชีเมื่อ login ผิดเกินเกณฑ์ (`sys_setting`) |
-| 2 — ตั้งค่าระบบ & template & เมนู | หน้า `sys_setting`, `sys_template`; ต่อ `AppSidebar.vue` ให้อ่านจาก `sys_menu_group`/`sys_menu` + หน้า CRUD เมนูหลังบ้าน; `sys_front_menu` (tree) สำหรับหน้าบ้าน |
+| 2 — ตั้งค่าระบบ & template & เมนู | หน้า `sys_setting`, `sys_template`; หน้า CRUD เมนูหลังบ้าน (`AppSidebar` อ่านจาก DB แล้ว); `sys_front_menu` (tree) สำหรับหน้าบ้าน |
 | 3 — โมดูลเนื้อหาแรก | บทความ (article) + page (หน้าเดี่ยว) + file management (`sys_file`) |
 | 4 — โมดูลที่เหลือ | banner, popup, intropage, contact us |
 | 5 — ประวัติ & dashboard จริง | `sys_log_login` / `sys_log_visit` / `sys_log_action` + สถิติ dashboard |

@@ -2,7 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\SysMenuGroup;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -47,6 +50,57 @@ class HandleInertiaRequests extends Middleware
                     'permissions' => $request->user()->getPermissionsArray(),
                 ] : null,
             ],
+            // เมนู sidebar หลังบ้าน สร้างจาก sys_menu_group + sys_menu กรองตามสิทธิ์ของผู้ใช้
+            // (closure = ประเมินเฉพาะตอนที่ Inertia ต้องส่ง prop นี้จริง)
+            'menu' => fn () => $this->adminMenu($request->user()),
         ];
+    }
+
+    /**
+     * โครงเมนูหลังบ้าน: กลุ่มเมนู (sys_menu_group) → เมนูย่อย (sys_menu)
+     * - เฉพาะผู้ใช้ user_type = back
+     * - แสดงเฉพาะ status = 'Y' เรียงตาม sort_order
+     * - เมนูย่อยที่มี action_code ต้องมีสิทธิ์นั้น ๆ ถึงจะแสดง (null = แสดงเสมอ)
+     * - กลุ่มที่ไม่มีเมนูย่อยเหลือเลย จะถูกซ่อน
+     *
+     * @return list<array{id: string, name: string, items: list<array{id: string, name: string, routeName: string|null, href: string|null}>}>
+     */
+    protected function adminMenu(?User $user): array
+    {
+        if (! $user || $user->user_type !== 'back') {
+            return [];
+        }
+
+        $permissions = $user->getPermissionsArray();
+
+        return SysMenuGroup::query()
+            ->where('status', 'Y')
+            ->with(['menus' => fn ($query) => $query->where('status', 'Y')->orderBy('sort_order')])
+            ->orderBy('sort_order')
+            ->get()
+            ->map(function (SysMenuGroup $group) use ($permissions) {
+                $items = $group->menus
+                    ->filter(fn ($menu) => $menu->action_code === null
+                        || in_array($menu->action_code, $permissions, true))
+                    ->map(fn ($menu) => [
+                        'id' => $menu->id,
+                        'name' => $menu->name,
+                        'routeName' => $menu->route_name,
+                        'href' => $menu->route_name && Route::has($menu->route_name)
+                            ? route($menu->route_name)
+                            : null,
+                    ])
+                    ->values()
+                    ->all();
+
+                return [
+                    'id' => $group->id,
+                    'name' => $group->name,
+                    'items' => $items,
+                ];
+            })
+            ->filter(fn ($group) => count($group['items']) > 0)
+            ->values()
+            ->all();
     }
 }
