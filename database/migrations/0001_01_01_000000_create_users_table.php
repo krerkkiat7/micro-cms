@@ -82,6 +82,7 @@ return new class extends Migration
             $table->string('id', 20)->primary();
             $table->string('name', 100);
             $table->unsignedInteger('sort_order')->default(0);
+            $table->char('status', 1)->default('Y'); // Y = แสดง, N = ซ่อน (ในหน้ากำหนดสิทธิ์)
             $table->timestamps();
             $table->softDeletes();
         });

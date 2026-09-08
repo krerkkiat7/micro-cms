@@ -87,7 +87,7 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 |-------|-----------|
 | `sys_user` | `name` → `titlename` (30, null) + `firstname` (100) + `lastname` (100); เพิ่ม `mobile` (20), `phone` (30), `line` (100), `facebook` (150), `status` `char(1)` default `'Y'`; `last_login_at` / `failed_login_count` / `last_failed_login_at`; `email` เหลือ 150 **และเลิก unique** (เช็กในโค้ดว่าไม่ซ้ำต่อ `user_type` ที่ยังไม่ถูกลบ); เปิด `SoftDeletes` |
 | `sys_usergroup` | เพิ่ม `status` `char(1)` default `'Y'`; `name` 100, `description` 255 |
-| `sys_action_group` | `id` เป็น `string(20)` primary (แทน auto-increment) |
+| `sys_action_group` | `id` เป็น `string(20)` primary (แทน auto-increment); เพิ่ม `status` `char(1)` default `'Y'` |
 | `sys_action` | `id` เป็น `string(20)` primary; เพิ่ม `parent_id` `string(20)` null (tree) + `sort_order`; `code` 100, `name` 150 |
 | `sys_usergroup_action` | `action_id` เป็น `string(20)` ให้ตรงกับ id ใหม่ |
 | `sys_setting` (ใหม่) | `group` (50) + `name` (100) เป็น composite primary key; `value` `text` null; `timestamps` + `softDeletes` |

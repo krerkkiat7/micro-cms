@@ -12,7 +12,7 @@ class SysActionGroup extends Model
 
     protected $keyType = 'string';
 
-    protected $fillable = ['id', 'name', 'sort_order'];
+    protected $fillable = ['id', 'name', 'sort_order', 'status'];
 
     /**
      * สิทธิ์ทั้งหมดในกลุ่มนี้

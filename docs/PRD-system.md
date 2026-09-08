@@ -121,10 +121,11 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 
 | คอลัมน์ | ชนิด | หมายเหตุ |
 |---------|------|----------|
-| `id` | `varchar(20)` PK | กำหนดเอง เช่น `system-user` |
+| `id` | `varchar(20)` PK | กำหนดเอง เช่น `article`, `system` |
 | `name` | `varchar(100)` | เช่น "จัดการผู้ใช้งาน" |
 | `sort_order` | unsigned int default 0 | ลำดับแสดง |
-| `timestamps`, `deleted_at` | | |
+| `status` | `char(1)` default `Y` | `Y` = แสดง, `N` = ซ่อน (ในหน้ากำหนดสิทธิ์) |
+| `timestamps`, `deleted_at` | | softDeletes |
 
 `sys_action` (ปรับในเฟส 0) — สิทธิ์รายตัว
 
@@ -181,7 +182,7 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 
 | คอลัมน์ | ชนิด | หมายเหตุ |
 |---------|------|----------|
-| `id` | `varchar(20)` PK | กำหนดเอง เช่น `content`, `system` |
+| `id` | `varchar(20)` PK | กำหนดเอง — ใช้ชุดเดียวกับ `sys_action_group` (`article`, `banner`, `popup`, `intropage`, `page`, `contactus`, `system`) |
 | `name` | `varchar(100)` | ชื่อกลุ่มที่แสดง |
 | `sort_order` | `unsigned int` default 0 | ลำดับการแสดงผล |
 | `status` | `char(1)` default `Y` | `Y` = แสดง, `N` = ซ่อน |
@@ -203,8 +204,9 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 **Model** — `App\Models\SysMenuGroup` (`menus()` hasMany) / `App\Models\SysMenu` (`group()` belongsTo) — string key, `SoftDeletes`
 
 **Seeder** — `Database\Seeders\MenuSeeder` (เรียกจาก `DatabaseSeeder` และรันเดี่ยวได้ด้วย
-`php artisan db:seed --class=MenuSeeder`) — ข้อมูล**จำลอง** 2 กลุ่ม (`content`, `system`) + เมนูตามโมดูล/จัดการระบบ
-`route_name` / `action_code` หลายรายการยังไม่มีจริง เจ้าของโปรเจกต์จะเข้าไปปรับเพิ่ม
+`php artisan db:seed --class=MenuSeeder`; `updateOrCreate` → รันซ้ำได้) — 7 กลุ่ม + 23 เมนู
+`action_code` ของทุกเมนูตรงกับ `sys_action.code` ที่ seed ใน `DatabaseSeeder` แล้ว;
+`route_name` ยังเป็น route ที่คาดว่าจะมี (เจ้าของโปรเจกต์จะเข้าไปปรับเพิ่ม)
 
 **ที่เหลือต้องทำ** — controller/composable แชร์ menu tree (group → menu ที่ `status='Y'` +
 ผ่าน `hasPermission(action_code)`) ผ่าน Inertia แล้วให้ `AppSidebar.vue` อ่านจากตรงนั้นแทน `navGroups` ที่ฮาร์ดโค้ด;
@@ -412,6 +414,7 @@ primary key = `(group, name)` — Eloquent ไม่รองรับ composite
 + id                      varchar(20)  PRIMARY KEY
   name                    varchar(255) → varchar(100)
   sort_order              int → unsigned int default 0
++ status                  char(1)      default 'Y'
 ```
 
 ### `sys_action`
@@ -485,13 +488,13 @@ sys_menu
 | `config/auth.php` | เพิ่ม password broker `front` (ตาราง `front_password_reset_tokens`) |
 | `app/Models/User.php` | `fillable` ใหม่ + accessor `name` + trait `SoftDeletes` + cast `last_login_at`/`last_failed_login_at` |
 | `app/Models/UserGroup.php` | `fillable` เพิ่ม `status` |
-| `app/Models/SysActionGroup.php` | `$incrementing=false`, `$keyType='string'`, `actions()` hasMany |
+| `app/Models/SysActionGroup.php` | `$incrementing=false`, `$keyType='string'`, `actions()` hasMany, `fillable` มี `status` (คอลัมน์ `sys_action_group.status`) |
 | `app/Models/SysAction.php` | `$incrementing=false`, `$keyType='string'`, `group()`/`parent()`/`children()` |
 | `app/Models/SysSetting.php` | **ไฟล์ใหม่** — softDeletes, key เป็น string, ไม่ใช้ `find()` |
 | `app/Models/SysMenuGroup.php`, `app/Models/SysMenu.php` | **ไฟล์ใหม่** — string key, softDeletes, `menus()`/`group()` |
-| `database/seeders/MenuSeeder.php` | **ไฟล์ใหม่** — ข้อมูลตัวอย่าง `sys_menu_group`/`sys_menu` (เรียกจาก `DatabaseSeeder`) |
+| `database/seeders/MenuSeeder.php` | **ไฟล์ใหม่** — 7 กลุ่ม + 23 เมนู (`updateOrCreate`, `action_code` ตรงกับ `sys_action.code`) |
 | `database/migrations/2026_09_08_000001_create_sys_menu_tables.php` | **ไฟล์ใหม่** — `sys_menu_group` + `sys_menu` |
-| `database/seeders/DatabaseSeeder.php` | id เป็น string, `status`, ชื่อผู้ใช้แยกส่วน, seed `sys_setting` กลุ่ม `site` |
+| `database/seeders/DatabaseSeeder.php` | 7 action group + 48 action (tree ผ่าน `parent_id`) + Super Admin (sync ทุกสิทธิ์) + admin user + `sys_setting`; ทุกจุดเป็น `updateOrCreate`/`sync` (รันซ้ำได้) |
 | `database/factories/UserFactory.php` | field ใหม่ + `user_type='back'`; state `front()` / `inactive()` |
 | `app/Http/Requests/ProfileUpdateRequest.php` | rule field ใหม่ (`email` max 150) + `unique` scope `user_type` + `whereNull('deleted_at')` |
 | `app/Http/Requests/Auth/LoginRequest.php` | `authenticate()` เช็ก `user_type='back'`+`status='Y'`, ข้อความ block, บันทึกสถิติ login สำเร็จ/ไม่สำเร็จ |

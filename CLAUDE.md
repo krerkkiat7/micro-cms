@@ -97,7 +97,7 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 |-------|-------|----------|
 | `sys_user` | `App\Models\User` | ชื่อแยกเป็น `titlename`/`firstname`/`lastname` (+ accessor `name` = ชื่อเต็ม); ช่องทางติดต่อ `mobile`/`phone`/`line`/`facebook`; `user_type` (`back`/`front`, default `back`), `status` `char(1)` default `Y`; สถิติ login `last_login_at`/`failed_login_count`/`last_failed_login_at`; `usergroup_id`; **`SoftDeletes` (เปิดใช้ trait แล้ว)**. `email` **ไม่ unique ระดับ DB** |
 | `sys_usergroup` | `App\Models\UserGroup` | มี `status` `char(1)` default `Y`, softDeletes (คอลัมน์) |
-| `sys_action_group` | `App\Models\SysActionGroup` | `id` เป็น `string(20)` primary (กำหนดเอง); มี `sort_order`, `actions()` hasMany |
+| `sys_action_group` | `App\Models\SysActionGroup` | `id` เป็น `string(20)` primary (กำหนดเอง); มี `sort_order`, `status` `char(1)` default `Y`, `actions()` hasMany |
 | `sys_action` | `App\Models\SysAction` | `id` เป็น `string(20)` primary; มี `code` (unique) เช่น `system.user.view`, `parent_id` (tree, self-FK), `sort_order` |
 | `sys_usergroup_action` | (pivot) | เชื่อม usergroup ↔ action (`action_id` เป็น `string(20)`) |
 | `sys_setting` | `App\Models\SysSetting` | ตั้งค่าระบบ key-value; composite PK `(group, name)` — ค้นด้วย `where()` ไม่ใช้ `find()`; timestamps + softDeletes. `group` เป็นคำสงวน MySQL (Laravel quote ให้) |
@@ -158,13 +158,16 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 - `migration down()` แก้ typo `sys_usergrouop` → `sys_usergroup` + เรียง drop ให้ปลอดภัยกับ FK แล้ว
 - ปรับ schema (เฟส 0): `sys_user.name` → `titlename`/`firstname`/`lastname` + `mobile`/`phone`/`line`/`facebook`/`status`
   + สถิติ login (`last_login_at`/`failed_login_count`/`last_failed_login_at`); `email` เลิก unique;
-  `sys_usergroup.status`; `sys_action_group`/`sys_action` id เป็น `string(20)` + `sys_action.parent_id`/`sort_order`;
+  `sys_usergroup.status`, `sys_action_group.status`; `sys_action_group`/`sys_action` id เป็น `string(20)` + `sys_action.parent_id`/`sort_order`;
   เพิ่มตาราง `sys_setting`; เปิด `SoftDeletes` บน `User` — ปรับ seeder/factory/requests/controllers auth/
   `HandleInertiaRequests`/หน้า Vue profile+register/เทส ให้ตรงแล้ว (ดู `docs/PRD-system.md` ภาคผนวก)
 - แยก password reset broker ตาม `user_type`: broker `users` → `password_reset_tokens` (back),
   broker `front` → `front_password_reset_tokens` (เตรียมไว้สำหรับ front-office auth)
 - เพิ่มตารางเมนูหลังบ้าน `sys_menu_group`/`sys_menu` (migration `2026_09_08_000001_*`) + `MenuSeeder`
-  (ข้อมูลตัวอย่าง, เรียกจาก `DatabaseSeeder`) — sidebar ยังไม่ได้ต่อให้อ่านจาก DB
+  (7 กลุ่ม + 23 เมนู, เรียกจาก `DatabaseSeeder`) — sidebar ยังไม่ได้ต่อให้อ่านจาก DB
+- `DatabaseSeeder`/`MenuSeeder` ปรับเป็นข้อมูลจริง: 7 action group + 48 action (tree),
+  กลุ่ม id ใช้ชุดเดียวกับ `sys_menu_group` (`article`/`banner`/`popup`/`intropage`/`page`/`contactus`/`system`),
+  `sys_menu.action_code` ทุกตัวตรงกับ `sys_action.code`; seeder ทุกจุดเป็น `updateOrCreate`/`sync` รันซ้ำได้
 - ลบไฟล์ Breeze ที่ตายแล้ว: `Pages/Welcome.vue`, `Pages/Dashboard.vue`, `Pages/Front/About.vue`
 - อัปเกรด Tailwind v3 → v4; เปลี่ยน layout หลังบ้านเป็นสไตล์ TailAdmin (sidebar/header มืด);
   ลบ `AuthenticatedLayout.vue`, `GuestLayout.vue`, `Components/NavLink.vue`, `Components/ResponsiveNavLink.vue`
