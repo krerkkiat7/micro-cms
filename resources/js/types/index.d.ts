@@ -17,6 +17,8 @@ export interface User {
 export interface MenuItem {
     id: string;
     name: string;
+    /** ชื่อไอคอน lucide (PascalCase) — null = ใช้ไอคอน fallback */
+    icon: string | null;
     routeName: string | null;
     /** URL ที่ resolve แล้ว — null ถ้ายังไม่มี route จริง */
     href: string | null;
@@ -26,6 +28,7 @@ export interface MenuItem {
 export interface MenuGroup {
     id: string;
     name: string;
+    icon: string | null;
     items: MenuItem[];
 }
 

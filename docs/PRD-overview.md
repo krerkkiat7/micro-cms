@@ -94,7 +94,7 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 | `password_reset_tokens` / `front_password_reset_tokens` (ใหม่) | แยกตารางโทเคน reset ตาม broker (`users` = back / `front` = front) |
 
 **migration แยกไฟล์:** `2026_09_08_000001_create_sys_menu_tables.php` — สร้าง `sys_menu_group` + `sys_menu`
-(เมนูหลังบ้าน, string PK, `status` `char(1)`, `softDeletes`) + `database/seeders/MenuSeeder.php` ข้อมูลตัวอย่าง — ดู §3.1 ใน PRD-system
+(เมนูหลังบ้าน, string PK, `icon`, `status` `char(1)`, `softDeletes`) + `database/seeders/MenuSeeder.php` ข้อมูลตัวอย่าง — ดู §3.1 ใน PRD-system
 
 รายละเอียดคอลัมน์ทุกช่อง + before/after ดูภาคผนวกใน [PRD-system.md](PRD-system.md#ภาคผนวก-สเปก-schema-รอบนี้)
 

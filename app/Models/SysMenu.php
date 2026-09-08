@@ -19,6 +19,7 @@ class SysMenu extends Model
         'id',
         'menu_group_id',
         'name',
+        'icon',
         'route_name',
         'sort_order',
         'action_code',

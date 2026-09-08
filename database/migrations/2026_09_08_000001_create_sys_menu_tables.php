@@ -17,6 +17,7 @@ return new class extends Migration
         Schema::create('sys_menu_group', function (Blueprint $table) {
             $table->string('id', 20)->primary();
             $table->string('name', 100);                       // ชื่อกลุ่มที่แสดง
+            $table->string('icon', 40)->nullable();            // ชื่อไอคอน lucide (PascalCase) เช่น "Settings"
             $table->unsignedInteger('sort_order')->default(0);  // ลำดับการแสดงผล
             $table->char('status', 1)->default('Y');            // Y = แสดง, N = ซ่อน
             $table->timestamps();
@@ -27,6 +28,7 @@ return new class extends Migration
             $table->string('id', 30)->primary();
             $table->string('menu_group_id', 20);               // กลุ่มที่สังกัด
             $table->string('name', 100);                       // ชื่อเมนูที่แสดง
+            $table->string('icon', 40)->nullable();            // ชื่อไอคอน lucide (PascalCase)
             $table->string('route_name', 100)->nullable();     // ชื่อ route เพื่อลิงก์ไปโมดูล
             $table->unsignedInteger('sort_order')->default(0); // ลำดับการแสดงผล
             $table->string('action_code', 100)->nullable();    // sys_action.code — เงื่อนไขแสดงเมนู (เช็กในโค้ด, ไม่มี FK)

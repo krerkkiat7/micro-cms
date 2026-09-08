@@ -184,6 +184,7 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 |---------|------|----------|
 | `id` | `varchar(20)` PK | กำหนดเอง — ใช้ชุดเดียวกับ `sys_action_group` (`article`, `banner`, `popup`, `intropage`, `page`, `contactus`, `system`) |
 | `name` | `varchar(100)` | ชื่อกลุ่มที่แสดง |
+| `icon` | `varchar(40)` null | ชื่อไอคอน lucide (PascalCase) เช่น `Settings` — ดูรายการที่รองรับใน `resources/js/Components/Admin/menuIcons.ts` |
 | `sort_order` | `unsigned int` default 0 | ลำดับการแสดงผล |
 | `status` | `char(1)` default `Y` | `Y` = แสดง, `N` = ซ่อน |
 | `timestamps`, `deleted_at` | | softDeletes |
@@ -195,6 +196,7 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 | `id` | `varchar(30)` PK | กำหนดเอง เช่น `system-user` |
 | `menu_group_id` | `varchar(20)` FK → `sys_menu_group` (cascadeOnDelete) | กลุ่มที่สังกัด |
 | `name` | `varchar(100)` | ชื่อเมนูที่แสดง |
+| `icon` | `varchar(40)` null | ชื่อไอคอน lucide (PascalCase) — map ใน `menuIcons.ts`, null = ใช้ fallback (`Circle`) |
 | `route_name` | `varchar(100)` null | ชื่อ route เพื่อลิงก์ไปโมดูล เช่น `admin.system.users.index` |
 | `sort_order` | `unsigned int` default 0 | ลำดับในกลุ่ม |
 | `action_code` | `varchar(100)` null | ค่า `sys_action.code` — เงื่อนไขแสดงเมนู (เช็กในโค้ดด้วย `hasPermission()`; ไม่มี FK เพราะ action อาจยังไม่ถูก seed); `null` = แสดงเสมอ |
@@ -204,7 +206,7 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 **Model** — `App\Models\SysMenuGroup` (`menus()` hasMany) / `App\Models\SysMenu` (`group()` belongsTo) — string key, `SoftDeletes`
 
 **Seeder** — `Database\Seeders\MenuSeeder` (เรียกจาก `DatabaseSeeder` และรันเดี่ยวได้ด้วย
-`php artisan db:seed --class=MenuSeeder`; `updateOrCreate` → รันซ้ำได้) — 7 กลุ่ม + 23 เมนู
+`php artisan db:seed --class=MenuSeeder`; `updateOrCreate` → รันซ้ำได้) — 7 กลุ่ม + 23 เมนู (มี `icon` ครบ)
 `action_code` ของทุกเมนูตรงกับ `sys_action.code` ที่ seed ใน `DatabaseSeeder` แล้ว;
 `route_name` ยังเป็น route ที่คาดว่าจะมี (เจ้าของโปรเจกต์จะเข้าไปปรับเพิ่ม)
 
@@ -212,10 +214,13 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 - กลุ่ม `status='Y'` เรียงตาม `sort_order`; เมนูย่อย `status='Y'` เรียงตาม `sort_order`
 - เมนูย่อยที่มี `action_code` ต้องมีสิทธิ์นั้น (`getPermissionsArray()`) ถึงจะติดมา; `action_code = null` = แสดงเสมอ
 - กลุ่มที่ไม่เหลือเมนูย่อยเลย → ตัดออก
-- `href` = resolve จาก `route_name` ถ้ามี route จริง (`Route::has`) ไม่งั้น `null`
-- `AppSidebar.vue` แสดงต่อจาก Dashboard: `SidebarGroup.vue` = หัวข้อกลุ่ม (กดไม่ได้ กด toggle เปิด/ปิด,
-  จำสถานะใน `localStorage` key `admin.sidebar.group.<id>`, กางอัตโนมัติถ้า route ปัจจุบันอยู่ในกลุ่ม) +
-  รายการเมนูย่อย (เป็น `<Link>` ถ้ามี `href`, ไม่งั้นเป็นข้อความจาง ๆ). แสดงเฉพาะตอน sidebar กางเต็ม/drawer มือถือ
+- ส่ง `icon` (ชื่อ) + `href` (resolve จาก `route_name` ถ้ามี route จริง `Route::has`, ไม่งั้น `null`) ไปด้วย
+- `AppSidebar.vue` — Dashboard + กลุ่มเมนูจาก DB อยู่ **section เดียวกัน ("เมนู")**; `SidebarGroup.vue` =
+  หัวข้อกลุ่ม (ไอคอน + toggle เปิด/ปิด, จำสถานะ `localStorage` `admin.sidebar.group.<id>`, กางอัตโนมัติเมื่อ
+  route ปัจจุบันอยู่ในกลุ่ม) + เมนูย่อย (ไอคอน + `<Link>` ถ้ามี `href`, ไม่งั้นข้อความจาง). โหมด sidebar ย่อ
+  แสดงเฉพาะไอคอนกลุ่ม กดแล้วกาง sidebar + เปิดกลุ่ม
+- ไอคอน: DB เก็บชื่อ lucide แบบ PascalCase, frontend map เป็น component ใน
+  `resources/js/Components/Admin/menuIcons.ts` (curated เพื่อ tree-shake) — เพิ่มไอคอนใหม่ = import แล้วใส่ในแมพนั้น
 
 **ที่เหลือต้องทำ** — หน้า CRUD จัดกลุ่มเมนู/เมนู; ไอคอนต่อเมนู (ยังไม่มีคอลัมน์ icon)
 
@@ -472,6 +477,7 @@ primary key = `(group, name)` — Eloquent ไม่รองรับ composite
 sys_menu_group
 + id                      varchar(20)  PRIMARY KEY
 + name                    varchar(100)
++ icon                    varchar(40)  NULL   // ชื่อไอคอน lucide (PascalCase)
 + sort_order              unsigned int default 0
 + status                  char(1)      default 'Y'
 + timestamps + deleted_at (softDeletes)
@@ -480,6 +486,7 @@ sys_menu
 + id                      varchar(30)  PRIMARY KEY
 + menu_group_id           varchar(20)  FK sys_menu_group  cascadeOnDelete
 + name                    varchar(100)
++ icon                    varchar(40)  NULL   // ชื่อไอคอน lucide (PascalCase)
 + route_name              varchar(100) NULL   // ชื่อ route ลิงก์ไปโมดูล
 + sort_order              unsigned int default 0
 + action_code             varchar(100) NULL   // sys_action.code — เช็กในโค้ด ไม่มี FK
@@ -509,9 +516,10 @@ sys_menu
 | `app/Http/Controllers/Admin/Auth/PasswordResetLinkController.php`, `NewPasswordController.php` | ใช้ `Password::broker('users')` + credential `user_type='back'` |
 | `tests/Feature/Auth/PasswordResetTest.php` | เทส front user ขอ reset ไม่ได้ + โทเคน back/front ของ email เดียวกันแยกกัน |
 | `app/Http/Middleware/HandleInertiaRequests.php` | แชร์ข้อมูล user (`titlename`…`permissions`) + prop `menu` (`adminMenu()` — sidebar หลังบ้านกรองตามสิทธิ์) |
-| `resources/js/Components/Admin/AppSidebar.vue` | render prop `menu` ต่อจาก Dashboard |
-| `resources/js/Components/Admin/SidebarGroup.vue` | **ไฟล์ใหม่** — กลุ่มเมนูกดเปิด/ปิด (localStorage) + เมนูย่อย |
-| `resources/js/types/index.d.ts` | เพิ่ม `MenuItem`/`MenuGroup` + `menu` ใน `PageProps` |
+| `resources/js/Components/Admin/AppSidebar.vue` | render prop `menu` เป็น section เดียวกับ Dashboard |
+| `resources/js/Components/Admin/SidebarGroup.vue` | **ไฟล์ใหม่** — กลุ่มเมนู (ไอคอน + กดเปิด/ปิด, localStorage) + เมนูย่อย + โหมด rail |
+| `resources/js/Components/Admin/menuIcons.ts` | **ไฟล์ใหม่** — map ชื่อไอคอน (PascalCase) → lucide component (curated) |
+| `resources/js/types/index.d.ts` | เพิ่ม `MenuItem`/`MenuGroup` (มี `icon`) + `menu` ใน `PageProps` |
 | `resources/js/types/index.d.ts` | `User` interface ใหม่ |
 | `resources/js/Pages/Admin/Profile/Partials/UpdateProfileInformationForm.vue` | ฟอร์มชื่อ + ช่องทางติดต่อ |
 | `resources/js/Pages/Admin/Auth/Register.vue` | ฟอร์ม คำนำหน้า/ชื่อ/นามสกุล |

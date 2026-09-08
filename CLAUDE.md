@@ -85,10 +85,11 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   split-screen ฟอร์มซ้าย + branding panel มืดขวา (จอ `lg`)
 - สไตล์อ้างอิง TailAdmin Vue (MIT) — port เฉพาะโครง ไม่ได้ใช้ตัวเทมเพลตตรง ๆ (มัน vue-router SPA + Pinia);
   **ไม่มี dark-mode toggle** (chrome มืดตายตัว เนื้อหาสว่างเสมอ)
-- `Components/Admin/AppSidebar.vue` — Dashboard + Profile ฮาร์ดโค้ด, ส่วนกลางอ่านจาก shared prop `menu`
-  (`HandleInertiaRequests::adminMenu()` — จาก `sys_menu_group`/`sys_menu`, กรอง `status='Y'` +
-  สิทธิ์ `action_code`, ตัดกลุ่มที่ว่าง). กลุ่มเมนูเป็นหัวข้อกดเปิด/ปิดใน `SidebarGroup.vue`
-  (จำสถานะ `localStorage` `admin.sidebar.group.<id>`). ดู `docs/PRD-system.md` §3.1
+- `Components/Admin/AppSidebar.vue` — Dashboard + Profile ฮาร์ดโค้ด; กลุ่มเมนูจาก DB อยู่ section เดียวกับ Dashboard
+  อ่านจาก shared prop `menu` (`HandleInertiaRequests::adminMenu()` — `sys_menu_group`/`sys_menu`, กรอง `status='Y'` +
+  สิทธิ์ `action_code`, ตัดกลุ่มที่ว่าง, ส่ง `icon`+`href`). `SidebarGroup.vue` = หัวข้อกลุ่มกดเปิด/ปิด
+  (localStorage `admin.sidebar.group.<id>`, โหมด rail แสดงไอคอน). ไอคอน map ใน `Components/Admin/menuIcons.ts`
+  (ชื่อ lucide PascalCase, curated) — เพิ่มไอคอน = import + ใส่ในแมพ. ดู `docs/PRD-system.md` §3.1
 
 ## ระบบสิทธิ์ (Permissions)
 
@@ -103,8 +104,8 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 | `sys_action` | `App\Models\SysAction` | `id` เป็น `string(20)` primary; มี `code` (unique) เช่น `system.user.view`, `parent_id` (tree, self-FK), `sort_order` |
 | `sys_usergroup_action` | (pivot) | เชื่อม usergroup ↔ action (`action_id` เป็น `string(20)`) |
 | `sys_setting` | `App\Models\SysSetting` | ตั้งค่าระบบ key-value; composite PK `(group, name)` — ค้นด้วย `where()` ไม่ใช้ `find()`; timestamps + softDeletes. `group` เป็นคำสงวน MySQL (Laravel quote ให้) |
-| `sys_menu_group` | `App\Models\SysMenuGroup` | กลุ่มเมนู sidebar หลังบ้าน; `id` `string(20)` primary; `sort_order`, `status`, softDeletes; `menus()` hasMany |
-| `sys_menu` | `App\Models\SysMenu` | เมนูย่อยหลังบ้าน; `id` `string(30)` primary; `menu_group_id` FK; `route_name` (ลิงก์โมดูล), `action_code` (`sys_action.code` — เช็กในโค้ด, ไม่มี FK), `sort_order`, `status`, softDeletes. seed ตัวอย่างใน `MenuSeeder` |
+| `sys_menu_group` | `App\Models\SysMenuGroup` | กลุ่มเมนู sidebar หลังบ้าน; `id` `string(20)` primary; `icon`, `sort_order`, `status`, softDeletes; `menus()` hasMany |
+| `sys_menu` | `App\Models\SysMenu` | เมนูย่อยหลังบ้าน; `id` `string(30)` primary; `menu_group_id` FK; `icon` (ชื่อ lucide PascalCase), `route_name` (ลิงก์โมดูล), `action_code` (`sys_action.code` — เช็กในโค้ด, ไม่มี FK), `sort_order`, `status`, softDeletes. seed ใน `MenuSeeder` |
 
 การเช็กสิทธิ์:
 - `$user->hasPermission('system.user.view')` — คืน `bool` (คืน `false` ถ้า user ไม่มี usergroup)
@@ -166,8 +167,8 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 - แยก password reset broker ตาม `user_type`: broker `users` → `password_reset_tokens` (back),
   broker `front` → `front_password_reset_tokens` (เตรียมไว้สำหรับ front-office auth)
 - เพิ่มตารางเมนูหลังบ้าน `sys_menu_group`/`sys_menu` (migration `2026_09_08_000001_*`) + `MenuSeeder`
-  (7 กลุ่ม + 23 เมนู, เรียกจาก `DatabaseSeeder`) — `AppSidebar.vue` อ่านจาก shared prop `menu` แล้ว
-  (`SidebarGroup.vue` = กลุ่มเมนูกดเปิด/ปิด, กรองตามสิทธิ์)
+  (7 กลุ่ม + 23 เมนู + `icon`, เรียกจาก `DatabaseSeeder`) — `AppSidebar.vue` render จาก shared prop `menu`
+  ระดับเดียวกับ Dashboard (`SidebarGroup.vue` = กลุ่มกดเปิด/ปิด + ไอคอน, กรองตามสิทธิ์)
 - `DatabaseSeeder`/`MenuSeeder` ปรับเป็นข้อมูลจริง: 7 action group + 48 action (tree),
   กลุ่ม id ใช้ชุดเดียวกับ `sys_menu_group` (`article`/`banner`/`popup`/`intropage`/`page`/`contactus`/`system`),
   `sys_menu.action_code` ทุกตัวตรงกับ `sys_action.code`; seeder ทุกจุดเป็น `updateOrCreate`/`sync` รันซ้ำได้

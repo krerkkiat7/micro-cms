@@ -15,7 +15,7 @@ class SysMenuGroup extends Model
 
     protected $keyType = 'string';
 
-    protected $fillable = ['id', 'name', 'sort_order', 'status'];
+    protected $fillable = ['id', 'name', 'icon', 'sort_order', 'status'];
 
     /**
      * เมนูย่อยในกลุ่มนี้

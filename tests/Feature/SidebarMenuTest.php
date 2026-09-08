@@ -18,8 +18,11 @@ test('super admin sees every menu group and item', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->has('menu', 7)
             ->where('menu.0.id', 'article')       // เรียงตาม sort_order
+            ->where('menu.0.icon', 'Newspaper')
             ->where('menu.6.id', 'system')
+            ->where('menu.6.icon', 'Settings')
             ->has('menu.6.items', 12)
+            ->where('menu.6.items.0.icon', 'Users')
         );
 });
 

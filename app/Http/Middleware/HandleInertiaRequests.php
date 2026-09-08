@@ -63,7 +63,7 @@ class HandleInertiaRequests extends Middleware
      * - เมนูย่อยที่มี action_code ต้องมีสิทธิ์นั้น ๆ ถึงจะแสดง (null = แสดงเสมอ)
      * - กลุ่มที่ไม่มีเมนูย่อยเหลือเลย จะถูกซ่อน
      *
-     * @return list<array{id: string, name: string, items: list<array{id: string, name: string, routeName: string|null, href: string|null}>}>
+     * @return list<array{id: string, name: string, icon: string|null, items: list<array{id: string, name: string, icon: string|null, routeName: string|null, href: string|null}>}>
      */
     protected function adminMenu(?User $user): array
     {
@@ -85,6 +85,7 @@ class HandleInertiaRequests extends Middleware
                     ->map(fn ($menu) => [
                         'id' => $menu->id,
                         'name' => $menu->name,
+                        'icon' => $menu->icon,
                         'routeName' => $menu->route_name,
                         'href' => $menu->route_name && Route::has($menu->route_name)
                             ? route($menu->route_name)
@@ -96,6 +97,7 @@ class HandleInertiaRequests extends Middleware
                 return [
                     'id' => $group->id,
                     'name' => $group->name,
+                    'icon' => $group->icon,
                     'items' => $items,
                 ];
             })

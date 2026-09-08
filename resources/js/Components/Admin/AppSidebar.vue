@@ -47,7 +47,7 @@ const showText = computed(() => isExpanded.value || isMobileOpen.value);
 
         <!-- เมนู -->
         <nav class="flex-1 overflow-y-auto px-4 py-5">
-            <!-- เมนูหลัก -->
+            <!-- เมนูหลัก: Dashboard + กลุ่มเมนูจาก DB (ระดับเดียวกัน) -->
             <div class="mb-6">
                 <p
                     v-show="showText"
@@ -63,16 +63,12 @@ const showText = computed(() => isExpanded.value || isMobileOpen.value);
                         active="admin.dashboard"
                         :icon="LayoutGrid"
                     />
+                    <SidebarGroup
+                        v-for="group in menuGroups"
+                        :key="group.id"
+                        :group="group"
+                    />
                 </div>
-            </div>
-
-            <!-- เมนูจาก DB (แสดงเมื่อ sidebar กางเต็ม / drawer มือถือ) -->
-            <div v-show="showText && menuGroups.length" class="mb-6 space-y-1">
-                <SidebarGroup
-                    v-for="group in menuGroups"
-                    :key="group.id"
-                    :group="group"
-                />
             </div>
 
             <!-- บัญชี -->
