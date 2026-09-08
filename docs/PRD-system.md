@@ -68,7 +68,20 @@ cast `last_login_at` / `last_failed_login_at` เป็น datetime
 - ถ้ารหัสผ่านถูกต้องแต่ `status = 'N'` → แจ้ง **"บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ"** (ไม่นับเป็น login ไม่สำเร็จ)
 - **login สำเร็จ** → ตั้ง `failed_login_count = 0`, `last_failed_login_at = null`, `last_login_at = now()`
 - **login ไม่สำเร็จ (รหัสผ่านผิด)** → `failed_login_count += 1`, `last_failed_login_at = now()`
-- password reset (`/admin/forgot-password`, `/admin/reset-password`) ก็ผูก `user_type = 'back'` เช่นกัน
+
+**Password reset** — ตาราง `password_reset_tokens` มี `email` เป็น PK (1 แถว/email) ซึ่งพอสำหรับผู้ใช้
+`back` เพราะกติกา "email ไม่ซ้ำต่อ user_type" การันตีว่ามีผู้ใช้ `back` ที่ยังไม่ถูกลบ ≤ 1 คนต่อ email
+รองรับกรณี email เดียวกันมีทั้งบัญชี `back` และ `front` ด้วยการ **แยก broker + แยกตาราง**:
+
+| broker (config `auth.passwords.*`) | ตาราง | ใช้กับ |
+|-----------------------------------|-------|--------|
+| `users` (default) | `password_reset_tokens` | ผู้ใช้หลังบ้าน — `/admin/forgot-password`, `/admin/reset-password` |
+| `front` | `front_password_reset_tokens` | ผู้ใช้หน้าบ้าน (ยังไม่มี route/หน้า — เตรียมโครงไว้) |
+
+controller หลังบ้านเรียก `Password::broker('users')->sendResetLink($request->only('email') + ['user_type' => 'back'])`
+(และ `->reset(...)` เช่นกัน) — front-office ในอนาคตใช้ `Password::broker('front')` + `['user_type' => 'front']`
+> `AppServiceProvider` override `ResetPassword::createUrlUsing()` ให้ทุก broker ชี้ URL ไป `admin.password.reset` —
+> เมื่อทำ front auth ต้องแยก URL ตาม broker
 
 > **ยังไม่ทำ:** การล็อกบัญชีอัตโนมัติเมื่อ `failed_login_count` เกินเกณฑ์ — จะทำพร้อมกับตอนดึงค่าเกณฑ์
 > จาก `sys_setting` (เช่น กลุ่ม `security`, key `max_failed_login`) มาใช้ในเฟสถัดไป
@@ -390,10 +403,21 @@ primary key = `(group, name)` — Eloquent ไม่รองรับ composite
 + deleted_at              (softDeletes)
 ```
 
+### `front_password_reset_tokens` — ใหม่
+
+```
++ email                   varchar(255)  PRIMARY KEY   // โครงเดียวกับ password_reset_tokens
++ token                   varchar(255)
++ created_at              timestamp     NULL
+```
+โทเคนรีเซ็ตรหัสผ่านของผู้ใช้ `front` (broker `front` ใน `config/auth.php`) แยกจาก `password_reset_tokens`
+ของผู้ใช้ `back` — ให้ email เดียวกันมีโทเคนรีเซ็ตของทั้งสองประเภทพร้อมกันได้
+
 ### ผลกระทบต่อโค้ด (ทำครบในเฟส 0)
 
 | ไฟล์ | การเปลี่ยน |
 |------|-----------|
+| `config/auth.php` | เพิ่ม password broker `front` (ตาราง `front_password_reset_tokens`) |
 | `app/Models/User.php` | `fillable` ใหม่ + accessor `name` + trait `SoftDeletes` + cast `last_login_at`/`last_failed_login_at` |
 | `app/Models/UserGroup.php` | `fillable` เพิ่ม `status` |
 | `app/Models/SysActionGroup.php` | `$incrementing=false`, `$keyType='string'`, `actions()` hasMany |
@@ -404,7 +428,8 @@ primary key = `(group, name)` — Eloquent ไม่รองรับ composite
 | `app/Http/Requests/ProfileUpdateRequest.php` | rule field ใหม่ (`email` max 150) + `unique` scope `user_type` + `whereNull('deleted_at')` |
 | `app/Http/Requests/Auth/LoginRequest.php` | `authenticate()` เช็ก `user_type='back'`+`status='Y'`, ข้อความ block, บันทึกสถิติ login สำเร็จ/ไม่สำเร็จ |
 | `app/Http/Controllers/Admin/Auth/RegisteredUserController.php` | สร้างด้วย `user_type='back'`,`status='Y'` + `unique` scope `user_type='back'` + `whereNull('deleted_at')` |
-| `app/Http/Controllers/Admin/Auth/PasswordResetLinkController.php`, `NewPasswordController.php` | ผูก `user_type='back'` กับ `Password::sendResetLink` / `Password::reset` |
+| `app/Http/Controllers/Admin/Auth/PasswordResetLinkController.php`, `NewPasswordController.php` | ใช้ `Password::broker('users')` + credential `user_type='back'` |
+| `tests/Feature/Auth/PasswordResetTest.php` | เทส front user ขอ reset ไม่ได้ + โทเคน back/front ของ email เดียวกันแยกกัน |
 | `app/Http/Middleware/HandleInertiaRequests.php` | แชร์ `titlename`/`firstname`/`lastname`/`name`/`mobile`/`phone`/`line`/`facebook`/`permissions` |
 | `resources/js/types/index.d.ts` | `User` interface ใหม่ |
 | `resources/js/Pages/Admin/Profile/Partials/UpdateProfileInformationForm.vue` | ฟอร์มชื่อ + ช่องทางติดต่อ |

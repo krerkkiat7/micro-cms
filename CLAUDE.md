@@ -140,7 +140,9 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 - `LoginRequest::authenticate()` ตรวจ `user_type = 'back'` + `status = 'Y'` เสมอ; รหัสผ่านถูกแต่ `status = 'N'`
   → ข้อความ "บัญชีนี้ถูกระงับการใช้งาน…"; login สำเร็จ/ไม่สำเร็จ อัปเดต `last_login_at` /
   `failed_login_count` / `last_failed_login_at` (สำเร็จ = เคลียร์ตัวนับ)
-- password reset ที่ `/admin/*` ผูก `user_type = 'back'` กับ `Password::sendResetLink` / `Password::reset`
+- password reset: `password_reset_tokens` (broker `users`, PK `email`) = ผู้ใช้ `back` เท่านั้น —
+  ผู้ใช้ `front` มี broker `front` + ตาราง `front_password_reset_tokens` แยก (เตรียมไว้ ยังไม่มี route);
+  controller หลังบ้านใช้ `Password::broker('users')->sendResetLink($request->only('email') + ['user_type' => 'back'])`
 - `email` ไม่ unique ระดับ DB — เช็ก "ห้ามซ้ำกับ `user_type` เดียวกันที่ยังไม่ถูกลบ" ในโค้ดผ่าน
   `Rule::unique(User::class)->where('user_type', …)->whereNull('deleted_at')` (`RegisteredUserController`,
   `ProfileUpdateRequest`) — ถ้าเพิ่มจุดสมัคร/แก้ email ใหม่ ต้องใส่ scope นี้ด้วย
@@ -154,6 +156,8 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   `sys_usergroup.status`; `sys_action_group`/`sys_action` id เป็น `string(20)` + `sys_action.parent_id`/`sort_order`;
   เพิ่มตาราง `sys_setting`; เปิด `SoftDeletes` บน `User` — ปรับ seeder/factory/requests/controllers auth/
   `HandleInertiaRequests`/หน้า Vue profile+register/เทส ให้ตรงแล้ว (ดู `docs/PRD-system.md` ภาคผนวก)
+- แยก password reset broker ตาม `user_type`: broker `users` → `password_reset_tokens` (back),
+  broker `front` → `front_password_reset_tokens` (เตรียมไว้สำหรับ front-office auth)
 - ลบไฟล์ Breeze ที่ตายแล้ว: `Pages/Welcome.vue`, `Pages/Dashboard.vue`, `Pages/Front/About.vue`
 - อัปเกรด Tailwind v3 → v4; เปลี่ยน layout หลังบ้านเป็นสไตล์ TailAdmin (sidebar/header มืด);
   ลบ `AuthenticatedLayout.vue`, `GuestLayout.vue`, `Components/NavLink.vue`, `Components/ResponsiveNavLink.vue`

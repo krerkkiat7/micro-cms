@@ -53,7 +53,17 @@ return new class extends Migration
             $table->softDeletes();
         });
 
+        // โทเคนรีเซ็ตรหัสผ่านของผู้ใช้หลังบ้าน (broker 'users')
+        // แยกตารางตาม user_type เพราะ sys_user เดียวเก็บทั้ง back/front และ email อาจซ้ำข้ามประเภทได้
+        // email เป็น PK ได้เพราะ "email ห้ามซ้ำต่อ user_type ที่ยังไม่ถูกลบ" (บังคับในโค้ด)
         Schema::create('password_reset_tokens', function (Blueprint $table) {
+            $table->string('email')->primary();
+            $table->string('token');
+            $table->timestamp('created_at')->nullable();
+        });
+
+        // โทเคนรีเซ็ตรหัสผ่านของผู้ใช้หน้าบ้าน (broker 'front') — เผื่อ front-office auth ในอนาคต
+        Schema::create('front_password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');
             $table->timestamp('created_at')->nullable();
@@ -121,6 +131,7 @@ return new class extends Migration
         Schema::dropIfExists('sys_action');
         Schema::dropIfExists('sys_action_group');
         Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('front_password_reset_tokens');
         Schema::dropIfExists('sessions');
     }
 };

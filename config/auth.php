@@ -93,9 +93,20 @@ return [
     */
 
     'passwords' => [
+        // ผู้ใช้หลังบ้าน (user_type = back) — ใช้ที่ /admin/*
         'users' => [
             'provider' => 'users',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+
+        // ผู้ใช้หน้าบ้าน (user_type = front) — เผื่อ front-office auth ในอนาคต
+        // แยกตารางโทเคนเพราะ sys_user เดียวเก็บทั้งสองประเภท และ email อาจซ้ำข้าม user_type
+        // เรียกด้วย Password::broker('front')->sendResetLink(['email' => ..., 'user_type' => 'front'])
+        'front' => [
+            'provider' => 'users',
+            'table' => 'front_password_reset_tokens',
             'expire' => 60,
             'throttle' => 60,
         ],

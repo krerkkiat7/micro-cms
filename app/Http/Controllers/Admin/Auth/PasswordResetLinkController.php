@@ -37,7 +37,8 @@ class PasswordResetLinkController extends Controller
         // to send the link, we will examine the response then see the message we
         // need to show to the user. Finally, we'll send out a proper response.
         // จำกัดเฉพาะผู้ใช้หลังบ้าน (user_type = back) เพราะ email ไม่ unique ทั้งตาราง
-        $status = Password::sendResetLink(
+        // broker 'users' ใช้ตาราง password_reset_tokens แยกจากผู้ใช้หน้าบ้าน
+        $status = Password::broker('users')->sendResetLink(
             $request->only('email') + ['user_type' => 'back']
         );
 
