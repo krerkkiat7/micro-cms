@@ -92,11 +92,11 @@ function expandAndOpen() {
                     v-if="item.href"
                     :href="item.href"
                     @click="closeMobileSidebar"
-                    class="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors"
+                    class="group flex items-center gap-2.5 rounded-lg border border-transparent px-3 py-2 text-sm transition-colors"
                     :class="
                         currentMatches(item.routeName)
-                            ? 'bg-brand-500/15 text-white'
-                            : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                            ? 'border-brand-500/25 bg-brand-500/15 text-white'
+                            : 'text-white hover:border-white/15 hover:bg-white/5'
                     "
                 >
                     <component
@@ -105,7 +105,7 @@ function expandAndOpen() {
                         :class="
                             currentMatches(item.routeName)
                                 ? 'text-brand-400'
-                                : 'text-gray-500 group-hover:text-gray-300'
+                                : 'text-gray-300 group-hover:text-white'
                         "
                     />
                     <span class="truncate">{{ item.name }}</span>
@@ -113,9 +113,9 @@ function expandAndOpen() {
                 <span
                     v-else
                     :title="`ยังไม่มี route: ${item.routeName ?? '-'}`"
-                    class="flex cursor-default items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-gray-600"
+                    class="flex cursor-default items-center gap-2.5 rounded-lg border border-transparent px-3 py-2 text-sm text-gray-500"
                 >
-                    <component :is="menuIcon(item.icon)" class="size-4 shrink-0 text-gray-700" />
+                    <component :is="menuIcon(item.icon)" class="size-4 shrink-0 text-gray-600" />
                     <span class="truncate">{{ item.name }}</span>
                 </span>
             </template>
