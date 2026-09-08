@@ -9,7 +9,7 @@
 |---|--------|-----------|-------|
 | 1 | จัดการผู้ใช้งาน | `sys_user` | 🟡 ตาราง/model มี, ยังไม่มี UI |
 | 2 | จัดการกลุ่มผู้ใช้งาน + สิทธิ์ | `sys_usergroup`, `sys_action_group`, `sys_action`, `sys_usergroup_action` | 🟡 ตาราง/model/seeder มี, ยังไม่มี UI |
-| 3 | จัดการเมนู (หน้าบ้าน) | `sys_menu` *(เสนอ)* | 🔴 |
+| 3 | จัดการเมนู (หลังบ้าน / หน้าบ้าน) | `sys_menu_group`, `sys_menu` / `sys_front_menu` *(เสนอ)* | 🟡 เมนูหลังบ้าน: ตาราง/model/seed ตัวอย่างมี, ยังไม่ต่อ UI · หน้าบ้าน: 🔴 |
 | 4 | จัดการ template | `sys_template` *(เสนอ)* | 🔴 |
 | 5 | ประวัติ login / เข้าชม / การกระทำ | `sys_log_login`, `sys_log_visit`, `sys_log_action` *(เสนอ)* | 🔴 |
 | 6 | ตั้งค่าระบบ/เว็บไซต์ | `sys_setting` | 🟡 ตาราง/model/seed ตัวอย่างมี, ยังไม่มี UI |
@@ -168,16 +168,62 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 
 ---
 
-## 3. จัดการเมนู (หน้าบ้าน) — 🔴 เสนอ
+## 3. จัดการเมนู
+
+มี 2 ชุดที่คนละเรื่องกัน: **เมนูหลังบ้าน** (sidebar admin) และ **เมนูหน้าบ้าน** (nav เว็บสาธารณะ)
+
+### 3.1 เมนูหลังบ้าน (admin sidebar) — 🟡 มีตาราง + seed ตัวอย่างแล้ว, ยังไม่ต่อ UI
+
+**วัตถุประสงค์** — เก็บโครงเมนู sidebar หลังบ้านใน DB แทนการฮาร์ดโค้ดใน
+`resources/js/Components/Admin/AppSidebar.vue` โครง 2 ระดับ: กลุ่ม → เมนูย่อย (ลิงก์ไปโมดูล)
+
+**Data model — `sys_menu_group`** (migration `2026_09_08_000001_create_sys_menu_tables.php`)
+
+| คอลัมน์ | ชนิด | หมายเหตุ |
+|---------|------|----------|
+| `id` | `varchar(20)` PK | กำหนดเอง เช่น `content`, `system` |
+| `name` | `varchar(100)` | ชื่อกลุ่มที่แสดง |
+| `sort_order` | `unsigned int` default 0 | ลำดับการแสดงผล |
+| `status` | `char(1)` default `Y` | `Y` = แสดง, `N` = ซ่อน |
+| `timestamps`, `deleted_at` | | softDeletes |
+
+**Data model — `sys_menu`**
+
+| คอลัมน์ | ชนิด | หมายเหตุ |
+|---------|------|----------|
+| `id` | `varchar(30)` PK | กำหนดเอง เช่น `system-user` |
+| `menu_group_id` | `varchar(20)` FK → `sys_menu_group` (cascadeOnDelete) | กลุ่มที่สังกัด |
+| `name` | `varchar(100)` | ชื่อเมนูที่แสดง |
+| `route_name` | `varchar(100)` null | ชื่อ route เพื่อลิงก์ไปโมดูล เช่น `admin.system.users.index` |
+| `sort_order` | `unsigned int` default 0 | ลำดับในกลุ่ม |
+| `action_code` | `varchar(100)` null | ค่า `sys_action.code` — เงื่อนไขแสดงเมนู (เช็กในโค้ดด้วย `hasPermission()`; ไม่มี FK เพราะ action อาจยังไม่ถูก seed); `null` = แสดงเสมอ |
+| `status` | `char(1)` default `Y` | `Y` = แสดง, `N` = ซ่อน |
+| `timestamps`, `deleted_at` | | softDeletes |
+
+**Model** — `App\Models\SysMenuGroup` (`menus()` hasMany) / `App\Models\SysMenu` (`group()` belongsTo) — string key, `SoftDeletes`
+
+**Seeder** — `Database\Seeders\MenuSeeder` (เรียกจาก `DatabaseSeeder` และรันเดี่ยวได้ด้วย
+`php artisan db:seed --class=MenuSeeder`) — ข้อมูล**จำลอง** 2 กลุ่ม (`content`, `system`) + เมนูตามโมดูล/จัดการระบบ
+`route_name` / `action_code` หลายรายการยังไม่มีจริง เจ้าของโปรเจกต์จะเข้าไปปรับเพิ่ม
+
+**ที่เหลือต้องทำ** — controller/composable แชร์ menu tree (group → menu ที่ `status='Y'` +
+ผ่าน `hasPermission(action_code)`) ผ่าน Inertia แล้วให้ `AppSidebar.vue` อ่านจากตรงนั้นแทน `navGroups` ที่ฮาร์ดโค้ด;
+หน้า CRUD จัดเมนู
+
+**Permission** — `system.menu.view`, `system.menu.create`, `system.menu.delete`
+
+**Route (เสนอ)** — `admin.system.menus.*` ใต้ `/admin/system/menus`
+
+### 3.2 เมนูหน้าบ้าน (public nav) — 🔴 เสนอ
 
 **วัตถุประสงค์** — จัดเมนูนำทางของเว็บหน้าบ้านแบบ tree ต่อภาษา ผูกกับหน้า (page), โมดูล หรือ URL ภายนอก
 
-**Data model เสนอ — `sys_menu`**
+**Data model เสนอ — `sys_front_menu`** (แยกจาก `sys_menu` ของหลังบ้าน)
 
 | คอลัมน์ | ชนิด | หมายเหตุ |
 |---------|------|----------|
 | `id` | bigint PK | |
-| `parent_id` | bigint null FK → `sys_menu` | tree |
+| `parent_id` | bigint null FK → `sys_front_menu` | tree |
 | `lang` | `char(2)` | `th` / `en` |
 | `title` | `varchar(150)` | ข้อความเมนู |
 | `type` | `varchar(20)` | `page` / `module` / `url` / `label` |
@@ -188,12 +234,9 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 | `status` | `char(1)` default `Y` | |
 | `timestamps`, `deleted_at` | | |
 
-**หน้าจอ** — ตัวจัดเรียง tree (drag & drop), ฟอร์มต่อโหนด, สลับภาษา
+**หน้าจอ** — ตัวจัดเรียง tree (drag & drop), ฟอร์มต่อโหนด, สลับภาษา — หน้าบ้าน query ตาม locale แล้ว render
 
-**Permission** — `system.menu.view`, `system.menu.create`, `system.menu.delete`
-
-**หมายเหตุ** — ปัจจุบันเมนู sidebar หลังบ้านฮาร์ดโค้ดใน `resources/js/Components/Admin/AppSidebar.vue`
-ส่วนนี้เป็นเมนู **หน้าบ้าน** คนละชุดกัน หน้าบ้านต้อง query `sys_menu` ตาม locale แล้ว render
+**Permission** — `system.frontmenu.view`, `system.frontmenu.create`, `system.frontmenu.delete`
 
 ---
 
@@ -413,6 +456,28 @@ primary key = `(group, name)` — Eloquent ไม่รองรับ composite
 โทเคนรีเซ็ตรหัสผ่านของผู้ใช้ `front` (broker `front` ใน `config/auth.php`) แยกจาก `password_reset_tokens`
 ของผู้ใช้ `back` — ให้ email เดียวกันมีโทเคนรีเซ็ตของทั้งสองประเภทพร้อมกันได้
 
+### `sys_menu_group` / `sys_menu` — ใหม่ (แยกไฟล์ `2026_09_08_000001_create_sys_menu_tables.php`)
+
+```
+sys_menu_group
++ id                      varchar(20)  PRIMARY KEY
++ name                    varchar(100)
++ sort_order              unsigned int default 0
++ status                  char(1)      default 'Y'
++ timestamps + deleted_at (softDeletes)
+
+sys_menu
++ id                      varchar(30)  PRIMARY KEY
++ menu_group_id           varchar(20)  FK sys_menu_group  cascadeOnDelete
++ name                    varchar(100)
++ route_name              varchar(100) NULL   // ชื่อ route ลิงก์ไปโมดูล
++ sort_order              unsigned int default 0
++ action_code             varchar(100) NULL   // sys_action.code — เช็กในโค้ด ไม่มี FK
++ status                  char(1)      default 'Y'
++ timestamps + deleted_at (softDeletes)
++ INDEX (menu_group_id, sort_order)
+```
+
 ### ผลกระทบต่อโค้ด (ทำครบในเฟส 0)
 
 | ไฟล์ | การเปลี่ยน |
@@ -423,6 +488,9 @@ primary key = `(group, name)` — Eloquent ไม่รองรับ composite
 | `app/Models/SysActionGroup.php` | `$incrementing=false`, `$keyType='string'`, `actions()` hasMany |
 | `app/Models/SysAction.php` | `$incrementing=false`, `$keyType='string'`, `group()`/`parent()`/`children()` |
 | `app/Models/SysSetting.php` | **ไฟล์ใหม่** — softDeletes, key เป็น string, ไม่ใช้ `find()` |
+| `app/Models/SysMenuGroup.php`, `app/Models/SysMenu.php` | **ไฟล์ใหม่** — string key, softDeletes, `menus()`/`group()` |
+| `database/seeders/MenuSeeder.php` | **ไฟล์ใหม่** — ข้อมูลตัวอย่าง `sys_menu_group`/`sys_menu` (เรียกจาก `DatabaseSeeder`) |
+| `database/migrations/2026_09_08_000001_create_sys_menu_tables.php` | **ไฟล์ใหม่** — `sys_menu_group` + `sys_menu` |
 | `database/seeders/DatabaseSeeder.php` | id เป็น string, `status`, ชื่อผู้ใช้แยกส่วน, seed `sys_setting` กลุ่ม `site` |
 | `database/factories/UserFactory.php` | field ใหม่ + `user_type='back'`; state `front()` / `inactive()` |
 | `app/Http/Requests/ProfileUpdateRequest.php` | rule field ใหม่ (`email` max 150) + `unique` scope `user_type` + `whereNull('deleted_at')` |

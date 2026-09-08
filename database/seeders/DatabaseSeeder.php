@@ -91,5 +91,8 @@ class DatabaseSeeder extends Seeder
         foreach ($settings as $setting) {
             SysSetting::create($setting);
         }
+
+        // 7. เมนูหลังบ้าน (ข้อมูลตัวอย่าง — แยกไฟล์)
+        $this->call(MenuSeeder::class);
     }
 }

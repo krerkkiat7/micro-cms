@@ -85,10 +85,13 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   split-screen ฟอร์มซ้าย + branding panel มืดขวา (จอ `lg`)
 - สไตล์อ้างอิง TailAdmin Vue (MIT) — port เฉพาะโครง ไม่ได้ใช้ตัวเทมเพลตตรง ๆ (มัน vue-router SPA + Pinia);
   **ไม่มี dark-mode toggle** (chrome มืดตายตัว เนื้อหาสว่างเสมอ)
+- `Components/Admin/AppSidebar.vue` ยัง**ฮาร์ดโค้ด** `navGroups` — แผนคือให้อ่านจาก `sys_menu_group`/`sys_menu`
+  (กรองด้วย `status='Y'` + `hasPermission(action_code)`) ผ่าน Inertia แทน (ดู `docs/PRD-system.md` §3.1)
 
 ## ระบบสิทธิ์ (Permissions)
 
-ตารางทั้งหมดขึ้นต้นด้วย `sys_` (กำหนดในไฟล์ migration เดียว: `database/migrations/0001_01_01_000000_create_users_table.php`)
+ตาราง `sys_*` หลักอยู่ในไฟล์ migration `database/migrations/0001_01_01_000000_create_users_table.php`
+(เมนูหลังบ้าน `sys_menu_group`/`sys_menu` แยกไฟล์: `2026_09_08_000001_create_sys_menu_tables.php`)
 
 | ตาราง | Model | หมายเหตุ |
 |-------|-------|----------|
@@ -98,6 +101,8 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 | `sys_action` | `App\Models\SysAction` | `id` เป็น `string(20)` primary; มี `code` (unique) เช่น `system.user.view`, `parent_id` (tree, self-FK), `sort_order` |
 | `sys_usergroup_action` | (pivot) | เชื่อม usergroup ↔ action (`action_id` เป็น `string(20)`) |
 | `sys_setting` | `App\Models\SysSetting` | ตั้งค่าระบบ key-value; composite PK `(group, name)` — ค้นด้วย `where()` ไม่ใช้ `find()`; timestamps + softDeletes. `group` เป็นคำสงวน MySQL (Laravel quote ให้) |
+| `sys_menu_group` | `App\Models\SysMenuGroup` | กลุ่มเมนู sidebar หลังบ้าน; `id` `string(20)` primary; `sort_order`, `status`, softDeletes; `menus()` hasMany |
+| `sys_menu` | `App\Models\SysMenu` | เมนูย่อยหลังบ้าน; `id` `string(30)` primary; `menu_group_id` FK; `route_name` (ลิงก์โมดูล), `action_code` (`sys_action.code` — เช็กในโค้ด, ไม่มี FK), `sort_order`, `status`, softDeletes. seed ตัวอย่างใน `MenuSeeder` |
 
 การเช็กสิทธิ์:
 - `$user->hasPermission('system.user.view')` — คืน `bool` (คืน `false` ถ้า user ไม่มี usergroup)
@@ -158,6 +163,8 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   `HandleInertiaRequests`/หน้า Vue profile+register/เทส ให้ตรงแล้ว (ดู `docs/PRD-system.md` ภาคผนวก)
 - แยก password reset broker ตาม `user_type`: broker `users` → `password_reset_tokens` (back),
   broker `front` → `front_password_reset_tokens` (เตรียมไว้สำหรับ front-office auth)
+- เพิ่มตารางเมนูหลังบ้าน `sys_menu_group`/`sys_menu` (migration `2026_09_08_000001_*`) + `MenuSeeder`
+  (ข้อมูลตัวอย่าง, เรียกจาก `DatabaseSeeder`) — sidebar ยังไม่ได้ต่อให้อ่านจาก DB
 - ลบไฟล์ Breeze ที่ตายแล้ว: `Pages/Welcome.vue`, `Pages/Dashboard.vue`, `Pages/Front/About.vue`
 - อัปเกรด Tailwind v3 → v4; เปลี่ยน layout หลังบ้านเป็นสไตล์ TailAdmin (sidebar/header มืด);
   ลบ `AuthenticatedLayout.vue`, `GuestLayout.vue`, `Components/NavLink.vue`, `Components/ResponsiveNavLink.vue`

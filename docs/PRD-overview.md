@@ -74,7 +74,8 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 | profile | ✅ มี (แก้ชื่อ/ช่องทางติดต่อ/อีเมล) | เพิ่มอัปโหลดรูปโปรไฟล์ (อนาคต) |
 | dashboard | 🟡 placeholder (การ์ดสถิติ "—") | ต่อสถิติจริงเมื่อมีโมดูล |
 | โมดูลเนื้อหาทั้ง 6 | ❌ ยังไม่มี | ทยอยทำ |
-| จัดการเมนู / template / ประวัติ / file management | ❌ ยังไม่มี | ทยอยทำ (ดู PRD-system.md) |
+| จัดการเมนูหลังบ้าน (`sys_menu_group`/`sys_menu`) | 🟡 มีตาราง + seed ตัวอย่าง | ต่อ sidebar ให้อ่านจาก DB + หน้า CRUD |
+| จัดการเมนูหน้าบ้าน / template / ประวัติ / file management | ❌ ยังไม่มี | ทยอยทำ (ดู PRD-system.md) |
 | ตั้งค่าระบบ (`sys_setting`) | 🟡 มีตาราง + seed ตัวอย่างแล้ว | หน้า UI จัดการ + helper อ่านค่า |
 
 ## 6. การปรับ schema รอบนี้ (เฟส 0)
@@ -90,6 +91,10 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 | `sys_action` | `id` เป็น `string(20)` primary; เพิ่ม `parent_id` `string(20)` null (tree) + `sort_order`; `code` 100, `name` 150 |
 | `sys_usergroup_action` | `action_id` เป็น `string(20)` ให้ตรงกับ id ใหม่ |
 | `sys_setting` (ใหม่) | `group` (50) + `name` (100) เป็น composite primary key; `value` `text` null; `timestamps` + `softDeletes` |
+| `password_reset_tokens` / `front_password_reset_tokens` (ใหม่) | แยกตารางโทเคน reset ตาม broker (`users` = back / `front` = front) |
+
+**migration แยกไฟล์:** `2026_09_08_000001_create_sys_menu_tables.php` — สร้าง `sys_menu_group` + `sys_menu`
+(เมนูหลังบ้าน, string PK, `status` `char(1)`, `softDeletes`) + `database/seeders/MenuSeeder.php` ข้อมูลตัวอย่าง — ดู §3.1 ใน PRD-system
 
 รายละเอียดคอลัมน์ทุกช่อง + before/after ดูภาคผนวกใน [PRD-system.md](PRD-system.md#ภาคผนวก-สเปก-schema-รอบนี้)
 
@@ -99,7 +104,7 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 |-----|--------|
 | **0 — schema base** *(รอบนี้)* | ปรับ `sys_user`/`sys_usergroup`/`sys_action*` + สร้าง `sys_setting` + เปิด SoftDeletes + auth หลังบ้านเช็ก `user_type`/`status` + บันทึกสถิติ login + ปรับ seeder/factory/profile/register/เทส |
 | 1 — จัดการผู้ใช้ & สิทธิ์ | CRUD `sys_user`, `sys_usergroup`, หน้าเลือกสิทธิ์แบบ tree, middleware บังคับสิทธิ์, ล็อกบัญชีเมื่อ login ผิดเกินเกณฑ์ (`sys_setting`) |
-| 2 — ตั้งค่าระบบ & template & เมนู | หน้า `sys_setting`, `sys_template`, `sys_menu` (tree) + ต่อ sidebar/หน้าบ้านให้อ่านเมนูจาก DB |
+| 2 — ตั้งค่าระบบ & template & เมนู | หน้า `sys_setting`, `sys_template`; ต่อ `AppSidebar.vue` ให้อ่านจาก `sys_menu_group`/`sys_menu` + หน้า CRUD เมนูหลังบ้าน; `sys_front_menu` (tree) สำหรับหน้าบ้าน |
 | 3 — โมดูลเนื้อหาแรก | บทความ (article) + page (หน้าเดี่ยว) + file management (`sys_file`) |
 | 4 — โมดูลที่เหลือ | banner, popup, intropage, contact us |
 | 5 — ประวัติ & dashboard จริง | `sys_log_login` / `sys_log_visit` / `sys_log_action` + สถิติ dashboard |
