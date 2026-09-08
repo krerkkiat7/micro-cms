@@ -14,19 +14,29 @@ return new class extends Migration
 
         Schema::create('sys_usergroup', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('description')->nullable();
+            $table->string('name', 100);
+            $table->string('description', 255)->nullable();
+            $table->char('status', 1)->default('Y'); // Y = ใช้งาน, N = ไม่ใช้งาน
             $table->timestamps();
             $table->softDeletes();
         });
-        
+
         Schema::create('sys_user', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
+            $table->string('titlename', 30)->nullable(); // คำนำหน้า
+            $table->string('firstname', 100);            // ชื่อ
+            $table->string('lastname', 100);             // นามสกุล
+            $table->string('email', 150)->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->string('user_type', 20)->default('back');
+            $table->string('user_type', 20)->default('back');   // back = ผู้จัดการหลังบ้าน, front = หน้าบ้าน
+
+            $table->string('mobile', 20)->nullable();    // เบอร์มือถือ
+            $table->string('phone', 30)->nullable();     // เบอร์ติดต่อ
+            $table->string('line', 100)->nullable();     // LINE id
+            $table->string('facebook', 150)->nullable(); // facebook (url/handle)
+
+            $table->char('status', 1)->default('Y');     // Y = ใช้งาน, N = ไม่ใช้งาน
 
             $table->foreignId('usergroup_id')->nullable()->constrained('sys_usergroup')->nullOnDelete();
 
@@ -52,27 +62,43 @@ return new class extends Migration
         });
 
         Schema::create('sys_action_group', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->integer('sort_order')->default(0);
+            $table->string('id', 20)->primary();
+            $table->string('name', 100);
+            $table->unsignedInteger('sort_order')->default(0);
             $table->timestamps();
             $table->softDeletes();
         });
 
         Schema::create('sys_action', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('action_group_id')->constrained('sys_action_group')->cascadeOnDelete();
-            $table->string('code')->unique();
-            $table->string('name');
+            $table->string('id', 20)->primary();
+            $table->string('action_group_id', 20);
+            $table->string('parent_id', 20)->nullable(); // สำหรับทำ tree
+            $table->string('code', 100)->unique();
+            $table->string('name', 150);
+            $table->unsignedInteger('sort_order')->default(0);
             $table->timestamps();
             $table->softDeletes();
+
+            $table->foreign('action_group_id')->references('id')->on('sys_action_group')->cascadeOnDelete();
+            $table->foreign('parent_id')->references('id')->on('sys_action')->nullOnDelete();
         });
 
         Schema::create('sys_usergroup_action', function (Blueprint $table) {
             $table->foreignId('usergroup_id')->constrained('sys_usergroup')->cascadeOnDelete();
-            $table->foreignId('action_id')->constrained('sys_action')->cascadeOnDelete();
+            $table->string('action_id', 20);
             $table->timestamps();
             $table->primary(['usergroup_id', 'action_id']);
+
+            $table->foreign('action_id')->references('id')->on('sys_action')->cascadeOnDelete();
+        });
+
+        Schema::create('sys_setting', function (Blueprint $table) {
+            $table->string('group', 50);
+            $table->string('name', 100);
+            $table->text('value')->nullable();
+            $table->timestamps();
+            $table->softDeletes();
+            $table->primary(['group', 'name']); // composite primary key
         });
     }
 
@@ -81,6 +107,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('sys_setting');
         Schema::dropIfExists('sys_usergroup_action');
         Schema::dropIfExists('sys_user');
         Schema::dropIfExists('sys_usergroup');

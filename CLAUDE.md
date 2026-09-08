@@ -8,6 +8,9 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 โปรเจกต์อยู่ในช่วงเริ่มต้น โครงสร้างพื้นฐาน (auth หลังบ้าน, multi-language front, ระบบสิทธิ์)
 วางไว้แล้ว แต่ยังไม่มีโมเดลเนื้อหา CMS จริง (`app/Http/Controllers/Admin/PostController.php` ยังว่าง)
 
+ภาพรวมโมดูล/ส่วนจัดการระบบ + roadmap อยู่ที่ `docs/PRD-overview.md`
+รายละเอียดส่วนจัดการระบบ (users, สิทธิ์, เมนู, template, ประวัติ, settings, files) อยู่ที่ `docs/PRD-system.md`
+
 ## Tech Stack
 
 | ส่วน | เทคโนโลยี |
@@ -89,11 +92,12 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 
 | ตาราง | Model | หมายเหตุ |
 |-------|-------|----------|
-| `sys_user` | `App\Models\User` | มี `user_type` (default `back`), `usergroup_id`, softDeletes |
-| `sys_usergroup` | `App\Models\UserGroup` | softDeletes |
-| `sys_action_group` | `App\Models\SysActionGroup` | |
-| `sys_action` | `App\Models\SysAction` | มี `code` (unique) เช่น `system.user.view` |
-| `sys_usergroup_action` | (pivot) | เชื่อม usergroup ↔ action |
+| `sys_user` | `App\Models\User` | ชื่อแยกเป็น `titlename`/`firstname`/`lastname` (+ accessor `name` = ชื่อเต็ม); ช่องทางติดต่อ `mobile`/`phone`/`line`/`facebook`; `user_type` (default `back`), `status` `char(1)` default `Y`, `usergroup_id`, softDeletes (คอลัมน์) |
+| `sys_usergroup` | `App\Models\UserGroup` | มี `status` `char(1)` default `Y`, softDeletes (คอลัมน์) |
+| `sys_action_group` | `App\Models\SysActionGroup` | `id` เป็น `string(20)` primary (กำหนดเอง); มี `sort_order`, `actions()` hasMany |
+| `sys_action` | `App\Models\SysAction` | `id` เป็น `string(20)` primary; มี `code` (unique) เช่น `system.user.view`, `parent_id` (tree, self-FK), `sort_order` |
+| `sys_usergroup_action` | (pivot) | เชื่อม usergroup ↔ action (`action_id` เป็น `string(20)`) |
+| `sys_setting` | `App\Models\SysSetting` | ตั้งค่าระบบ key-value; composite PK `(group, name)` — ค้นด้วย `where()` ไม่ใช้ `find()`; timestamps + softDeletes. `group` เป็นคำสงวน MySQL (Laravel quote ให้) |
 
 การเช็กสิทธิ์:
 - `$user->hasPermission('system.user.view')` — คืน `bool` (คืน `false` ถ้า user ไม่มี usergroup)
@@ -126,11 +130,17 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   และ `SetLocale` middleware ใช้ `th` เป็นค่าเริ่มต้น
 - database มีไฟล์ `database/database.sqlite` ค้างอยู่ (gitignore แล้ว; ไม่ได้ใช้เมื่อรันบน MySQL)
 - `Admin/PostController.php` ยังเป็นไฟล์ว่าง (placeholder สำหรับโมดูลเนื้อหาที่จะทำ)
+- `sys_setting` มี seed ตัวอย่างกลุ่ม `site` (`site_name`/`site_email`/`site_description`) — ยังไม่มีหน้า UI จัดการ
+- ตอน login ยังไม่เช็ก `sys_user.status` (`Y`/`N`) — ต้องเพิ่มในเฟสจัดการผู้ใช้
 - Git remote: `https://github.com/krerkkiat7/micro-cms` (private) — branch `main`
 
 ### ประเด็นที่แก้ไปแล้ว (ประวัติ อย่าทำซ้ำ)
 - ชื่อ route ทุกจุดในโค้ด/เทสปรับเป็น `admin.*` ครบแล้ว (เดิม Breeze อ้าง `login`/`dashboard`/`password.*` ที่ไม่มี)
 - `migration down()` แก้ typo `sys_usergrouop` → `sys_usergroup` + เรียง drop ให้ปลอดภัยกับ FK แล้ว
+- ปรับ schema (เฟส 0): `sys_user.name` → `titlename`/`firstname`/`lastname` + `mobile`/`phone`/`line`/`facebook`/`status`;
+  `sys_usergroup.status`; `sys_action_group`/`sys_action` id เป็น `string(20)` + `sys_action.parent_id`/`sort_order`;
+  เพิ่มตาราง `sys_setting` — ปรับ seeder/factory/`ProfileUpdateRequest`/`RegisteredUserController`/`HandleInertiaRequests`/
+  หน้า Vue profile+register/เทส ให้ตรงแล้ว (ดู `docs/PRD-system.md` ภาคผนวก)
 - ลบไฟล์ Breeze ที่ตายแล้ว: `Pages/Welcome.vue`, `Pages/Dashboard.vue`, `Pages/Front/About.vue`
 - อัปเกรด Tailwind v3 → v4; เปลี่ยน layout หลังบ้านเป็นสไตล์ TailAdmin (sidebar/header มืด);
   ลบ `AuthenticatedLayout.vue`, `GuestLayout.vue`, `Components/NavLink.vue`, `Components/ResponsiveNavLink.vue`

@@ -34,12 +34,16 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user() ? [
                     'id' => $request->user()->id,
-                    'name' => $request->user()->name,
+                    'titlename' => $request->user()->titlename,
+                    'firstname' => $request->user()->firstname,
+                    'lastname' => $request->user()->lastname,
+                    'name' => $request->user()->name, // accessor: คำนำหน้า + ชื่อ + นามสกุล
                     'email' => $request->user()->email,
-                    // // โยน Array ของ Action Codes เช่น ['article.view', 'article.create', 'article.delete'] ไปยัง Vue
-                    // 'permissions' => $request->user() && $request->user()->group 
-                    //     ? $request->user()->group->actions->pluck('code')->toArray() 
-                    //     : [],
+                    'mobile' => $request->user()->mobile,
+                    'phone' => $request->user()->phone,
+                    'line' => $request->user()->line,
+                    'facebook' => $request->user()->facebook,
+                    // โยน Array ของ Action Codes เช่น ['article.view', 'article.create', 'article.delete'] ไปยัง Vue
                     'permissions' => $request->user()->getPermissionsArray(),
                 ] : null,
             ],

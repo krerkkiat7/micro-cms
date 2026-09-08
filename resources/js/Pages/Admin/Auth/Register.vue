@@ -7,7 +7,9 @@ import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
 const form = useForm({
-    name: '',
+    titlename: '',
+    firstname: '',
+    lastname: '',
     email: '',
     password: '',
     password_confirmation: '',
@@ -28,16 +30,41 @@ const submit = () => {
 
         <form class="space-y-5" @submit.prevent="submit">
             <div>
-                <InputLabel for="name" value="ชื่อ" />
+                <InputLabel for="titlename" value="คำนำหน้า" />
                 <TextInput
-                    id="name"
+                    id="titlename"
                     type="text"
-                    v-model="form.name"
-                    required
-                    autofocus
-                    autocomplete="name"
+                    v-model="form.titlename"
+                    autocomplete="honorific-prefix"
                 />
-                <InputError :message="form.errors.name" />
+                <InputError :message="form.errors.titlename" />
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <InputLabel for="firstname" value="ชื่อ" />
+                    <TextInput
+                        id="firstname"
+                        type="text"
+                        v-model="form.firstname"
+                        required
+                        autofocus
+                        autocomplete="given-name"
+                    />
+                    <InputError :message="form.errors.firstname" />
+                </div>
+
+                <div>
+                    <InputLabel for="lastname" value="นามสกุล" />
+                    <TextInput
+                        id="lastname"
+                        type="text"
+                        v-model="form.lastname"
+                        required
+                        autocomplete="family-name"
+                    />
+                    <InputError :message="form.errors.lastname" />
+                </div>
             </div>
 
             <div>

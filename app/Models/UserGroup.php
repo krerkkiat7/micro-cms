@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class UserGroup extends Model
 {
@@ -14,7 +13,7 @@ class UserGroup extends Model
      *
      * @var list<string>
      */
-    protected $fillable = ['name', 'description'];
+    protected $fillable = ['name', 'description', 'status'];
 
     public function actions()
     {

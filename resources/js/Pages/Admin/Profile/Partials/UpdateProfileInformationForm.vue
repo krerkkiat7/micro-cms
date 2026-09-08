@@ -13,7 +13,13 @@ defineProps<{
 const user = usePage().props.auth.user;
 
 const form = useForm({
-    name: user.name,
+    titlename: user.titlename ?? '',
+    firstname: user.firstname,
+    lastname: user.lastname,
+    mobile: user.mobile ?? '',
+    phone: user.phone ?? '',
+    line: user.line ?? '',
+    facebook: user.facebook ?? '',
     email: user.email,
 });
 </script>
@@ -24,7 +30,7 @@ const form = useForm({
             <h2 class="text-base font-semibold text-gray-800">ข้อมูลโปรไฟล์</h2>
 
             <p class="mt-1 text-sm text-gray-500">
-                แก้ไขชื่อและอีเมลของบัญชี
+                แก้ไขชื่อ ช่องทางติดต่อ และอีเมลของบัญชี
             </p>
         </header>
 
@@ -32,19 +38,99 @@ const form = useForm({
             @submit.prevent="form.patch(route('admin.profile.update'))"
             class="mt-6 space-y-6"
         >
-            <div>
-                <InputLabel for="name" value="ชื่อ" />
+            <div class="grid gap-4 sm:grid-cols-3">
+                <div>
+                    <InputLabel for="titlename" value="คำนำหน้า" />
 
-                <TextInput
-                    id="name"
-                    type="text"
-                    v-model="form.name"
-                    required
-                    autofocus
-                    autocomplete="name"
-                />
+                    <TextInput
+                        id="titlename"
+                        type="text"
+                        v-model="form.titlename"
+                        autocomplete="honorific-prefix"
+                    />
 
-                <InputError :message="form.errors.name" />
+                    <InputError :message="form.errors.titlename" />
+                </div>
+
+                <div>
+                    <InputLabel for="firstname" value="ชื่อ" />
+
+                    <TextInput
+                        id="firstname"
+                        type="text"
+                        v-model="form.firstname"
+                        required
+                        autofocus
+                        autocomplete="given-name"
+                    />
+
+                    <InputError :message="form.errors.firstname" />
+                </div>
+
+                <div>
+                    <InputLabel for="lastname" value="นามสกุล" />
+
+                    <TextInput
+                        id="lastname"
+                        type="text"
+                        v-model="form.lastname"
+                        required
+                        autocomplete="family-name"
+                    />
+
+                    <InputError :message="form.errors.lastname" />
+                </div>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <InputLabel for="mobile" value="เบอร์มือถือ" />
+
+                    <TextInput
+                        id="mobile"
+                        type="text"
+                        v-model="form.mobile"
+                        autocomplete="tel"
+                    />
+
+                    <InputError :message="form.errors.mobile" />
+                </div>
+
+                <div>
+                    <InputLabel for="phone" value="เบอร์ติดต่อ" />
+
+                    <TextInput
+                        id="phone"
+                        type="text"
+                        v-model="form.phone"
+                    />
+
+                    <InputError :message="form.errors.phone" />
+                </div>
+
+                <div>
+                    <InputLabel for="line" value="LINE" />
+
+                    <TextInput
+                        id="line"
+                        type="text"
+                        v-model="form.line"
+                    />
+
+                    <InputError :message="form.errors.line" />
+                </div>
+
+                <div>
+                    <InputLabel for="facebook" value="Facebook" />
+
+                    <TextInput
+                        id="facebook"
+                        type="text"
+                        v-model="form.facebook"
+                    />
+
+                    <InputError :message="form.errors.facebook" />
+                </div>
             </div>
 
             <div>
