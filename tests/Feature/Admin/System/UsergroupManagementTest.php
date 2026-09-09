@@ -249,13 +249,78 @@ test('rights page redirects without system.usergroup.rights', function () {
         ->assertRedirect(route('admin.system.usergroup.index'));
 });
 
-test('rights page renders with system.usergroup.rights', function () {
+test('rights page renders the action-group tree and the checked ids', function () {
     actingAsUserWithPermissions(['system.usergroup.rights']);
+
     $group = UserGroup::factory()->create();
+    $checked = SysAction::whereIn('code', ['system.user.view', 'system.user.manage'])->pluck('id');
+    $group->actions()->attach($checked);
 
     $this->get(route('admin.system.usergroup.rights', $group->id))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('Admin/System/Usergroup/Rights')
-            ->where('group.id', $group->id));
+            ->where('group.id', $group->id)
+            ->has('actionGroups')
+            ->where('checkedIds', fn ($ids) => collect($ids)->sort()->values()->all() === $checked->sort()->values()->all()));
+});
+
+test('rights update replaces the group actions (real delete + re-insert)', function () {
+    actingAsUserWithPermissions(['system.usergroup.rights']);
+
+    $group = UserGroup::factory()->create();
+    $group->actions()->attach(SysAction::where('code', 'article.item.view')->pluck('id'));
+
+    $keep = SysAction::whereIn('code', ['system.user.view', 'system.user.manage'])->pluck('id')->all();
+
+    $this->put(route('admin.system.usergroup.rights.update', $group->id), ['action_ids' => $keep])
+        ->assertRedirect(route('admin.system.usergroup.rights', $group->id))
+        ->assertSessionHas('success');
+
+    expect($group->fresh()->actions->pluck('id')->sort()->values()->all())
+        ->toEqual(collect($keep)->sort()->values()->all());
+});
+
+test('rights update drops actions whose parent is not selected', function () {
+    actingAsUserWithPermissions(['system.usergroup.rights']);
+    $group = UserGroup::factory()->create();
+
+    // system.user.manage (system002) เป็นลูกของ system.user.view (system001)
+    $childOnly = SysAction::where('code', 'system.user.manage')->pluck('id')->all();
+
+    $this->put(route('admin.system.usergroup.rights.update', $group->id), ['action_ids' => $childOnly])
+        ->assertRedirect(route('admin.system.usergroup.rights', $group->id));
+
+    expect($group->fresh()->actions()->count())->toBe(0);
+});
+
+test('rights update clears every action when nothing is selected', function () {
+    actingAsUserWithPermissions(['system.usergroup.rights']);
+    $group = UserGroup::factory()->create();
+    $group->actions()->attach(SysAction::where('code', 'system.user.view')->pluck('id'));
+
+    $this->put(route('admin.system.usergroup.rights.update', $group->id), [])
+        ->assertRedirect(route('admin.system.usergroup.rights', $group->id));
+
+    expect($group->fresh()->actions()->count())->toBe(0);
+});
+
+test('rights update is blocked for a system group (can_edit = N)', function () {
+    actingAsUserWithPermissions(['system.usergroup.rights']);
+    $group = superAdminGroup();
+    $before = $group->actions()->count();
+
+    $this->from(route('admin.system.usergroup.rights', $group->id))
+        ->put(route('admin.system.usergroup.rights.update', $group->id), ['action_ids' => []])
+        ->assertInvalid('action_ids');
+
+    expect($group->fresh()->actions()->count())->toBe($before);
+});
+
+test('rights update redirects without system.usergroup.rights', function () {
+    actingAsUserWithPermissions(['system.usergroup.view', 'system.usergroup.manage']);
+    $group = UserGroup::factory()->create();
+
+    $this->put(route('admin.system.usergroup.rights.update', $group->id), ['action_ids' => []])
+        ->assertRedirect(route('admin.system.usergroup.index'));
 });
