@@ -113,7 +113,7 @@ const groupInfo = computed(() => [
                     </p>
 
                     <div class="mt-5 grid gap-4 sm:grid-cols-6">
-                        <div class="sm:col-span-4">
+                        <div class="sm:col-span-6">
                             <InputLabel for="name" value="ชื่อกลุ่ม" required />
                             <TextInput
                                 id="name"
@@ -122,6 +122,17 @@ const groupInfo = computed(() => [
                                 :disabled="locked"
                             />
                             <InputError :message="form.errors.name" />
+                        </div>
+
+                        <div class="sm:col-span-6">
+                            <InputLabel for="description" value="รายละเอียด" />
+                            <Textarea
+                                id="description"
+                                v-model="form.description"
+                                rows="4"
+                                :disabled="locked"
+                            />
+                            <InputError :message="form.errors.description" />
                         </div>
 
                         <div class="sm:col-span-2">
@@ -135,17 +146,6 @@ const groupInfo = computed(() => [
                                 <option value="N">ไม่ใช้งาน</option>
                             </SelectInput>
                             <InputError :message="form.errors.status" />
-                        </div>
-
-                        <div class="sm:col-span-6">
-                            <InputLabel for="description" value="รายละเอียด" />
-                            <Textarea
-                                id="description"
-                                v-model="form.description"
-                                rows="4"
-                                :disabled="locked"
-                            />
-                            <InputError :message="form.errors.description" />
                         </div>
                     </div>
                 </div>

@@ -42,10 +42,16 @@ const breadcrumbs = [
                 <h2 class="text-base font-semibold text-gray-800">ข้อมูลกลุ่มผู้ใช้งาน</h2>
 
                 <div class="mt-5 grid gap-4 sm:grid-cols-6">
-                    <div class="sm:col-span-4">
+                    <div class="sm:col-span-6">
                         <InputLabel for="name" value="ชื่อกลุ่ม" required />
                         <TextInput id="name" v-model="form.name" type="text" />
                         <InputError :message="form.errors.name" />
+                    </div>
+
+                    <div class="sm:col-span-6">
+                        <InputLabel for="description" value="รายละเอียด" />
+                        <Textarea id="description" v-model="form.description" rows="4" />
+                        <InputError :message="form.errors.description" />
                     </div>
 
                     <div class="sm:col-span-2">
@@ -55,12 +61,6 @@ const breadcrumbs = [
                             <option value="N">ไม่ใช้งาน</option>
                         </SelectInput>
                         <InputError :message="form.errors.status" />
-                    </div>
-
-                    <div class="sm:col-span-6">
-                        <InputLabel for="description" value="รายละเอียด" />
-                        <Textarea id="description" v-model="form.description" rows="4" />
-                        <InputError :message="form.errors.description" />
                     </div>
                 </div>
             </div>
