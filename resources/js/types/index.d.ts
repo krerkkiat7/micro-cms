@@ -22,6 +22,8 @@ export interface MenuItem {
     routeName: string | null;
     /** URL ที่ resolve แล้ว — null ถ้ายังไม่มี route จริง */
     href: string | null;
+    /** pattern สำหรับ `route().current()` (รองรับ wildcard) — null ถ้าไม่มี route */
+    activePattern: string | null;
 }
 
 /** กลุ่มเมนูหลักใน sidebar หลังบ้าน (มาจาก sys_menu_group) — กดไม่ได้ ใช้เปิด/ปิดกลุ่ม */
@@ -32,6 +34,31 @@ export interface MenuGroup {
     items: MenuItem[];
 }
 
+/** ตัวเลือกกลุ่มผู้ใช้งานสำหรับ dropdown */
+export interface UserGroupOption {
+    id: number;
+    name: string;
+}
+
+/** ลิงก์หน้าใน paginator ของ Laravel */
+export interface PaginationLink {
+    url: string | null;
+    label: string;
+    active: boolean;
+}
+
+/** ผลลัพธ์ paginate() ของ Laravel (โครงสร้างแบน) */
+export interface Paginated<T> {
+    data: T[];
+    links: PaginationLink[];
+    from: number | null;
+    to: number | null;
+    total: number;
+    current_page: number;
+    last_page: number;
+    per_page: number;
+}
+
 export type PageProps<
     T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {
@@ -39,4 +66,8 @@ export type PageProps<
         user: User;
     };
     menu: MenuGroup[];
+    flash?: {
+        success?: string | null;
+        successId?: string | null;
+    };
 };

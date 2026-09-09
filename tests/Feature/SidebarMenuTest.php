@@ -23,6 +23,10 @@ test('super admin sees every menu group and item', function () {
             ->where('menu.6.icon', 'Settings')
             ->has('menu.6.items', 12)
             ->where('menu.6.items.0.icon', 'Users')
+            // route ลงท้าย .index → activePattern ครอบทุกหน้าในโมดูล
+            ->where('menu.6.items.0.activePattern', 'admin.system.user.*')
+            // หน้าเดี่ยว (ไม่ลงท้าย .index) → activePattern = ชื่อ route ตรง ๆ
+            ->where('menu.6.items.4.activePattern', 'admin.system.backlog.access')
         );
 });
 
@@ -40,8 +44,10 @@ test('menu items are filtered by permission and empty groups drop out', function
             ->where('menu.0.id', 'system')
             ->has('menu.0.items', 2)
             ->where('menu.0.items.0.id', 'system-user')
-            ->where('menu.0.items.0.href', null)   // ยังไม่มี route จริง
+            ->where('menu.0.items.0.href', route('admin.system.user.index')) // route มีจริงแล้ว
+            ->where('menu.0.items.0.activePattern', 'admin.system.user.*')
             ->where('menu.0.items.1.id', 'system-menu')
+            ->where('menu.0.items.1.href', null)   // system-menu ยังไม่มี route จริง
         );
 });
 
