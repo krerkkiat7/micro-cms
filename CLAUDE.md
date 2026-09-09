@@ -87,8 +87,11 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   **ไม่มี dark-mode toggle** (chrome มืดตายตัว เนื้อหาสว่างเสมอ)
 - `Components/Admin/AppSidebar.vue` — Dashboard + Profile ฮาร์ดโค้ด; กลุ่มเมนูจาก DB อยู่ section เดียวกับ Dashboard
   อ่านจาก shared prop `menu` (`HandleInertiaRequests::adminMenu()` — `sys_menu_group`/`sys_menu`, กรอง `status='Y'` +
-  สิทธิ์ `action_code`, ตัดกลุ่มที่ว่าง, ส่ง `icon`+`href`). `SidebarGroup.vue` = หัวข้อกลุ่มกดเปิด/ปิด
-  (localStorage `admin.sidebar.group.<id>`, โหมด rail แสดงไอคอน). ไอคอน map ใน `Components/Admin/menuIcons.ts`
+  สิทธิ์ `action_code`, ตัดกลุ่มที่ว่าง, ส่ง `icon`+`href`+`activePattern`). `SidebarGroup.vue` = หัวข้อกลุ่มกดเปิด/ปิด
+  (localStorage `admin.sidebar.group.<id>`, โหมด rail แสดงไอคอน) + ไฮไลต์หัวข้อกลุ่มเมื่อมีเมนูย่อย active.
+  `activePattern` (คำนวณใน `adminMenu()` จาก `route_name`): route ลงท้าย `.index` → `<prefix>.*`
+  (ไฮไลต์ครอบทุกหน้าในโมดูล เช่น add/edit), route หน้าเดี่ยว → ชื่อ route ตรง ๆ — โมดูลใหม่ตั้งหน้ารายการเป็น
+  `admin.<module>.<sub>.index` แล้วได้ active state อัตโนมัติ. ไอคอน map ใน `Components/Admin/menuIcons.ts`
   (ชื่อ lucide PascalCase, curated) — เพิ่มไอคอน = import + ใส่ในแมพ. ดู `docs/PRD-system.md` §3.1
 
 ## ระบบสิทธิ์ (Permissions)

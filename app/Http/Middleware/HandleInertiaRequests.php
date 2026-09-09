@@ -72,7 +72,7 @@ class HandleInertiaRequests extends Middleware
      * - เมนูย่อยที่มี action_code ต้องมีสิทธิ์นั้น ๆ ถึงจะแสดง (null = แสดงเสมอ)
      * - กลุ่มที่ไม่มีเมนูย่อยเหลือเลย จะถูกซ่อน
      *
-     * @return list<array{id: string, name: string, icon: string|null, items: list<array{id: string, name: string, icon: string|null, routeName: string|null, href: string|null}>}>
+     * @return list<array{id: string, name: string, icon: string|null, items: list<array{id: string, name: string, icon: string|null, routeName: string|null, href: string|null, activePattern: string|null}>}>
      */
     protected function adminMenu(?User $user): array
     {
@@ -99,6 +99,7 @@ class HandleInertiaRequests extends Middleware
                         'href' => $menu->route_name && Route::has($menu->route_name)
                             ? route($menu->route_name)
                             : null,
+                        'activePattern' => $this->menuActivePattern($menu->route_name),
                     ])
                     ->values()
                     ->all();
@@ -113,5 +114,25 @@ class HandleInertiaRequests extends Middleware
             ->filter(fn ($group) => count($group['items']) > 0)
             ->values()
             ->all();
+    }
+
+    /**
+     * pattern สำหรับเช็ค active ของเมนูย่อยใน sidebar (ใช้กับ Ziggy `route().current()`)
+     *
+     * - route ที่ลงท้าย `.index` = หน้ารายการของโมดูล CRUD → คืน `<prefix>.*`
+     *   เพื่อให้ไฮไลต์ครอบทุกหน้าในโมดูล (add / edit / …)
+     * - route หน้าเดี่ยว (เช่นหน้าประวัติ/รายงาน) → คืนชื่อ route ตรง ๆ
+     */
+    protected function menuActivePattern(?string $routeName): ?string
+    {
+        if (! $routeName) {
+            return null;
+        }
+
+        if (str_ends_with($routeName, '.index')) {
+            return substr($routeName, 0, -strlen('.index')).'.*';
+        }
+
+        return $routeName;
     }
 }

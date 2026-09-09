@@ -22,6 +22,8 @@ export interface MenuItem {
     routeName: string | null;
     /** URL ที่ resolve แล้ว — null ถ้ายังไม่มี route จริง */
     href: string | null;
+    /** pattern สำหรับ `route().current()` (รองรับ wildcard) — null ถ้าไม่มี route */
+    activePattern: string | null;
 }
 
 /** กลุ่มเมนูหลักใน sidebar หลังบ้าน (มาจาก sys_menu_group) — กดไม่ได้ ใช้เปิด/ปิดกลุ่ม */
