@@ -158,7 +158,7 @@ const tabs = computed(() => [
                     >
                         <button
                             type="button"
-                            class="flex items-center gap-2 text-sm font-semibold text-gray-800"
+                            class="flex cursor-pointer items-center gap-2 text-sm font-semibold text-gray-800 hover:text-gray-900"
                             @click="toggleOpen(g.id)"
                         >
                             <ChevronDown
@@ -177,7 +177,7 @@ const tabs = computed(() => [
                         >
                             <button
                                 type="button"
-                                class="font-medium text-brand-600 hover:text-brand-700"
+                                class="cursor-pointer font-medium text-brand-600 hover:text-brand-700"
                                 @click="selectAll(g)"
                             >
                                 เลือกทั้งหมด
@@ -185,7 +185,7 @@ const tabs = computed(() => [
                             <span class="text-gray-300">|</span>
                             <button
                                 type="button"
-                                class="font-medium text-gray-500 hover:text-gray-700"
+                                class="cursor-pointer font-medium text-gray-500 hover:text-gray-700"
                                 @click="deselectAll(g)"
                             >
                                 ไม่เลือกทั้งหมด

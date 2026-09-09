@@ -23,7 +23,11 @@ function disabled(): boolean {
     <div>
         <label
             class="flex items-center gap-2 py-1 text-sm"
-            :class="disabled() ? 'text-gray-400' : 'text-gray-700'"
+            :class="
+                disabled()
+                    ? 'cursor-not-allowed text-gray-400'
+                    : 'cursor-pointer text-gray-700'
+            "
         >
             <Checkbox
                 :checked="isSelected(node.id)"
@@ -31,7 +35,6 @@ function disabled(): boolean {
                 @update:checked="(v: boolean) => emit('toggle', node, v)"
             />
             <span>{{ node.name }}</span>
-            <code class="text-xs text-gray-400">{{ node.code }}</code>
         </label>
 
         <div
