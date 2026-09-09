@@ -53,6 +53,15 @@ class HandleInertiaRequests extends Middleware
             // เมนู sidebar หลังบ้าน สร้างจาก sys_menu_group + sys_menu กรองตามสิทธิ์ของผู้ใช้
             // (closure = ประเมินเฉพาะตอนที่ Inertia ต้องส่ง prop นี้จริง)
             'menu' => fn () => $this->adminMenu($request->user()),
+            // ข้อความแจ้งผลสำเร็จ (flash) — successId ใหม่ทุกครั้งเพื่อให้ frontend ตรวจจับได้แม้ข้อความซ้ำ
+            'flash' => function () use ($request) {
+                $success = $request->session()->get('success');
+
+                return [
+                    'success' => $success,
+                    'successId' => $success ? uniqid('flash_', true) : null,
+                ];
+            },
         ];
     }
 

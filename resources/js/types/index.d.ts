@@ -32,6 +32,31 @@ export interface MenuGroup {
     items: MenuItem[];
 }
 
+/** ตัวเลือกกลุ่มผู้ใช้งานสำหรับ dropdown */
+export interface UserGroupOption {
+    id: number;
+    name: string;
+}
+
+/** ลิงก์หน้าใน paginator ของ Laravel */
+export interface PaginationLink {
+    url: string | null;
+    label: string;
+    active: boolean;
+}
+
+/** ผลลัพธ์ paginate() ของ Laravel (โครงสร้างแบน) */
+export interface Paginated<T> {
+    data: T[];
+    links: PaginationLink[];
+    from: number | null;
+    to: number | null;
+    total: number;
+    current_page: number;
+    last_page: number;
+    per_page: number;
+}
+
 export type PageProps<
     T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {
@@ -39,4 +64,8 @@ export type PageProps<
         user: User;
     };
     menu: MenuGroup[];
+    flash?: {
+        success?: string | null;
+        successId?: string | null;
+    };
 };

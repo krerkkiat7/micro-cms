@@ -1,12 +1,12 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\ProfileController;
+use App\Http\Controllers\Admin\System\UserController;
+use App\Http\Controllers\Front\HomeController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\ProfileController;
-use App\Http\Controllers\Front\HomeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -22,7 +22,7 @@ Route::get('/', function () {
 Route::group([
     'prefix' => '{lang}',
     'where' => ['lang' => 'th|en'],
-    'middleware' => ['web', 'setLocale'] // เดี๋ยวเราจะใส่ SetLocale Middleware ที่นี่
+    'middleware' => ['web', 'setLocale'], // เดี๋ยวเราจะใส่ SetLocale Middleware ที่นี่
 ], function () {
 
     Route::get('/', [HomeController::class, 'index'])->name('front.home');
@@ -42,17 +42,27 @@ Route::prefix('admin')->group(function () {
 
     // 2. Route หน้าหลังบ้านที่ต้องผ่านการ Login ก่อน
     Route::middleware(['auth', 'verified'])->group(function () {
-        
+
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
-        
+
         // เพิ่ม Route หลังบ้านอื่นๆ ตรงนี้...
         Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('admin.profile.update');
         Route::delete('/profile', [ProfileController::class, 'destroy'])->name('admin.profile.destroy');
+
+        // จัดการผู้ใช้งานหลังบ้าน (user_type = back) — ตรวจสอบสิทธิ์ในแต่ละ method ของ UserController
+        Route::prefix('system/user')->group(function () {
+            Route::get('/', [UserController::class, 'index'])->name('admin.system.user.index');
+            Route::get('/add', [UserController::class, 'add'])->name('admin.system.user.add');
+            Route::post('/', [UserController::class, 'store'])->name('admin.system.user.store');
+            Route::get('/{user}/edit', [UserController::class, 'edit'])->name('admin.system.user.edit');
+            Route::put('/{user}', [UserController::class, 'update'])->name('admin.system.user.update');
+            Route::delete('/{user}', [UserController::class, 'destroy'])->name('admin.system.user.destroy');
+            Route::get('/{user}/password', [UserController::class, 'password'])->name('admin.system.user.password');
+            Route::put('/{user}/password', [UserController::class, 'passwordUpdate'])->name('admin.system.user.password.update');
+        });
     });
 });
-
-
 
 // Route::get('/', function () {
 //     return Inertia::render('Welcome', [

@@ -1,9 +1,25 @@
 <script setup lang="ts">
 import AppSidebar from '@/Components/Admin/AppSidebar.vue';
 import AppHeader from '@/Components/Admin/AppHeader.vue';
+import SuccessDialog from '@/Components/SuccessDialog.vue';
 import { provideSidebar } from '@/composables/useSidebar';
+import { usePage } from '@inertiajs/vue3';
+import { ref, watch } from 'vue';
 
 const { isExpanded } = provideSidebar();
+
+const page = usePage();
+const flashSuccess = ref<string | null>(null);
+
+// successId เปลี่ยนทุกครั้งที่มี flash ใหม่ (แม้ข้อความเดิม) → เด้ง dialog
+watch(
+    () => page.props.flash?.successId,
+    () => {
+        const message = page.props.flash?.success;
+        if (message) flashSuccess.value = message;
+    },
+    { immediate: true },
+);
 </script>
 
 <template>
@@ -28,5 +44,11 @@ const { isExpanded } = provideSidebar();
                 </div>
             </main>
         </div>
+
+        <SuccessDialog
+            :show="!!flashSuccess"
+            :message="flashSuccess ?? ''"
+            @close="flashSuccess = null"
+        />
     </div>
 </template>

@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\SysAction;
+use App\Models\User;
+use App\Models\UserGroup;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -47,4 +50,31 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+/**
+ * สร้างผู้ใช้หลังบ้านในกลุ่มสิทธิ์ใหม่ที่มีเฉพาะ action codes ที่ระบุ แล้ว actingAs
+ * (ต้อง seed sys_action ไว้ก่อน เช่น $this->seed(DatabaseSeeder::class))
+ *
+ * @param  list<string>  $codes
+ * @param  array<string, mixed>  $attributes
+ */
+function actingAsUserWithPermissions(array $codes, array $attributes = []): User
+{
+    $group = UserGroup::create([
+        'name' => 'Test Group '.uniqid(),
+        'status' => 'Y',
+    ]);
+
+    if ($codes !== []) {
+        $group->actions()->attach(
+            SysAction::whereIn('code', $codes)->pluck('id')
+        );
+    }
+
+    $user = User::factory()->create(array_merge(['usergroup_id' => $group->id], $attributes));
+
+    test()->actingAs($user);
+
+    return $user;
 }
