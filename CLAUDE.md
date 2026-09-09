@@ -102,7 +102,7 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 | ตาราง | Model | หมายเหตุ |
 |-------|-------|----------|
 | `sys_user` | `App\Models\User` | ชื่อแยกเป็น `titlename`/`firstname`/`lastname` (+ accessor `name` = ชื่อเต็ม); ช่องทางติดต่อ `mobile`/`phone`/`line`/`facebook`; `user_type` (`back`/`front`, default `back`), `status` `char(1)` default `Y`; สถิติ login `last_login_at`/`failed_login_count`/`last_failed_login_at`; `usergroup_id`; **`SoftDeletes` (เปิดใช้ trait แล้ว)**. `email` **ไม่ unique ระดับ DB** |
-| `sys_usergroup` | `App\Models\UserGroup` | มี `status` `char(1)` default `Y`, softDeletes (คอลัมน์) |
+| `sys_usergroup` | `App\Models\UserGroup` | `status` `char(1)` default `Y`; `can_edit`/`can_delete` `char(1)` default `Y` (`N` = กลุ่มระบบ ห้ามแก้/ห้ามลบ — Super Admin seed เป็น `N`); **`SoftDeletes` + `HasFactory` (เปิด trait แล้ว)**; relations `actions()` belongsToMany, `users()` hasMany |
 | `sys_action_group` | `App\Models\SysActionGroup` | `id` เป็น `string(20)` primary (กำหนดเอง); มี `sort_order`, `status` `char(1)` default `Y`, `actions()` hasMany |
 | `sys_action` | `App\Models\SysAction` | `id` เป็น `string(20)` primary; มี `code` (unique) เช่น `system.user.view`, `parent_id` (tree, self-FK), `sort_order` |
 | `sys_usergroup_action` | (pivot) | เชื่อม usergroup ↔ action (`action_id` เป็น `string(20)`) |
@@ -178,6 +178,14 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 - ลบไฟล์ Breeze ที่ตายแล้ว: `Pages/Welcome.vue`, `Pages/Dashboard.vue`, `Pages/Front/About.vue`
 - อัปเกรด Tailwind v3 → v4; เปลี่ยน layout หลังบ้านเป็นสไตล์ TailAdmin (sidebar/header มืด);
   ลบ `AuthenticatedLayout.vue`, `GuestLayout.vue`, `Components/NavLink.vue`, `Components/ResponsiveNavLink.vue`
+- โมดูล `system.user` (จัดการผู้ใช้งานหลังบ้าน) เสร็จ + เป็น **ต้นแบบตาม `docs/PRD-overview.md` §5** —
+  `adminMenu()` ส่ง `activePattern` ต่อเมนู, shared prop `flash.success`+`SuccessDialog`, `ConfirmDialog`,
+  component กลาง `SelectInput`/`Pagination`/`StatusBadge`/`Textarea`/`Admin/{PageHeader,Breadcrumbs,TabNav}`
+- โมดูล `system.usergroup` (จัดการกลุ่มผู้ใช้งาน) เสร็จครบ: list/add/edit + **หน้ากำหนดสิทธิ์**
+  (`admin.system.usergroup.rights` + `.rights.update`) — tree `sys_action_group`/`sys_action`,
+  checkbox parent→ลูก, เลือก/ไม่เลือกทั้งหมดต่อกลุ่ม, บันทึกแบบ `detach()`+`attach()` (`Components/Admin/PermissionTreeNode.vue`
+  recursive); `sys_usergroup` เพิ่ม `can_edit`/`can_delete` + เปิด `SoftDeletes`;
+  guard: ชื่อกลุ่มห้ามซ้ำ, ห้ามลบกลุ่มที่มีสมาชิก, กลุ่ม `can_edit`/`can_delete='N'` แก้/ลบไม่ได้
 
 ## ทดสอบ
 

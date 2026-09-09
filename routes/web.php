@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\System\UserController;
+use App\Http\Controllers\Admin\System\UsergroupController;
 use App\Http\Controllers\Front\HomeController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -60,6 +61,18 @@ Route::prefix('admin')->group(function () {
             Route::delete('/{user}', [UserController::class, 'destroy'])->name('admin.system.user.destroy');
             Route::get('/{user}/password', [UserController::class, 'password'])->name('admin.system.user.password');
             Route::put('/{user}/password', [UserController::class, 'passwordUpdate'])->name('admin.system.user.password.update');
+        });
+
+        // จัดการกลุ่มผู้ใช้งานหลังบ้าน — ตรวจสอบสิทธิ์ในแต่ละ method ของ UsergroupController
+        Route::prefix('system/usergroup')->group(function () {
+            Route::get('/', [UsergroupController::class, 'index'])->name('admin.system.usergroup.index');
+            Route::get('/add', [UsergroupController::class, 'add'])->name('admin.system.usergroup.add');
+            Route::post('/', [UsergroupController::class, 'store'])->name('admin.system.usergroup.store');
+            Route::get('/{usergroup}/edit', [UsergroupController::class, 'edit'])->name('admin.system.usergroup.edit');
+            Route::put('/{usergroup}', [UsergroupController::class, 'update'])->name('admin.system.usergroup.update');
+            Route::delete('/{usergroup}', [UsergroupController::class, 'destroy'])->name('admin.system.usergroup.destroy');
+            Route::get('/{usergroup}/rights', [UsergroupController::class, 'rights'])->name('admin.system.usergroup.rights');
+            Route::put('/{usergroup}/rights', [UsergroupController::class, 'rightsUpdate'])->name('admin.system.usergroup.rights.update');
         });
     });
 });

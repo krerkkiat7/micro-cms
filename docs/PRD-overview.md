@@ -162,6 +162,7 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 | Layout หลังบ้าน (sidebar/header มืด) | ✅ มี (สไตล์ TailAdmin) | ต่อเมนูโมดูล/จัดการระบบเข้า sidebar |
 | ระบบสิทธิ์ (`sys_*`) | ✅ ตาราง + model + `hasPermission()` + seeder ตัวอย่าง | หน้าจัดการกลุ่ม/สิทธิ์แบบ tree + middleware บังคับสิทธิ์ |
 | จัดการผู้ใช้งานหลังบ้าน (CRUD `sys_user` `user_type='back'`) | ✅ เสร็จแล้ว — list (ค้นหา/กรอง/เรียง/paging) + add + edit + เปลี่ยนรหัสผ่าน; เป็น **ต้นแบบตาม §5** | — |
+| จัดการกลุ่มผู้ใช้งาน (CRUD `sys_usergroup` + กำหนดสิทธิ์) | ✅ list + add + edit + **หน้ากำหนดสิทธิ์** (tree `sys_action_group`/`sys_action`, checkbox parent→ลูก, เลือก/ไม่เลือกทั้งหมดต่อกลุ่ม, บันทึกแบบ detach+attach); `can_edit`/`can_delete`, guard ชื่อซ้ำ/มีสมาชิก | — |
 | profile | ✅ มี (แก้ชื่อ/ช่องทางติดต่อ/อีเมล) | เพิ่มอัปโหลดรูปโปรไฟล์ (อนาคต) |
 | dashboard | 🟡 placeholder (การ์ดสถิติ "—") | ต่อสถิติจริงเมื่อมีโมดูล |
 | โมดูลเนื้อหาทั้ง 6 | ❌ ยังไม่มี | ทยอยทำ |
@@ -194,7 +195,7 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 | เฟส | ขอบเขต |
 |-----|--------|
 | **0 — schema base** *(รอบนี้)* | ปรับ `sys_user`/`sys_usergroup`/`sys_action*` + สร้าง `sys_setting` + เปิด SoftDeletes + auth หลังบ้านเช็ก `user_type`/`status` + บันทึกสถิติ login + ปรับ seeder/factory/profile/register/เทส |
-| 1 — จัดการผู้ใช้ & สิทธิ์ | ~~CRUD `sys_user`~~ ✅; เหลือ CRUD `sys_usergroup`, หน้าเลือกสิทธิ์แบบ tree, middleware บังคับสิทธิ์, ล็อกบัญชีเมื่อ login ผิดเกินเกณฑ์ (`sys_setting`), self-guard เปลี่ยนกลุ่มบัญชีตัวเอง |
+| 1 — จัดการผู้ใช้ & สิทธิ์ | ~~CRUD `sys_user`~~ ✅ · ~~CRUD `sys_usergroup` + หน้ากำหนดสิทธิ์แบบ tree~~ ✅; เหลือ middleware บังคับสิทธิ์, ล็อกบัญชีเมื่อ login ผิดเกินเกณฑ์ (`sys_setting`), self-guard เปลี่ยนกลุ่มบัญชีตัวเอง |
 | 2 — ตั้งค่าระบบ & template & เมนู | หน้า `sys_setting`, `sys_template`; หน้า CRUD เมนูหลังบ้าน (`AppSidebar` อ่านจาก DB แล้ว); `sys_front_menu` (tree) สำหรับหน้าบ้าน |
 | 3 — โมดูลเนื้อหาแรก | บทความ (article) + page (หน้าเดี่ยว) + file management (`sys_file`) |
 | 4 — โมดูลที่เหลือ | banner, popup, intropage, contact us |

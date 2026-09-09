@@ -10,56 +10,51 @@ import Pagination from '@/Components/Pagination.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ArrowDown, ArrowUp, ArrowUpDown, Plus, RotateCcw, Search } from 'lucide-vue-next';
 import { reactive } from 'vue';
-import type { Paginated, UserGroupOption } from '@/types';
-import { formatDateTime } from '@/utils/date';
+import type { Paginated } from '@/types';
 
 interface Row {
     id: number;
     name: string;
-    email: string;
-    group: string | null;
+    description: string | null;
     status: string;
-    created_at: string | null;
-    last_login_at: string | null;
+    actions_count: number;
+    users_count: number;
+    can_edit: string;
+    can_delete: string;
 }
 
 const props = defineProps<{
-    users: Paginated<Row>;
+    groups: Paginated<Row>;
     filters: {
         q: string | null;
-        usergroup_id: string | null;
         status: string | null;
         per_page: number;
     };
     sort: string;
     direction: 'asc' | 'desc';
-    userGroups: UserGroupOption[];
     perPageOptions: number[];
     can: { manage: boolean };
 }>();
 
 const form = reactive({
     q: props.filters.q ?? '',
-    usergroup_id: props.filters.usergroup_id ?? '',
     status: props.filters.status ?? '',
     per_page: String(props.filters.per_page),
 });
 
-const columns: { key: string; label: string }[] = [
-    { key: 'name', label: 'ชื่อ - นามสกุล' },
-    { key: 'group', label: 'กลุ่มผู้ใช้งาน' },
-    { key: 'email', label: 'อีเมล' },
-    { key: 'created_at', label: 'วันที่สร้าง' },
-    { key: 'last_login_at', label: 'เข้าสู่ระบบล่าสุด' },
-    { key: 'status', label: 'สถานะ' },
+const columns: { key: string; label: string; sortable: boolean }[] = [
+    { key: 'name', label: 'ชื่อกลุ่ม', sortable: true },
+    { key: 'description', label: 'รายละเอียด', sortable: false },
+    { key: 'actions_count', label: 'จำนวนสิทธิ์', sortable: true },
+    { key: 'users_count', label: 'จำนวนสมาชิก', sortable: true },
+    { key: 'status', label: 'สถานะ', sortable: true },
 ];
 
 function visit(extra: Record<string, unknown> = {}) {
     router.get(
-        route('admin.system.user.index'),
+        route('admin.system.usergroup.index'),
         {
             q: form.q !== '' ? form.q : undefined,
-            usergroup_id: form.usergroup_id !== '' ? form.usergroup_id : undefined,
             status: form.status !== '' ? form.status : undefined,
             per_page: form.per_page,
             sort: props.sort,
@@ -76,11 +71,10 @@ function search() {
 
 function resetFilters() {
     form.q = '';
-    form.usergroup_id = '';
     form.status = '';
     form.per_page = String(props.perPageOptions[0]);
     router.get(
-        route('admin.system.user.index'),
+        route('admin.system.usergroup.index'),
         {},
         { preserveScroll: true, replace: true },
     );
@@ -98,21 +92,21 @@ function sortIcon(column: string) {
 }
 
 function goToEdit(id: number) {
-    router.get(route('admin.system.user.edit', id));
+    router.get(route('admin.system.usergroup.edit', id));
 }
 
 const breadcrumbs = [
     { label: 'Dashboard', href: route('admin.dashboard') },
-    { label: 'จัดการผู้ใช้งาน' },
+    { label: 'จัดการกลุ่มผู้ใช้งาน' },
 ];
 </script>
 
 <template>
-    <Head title="รายการผู้ใช้งาน" />
+    <Head title="รายการกลุ่มผู้ใช้งาน" />
 
     <AdminLayout>
         <template #header>
-            <PageHeader title="รายการผู้ใช้งาน" :breadcrumbs="breadcrumbs" />
+            <PageHeader title="รายการกลุ่มผู้ใช้งาน" :breadcrumbs="breadcrumbs" />
         </template>
 
         <div class="space-y-4">
@@ -126,20 +120,10 @@ const breadcrumbs = [
                         <TextInput
                             v-model="form.q"
                             type="text"
-                            placeholder="ค้นหาชื่อ นามสกุล อีเมล เบอร์มือถือ เบอร์ติดต่อ"
+                            placeholder="ค้นหาชื่อกลุ่ม รายละเอียด"
                             @keyup.enter="search"
                         />
                     </div>
-                    <SelectInput v-model="form.usergroup_id">
-                        <option value="">ทุกกลุ่มผู้ใช้งาน</option>
-                        <option
-                            v-for="g in userGroups"
-                            :key="g.id"
-                            :value="String(g.id)"
-                        >
-                            {{ g.name }}
-                        </option>
-                    </SelectInput>
                     <SelectInput v-model="form.status">
                         <option value="">ทุกสถานะ</option>
                         <option value="Y">ใช้งาน</option>
@@ -161,9 +145,9 @@ const breadcrumbs = [
                         />
                         <PrimaryButton
                             type="button"
-                            @click="router.get(route('admin.system.user.add'))"
+                            @click="router.get(route('admin.system.usergroup.add'))"
                         >
-                            <Plus class="mr-1.5 size-4" /> เพิ่มผู้ใช้งาน
+                            <Plus class="mr-1.5 size-4" /> เพิ่มกลุ่มผู้ใช้งาน
                         </PrimaryButton>
                     </template>
                 </div>
@@ -174,7 +158,7 @@ const breadcrumbs = [
                 class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs"
             >
                 <div class="overflow-x-auto">
-                    <table class="w-full min-w-[900px] text-left text-sm">
+                    <table class="w-full min-w-[800px] text-left text-sm">
                         <thead
                             class="border-b border-gray-200 bg-gray-50 text-xs uppercase tracking-wide text-gray-500"
                         >
@@ -185,6 +169,7 @@ const breadcrumbs = [
                                     class="px-4 py-3 font-medium"
                                 >
                                     <button
+                                        v-if="col.sortable"
                                         type="button"
                                         class="inline-flex items-center gap-1 transition-colors hover:text-gray-700"
                                         @click="sortBy(col.key)"
@@ -200,45 +185,47 @@ const breadcrumbs = [
                                             "
                                         />
                                     </button>
+                                    <span v-else>{{ col.label }}</span>
                                 </th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             <tr
-                                v-for="row in users.data"
+                                v-for="row in groups.data"
                                 :key="row.id"
-                                class="cursor-pointer transition-colors hover:bg-gray-50"
+                                class="cursor-pointer align-top transition-colors hover:bg-gray-50"
                                 @click="goToEdit(row.id)"
                             >
                                 <td class="px-4 py-3">
                                     <Link
-                                        :href="route('admin.system.user.edit', row.id)"
+                                        :href="route('admin.system.usergroup.edit', row.id)"
                                         class="font-medium text-brand-600 hover:text-brand-700"
                                         @click.stop
                                     >
                                         {{ row.name }}
                                     </Link>
                                 </td>
-                                <td class="px-4 py-3 text-gray-600">
-                                    {{ row.group ?? '-' }}
-                                </td>
-                                <td class="px-4 py-3 text-gray-600">{{ row.email }}</td>
-                                <td class="px-4 py-3 text-gray-600">
-                                    {{ formatDateTime(row.created_at) }}
+                                <td
+                                    class="max-w-sm whitespace-pre-line px-4 py-3 text-gray-600"
+                                >
+                                    {{ row.description ?? '—' }}
                                 </td>
                                 <td class="px-4 py-3 text-gray-600">
-                                    {{ formatDateTime(row.last_login_at) }}
+                                    {{ row.actions_count }}
+                                </td>
+                                <td class="px-4 py-3 text-gray-600">
+                                    {{ row.users_count }}
                                 </td>
                                 <td class="px-4 py-3">
                                     <StatusBadge :status="row.status" />
                                 </td>
                             </tr>
-                            <tr v-if="users.data.length === 0">
+                            <tr v-if="groups.data.length === 0">
                                 <td
                                     :colspan="columns.length"
                                     class="px-4 py-10 text-center text-gray-500"
                                 >
-                                    ไม่พบผู้ใช้งานตามเงื่อนไข
+                                    ไม่พบกลุ่มผู้ใช้งานตามเงื่อนไข
                                 </td>
                             </tr>
                         </tbody>
@@ -250,8 +237,8 @@ const breadcrumbs = [
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-2 text-sm text-gray-500">
                     <span>
-                        แสดง {{ users.from ?? 0 }}–{{ users.to ?? 0 }} จาก
-                        {{ users.total }} รายการ
+                        แสดง {{ groups.from ?? 0 }}–{{ groups.to ?? 0 }} จาก
+                        {{ groups.total }} รายการ
                     </span>
                     <SelectInput
                         v-model="form.per_page"
@@ -267,7 +254,7 @@ const breadcrumbs = [
                         </option>
                     </SelectInput>
                 </div>
-                <Pagination :links="users.links" />
+                <Pagination :links="groups.links" />
             </div>
         </div>
     </AdminLayout>
