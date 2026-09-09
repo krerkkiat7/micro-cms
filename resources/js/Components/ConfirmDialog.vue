@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted } from 'vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 
-withDefaults(
+const props = withDefaults(
     defineProps<{
         show?: boolean;
         title?: string;
@@ -25,6 +26,15 @@ const emit = defineEmits<{
     confirm: [];
     cancel: [];
 }>();
+
+function onKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape' && props.show && !props.processing) {
+        emit('cancel');
+    }
+}
+
+onMounted(() => document.addEventListener('keydown', onKeydown));
+onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
 </script>
 
 <template>

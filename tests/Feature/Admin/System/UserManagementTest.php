@@ -74,6 +74,18 @@ test('index only lists back users and matches the search term', function () {
         ->assertInertia(fn (Assert $page) => $page->has('users.data', 0));
 });
 
+test('search still filters when the term is the string "0"', function () {
+    actingAsUserWithPermissions(['system.user.view']);
+
+    User::factory()->create(['firstname' => 'Zero0', 'lastname' => 'User', 'email' => 'zero-0@example.com']);
+    User::factory()->create(['firstname' => 'Plain', 'lastname' => 'Name', 'email' => 'plain@example.com']);
+
+    // "0" ต้องกรองจริง — คนที่ไม่มีเลข 0 ต้องไม่ติดมาด้วย
+    $this->get(route('admin.system.user.index', ['q' => '0']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('users.data', fn ($rows) => collect($rows)->pluck('email')->doesntContain('plain@example.com')));
+});
+
 test('index filters by status', function () {
     actingAsUserWithPermissions(['system.user.view']);
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue';
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { CheckCircle2 } from 'lucide-vue-next';
 
 const props = withDefaults(
@@ -41,10 +41,11 @@ function start() {
     }, 1000);
 }
 
+// เฝ้าทั้ง show และ message — ถ้ามี flash ใหม่ระหว่างที่ dialog ยังเปิดอยู่ ให้เริ่มนับถอยหลังใหม่
 watch(
-    () => props.show,
-    (value) => {
-        if (value) {
+    [() => props.show, () => props.message],
+    ([show]) => {
+        if (show) {
             start();
         } else {
             stop();
@@ -53,7 +54,18 @@ watch(
     { immediate: true },
 );
 
-onBeforeUnmount(stop);
+function onKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape' && props.show) {
+        emit('close');
+    }
+}
+
+onMounted(() => document.addEventListener('keydown', onKeydown));
+
+onBeforeUnmount(() => {
+    stop();
+    document.removeEventListener('keydown', onKeydown);
+});
 </script>
 
 <template>

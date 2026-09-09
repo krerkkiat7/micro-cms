@@ -49,7 +49,9 @@ class UserController extends Controller
         $users = User::query()
             ->where('user_type', 'back')
             ->with('group:id,name')
-            ->when($filters['q'], function ($query, $term) {
+            ->when($filters['q'] !== null, function ($query) use ($filters) {
+                $term = $filters['q'];
+
                 $query->where(function ($inner) use ($term) {
                     $inner->where('firstname', 'like', "%{$term}%")
                         ->orWhere('lastname', 'like', "%{$term}%")
@@ -66,8 +68,8 @@ class UserController extends Controller
                     }
                 });
             })
-            ->when($filters['usergroup_id'], fn ($query, $id) => $query->where('usergroup_id', $id))
-            ->when($filters['status'], fn ($query, $value) => $query->where('status', $value))
+            ->when($filters['usergroup_id'] !== null, fn ($query) => $query->where('usergroup_id', $filters['usergroup_id']))
+            ->when($filters['status'] !== null, fn ($query) => $query->where('status', $filters['status']))
             ->when($sort === 'name', fn ($query) => $query
                 ->orderBy('firstname', $direction)
                 ->orderBy('lastname', $direction))
