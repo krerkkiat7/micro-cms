@@ -59,6 +59,23 @@ test('index search matches name and description', function () {
                 && collect($rows)->pluck('name')->doesntContain('ฝ่ายการตลาด')));
 });
 
+test('index defaults to sorting by group name ascending', function () {
+    actingAsUserWithPermissions(['system.usergroup.view']);
+
+    UserGroup::factory()->create(['name' => 'zzz-กลุ่มท้าย']);
+    UserGroup::factory()->create(['name' => 'aaa-กลุ่มต้น']);
+
+    $this->get(route('admin.system.usergroup.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('sort', 'name')
+            ->where('direction', 'asc')
+            ->where('groups.data', function ($rows) {
+                $names = collect($rows)->pluck('name');
+
+                return $names->search('aaa-กลุ่มต้น') < $names->search('zzz-กลุ่มท้าย');
+            }));
+});
+
 test('index filters by status', function () {
     actingAsUserWithPermissions(['system.usergroup.view']);
 

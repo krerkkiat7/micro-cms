@@ -35,10 +35,10 @@ class UsergroupController extends Controller
             'per_page' => in_array($perPage, self::PER_PAGE_OPTIONS, true) ? $perPage : self::PER_PAGE_OPTIONS[0],
         ];
 
-        // การเรียงลำดับ — เริ่มต้นที่ วันที่สร้าง มากไปน้อย
+        // การเรียงลำดับ — เริ่มต้นที่ ชื่อกลุ่ม น้อยไปมาก
         $sortable = ['name', 'status', 'actions_count', 'users_count', 'created_at'];
-        $sort = in_array($request->query('sort'), $sortable, true) ? $request->query('sort') : 'created_at';
-        $direction = $request->query('direction') === 'asc' ? 'asc' : 'desc';
+        $sort = in_array($request->query('sort'), $sortable, true) ? $request->query('sort') : 'name';
+        $direction = $request->query('direction') === 'desc' ? 'desc' : 'asc';
 
         $groups = UserGroup::query()
             ->withCount([
