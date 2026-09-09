@@ -193,7 +193,7 @@ const breadcrumbs = [
                             <tr
                                 v-for="row in groups.data"
                                 :key="row.id"
-                                class="cursor-pointer transition-colors hover:bg-gray-50"
+                                class="cursor-pointer align-top transition-colors hover:bg-gray-50"
                                 @click="goToEdit(row.id)"
                             >
                                 <td class="px-4 py-3">
@@ -205,7 +205,9 @@ const breadcrumbs = [
                                         {{ row.name }}
                                     </Link>
                                 </td>
-                                <td class="max-w-xs truncate px-4 py-3 text-gray-600">
+                                <td
+                                    class="max-w-sm whitespace-pre-line px-4 py-3 text-gray-600"
+                                >
                                     {{ row.description ?? '—' }}
                                 </td>
                                 <td class="px-4 py-3 text-gray-600">
