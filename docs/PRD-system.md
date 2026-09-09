@@ -7,8 +7,8 @@
 
 | # | หัวข้อ | ตารางหลัก | สถานะ |
 |---|--------|-----------|-------|
-| 1 | จัดการผู้ใช้งาน | `sys_user` | 🟡 ตาราง/model มี, ยังไม่มี UI |
-| 2 | จัดการกลุ่มผู้ใช้งาน + สิทธิ์ | `sys_usergroup`, `sys_action_group`, `sys_action`, `sys_usergroup_action` | 🟡 ตาราง/model/seeder มี, ยังไม่มี UI |
+| 1 | จัดการผู้ใช้งาน | `sys_user` | 🟢 list/add/edit/เปลี่ยนรหัสผ่าน เสร็จ (ต้นแบบ §5) |
+| 2 | จัดการกลุ่มผู้ใช้งาน + สิทธิ์ | `sys_usergroup`, `sys_action_group`, `sys_action`, `sys_usergroup_action` | 🟡 list/add/edit เสร็จ · หน้ากำหนดสิทธิ์ยังเป็น stub |
 | 3 | จัดการเมนู (หลังบ้าน / หน้าบ้าน) | `sys_menu_group`, `sys_menu` / `sys_front_menu` *(เสนอ)* | 🟡 เมนูหลังบ้าน: ตาราง/model/seed ตัวอย่างมี, ยังไม่ต่อ UI · หน้าบ้าน: 🔴 |
 | 4 | จัดการ template | `sys_template` *(เสนอ)* | 🔴 |
 | 5 | ประวัติ login / เข้าชม / การกระทำ | `sys_log_login`, `sys_log_visit`, `sys_log_action` *(เสนอ)* | 🔴 |
@@ -103,6 +103,10 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 
 ## 2. จัดการกลุ่มผู้ใช้งาน + กำหนดสิทธิ์
 
+> **สถานะ:** CRUD กลุ่ม (list/add/edit) เสร็จแล้วตาม [PRD-overview §5](PRD-overview.md#5-แบบแผนหน้าจอหลังบ้าน-back-office-screen-blueprint) —
+> `Admin\System\UsergroupController` + `resources/js/Pages/Admin/System/Usergroup/*`, route `admin.system.usergroup.*` (เอกพจน์),
+> permission `system.usergroup.view/manage/delete/rights` (ตาม seeder). **หน้ากำหนดสิทธิ์ (`...usergroup.rights`) ยังเป็นหน้าเปล่า** — รอทำต่อ
+
 **วัตถุประสงค์** — นิยาม "กลุ่มผู้ใช้" (บทบาท) แล้วติ๊กสิทธิ์ (action) ให้กลุ่ม ผู้ใช้ที่อยู่ในกลุ่มจะได้สิทธิ์ตามนั้น
 
 **Data model**
@@ -115,7 +119,9 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 | `name` | `varchar(100)` | ชื่อกลุ่ม เช่น "Super Admin" |
 | `description` | `varchar(255)` null | |
 | `status` | `char(1)` default `Y` | `Y`/`N` |
-| `timestamps`, `deleted_at` | | softDeletes (คอลัมน์มี) |
+| `can_edit` | `char(1)` default `Y` | `N` = กลุ่มระบบ ห้ามแก้ไข (Super Admin seed เป็น `N`) |
+| `can_delete` | `char(1)` default `Y` | `N` = กลุ่มระบบ ห้ามลบ (Super Admin seed เป็น `N`) |
+| `timestamps`, `deleted_at` | | `SoftDeletes` (เปิด trait บน `UserGroup` แล้ว) |
 
 `sys_action_group` (ปรับในเฟส 0) — หมวดของสิทธิ์ เพื่อจัดกลุ่มในหน้าติ๊ก
 
@@ -148,21 +154,22 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 | composite PK `(usergroup_id, action_id)` + `timestamps` | |
 
 **Model**
-- `UserGroup::actions()` — belongsToMany ผ่าน pivot
+- `UserGroup::actions()` — belongsToMany ผ่าน pivot · `UserGroup::users()` — hasMany (`usergroup_id`) · `HasFactory` + `SoftDeletes`
 - `SysActionGroup::actions()` — hasMany
 - `SysAction::group()` / `parent()` / `children()`
 - `User::hasPermission($code)` / `getPermissionsArray()` — อ่านจาก `group->actions->pluck('code')`
 
-**หน้าจอ**
-- `รายการกลุ่ม` — ตาราง (ชื่อ, จำนวนสิทธิ์, จำนวนสมาชิก, สถานะ)
-- `ฟอร์มกลุ่ม` — ชื่อ/คำอธิบาย/สถานะ + **ต้นไม้สิทธิ์**: จัดกลุ่มตาม `sys_action_group` (เรียงด้วย `sort_order`),
-  ภายในกลุ่มแสดง `sys_action` เป็น tree ตาม `parent_id`/`sort_order` — ติ๊ก parent = ติ๊กลูกทั้งหมด
-- บันทึกด้วย `->actions()->sync([...])`
+**หน้าจอ** (ทำแล้ว 3, เหลือ 1)
+- ✅ `รายการกลุ่ม` — ตาราง (ชื่อกลุ่ม, รายละเอียด, จำนวนสิทธิ์, จำนวนสมาชิก, สถานะ) + ค้นหา/กรอง/เรียง/paging
+- ✅ `ฟอร์มเพิ่ม/แก้ไข` — ชื่อกลุ่ม / รายละเอียด (textarea) / สถานะ; แก้ไขมี tab "ข้อมูลทั่วไป" + "กำหนดสิทธิ์";
+  ปุ่มบันทึก/ลบ เคารพ `can_edit`/`can_delete` + guard ชื่อซ้ำ / กลุ่มมีสมาชิก
+- ⬜ `กำหนดสิทธิ์` (`admin.system.usergroup.rights`) — **หน้าเปล่า/stub** — จะทำ **ต้นไม้สิทธิ์**: จัดกลุ่มตาม `sys_action_group`
+  (เรียง `sort_order`), ภายในแสดง `sys_action` เป็น tree ตาม `parent_id`/`sort_order` — ติ๊ก parent = ติ๊กลูกทั้งหมด,
+  บันทึกด้วย `$group->actions()->sync([...])`; permission `system.usergroup.rights`
 
-**Permission code (เสนอ)** — `system.usergroup.view`, `system.usergroup.create`, `system.usergroup.delete`
-(ชุด `system.action.*` สำหรับจัดการรายการสิทธิ์เอง — ทำภายหลังหรือ seed อย่างเดียว)
+**Permission code (ที่ seed จริง)** — `system.usergroup.view` / `system.usergroup.manage` / `system.usergroup.delete` / `system.usergroup.rights`
 
-**Route (เสนอ)** — `admin.system.usergroups.*` ใต้ `/admin/system/usergroups`
+**Route (ที่ทำจริง)** — `admin.system.usergroup.*` (เอกพจน์) ใต้ `/admin/system/usergroup`
 
 **หมายเหตุ** — ยังไม่มี middleware/gate บังคับสิทธิ์รวมศูนย์ (โค้ด `abort(403)` ถูก comment ไว้ใน controller)
 เฟส 1 ควรเพิ่ม route middleware เช่น `can:system.user.view` หรือ middleware กำหนดเองที่อ่าน `hasPermission()`
@@ -501,7 +508,7 @@ sys_menu
 |------|-----------|
 | `config/auth.php` | เพิ่ม password broker `front` (ตาราง `front_password_reset_tokens`) |
 | `app/Models/User.php` | `fillable` ใหม่ + accessor `name` + trait `SoftDeletes` + cast `last_login_at`/`last_failed_login_at` |
-| `app/Models/UserGroup.php` | `fillable` เพิ่ม `status` |
+| `app/Models/UserGroup.php` | `fillable` เพิ่ม `status`, `can_edit`, `can_delete`; เปิด `HasFactory` + `SoftDeletes`; relation `users()` |
 | `app/Models/SysActionGroup.php` | `$incrementing=false`, `$keyType='string'`, `actions()` hasMany, `fillable` มี `status` (คอลัมน์ `sys_action_group.status`) |
 | `app/Models/SysAction.php` | `$incrementing=false`, `$keyType='string'`, `group()`/`parent()`/`children()` |
 | `app/Models/SysSetting.php` | **ไฟล์ใหม่** — softDeletes, key เป็น string, ไม่ใช้ `find()` |
