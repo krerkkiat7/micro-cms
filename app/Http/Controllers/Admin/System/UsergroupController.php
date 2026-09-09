@@ -3,11 +3,15 @@
 namespace App\Http\Controllers\Admin\System;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\System\AssignUsergroupRightsRequest;
 use App\Http\Requests\Admin\System\StoreUsergroupRequest;
 use App\Http\Requests\Admin\System\UpdateUsergroupRequest;
+use App\Models\SysAction;
+use App\Models\SysActionGroup;
 use App\Models\UserGroup;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -207,7 +211,7 @@ class UsergroupController extends Controller
     }
 
     /**
-     * หน้ากำหนดสิทธิ์ของกลุ่ม (ยังเป็นหน้าเปล่า — จะพัฒนาต่อภายหลัง)
+     * หน้ากำหนดสิทธิ์ของกลุ่ม — ต้นไม้สิทธิ์ตาม sys_action_group / sys_action
      */
     public function rights(Request $request, string $usergroup): Response|RedirectResponse
     {
@@ -221,12 +225,108 @@ class UsergroupController extends Controller
             return redirect()->route('admin.system.usergroup.index');
         }
 
+        $actionGroups = SysActionGroup::query()
+            ->where('status', 'Y')
+            ->with(['actions' => fn ($query) => $query->orderBy('sort_order')->orderBy('id')])
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn (SysActionGroup $actionGroup) => [
+                'id' => $actionGroup->id,
+                'name' => $actionGroup->name,
+                'total' => $actionGroup->actions->count(),
+                'actions' => $this->buildActionTree($actionGroup->actions),
+            ])
+            ->filter(fn ($actionGroup) => $actionGroup['total'] > 0)
+            ->values()
+            ->all();
+
         return Inertia::render('Admin/System/Usergroup/Rights', [
             'group' => [
                 'id' => $group->id,
                 'name' => $group->name,
+                'can_edit' => $group->can_edit,
             ],
+            'actionGroups' => $actionGroups,
+            'checkedIds' => $group->actions()->pluck('sys_action.id')->all(),
         ]);
+    }
+
+    /**
+     * บันทึกสิทธิ์ของกลุ่ม — ล้าง pivot เดิมทั้งหมดแล้วบันทึกใหม่ (ลบออกจริง)
+     */
+    public function rightsUpdate(AssignUsergroupRightsRequest $request, string $usergroup): RedirectResponse
+    {
+        if (! $request->user()->hasPermission('system.usergroup.rights')) {
+            return redirect()->route('admin.system.usergroup.index');
+        }
+
+        $group = $this->resolveGroup($usergroup);
+
+        if (! $group) {
+            return redirect()->route('admin.system.usergroup.index');
+        }
+
+        // กลุ่มระบบ (can_edit = N) แสดงอย่างเดียว บันทึกไม่ได้
+        if ($group->can_edit === 'N') {
+            return back()->withErrors(['action_ids' => 'กลุ่มนี้เป็นกลุ่มระบบ ไม่อนุญาตให้แก้ไข']);
+        }
+
+        $ids = $this->pruneOrphanActions($request->validated()['action_ids'] ?? []);
+
+        $group->actions()->detach();
+
+        if ($ids !== []) {
+            $group->actions()->attach($ids);
+        }
+
+        return redirect()
+            ->route('admin.system.usergroup.rights', $group->id)
+            ->with('success', 'บันทึกสิทธิ์เรียบร้อยแล้ว');
+    }
+
+    /**
+     * แปลง collection ของ sys_action (เรียง sort_order แล้ว) เป็น tree ตาม parent_id
+     *
+     * @param  Collection<int, SysAction>  $actions
+     * @return list<array{id: string, code: string, name: string, children: array<mixed>}>
+     */
+    private function buildActionTree(Collection $actions, ?string $parentId = null): array
+    {
+        return $actions
+            ->filter(fn (SysAction $action) => $action->parent_id === $parentId)
+            ->map(fn (SysAction $action) => [
+                'id' => $action->id,
+                'code' => $action->code,
+                'name' => $action->name,
+                'children' => $this->buildActionTree($actions, $action->id),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * ตัด action ที่ ancestor ยังไม่ถูกเลือกออก (กัน UI ส่งข้อมูลไม่ครบสาย)
+     *
+     * @param  list<string>  $ids
+     * @return list<string>
+     */
+    private function pruneOrphanActions(array $ids): array
+    {
+        $parentOf = SysAction::query()->pluck('parent_id', 'id');
+        $selected = array_flip($ids);
+
+        return array_values(array_filter($ids, function ($id) use ($parentOf, $selected) {
+            $cursor = $parentOf[$id] ?? null;
+
+            while ($cursor !== null) {
+                if (! isset($selected[$cursor])) {
+                    return false;
+                }
+                $cursor = $parentOf[$cursor] ?? null;
+            }
+
+            return true;
+        }));
     }
 
     /**

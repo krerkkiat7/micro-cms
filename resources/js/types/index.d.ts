@@ -59,6 +59,22 @@ export interface Paginated<T> {
     per_page: number;
 }
 
+/** โหนดสิทธิ์ (sys_action) แบบ tree — ใช้ในหน้ากำหนดสิทธิ์ของกลุ่มผู้ใช้งาน */
+export interface ActionNode {
+    id: string;
+    code: string;
+    name: string;
+    children: ActionNode[];
+}
+
+/** กลุ่มสิทธิ์ (sys_action_group) พร้อมต้นไม้สิทธิ์ภายใน */
+export interface ActionGroupNode {
+    id: string;
+    name: string;
+    total: number;
+    actions: ActionNode[];
+}
+
 export type PageProps<
     T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {

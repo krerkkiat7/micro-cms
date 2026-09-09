@@ -72,6 +72,7 @@ Route::prefix('admin')->group(function () {
             Route::put('/{usergroup}', [UsergroupController::class, 'update'])->name('admin.system.usergroup.update');
             Route::delete('/{usergroup}', [UsergroupController::class, 'destroy'])->name('admin.system.usergroup.destroy');
             Route::get('/{usergroup}/rights', [UsergroupController::class, 'rights'])->name('admin.system.usergroup.rights');
+            Route::put('/{usergroup}/rights', [UsergroupController::class, 'rightsUpdate'])->name('admin.system.usergroup.rights.update');
         });
     });
 });
