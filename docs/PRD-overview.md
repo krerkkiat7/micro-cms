@@ -64,13 +64,104 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 | แยกโฟลเดอร์ | `Admin/` vs `Front/` ทุกชั้น (controller, Pages, Layouts); component เฉพาะหลังบ้านใน `Components/Admin/` |
 | ภาษา UI หลังบ้าน | ฮาร์ดโค้ดภาษาไทยในไฟล์ `.vue` (ไม่ได้ทำ i18n ฝั่ง admin) |
 
-## 5. สถานะปัจจุบัน vs เป้าหมาย
+## 5. แบบแผนหน้าจอหลังบ้าน (Back-office screen blueprint)
+
+ทุกโมดูลหลังบ้าน (เนื้อหาและจัดการระบบ) ให้ยึดแบบแผนนี้เพื่อให้ประสบการณ์ใช้งานเหมือนกันทั้งระบบ
+**ต้นแบบอ้างอิง:** โมดูล `system.user` — `app/Http/Controllers/Admin/System/UserController.php`
++ `resources/js/Pages/Admin/System/User/*` + `app/Http/Requests/Admin/System/*`
+
+### 5.1 โครง route ต่อ 1 โมดูล
+
+ตั้งชื่อ **เอกพจน์** ให้ URL segment ตรงกับ segment ในชื่อ route และจัดกลุ่มด้วย `Route::prefix('<section>/<thing>')`
+
+| การกระทำ | Method + URI | ชื่อ route | สิทธิ์ที่เช็ก | ไม่ผ่าน → |
+|---|---|---|---|---|
+| รายการ | GET `/admin/<s>/<t>` | `admin.<s>.<t>.index` | `<code>.view` | redirect dashboard |
+| ฟอร์มเพิ่ม | GET `/admin/<s>/<t>/add` | `admin.<s>.<t>.add` | `<code>.manage` | redirect index |
+| บันทึกเพิ่ม | POST `/admin/<s>/<t>` | `admin.<s>.<t>.store` | `<code>.manage` | redirect index |
+| ฟอร์มแก้ไข | GET `/admin/<s>/<t>/{id}/edit` | `admin.<s>.<t>.edit` | `<code>.view` | redirect index |
+| บันทึกแก้ไข | PUT `/admin/<s>/<t>/{id}` | `admin.<s>.<t>.update` | `<code>.manage` | redirect index |
+| ลบ | DELETE `/admin/<s>/<t>/{id}` | `admin.<s>.<t>.destroy` | `<code>.delete` | redirect index |
+| sub-action (ถ้ามี) | GET/PUT `/admin/<s>/<t>/{id}/<action>` | `admin.<s>.<t>.<action>[.update]` | `<code>.<action>` | redirect index |
+
+- รับ `{id}` เป็น **id ดิบ** (ไม่ใช้ route-model-binding) → ใน controller `Model::where(...)->find($id)` เอง
+  ถ้าไม่พบ / ถูก soft-delete → `redirect()->route('admin.<s>.<t>.index')` (ไม่ใช่ 404)
+- `sys_menu.route_name` ของเมนู sidebar ตั้งเป็น `admin.<s>.<t>.index` เสมอ → `HandleInertiaRequests::adminMenu()`
+  จะส่ง `activePattern` = `admin.<s>.<t>.*` ทำให้เมนูย่อยไฮไลต์ครอบทุกหน้าในโมดูล และหัวข้อกลุ่มไฮไลต์อัตโนมัติ
+
+### 5.2 การตรวจสอบสิทธิ์
+
+- **เช็กในทุก method ของ controller** ด้วย `$request->user()->hasPermission('<code>')` — ไม่ผ่าน `return redirect()->route(...)`
+  ตามตาราง 5.1 (**ไม่ใช้ `abort(403)`** สำหรับการเข้าหน้าปกติ)
+- controller ส่ง prop `can` = map ของ boolean (`['manage' => …, 'delete' => …, …]`) → Vue เช็ก `v-if="can.xxx"`
+  เพื่อซ่อน/แสดงปุ่ม แท็บ ลิงก์
+- action code รูปแบบ `<module>.<sub>.<action>` โดย `<action>` = `view` / `manage` (เพิ่ม+แก้รวมกัน) / `delete` /
+  sub-action อื่น เช่น `password` — ต้อง seed ไว้ใน `DatabaseSeeder` (tree: `manage` เป็นลูกของ `view`, ที่เหลือลูกของ `manage`)
+- self-guard (กันทำกับบัญชีตัวเอง เช่น ระงับ/ลบ/เปลี่ยนกลุ่มตัวเอง) เช็กใน controller หลัง validate →
+  `return back()->withErrors([...])`; ฝั่ง Vue ก็ disable ตัวเลือกที่เกี่ยวข้องเมื่อ `isSelf`
+
+### 5.3 หน้ารายการ (index)
+
+- **Controller ส่ง props:** `items` (LengthAwarePaginator `->paginate()->withQueryString()->through(fn ($m) => [...])`
+  map เฉพาะฟิลด์ที่ตารางใช้), `filters` (ค่าที่กรองอยู่ตอนนี้), `sort` + `direction`, `*Options` สำหรับ dropdown,
+  `can` (อย่างน้อย `manage`)
+- **UI:** `<AdminLayout>` → `#header` = `<PageHeader :title :breadcrumbs>` (breadcrumb เริ่มจาก Dashboard, ตัวสุดท้ายเป็นข้อความ)
+- **กล่องกรอง** (การ์ดขาว): `<TextInput>` ค้นหา (`@keyup.enter`), `<SelectInput>` ต่อ 1 ตัวกรอง,
+  ปุ่ม **"ค้นหา"** (icon `Search`) + **"เริ่มใหม่"** (icon `RotateCcw`); ปุ่ม **"เพิ่ม…"** (icon `Plus`, `v-if="can.manage"`)
+  ต่อท้ายในแถวเดียวกันโดยมี divider (`w-px bg-gray-200`) คั่น
+- **ยิงค้นหา/กรอง/เรียง/เปลี่ยนหน้า:** `router.get(route('...index'), params, { preserveState: true, preserveScroll: true, replace: true })`
+- **ตาราง:** หัวคอลัมน์กดเรียงได้ (toggle asc/desc) + ไอคอน `ArrowUp` / `ArrowDown` (คอลัมน์ที่เรียงอยู่) /
+  `ArrowUpDown` (ยังไม่เรียง); คลิกทั้งแถว → ไปหน้าแก้ไข; คอลัมน์สถานะใช้ `<StatusBadge :status>`;
+  วันที่ format ด้วย `@/utils/date` (`formatDate` / `formatDateTime`)
+- **ค่าเริ่มต้น:** เรียงจาก `created_at` มากไปน้อย
+- **ท้ายตาราง:** ข้อความ "แสดง X–Y จาก Z รายการ" + `<SelectInput>` จำนวนต่อหน้า (`[10, 25, 50, 100]`) + `<Pagination :links="items.links">`
+
+### 5.4 หน้าแบบฟอร์ม (add / edit)
+
+- **FormRequest แยก** ที่ `app/Http/Requests/Admin/<Section>/{Store,Update}<Thing>Request.php`
+  - unique ที่ต้อง scope: `Rule::unique(Model::class)->where(fn ($q) => $q->where(...)->whereNull('deleted_at'))`
+    (+ `->ignore($this->route('<param>'))` ในตัว Update)
+  - รหัสผ่าน: `Password::min(8)->mixedCase()->numbers()->symbols()` + แสดง hint ใต้ช่อง
+- **UI:** `<AdminLayout>` → `#header` `<PageHeader>`; ฟอร์ม**เต็มความกว้าง** (ไม่จำกัด `max-width`);
+  แบ่งเป็นการ์ด `rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8`
+- **field block:** `<InputLabel :required>` (ใส่ `required` → มี `*` สีแดงหลัง label) → `<TextInput>` / `<SelectInput>` →
+  `<InputError :message="form.errors.<field>">` (ข้อความสีแดงใต้ช่อง)
+- **ปุ่ม** อยู่**นอกการ์ด** แถวล่างสุด: **"บันทึก"** (`v-if="can.manage"`, icon `Save`, `type="submit"`) +
+  **"ลบ"** (`v-if="can.delete && !isSelf"`, `<DangerButton>` icon `Trash2` → เปิด `<ConfirmDialog>`) + ลิงก์ **"ยกเลิก/กลับไปหน้ารายการ"**
+- **แท็บ** เมื่อหน้าแก้ไขมี sub-action (เช่น เปลี่ยนรหัสผ่าน): `<TabNav :tabs>` — แสดงเฉพาะเมื่อผู้ใช้มีสิทธิ์ sub-action นั้น
+  (ถ้าเหลือแท็บเดียวก็ไม่ต้องแสดง)
+- **บันทึกสำเร็จ:** controller `return redirect()->route('admin.<s>.<t>.edit', $id)->with('success', 'ข้อความไทย')`
+  (หน้า add ก็ redirect ไปหน้า edit ของ record ที่เพิ่งสร้าง)
+
+### 5.5 Dialog
+
+| ประเภท | ใช้ component | พฤติกรรม |
+|---|---|---|
+| **แจ้งผลสำเร็จ** | ไม่ต้องทำเอง — controller `->with('success', '…')` แล้ว `AdminLayout` เด้ง `<SuccessDialog>` ให้อัตโนมัติ | modal กลางจอ ไอคอนเช็กเขียว + นับถอยหลัง 5 วิ แล้วปิดเอง (กด Esc / คลิกนอกกล่อง / ปุ่ม "ปิดตอนนี้" ได้) |
+| **ยืนยันการลบ / การกระทำเสี่ยง** | `<ConfirmDialog :show :title :processing @confirm @cancel>` (ข้อความอยู่ใน default slot) | overlay teleport ธรรมดา, ปุ่มยกเลิก + ยืนยัน (แดง), กด Esc ได้ |
+
+- กลไก flash: shared prop `flash.success` + `flash.successId` (uuid ใหม่ทุกครั้ง) ใน `HandleInertiaRequests::share()`
+- **ห้ามใช้ `resources/js/Components/Modal.vue` (native `<dialog>`) กับ dialog ใหม่** — มีปัญหา overlay ค้างกดไม่ได้
+  ให้ใช้ `SuccessDialog` / `ConfirmDialog` เป็นต้นแบบ (teleport + `<Transition>` + `z-[100]`)
+
+### 5.6 Component / helper กลางที่ต้องใช้ซ้ำ
+
+- **shared** (`resources/js/Components/`): `PageHeader`, `Breadcrumbs`, `TabNav` (อยู่ใต้ `Admin/`);
+  `SelectInput`, `Pagination`, `StatusBadge`, `SuccessDialog`, `ConfirmDialog`, `InputLabel` (prop `required`),
+  `InputError`, `TextInput`, `PrimaryButton` / `SecondaryButton` / `DangerButton`
+- **helper:** `@/utils/date` → `formatDate(iso)` / `formatDateTime(iso)` (คืน `'-'` เมื่อว่าง)
+- **เทส:** helper `actingAsUserWithPermissions([...codes])` ใน `tests/Pest.php` (สร้าง usergroup + attach action + `actingAs`);
+  seed `DatabaseSeeder` ใน `beforeEach`; assert `->assertRedirect(...)` สำหรับเคสไม่มีสิทธิ์,
+  `->assertInertia(fn (Assert $page) => …)` สำหรับ props, `->assertSessionHas('success')` หลังบันทึก
+
+## 6. สถานะปัจจุบัน vs เป้าหมาย
 
 | ส่วน | ปัจจุบัน | เป้าหมาย |
 |------|----------|----------|
 | Auth หลังบ้าน (login/register/reset/verify) | ✅ มี (Breeze ย้ายมาใต้ `/admin`) + เช็ก `user_type='back'` / `status='Y'` + บันทึกสถิติ login แล้ว | เพิ่มล็อกบัญชีอัตโนมัติเมื่อ login ผิดเกินเกณฑ์ (อ่านจาก `sys_setting`) |
 | Layout หลังบ้าน (sidebar/header มืด) | ✅ มี (สไตล์ TailAdmin) | ต่อเมนูโมดูล/จัดการระบบเข้า sidebar |
 | ระบบสิทธิ์ (`sys_*`) | ✅ ตาราง + model + `hasPermission()` + seeder ตัวอย่าง | หน้าจัดการกลุ่ม/สิทธิ์แบบ tree + middleware บังคับสิทธิ์ |
+| จัดการผู้ใช้งานหลังบ้าน (CRUD `sys_user` `user_type='back'`) | ✅ เสร็จแล้ว — list (ค้นหา/กรอง/เรียง/paging) + add + edit + เปลี่ยนรหัสผ่าน; เป็น **ต้นแบบตาม §5** | — |
 | profile | ✅ มี (แก้ชื่อ/ช่องทางติดต่อ/อีเมล) | เพิ่มอัปโหลดรูปโปรไฟล์ (อนาคต) |
 | dashboard | 🟡 placeholder (การ์ดสถิติ "—") | ต่อสถิติจริงเมื่อมีโมดูล |
 | โมดูลเนื้อหาทั้ง 6 | ❌ ยังไม่มี | ทยอยทำ |
@@ -78,7 +169,7 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 | จัดการเมนูหน้าบ้าน / template / ประวัติ / file management | ❌ ยังไม่มี | ทยอยทำ (ดู PRD-system.md) |
 | ตั้งค่าระบบ (`sys_setting`) | 🟡 มีตาราง + seed ตัวอย่างแล้ว | หน้า UI จัดการ + helper อ่านค่า |
 
-## 6. การปรับ schema รอบนี้ (เฟส 0)
+## 7. การปรับ schema รอบนี้ (เฟส 0)
 
 ทำในไฟล์ migration เดียว `database/migrations/0001_01_01_000000_create_users_table.php`
 (ต้อง `php artisan migrate:fresh --seed` ใหม่)
@@ -98,12 +189,12 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 
 รายละเอียดคอลัมน์ทุกช่อง + before/after ดูภาคผนวกใน [PRD-system.md](PRD-system.md#ภาคผนวก-สเปก-schema-รอบนี้)
 
-## 7. Roadmap (ร่าง)
+## 8. Roadmap (ร่าง)
 
 | เฟส | ขอบเขต |
 |-----|--------|
 | **0 — schema base** *(รอบนี้)* | ปรับ `sys_user`/`sys_usergroup`/`sys_action*` + สร้าง `sys_setting` + เปิด SoftDeletes + auth หลังบ้านเช็ก `user_type`/`status` + บันทึกสถิติ login + ปรับ seeder/factory/profile/register/เทส |
-| 1 — จัดการผู้ใช้ & สิทธิ์ | CRUD `sys_user`, `sys_usergroup`, หน้าเลือกสิทธิ์แบบ tree, middleware บังคับสิทธิ์, ล็อกบัญชีเมื่อ login ผิดเกินเกณฑ์ (`sys_setting`) |
+| 1 — จัดการผู้ใช้ & สิทธิ์ | ~~CRUD `sys_user`~~ ✅; เหลือ CRUD `sys_usergroup`, หน้าเลือกสิทธิ์แบบ tree, middleware บังคับสิทธิ์, ล็อกบัญชีเมื่อ login ผิดเกินเกณฑ์ (`sys_setting`), self-guard เปลี่ยนกลุ่มบัญชีตัวเอง |
 | 2 — ตั้งค่าระบบ & template & เมนู | หน้า `sys_setting`, `sys_template`; หน้า CRUD เมนูหลังบ้าน (`AppSidebar` อ่านจาก DB แล้ว); `sys_front_menu` (tree) สำหรับหน้าบ้าน |
 | 3 — โมดูลเนื้อหาแรก | บทความ (article) + page (หน้าเดี่ยว) + file management (`sys_file`) |
 | 4 — โมดูลที่เหลือ | banner, popup, intropage, contact us |
