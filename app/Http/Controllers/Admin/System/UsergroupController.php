@@ -45,10 +45,7 @@ class UsergroupController extends Controller
         $direction = $request->query('direction') === 'desc' ? 'desc' : 'asc';
 
         $groups = UserGroup::query()
-            ->withCount([
-                'actions',
-                'users as users_count' => fn ($query) => $query->where('user_type', 'back'),
-            ])
+            ->withCount(['actions', 'users'])
             ->when($filters['q'] !== null, function ($query) use ($filters) {
                 $term = $filters['q'];
 
@@ -198,8 +195,8 @@ class UsergroupController extends Controller
             return back()->withErrors(['group' => 'กลุ่มนี้เป็นกลุ่มระบบ ไม่อนุญาตให้ลบ']);
         }
 
-        // ห้ามลบกลุ่มที่ยังมีสมาชิก (ผู้ใช้หลังบ้านที่ยังไม่ถูกลบ)
-        if ($group->users()->where('user_type', 'back')->exists()) {
+        // ห้ามลบกลุ่มที่ยังมีสมาชิก (ผู้ใช้ที่ยังไม่ถูกลบ ทั้ง back/front)
+        if ($group->users()->exists()) {
             return back()->withErrors(['group' => 'ไม่สามารถลบกลุ่มที่ยังมีสมาชิกอยู่']);
         }
 
@@ -286,22 +283,44 @@ class UsergroupController extends Controller
 
     /**
      * แปลง collection ของ sys_action (เรียง sort_order แล้ว) เป็น tree ตาม parent_id
+     * - root = action ที่ parent_id เป็น null หรือ parent อยู่นอก collection นี้
+     * - กัน parent_id ที่วนลูป (cycle) ด้วย $path
      *
      * @param  Collection<int, SysAction>  $actions
      * @return list<array{id: string, code: string, name: string, children: array<mixed>}>
      */
-    private function buildActionTree(Collection $actions, ?string $parentId = null): array
+    private function buildActionTree(Collection $actions): array
     {
+        $ids = $actions->pluck('id')->flip();
+
         return $actions
-            ->filter(fn (SysAction $action) => $action->parent_id === $parentId)
-            ->map(fn (SysAction $action) => [
-                'id' => $action->id,
-                'code' => $action->code,
-                'name' => $action->name,
-                'children' => $this->buildActionTree($actions, $action->id),
-            ])
+            ->filter(fn (SysAction $action) => $action->parent_id === null
+                || ! $ids->has($action->parent_id))
+            ->map(fn (SysAction $action) => $this->actionNode($action, $actions))
             ->values()
             ->all();
+    }
+
+    /**
+     * @param  Collection<int, SysAction>  $siblings
+     * @param  array<string, true>  $path
+     * @return array{id: string, code: string, name: string, children: array<mixed>}
+     */
+    private function actionNode(SysAction $action, Collection $siblings, array $path = []): array
+    {
+        $path[$action->id] = true;
+
+        return [
+            'id' => $action->id,
+            'code' => $action->code,
+            'name' => $action->name,
+            'children' => $siblings
+                ->filter(fn (SysAction $child) => $child->parent_id === $action->id
+                    && ! isset($path[$child->id]))
+                ->map(fn (SysAction $child) => $this->actionNode($child, $siblings, $path))
+                ->values()
+                ->all(),
+        ];
     }
 
     /**
@@ -316,12 +335,14 @@ class UsergroupController extends Controller
         $selected = array_flip($ids);
 
         return array_values(array_filter($ids, function ($id) use ($parentOf, $selected) {
+            $seen = [];
             $cursor = $parentOf[$id] ?? null;
 
-            while ($cursor !== null) {
+            while ($cursor !== null && ! isset($seen[$cursor])) {
                 if (! isset($selected[$cursor])) {
                     return false;
                 }
+                $seen[$cursor] = true;
                 $cursor = $parentOf[$cursor] ?? null;
             }
 
@@ -335,10 +356,7 @@ class UsergroupController extends Controller
     private function resolveGroup(string $id): ?UserGroup
     {
         return UserGroup::query()
-            ->withCount([
-                'actions',
-                'users as users_count' => fn ($query) => $query->where('user_type', 'back'),
-            ])
+            ->withCount(['actions', 'users'])
             ->find($id);
     }
 }

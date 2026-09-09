@@ -58,9 +58,9 @@ function visit(extra: Record<string, unknown> = {}) {
     router.get(
         route('admin.system.user.index'),
         {
-            q: form.q || undefined,
-            usergroup_id: form.usergroup_id || undefined,
-            status: form.status || undefined,
+            q: form.q !== '' ? form.q : undefined,
+            usergroup_id: form.usergroup_id !== '' ? form.usergroup_id : undefined,
+            status: form.status !== '' ? form.status : undefined,
             per_page: form.per_page,
             sort: props.sort,
             direction: props.direction,

@@ -86,7 +86,7 @@ test('index filters by status', function () {
         ->assertInertia(fn (Assert $page) => $page->has('groups.data', 1));
 });
 
-test('index counts actions and back-office members per group', function () {
+test('index counts actions and members (any user_type) per group', function () {
     actingAsUserWithPermissions(['system.usergroup.view']);
 
     $group = UserGroup::factory()->create(['name' => 'กลุ่มนับ']);
@@ -99,7 +99,7 @@ test('index counts actions and back-office members per group', function () {
     $this->get(route('admin.system.usergroup.index', ['q' => 'กลุ่มนับ']))
         ->assertInertia(fn (Assert $page) => $page
             ->where('groups.data.0.actions_count', 2)
-            ->where('groups.data.0.users_count', 3));
+            ->where('groups.data.0.users_count', 4));
 });
 
 // ---------------------------------------------------------------- add / store
@@ -216,10 +216,22 @@ test('destroy is blocked for a system group (can_delete = N)', function () {
     expect($group->fresh()->trashed())->toBeFalse();
 });
 
-test('destroy is blocked when the group still has back-office members', function () {
+test('destroy is blocked when the group still has members', function () {
     actingAsUserWithPermissions(['system.usergroup.delete']);
     $group = UserGroup::factory()->create();
     User::factory()->create(['usergroup_id' => $group->id]);
+
+    $this->from(route('admin.system.usergroup.edit', $group->id))
+        ->delete(route('admin.system.usergroup.destroy', $group->id))
+        ->assertInvalid('group');
+
+    expect($group->fresh()->trashed())->toBeFalse();
+});
+
+test('destroy is blocked when the group only has front members', function () {
+    actingAsUserWithPermissions(['system.usergroup.delete']);
+    $group = UserGroup::factory()->create();
+    User::factory()->front()->create(['usergroup_id' => $group->id]);
 
     $this->from(route('admin.system.usergroup.edit', $group->id))
         ->delete(route('admin.system.usergroup.destroy', $group->id))

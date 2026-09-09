@@ -52,11 +52,13 @@ function submit() {
 }
 
 const confirmingDeletion = ref(false);
-const deleteForm = useForm({});
+// ไม่มี field — ใช้แค่รับ error 'group' จาก guard ฝั่ง server
+const deleteForm = useForm<{ group?: string }>({});
 
 function destroy() {
     deleteForm.delete(route('admin.system.usergroup.destroy', props.group.id), {
-        onSuccess: () => (confirmingDeletion.value = false),
+        // ปิด dialog ทั้งกรณีสำเร็จและถูก block (error ไปแสดงใต้ปุ่มลบ)
+        onFinish: () => (confirmingDeletion.value = false),
     });
 }
 
@@ -192,6 +194,8 @@ const groupInfo = computed(() => [
                         กลับไปหน้ารายการ
                     </Link>
                 </div>
+
+                <InputError :message="deleteForm.errors.group" />
             </form>
         </div>
 
