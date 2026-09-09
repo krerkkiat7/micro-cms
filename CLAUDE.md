@@ -181,8 +181,10 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 - โมดูล `system.user` (จัดการผู้ใช้งานหลังบ้าน) เสร็จ + เป็น **ต้นแบบตาม `docs/PRD-overview.md` §5** —
   `adminMenu()` ส่ง `activePattern` ต่อเมนู, shared prop `flash.success`+`SuccessDialog`, `ConfirmDialog`,
   component กลาง `SelectInput`/`Pagination`/`StatusBadge`/`Textarea`/`Admin/{PageHeader,Breadcrumbs,TabNav}`
-- โมดูล `system.usergroup` (จัดการกลุ่มผู้ใช้งาน) เสร็จ: list/add/edit + หน้ากำหนดสิทธิ์ (`admin.system.usergroup.rights`)
-  ยังเป็น **stub** (หน้าเปล่า); `sys_usergroup` เพิ่ม `can_edit`/`can_delete` + เปิด `SoftDeletes`;
+- โมดูล `system.usergroup` (จัดการกลุ่มผู้ใช้งาน) เสร็จครบ: list/add/edit + **หน้ากำหนดสิทธิ์**
+  (`admin.system.usergroup.rights` + `.rights.update`) — tree `sys_action_group`/`sys_action`,
+  checkbox parent→ลูก, เลือก/ไม่เลือกทั้งหมดต่อกลุ่ม, บันทึกแบบ `detach()`+`attach()` (`Components/Admin/PermissionTreeNode.vue`
+  recursive); `sys_usergroup` เพิ่ม `can_edit`/`can_delete` + เปิด `SoftDeletes`;
   guard: ชื่อกลุ่มห้ามซ้ำ, ห้ามลบกลุ่มที่มีสมาชิก, กลุ่ม `can_edit`/`can_delete='N'` แก้/ลบไม่ได้
 
 ## ทดสอบ

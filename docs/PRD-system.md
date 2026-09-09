@@ -8,7 +8,7 @@
 | # | หัวข้อ | ตารางหลัก | สถานะ |
 |---|--------|-----------|-------|
 | 1 | จัดการผู้ใช้งาน | `sys_user` | 🟢 list/add/edit/เปลี่ยนรหัสผ่าน เสร็จ (ต้นแบบ §5) |
-| 2 | จัดการกลุ่มผู้ใช้งาน + สิทธิ์ | `sys_usergroup`, `sys_action_group`, `sys_action`, `sys_usergroup_action` | 🟡 list/add/edit เสร็จ · หน้ากำหนดสิทธิ์ยังเป็น stub |
+| 2 | จัดการกลุ่มผู้ใช้งาน + สิทธิ์ | `sys_usergroup`, `sys_action_group`, `sys_action`, `sys_usergroup_action` | 🟢 list/add/edit + หน้ากำหนดสิทธิ์ (tree) เสร็จ |
 | 3 | จัดการเมนู (หลังบ้าน / หน้าบ้าน) | `sys_menu_group`, `sys_menu` / `sys_front_menu` *(เสนอ)* | 🟡 เมนูหลังบ้าน: ตาราง/model/seed ตัวอย่างมี, ยังไม่ต่อ UI · หน้าบ้าน: 🔴 |
 | 4 | จัดการ template | `sys_template` *(เสนอ)* | 🔴 |
 | 5 | ประวัติ login / เข้าชม / การกระทำ | `sys_log_login`, `sys_log_visit`, `sys_log_action` *(เสนอ)* | 🔴 |
@@ -103,9 +103,9 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 
 ## 2. จัดการกลุ่มผู้ใช้งาน + กำหนดสิทธิ์
 
-> **สถานะ:** CRUD กลุ่ม (list/add/edit) เสร็จแล้วตาม [PRD-overview §5](PRD-overview.md#5-แบบแผนหน้าจอหลังบ้าน-back-office-screen-blueprint) —
+> **สถานะ:** ครบทั้ง 4 หน้าจอตาม [PRD-overview §5](PRD-overview.md#5-แบบแผนหน้าจอหลังบ้าน-back-office-screen-blueprint) —
 > `Admin\System\UsergroupController` + `resources/js/Pages/Admin/System/Usergroup/*`, route `admin.system.usergroup.*` (เอกพจน์),
-> permission `system.usergroup.view/manage/delete/rights` (ตาม seeder). **หน้ากำหนดสิทธิ์ (`...usergroup.rights`) ยังเป็นหน้าเปล่า** — รอทำต่อ
+> permission `system.usergroup.view/manage/delete/rights` (ตาม seeder). **หน้ากำหนดสิทธิ์เสร็จแล้ว** (tree + checkbox parent→ลูก, บันทึก detach+attach)
 
 **วัตถุประสงค์** — นิยาม "กลุ่มผู้ใช้" (บทบาท) แล้วติ๊กสิทธิ์ (action) ให้กลุ่ม ผู้ใช้ที่อยู่ในกลุ่มจะได้สิทธิ์ตามนั้น
 
@@ -159,13 +159,15 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 - `SysAction::group()` / `parent()` / `children()`
 - `User::hasPermission($code)` / `getPermissionsArray()` — อ่านจาก `group->actions->pluck('code')`
 
-**หน้าจอ** (ทำแล้ว 3, เหลือ 1)
+**หน้าจอ** (ครบทั้ง 4)
 - ✅ `รายการกลุ่ม` — ตาราง (ชื่อกลุ่ม, รายละเอียด, จำนวนสิทธิ์, จำนวนสมาชิก, สถานะ) + ค้นหา/กรอง/เรียง/paging
 - ✅ `ฟอร์มเพิ่ม/แก้ไข` — ชื่อกลุ่ม / รายละเอียด (textarea) / สถานะ; แก้ไขมี tab "ข้อมูลทั่วไป" + "กำหนดสิทธิ์";
   ปุ่มบันทึก/ลบ เคารพ `can_edit`/`can_delete` + guard ชื่อซ้ำ / กลุ่มมีสมาชิก
-- ⬜ `กำหนดสิทธิ์` (`admin.system.usergroup.rights`) — **หน้าเปล่า/stub** — จะทำ **ต้นไม้สิทธิ์**: จัดกลุ่มตาม `sys_action_group`
-  (เรียง `sort_order`), ภายในแสดง `sys_action` เป็น tree ตาม `parent_id`/`sort_order` — ติ๊ก parent = ติ๊กลูกทั้งหมด,
-  บันทึกด้วย `$group->actions()->sync([...])`; permission `system.usergroup.rights`
+- ✅ `กำหนดสิทธิ์` (`admin.system.usergroup.rights` + `.rights.update`) — **ต้นไม้สิทธิ์**: กลุ่มตาม `sys_action_group`
+  (เรียง `sort_order`, เปิด/ปิดได้เหมือนเมนูข้าง), ภายในแสดง `sys_action` เป็น tree ตาม `parent_id`/`sort_order`;
+  checkbox สะท้อน `sys_usergroup_action` — parent ยังไม่ติ๊ก → ลูก disabled + เคลียร์; ต่อกลุ่มมี "(เลือก/ทั้งหมด)" +
+  ปุ่ม "เลือกทั้งหมด" / "ไม่เลือกทั้งหมด"; บันทึกแบบ `detach()` แล้ว `attach()` (ลบ pivot จริง);
+  server ตัด action ที่ ancestor ไม่ถูกเลือกทิ้ง (`pruneOrphanActions`); `can_edit='N'` แสดงอย่างเดียว; permission `system.usergroup.rights`
 
 **Permission code (ที่ seed จริง)** — `system.usergroup.view` / `system.usergroup.manage` / `system.usergroup.delete` / `system.usergroup.rights`
 
