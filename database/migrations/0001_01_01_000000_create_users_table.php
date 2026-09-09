@@ -16,7 +16,9 @@ return new class extends Migration
             $table->id();
             $table->string('name', 100);
             $table->string('description', 255)->nullable();
-            $table->char('status', 1)->default('Y'); // Y = ใช้งาน, N = ไม่ใช้งาน
+            $table->char('status', 1)->default('Y');     // Y = ใช้งาน, N = ไม่ใช้งาน
+            $table->char('can_edit', 1)->default('Y');   // N = กลุ่มระบบ ห้ามแก้ไข (เช่น Super Admin)
+            $table->char('can_delete', 1)->default('Y'); // N = กลุ่มระบบ ห้ามลบ (เช่น Super Admin)
             $table->timestamps();
             $table->softDeletes();
         });

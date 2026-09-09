@@ -113,10 +113,15 @@ class DatabaseSeeder extends Seeder
             ])->id;
         }
 
-        // กลุ่มผู้ใช้ Super Admin (ได้สิทธิ์ทั้งหมด)
+        // กลุ่มผู้ใช้ Super Admin (ได้สิทธิ์ทั้งหมด — กลุ่มระบบ แก้ไข/ลบไม่ได้)
         $adminGroup = UserGroup::updateOrCreate(
             ['name' => 'Super Admin'],
-            ['description' => 'ผู้ดูแลระบบสูงสุด มีสิทธิ์ทุกอย่าง', 'status' => 'Y'],
+            [
+                'description' => 'ผู้ดูแลระบบสูงสุด มีสิทธิ์ทุกอย่าง',
+                'status' => 'Y',
+                'can_edit' => 'N',
+                'can_delete' => 'N',
+            ],
         );
 
         $adminGroup->actions()->sync($actionIds);
