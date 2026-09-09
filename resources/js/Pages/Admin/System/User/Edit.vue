@@ -8,8 +8,7 @@ import TextInput from '@/Components/TextInput.vue';
 import SelectInput from '@/Components/SelectInput.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
-import SecondaryButton from '@/Components/SecondaryButton.vue';
-import Modal from '@/Components/Modal.vue';
+import ConfirmDialog from '@/Components/ConfirmDialog.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { Save, Trash2 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
@@ -264,28 +263,16 @@ const systemInfo = computed(() => [
             </form>
         </div>
 
-        <Modal :show="confirmingDeletion" max-width="md" @close="confirmingDeletion = false">
-            <div class="p-6">
-                <h2 class="text-base font-semibold text-gray-800">
-                    ยืนยันการลบผู้ใช้งาน
-                </h2>
-                <p class="mt-1 text-sm text-gray-500">
-                    ต้องการลบผู้ใช้งาน "{{ user.name }}" ใช่หรือไม่?
-                    ผู้ใช้งานนี้จะไม่สามารถเข้าสู่ระบบได้อีก
-                </p>
-                <div class="mt-6 flex justify-end gap-3">
-                    <SecondaryButton @click="confirmingDeletion = false">
-                        ยกเลิก
-                    </SecondaryButton>
-                    <DangerButton
-                        :class="{ 'opacity-50': deleteForm.processing }"
-                        :disabled="deleteForm.processing"
-                        @click="destroy"
-                    >
-                        ลบผู้ใช้งาน
-                    </DangerButton>
-                </div>
-            </div>
-        </Modal>
+        <ConfirmDialog
+            :show="confirmingDeletion"
+            title="ยืนยันการลบผู้ใช้งาน"
+            confirm-text="ลบผู้ใช้งาน"
+            :processing="deleteForm.processing"
+            @confirm="destroy"
+            @cancel="confirmingDeletion = false"
+        >
+            ต้องการลบผู้ใช้งาน "{{ user.name }}" ใช่หรือไม่?
+            ผู้ใช้งานนี้จะไม่สามารถเข้าสู่ระบบได้อีก
+        </ConfirmDialog>
     </AdminLayout>
 </template>
