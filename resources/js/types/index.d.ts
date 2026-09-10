@@ -86,4 +86,8 @@ export type PageProps<
         success?: string | null;
         successId?: string | null;
     };
+    /** โทเคน log_back_access ของการเข้าหน้านี้ — null ถ้าหน้านี้ไม่ได้บันทึก log */
+    accessLog?: {
+        token: string | null;
+    };
 };

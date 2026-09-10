@@ -2,11 +2,15 @@
 import AppSidebar from '@/Components/Admin/AppSidebar.vue';
 import AppHeader from '@/Components/Admin/AppHeader.vue';
 import SuccessDialog from '@/Components/SuccessDialog.vue';
+import { useAccessHeartbeat } from '@/composables/useAccessHeartbeat';
 import { provideSidebar } from '@/composables/useSidebar';
 import { usePage } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
 
 const { isExpanded } = provideSidebar();
+
+// keep-alive อัปเดต last_visited ของ log_back_access ระหว่างเปิดหน้านี้ค้างไว้
+useAccessHeartbeat();
 
 const page = usePage();
 const flashSuccess = ref<string | null>(null);

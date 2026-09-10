@@ -21,5 +21,5 @@ class SysSetting extends Model
 
     protected $keyType = 'string';
 
-    protected $fillable = ['group', 'name', 'value'];
+    protected $fillable = ['group', 'name', 'value', 'created_by', 'updated_by'];
 }

@@ -25,8 +25,7 @@ test('super admin sees every menu group and item', function () {
             ->where('menu.6.items.0.icon', 'Users')
             // route ลงท้าย .index → activePattern ครอบทุกหน้าในโมดูล
             ->where('menu.6.items.0.activePattern', 'admin.system.user.*')
-            // หน้าเดี่ยว (ไม่ลงท้าย .index) → activePattern = ชื่อ route ตรง ๆ
-            ->where('menu.6.items.4.activePattern', 'admin.system.backlog.access')
+            ->where('menu.6.items.4.activePattern', 'admin.system.backlog.access.*')
         );
 });
 

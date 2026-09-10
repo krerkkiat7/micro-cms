@@ -3,9 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\RedirectResponse;
+use App\Models\LogBackAccess;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,6 +20,8 @@ class DashboardController extends Controller
         // }
 
         $user = $request->user();
+
+        LogBackAccess::record('แดชบอร์ด');
 
         return Inertia::render('Admin/Dashboard', [
             'can' => [

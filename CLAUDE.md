@@ -60,6 +60,9 @@ npm run build                 # vue-tsc typecheck + vite build
 - **Back-office**: prefix `/admin`
   - `routes/auth_admin.php` = auth routes ของ Breeze ที่ย้ายมาไว้ใต้ `/admin` (ชื่อ route ขึ้นต้น `admin.*` เช่น `admin.login`, `admin.password.request`)
   - routes ที่ต้อง login อยู่ใน group `middleware(['auth', 'verified'])` ชื่อขึ้นต้น `admin.*` (เช่น `admin.dashboard`, `admin.profile.edit`)
+  - `/admin` เฉย ๆ (`admin.home`) → redirect ไป `admin.dashboard` (login แล้ว) หรือ `admin.login` (ยังไม่ login)
+  - `bootstrap/app.php` ตั้ง `redirectGuestsTo(route('admin.login'))` + `redirectUsersTo(route('admin.dashboard'))` —
+    Breeze อยู่ใต้ `/admin` จึงต้อง override ไม่งั้น middleware `auth` เด้งไป route `login` ที่ไม่มี (error "Route [login] not defined")
 
 ## การแยกโฟลเดอร์ (สำคัญ — ต้องรักษาให้สม่ำเสมอ)
 
@@ -97,18 +100,22 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 ## ระบบสิทธิ์ (Permissions)
 
 ตาราง `sys_*` หลักอยู่ในไฟล์ migration `database/migrations/0001_01_01_000000_create_users_table.php`
-(เมนูหลังบ้าน `sys_menu_group`/`sys_menu` แยกไฟล์: `2026_09_08_000001_create_sys_menu_tables.php`)
+(เมนูหลังบ้าน `sys_menu_group`/`sys_menu` แยกไฟล์: `2026_09_08_000001_create_sys_menu_tables.php`;
+ตาราง log ทั้งหมดรวมในไฟล์กลาง `2026_09_10_000001_create_log_tables.php` — ดู `docs/PRD-system.md` §5)
 
 | ตาราง | Model | หมายเหตุ |
 |-------|-------|----------|
-| `sys_user` | `App\Models\User` | ชื่อแยกเป็น `titlename`/`firstname`/`lastname` (+ accessor `name` = ชื่อเต็ม); ช่องทางติดต่อ `mobile`/`phone`/`line`/`facebook`; `user_type` (`back`/`front`, default `back`), `status` `char(1)` default `Y`; สถิติ login `last_login_at`/`failed_login_count`/`last_failed_login_at`; `usergroup_id`; **`SoftDeletes` (เปิดใช้ trait แล้ว)**. `email` **ไม่ unique ระดับ DB** |
-| `sys_usergroup` | `App\Models\UserGroup` | `status` `char(1)` default `Y`; `can_edit`/`can_delete` `char(1)` default `Y` (`N` = กลุ่มระบบ ห้ามแก้/ห้ามลบ — Super Admin seed เป็น `N`); **`SoftDeletes` + `HasFactory` (เปิด trait แล้ว)**; relations `actions()` belongsToMany, `users()` hasMany |
+| `sys_user` | `App\Models\User` | ชื่อแยกเป็น `titlename`/`firstname`/`lastname` (+ accessor `name` = ชื่อเต็ม); ช่องทางติดต่อ `mobile`/`phone`/`line`/`facebook`; `user_type` (`back`/`front`, default `back`), `status` `char(1)` default `Y`; สถิติ login `last_login_at`/`failed_login_count`/`last_failed_login_at`; `password_changed_at`/`password_changed_by` (ตั้ง/เปลี่ยนรหัสผ่านครั้งล่าสุด); audit `created_by`/`updated_by`/`deleted_by` (`sys_user.id`, ไม่มี FK); `usergroup_id`; **`SoftDeletes` (เปิดใช้ trait แล้ว)**. `email` **ไม่ unique ระดับ DB** |
+| `sys_usergroup` | `App\Models\UserGroup` | `status` `char(1)` default `Y`; `can_edit`/`can_delete` `char(1)` default `Y` (`N` = กลุ่มระบบ ห้ามแก้/ห้ามลบ — Super Admin seed เป็น `N`); audit `created_by`/`updated_by`/`deleted_by` (`sys_user.id`, ไม่มี FK); **`SoftDeletes` + `HasFactory` (เปิด trait แล้ว)**; relations `actions()` belongsToMany (`withPivot(created_by,updated_by)` + `withTimestamps()`), `users()` hasMany |
 | `sys_action_group` | `App\Models\SysActionGroup` | `id` เป็น `string(20)` primary (กำหนดเอง); มี `sort_order`, `status` `char(1)` default `Y`, `actions()` hasMany |
 | `sys_action` | `App\Models\SysAction` | `id` เป็น `string(20)` primary; มี `code` (unique) เช่น `system.user.view`, `parent_id` (tree, self-FK), `sort_order` |
-| `sys_usergroup_action` | (pivot) | เชื่อม usergroup ↔ action (`action_id` เป็น `string(20)`) |
-| `sys_setting` | `App\Models\SysSetting` | ตั้งค่าระบบ key-value; composite PK `(group, name)` — ค้นด้วย `where()` ไม่ใช้ `find()`; timestamps + softDeletes. `group` เป็นคำสงวน MySQL (Laravel quote ให้) |
+| `sys_usergroup_action` | (pivot) | เชื่อม usergroup ↔ action (`action_id` เป็น `string(20)`); `created_by`/`updated_by` (`sys_user.id`) + `timestamps` — หน้ากำหนดสิทธิ์ `attach()` พร้อม pivot เหล่านี้ |
+| `sys_setting` | `App\Models\SysSetting` | ตั้งค่าระบบ key-value; composite PK `(group, name)` — ค้นด้วย `where()` ไม่ใช้ `find()`; `created_by`/`updated_by` (`sys_user.id`) + timestamps + softDeletes. `group` เป็นคำสงวน MySQL (Laravel quote ให้) |
 | `sys_menu_group` | `App\Models\SysMenuGroup` | กลุ่มเมนู sidebar หลังบ้าน; `id` `string(20)` primary; `icon`, `sort_order`, `status`, softDeletes; `menus()` hasMany |
 | `sys_menu` | `App\Models\SysMenu` | เมนูย่อยหลังบ้าน; `id` `string(30)` primary; `menu_group_id` FK; `icon` (ชื่อ lucide PascalCase), `route_name` (ลิงก์โมดูล), `action_code` (`sys_action.code` — เช็กในโค้ด, ไม่มี FK), `sort_order`, `status`, softDeletes. seed ใน `MenuSeeder` |
+| `log_back_access` | `App\Models\LogBackAccess` | log การเข้าชมหน้าหลังบ้าน (1 request = 1 แถว); `token` (ULID unique) สำหรับ keep-alive ping, `last_visited` (bump ตอน ping, ครั้งแรก = `created_at`), `action_date` (index, กรองรายวัน), `session_id`/`remote_ip`/`agent`/`browser*`/`platform`/`device_type`/`referrer`/`accept_*`, `status` `char(1)` `Y`, audit `created_by`/`updated_by`/`deleted_by`, `timestamps` + softDeletes. model เติม `token`/`action_date`/`last_visited` อัตโนมัติใน `creating`; static `LogBackAccess::record($title)` = บันทึก 1 แถวจาก request ปัจจุบัน (ดู §ประวัติ). permission `system.backlog.access` (seed แล้ว) |
+| `log_back_login` | `App\Models\LogBackLogin` | log การเข้า/ออกระบบหลังบ้าน (1 เหตุการณ์ = 1 แถว); `log_type` (`login`/`logout`), `result` (`success`/`fail`/`block`), `username` (อีเมลที่กรอก), `note` (เหตุผล), `remote_ip`, `action_date` (`date`, model เติม), `status` `char(1)` `Y`, audit + `timestamps` + softDeletes. **ไม่มีคอลัมน์ password** (ไม่เก็บรหัสที่กรอก). `user_id` เก็บเมื่อสำเร็จ/logout เท่านั้น. static: `loginSuccess(User)` / `loginFailed(username,note)` / `loginBlocked(username,note)` / `logout(userId,username)`. permission `system.backlog.login` (seed แล้ว) |
+| `log_back_action` | `App\Models\LogBackAction` | log การกระทำในหลังบ้าน (create/view/update/delete บนข้อมูล); `module_code` (เช่น `system.user`, `system.usergroup.rights`), `action_type`, `value_string` (ชื่อข้อมูล), `ref_id` (id ข้อมูล), `action_date` (`date`, model เติม), `remote_ip`, `geo_ip`, `status` + audit + `timestamps` + softDeletes. static `LogBackAction::record($moduleCode, $actionType, $valueString, $refId)` — เซ็ต `user_id`/`created_by` = `Auth::id()`, `remote_ip` = `ClientIp::from()`. permission `system.backlog.action` (seed แล้ว). **โมดูล CRUD ใหม่ทุกตัวต้องเรียก `record()` ตาม pattern `system.user`** |
 
 การเช็กสิทธิ์:
 - `$user->hasPermission('system.user.view')` — คืน `bool` (คืน `false` ถ้า user ไม่มี usergroup)
@@ -186,6 +193,51 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   checkbox parent→ลูก, เลือก/ไม่เลือกทั้งหมดต่อกลุ่ม, บันทึกแบบ `detach()`+`attach()` (`Components/Admin/PermissionTreeNode.vue`
   recursive); `sys_usergroup` เพิ่ม `can_edit`/`can_delete` + เปิด `SoftDeletes`;
   guard: ชื่อกลุ่มห้ามซ้ำ, ห้ามลบกลุ่มที่มีสมาชิก, กลุ่ม `can_edit`/`can_delete='N'` แก้/ลบไม่ได้
+- เพิ่มคอลัมน์ audit ผู้กระทำ (`sys_user.id`, ไม่มี FK) — `sys_user`/`sys_usergroup`: `created_by`/`updated_by`/`deleted_by`;
+  `sys_usergroup_action`/`sys_setting`: `created_by`/`updated_by`; `sys_user` เพิ่ม `password_changed_at`/`password_changed_by`.
+  `UserController`/`UsergroupController` เซ็ตค่าจาก `$request->user()->id` ตอน store (`created_by` + ตั้งรหัสผ่าน = `password_changed_*`),
+  update (`updated_by`), destroy (`deleted_by` — save ก่อน soft delete เพราะ `runSoftDelete` ไม่ save attribute อื่น),
+  เปลี่ยนรหัสผ่าน (`password_changed_*` + `updated_by`), หน้ากำหนดสิทธิ์ (`attach()` พร้อม pivot `created_by`/`updated_by`,
+  `withTimestamps()` เติม `created_at`/`updated_at`). audit column ยังไม่มี UI แสดงผล / seeder ปล่อยเป็น null
+- เริ่มระบบ log หลังบ้าน — migration กลาง `2026_09_10_000001_create_log_tables.php` (ไฟล์เดียวสำหรับ log ทุกตัว
+  ทั้ง `log_back_*`/`log_front_*`) + ตาราง `log_back_access` + model `App\Models\LogBackAccess`
+  (ตาม convention `sys_*`: `status` char(1)/`softDeletes`/audit; `token` ULID + `last_visited` สำหรับ keep-alive).
+  permission/เมนู seed ไว้ก่อนแล้ว (`system.backlog.access` ฯลฯ)
+- บันทึก log การเข้าหน้าจอหลังบ้าน — `LogBackAccess::record('ชื่อหน้า')` (static, เก็บ request ปัจจุบัน + parse
+  User-Agent ด้วย `App\Support\UserAgentParser` heuristic เบา ๆ ไม่พึ่ง package, geo_ip ปล่อย null).
+  `remote_ip` อ่านจาก header proxy ก่อน (`CF-Connecting-IP` / `X-Real-IP` / `X-Forwarded-For` ตัวแรกที่ valid)
+  ค่อย fallback `$request->ip()` — `App\Support\ClientIp::from()` (ใช้ร่วมกับ `log_back_login`).
+  เรียกในทุก controller ที่ render หน้าจอ **หลัง permission guard** (dashboard, profile.edit, user/usergroup
+  index+add+edit+password/rights, backlog.access.index) — หน้ารายการเรียกเฉพาะเมื่อ `count($request->query()) === 0`
+  (ไม่ log ตอนค้นหา/แบ่งหน้า). `record()` เก็บ `token` ลง `$request->attributes` → `HandleInertiaRequests` แชร์เป็น prop `accessLog.token`
+- keep-alive `last_visited` — composable `resources/js/composables/useAccessHeartbeat.ts` (เรียกครั้งเดียวใน
+  `AdminLayout.vue`) อ่าน `accessLog.token` แล้วยิง `navigator.sendBeacon` (fallback `fetch keepalive`) ไป
+  `POST admin.system.backlog.access.ping` ตอน tab hidden / `pagehide` / `onBeforeUnmount` + interval 45 วิ.
+  `BackLogAccessController@ping` (ไม่เช็ก permission, กันด้วย auth + scope `user_id` + `created_at >= -1 วัน`,
+  `throttle:60,1`, ตอบ 204). CSRF: route `admin/system/backlog/access/ping` ถูก **ยกเว้น CSRF**
+  ใน `bootstrap/app.php` (`validateCsrfTokens(except: [...])`) — sendBeacon ตั้ง header ไม่ได้ กันด้วย auth+scope แทน.
+  **ห้ามเซ็ต `X-CSRF-TOKEN` เป็น axios default จาก `<meta csrf>`** — Inertia ไม่ re-render `<head>` โทเคนจะค้าง
+  หลัง session regenerate (login/logout) → 419; Inertia ใช้คุกกี้ `XSRF-TOKEN` เองอยู่แล้ว อย่าไปแทรก
+- หน้ารายการประวัติ — `admin.system.backlog.access.index` → `BackLogAccessController@index` (เช็ก `system.backlog.access`
+  ไม่มีสิทธิ์ redirect ไป dashboard). `resources/js/Pages/Admin/System/BackLogAccess/Index.vue` — ตาราง
+  (ชื่อ-นามสกุล/URL/ชื่อหน้า/IP/เวลาเข้าชม=`created_at`/เวลาออก=`last_visited`) คลิกแถวเปิด `Components/Admin/DetailDialog.vue`
+  (dialog กลาง ใช้ซ้ำได้ — Teleport+Transition แบบ `ConfirmDialog`) แสดง field ทั้งหมด. ค้นหา 1 ช่อง (URL/ชื่อหน้า/IP)
+  + ช่วงวันที่ `date_from`/`date_to` (กรอง `created_at`) + paging + per_page + sort (default `created_at` desc,
+  `sort=name` leftJoin `sys_user`). เมนู sidebar คลิกได้แล้ว (route มีจริง)
+- log_back_login (การเข้า/ออกระบบ) — บันทึกใน `LoginRequest::authenticate()` (สำเร็จ / รหัสผิด / ไม่พบบัญชี / บัญชีถูกระงับ)
+  + `ensureIsNotRateLimited()` (ถูก throttle = `block`) + `AuthenticatedSessionController::destroy()` (logout — เก็บ
+  `Auth::id()`/email **ก่อน** logout). หน้ารายการ `admin.system.backlog.login.index` → `BackLogLoginController@index`
+  (เช็ก `system.backlog.login`) → `Pages/Admin/System/BackLogLogin/Index.vue` — คอลัมน์ ชื่อ-นามสกุล/Username/ประเภท/
+  ผลลัพธ์ (pill สี)/IP/วันเวลา, กรอง q(username,ip,note)+ประเภท+ผลลัพธ์+ช่วงวันที่, คลิกแถวเปิด `DetailDialog`.
+  route ทั้งหมดจัดกลุ่มใต้ `system/backlog` ใน `routes/web.php`
+- log_back_action (การกระทำ) — `LogBackAction::record($moduleCode, $actionType, $valueString, $refId)` เรียกใน
+  `UserController` (store→`create`, edit→`view`, update→`update`, destroy→`delete` [เก็บ name/id ก่อนลบ],
+  password→`view`, passwordUpdate→`update`; module `system.user` / `system.user.password`) และ `UsergroupController`
+  (เทียบเคียง; module `system.usergroup` / `system.usergroup.rights`) — **หน้ารายการ/หน้า add ไม่บันทึก**.
+  หน้ารายการ `admin.system.backlog.action.index` → `BackLogActionController@index` (เช็ก `system.backlog.action`)
+  → `Pages/Admin/System/BackLogAction/Index.vue` — คอลัมน์ ชื่อ-นามสกุล/โมดูล/ประเภท (pill)/ข้อมูล/IP/วันเวลา,
+  กรอง q(value_string,module_code,ip) + dropdown "โมดูล"/"ประเภทการกระทำ" (distinct จากคอลัมน์) + ช่วงวันที่.
+  `toDate()` helper ย้ายไป base `App\Http\Controllers\Controller` (ใช้ร่วม 3 log viewer). **ยังไม่ทำ**: log ฝั่งหน้าบ้าน
 
 ## ทดสอบ
 

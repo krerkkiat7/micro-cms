@@ -159,7 +159,7 @@ test('store rejects a weak password', function () {
 });
 
 test('store creates a back user and redirects to edit with a success flash', function () {
-    actingAsUserWithPermissions(['system.user.manage']);
+    $me = actingAsUserWithPermissions(['system.user.manage']);
 
     $response = $this->post(route('admin.system.user.store'), validUserPayload(superAdminGroupId()));
 
@@ -167,7 +167,10 @@ test('store creates a back user and redirects to edit with a success flash', fun
 
     expect($user)->not->toBeNull()
         ->and($user->user_type)->toBe('back')
-        ->and($user->status)->toBe('Y');
+        ->and($user->status)->toBe('Y')
+        ->and($user->created_by)->toBe($me->id)
+        ->and($user->password_changed_by)->toBe($me->id)
+        ->and($user->password_changed_at)->not->toBeNull();
 
     $response->assertRedirect(route('admin.system.user.edit', $user->id))
         ->assertSessionHas('success');
@@ -221,7 +224,7 @@ test('edit renders with can flags', function () {
 });
 
 test('update saves the changes', function () {
-    actingAsUserWithPermissions(['system.user.manage']);
+    $me = actingAsUserWithPermissions(['system.user.manage']);
     $target = User::factory()->create(['firstname' => 'Old']);
 
     $this->put(route('admin.system.user.update', $target->id), [
@@ -235,7 +238,8 @@ test('update saves the changes', function () {
         ->assertRedirect(route('admin.system.user.edit', $target->id))
         ->assertSessionHas('success');
 
-    expect($target->fresh()->firstname)->toBe('Updated');
+    expect($target->fresh()->firstname)->toBe('Updated')
+        ->and($target->fresh()->updated_by)->toBe($me->id);
 });
 
 test('update blocks suspending your own account', function () {
@@ -268,7 +272,7 @@ test('destroy redirects without system.user.delete', function () {
 });
 
 test('destroy soft deletes a user', function () {
-    actingAsUserWithPermissions(['system.user.delete']);
+    $me = actingAsUserWithPermissions(['system.user.delete']);
     $target = User::factory()->create();
 
     $this->delete(route('admin.system.user.destroy', $target->id))
@@ -276,6 +280,7 @@ test('destroy soft deletes a user', function () {
         ->assertSessionHas('success');
 
     $this->assertSoftDeleted($target);
+    expect($target->fresh()->deleted_by)->toBe($me->id);
 });
 
 test('destroy blocks deleting your own account', function () {
@@ -323,8 +328,8 @@ test('password update validates strength and confirmation', function () {
 });
 
 test('password update changes the password', function () {
-    actingAsUserWithPermissions(['system.user.password']);
-    $target = User::factory()->create();
+    $me = actingAsUserWithPermissions(['system.user.password']);
+    $target = User::factory()->create(['password_changed_at' => null]);
 
     $this->put(route('admin.system.user.password.update', $target->id), [
         'password' => 'Aa1!aaaa',
@@ -333,5 +338,10 @@ test('password update changes the password', function () {
         ->assertRedirect(route('admin.system.user.edit', $target->id))
         ->assertSessionHas('success');
 
-    expect(Hash::check('Aa1!aaaa', $target->fresh()->password))->toBeTrue();
+    $fresh = $target->fresh();
+
+    expect(Hash::check('Aa1!aaaa', $fresh->password))->toBeTrue()
+        ->and($fresh->password_changed_by)->toBe($me->id)
+        ->and($fresh->password_changed_at)->not->toBeNull()
+        ->and($fresh->updated_by)->toBe($me->id);
 });

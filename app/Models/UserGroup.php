@@ -19,14 +19,18 @@ class UserGroup extends Model
      *
      * @var list<string>
      */
-    protected $fillable = ['name', 'description', 'status', 'can_edit', 'can_delete'];
+    protected $fillable = ['name', 'description', 'status', 'can_edit', 'can_delete', 'created_by', 'updated_by', 'deleted_by'];
 
     /**
      * สิทธิ์ (action) ที่ผูกกับกลุ่มนี้
+     *
+     * pivot `sys_usergroup_action` เก็บ `created_by`/`updated_by` (ผู้กำหนดสิทธิ์) + timestamps
      */
     public function actions()
     {
-        return $this->belongsToMany(SysAction::class, 'sys_usergroup_action', 'usergroup_id', 'action_id');
+        return $this->belongsToMany(SysAction::class, 'sys_usergroup_action', 'usergroup_id', 'action_id')
+            ->withPivot(['created_by', 'updated_by'])
+            ->withTimestamps();
     }
 
     /**
