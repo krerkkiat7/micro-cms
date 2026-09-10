@@ -1,7 +1,7 @@
 const dateFmt = new Intl.DateTimeFormat('th-TH', { dateStyle: 'medium' });
 const dateTimeFmt = new Intl.DateTimeFormat('th-TH', {
     dateStyle: 'medium',
-    timeStyle: 'short',
+    timeStyle: 'medium', // แสดงวินาทีด้วย (HH:MM:SS)
 });
 
 /** วันที่แบบสั้น (คืน '-' เมื่อค่าว่างหรือ parse ไม่ได้) */
