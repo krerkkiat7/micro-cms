@@ -142,7 +142,7 @@ test('store scopes name uniqueness to non-deleted groups', function () {
 });
 
 test('store creates a group with can_edit and can_delete defaulted to Y and redirects to edit', function () {
-    actingAsUserWithPermissions(['system.usergroup.manage']);
+    $me = actingAsUserWithPermissions(['system.usergroup.manage']);
 
     $response = $this->post(route('admin.system.usergroup.store'), validGroupPayload(['name' => 'กลุ่มใหม่']));
 
@@ -150,7 +150,8 @@ test('store creates a group with can_edit and can_delete defaulted to Y and redi
 
     expect($group)->not->toBeNull()
         ->and($group->can_edit)->toBe('Y')
-        ->and($group->can_delete)->toBe('Y');
+        ->and($group->can_delete)->toBe('Y')
+        ->and($group->created_by)->toBe($me->id);
 
     $response->assertRedirect(route('admin.system.usergroup.edit', $group->id))
         ->assertSessionHas('success');
@@ -172,14 +173,15 @@ test('edit redirects for a missing or soft-deleted group', function () {
 });
 
 test('update saves the changes', function () {
-    actingAsUserWithPermissions(['system.usergroup.manage']);
+    $me = actingAsUserWithPermissions(['system.usergroup.manage']);
     $group = UserGroup::factory()->create(['name' => 'เดิม']);
 
     $this->put(route('admin.system.usergroup.update', $group->id), validGroupPayload(['name' => 'ใหม่']))
         ->assertRedirect(route('admin.system.usergroup.edit', $group->id))
         ->assertSessionHas('success');
 
-    expect($group->fresh()->name)->toBe('ใหม่');
+    expect($group->fresh()->name)->toBe('ใหม่')
+        ->and($group->fresh()->updated_by)->toBe($me->id);
 });
 
 test('update is blocked for a system group (can_edit = N)', function () {
@@ -241,7 +243,7 @@ test('destroy is blocked when the group only has front members', function () {
 });
 
 test('destroy soft deletes an empty deletable group', function () {
-    actingAsUserWithPermissions(['system.usergroup.delete']);
+    $me = actingAsUserWithPermissions(['system.usergroup.delete']);
     $group = UserGroup::factory()->create();
 
     $this->delete(route('admin.system.usergroup.destroy', $group->id))
@@ -249,6 +251,7 @@ test('destroy soft deletes an empty deletable group', function () {
         ->assertSessionHas('success');
 
     $this->assertSoftDeleted($group);
+    expect($group->fresh()->deleted_by)->toBe($me->id);
 });
 
 // ---------------------------------------------------------------- rights
@@ -278,7 +281,7 @@ test('rights page renders the action-group tree and the checked ids', function (
 });
 
 test('rights update replaces the group actions (real delete + re-insert)', function () {
-    actingAsUserWithPermissions(['system.usergroup.rights']);
+    $me = actingAsUserWithPermissions(['system.usergroup.rights']);
 
     $group = UserGroup::factory()->create();
     $group->actions()->attach(SysAction::where('code', 'article.item.view')->pluck('id'));
@@ -291,6 +294,13 @@ test('rights update replaces the group actions (real delete + re-insert)', funct
 
     expect($group->fresh()->actions->pluck('id')->sort()->values()->all())
         ->toEqual(collect($keep)->sort()->values()->all());
+
+    // pivot บันทึกผู้กำหนดสิทธิ์ + วันที่
+    $pivot = $group->fresh()->actions->first()->pivot;
+    expect($pivot->created_by)->toBe($me->id)
+        ->and($pivot->updated_by)->toBe($me->id)
+        ->and($pivot->created_at)->not->toBeNull()
+        ->and($pivot->updated_at)->not->toBeNull();
 });
 
 test('rights update drops actions whose parent is not selected', function () {

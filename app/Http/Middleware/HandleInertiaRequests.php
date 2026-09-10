@@ -62,6 +62,11 @@ class HandleInertiaRequests extends Middleware
                     'successId' => $success ? uniqid('flash_', true) : null,
                 ];
             },
+            // โทเคน log_back_access ของการเข้าหน้านี้ (LogBackAccess::record() เซ็ตไว้ใน attribute)
+            // null = หน้านี้ไม่ได้บันทึก log — frontend ใช้ตัดสินใจว่าจะยิง keep-alive ping ไหม
+            'accessLog' => fn () => [
+                'token' => $request->attributes->get('access_log_token'),
+            ],
         ];
     }
 

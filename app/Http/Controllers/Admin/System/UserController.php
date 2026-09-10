@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\System\StoreUserRequest;
 use App\Http\Requests\Admin\System\UpdateUserPasswordRequest;
 use App\Http\Requests\Admin\System\UpdateUserRequest;
+use App\Models\LogBackAccess;
 use App\Models\User;
 use App\Models\UserGroup;
 use Illuminate\Database\Eloquent\Collection;
@@ -94,6 +95,11 @@ class UserController extends Controller
                 'last_login_at' => $user->last_login_at,
             ]);
 
+        // บันทึก log เฉพาะการเข้าหน้ารายการจริง ๆ — ไม่บันทึกตอนค้นหา/กรอง/แบ่งหน้า/เรียง
+        if (count($request->query()) === 0) {
+            LogBackAccess::record('จัดการผู้ใช้งาน');
+        }
+
         return Inertia::render('Admin/System/User/Index', [
             'users' => $users,
             'filters' => $filters,
@@ -116,6 +122,8 @@ class UserController extends Controller
             return redirect()->route('admin.system.user.index');
         }
 
+        LogBackAccess::record('เพิ่มผู้ใช้งาน');
+
         return Inertia::render('Admin/System/User/Add', [
             'userGroups' => $this->userGroupOptions(),
         ]);
@@ -131,6 +139,7 @@ class UserController extends Controller
         }
 
         $data = $request->validated();
+        $actorId = $request->user()->id;
 
         $user = User::create([
             'titlename' => $data['titlename'],
@@ -145,6 +154,10 @@ class UserController extends Controller
             'status' => $data['status'],
             'password' => Hash::make($data['password']),
             'user_type' => 'back',
+            'created_by' => $actorId,
+            // สร้างครั้งแรก = ตั้งรหัสผ่านครั้งแรก
+            'password_changed_at' => now(),
+            'password_changed_by' => $actorId,
         ]);
 
         return redirect()
@@ -166,6 +179,8 @@ class UserController extends Controller
         if (! $model) {
             return redirect()->route('admin.system.user.index');
         }
+
+        LogBackAccess::record('แก้ไขผู้ใช้งาน');
 
         return Inertia::render('Admin/System/User/Edit', [
             'user' => [
@@ -229,6 +244,7 @@ class UserController extends Controller
             'facebook' => $data['facebook'] ?? null,
             'usergroup_id' => $data['usergroup_id'],
             'status' => $data['status'],
+            'updated_by' => $request->user()->id,
         ])->save();
 
         return redirect()
@@ -256,6 +272,10 @@ class UserController extends Controller
             return back()->withErrors(['user' => 'ไม่สามารถลบบัญชีของตัวเองได้']);
         }
 
+        // บันทึกผู้ลบก่อน soft delete (runSoftDelete ไม่ save attribute อื่น)
+        $model->deleted_by = $request->user()->id;
+        $model->save();
+
         $model->delete();
 
         return redirect()
@@ -277,6 +297,8 @@ class UserController extends Controller
         if (! $model) {
             return redirect()->route('admin.system.user.index');
         }
+
+        LogBackAccess::record('เปลี่ยนรหัสผ่านผู้ใช้งาน');
 
         return Inertia::render('Admin/System/User/Password', [
             'user' => [
@@ -302,8 +324,13 @@ class UserController extends Controller
             return redirect()->route('admin.system.user.index');
         }
 
+        $actorId = $request->user()->id;
+
         $model->update([
             'password' => Hash::make($request->validated()['password']),
+            'password_changed_at' => now(),
+            'password_changed_by' => $actorId,
+            'updated_by' => $actorId,
         ]);
 
         return redirect()

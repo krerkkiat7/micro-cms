@@ -82,6 +82,19 @@ test('failed login is recorded on the user and cleared on success', function () 
     expect($user->last_login_at)->not->toBeNull();
 });
 
+test('guests hitting a protected admin route are redirected to the admin login', function () {
+    $this->get('/admin/system/usergroup/2/rights')
+        ->assertRedirect(route('admin.login'));
+});
+
+test('/admin redirects guests to login and authenticated users to the dashboard', function () {
+    $this->get('/admin')->assertRedirect(route('admin.login'));
+
+    $this->actingAs(User::factory()->create())
+        ->get('/admin')
+        ->assertRedirect(route('admin.dashboard'));
+});
+
 test('users can logout', function () {
     $user = User::factory()->create();
 

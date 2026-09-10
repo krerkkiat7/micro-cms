@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProfileController;
+use App\Http\Controllers\Admin\System\BackLogAccessController;
+use App\Http\Controllers\Admin\System\BackLogLoginController;
 use App\Http\Controllers\Admin\System\UserController;
 use App\Http\Controllers\Admin\System\UsergroupController;
 use App\Http\Controllers\Front\HomeController;
@@ -41,6 +43,11 @@ Route::prefix('admin')->group(function () {
     // ทำให้ URL กลายเป็น /admin/login, /admin/register อัตโนมัติ
     require __DIR__.'/auth_admin.php';
 
+    // /admin เฉย ๆ — login แล้วไป dashboard, ยังไม่ login ไปหน้า login
+    Route::get('/', function () {
+        return redirect()->route(auth()->check() ? 'admin.dashboard' : 'admin.login');
+    })->name('admin.home');
+
     // 2. Route หน้าหลังบ้านที่ต้องผ่านการ Login ก่อน
     Route::middleware(['auth', 'verified'])->group(function () {
 
@@ -73,6 +80,21 @@ Route::prefix('admin')->group(function () {
             Route::delete('/{usergroup}', [UsergroupController::class, 'destroy'])->name('admin.system.usergroup.destroy');
             Route::get('/{usergroup}/rights', [UsergroupController::class, 'rights'])->name('admin.system.usergroup.rights');
             Route::put('/{usergroup}/rights', [UsergroupController::class, 'rightsUpdate'])->name('admin.system.usergroup.rights.update');
+        });
+
+        // ประวัติหลังบ้าน (log_back_*) — ตรวจสอบสิทธิ์ในแต่ละ controller
+        Route::prefix('system/backlog')->group(function () {
+            // การเข้าชม (log_back_access)
+            Route::prefix('access')->group(function () {
+                Route::get('/', [BackLogAccessController::class, 'index'])->name('admin.system.backlog.access.index');
+                // ปลายทาง keep-alive อัปเดต last_visited (ยิงจาก navigator.sendBeacon)
+                Route::post('/ping', [BackLogAccessController::class, 'ping'])
+                    ->name('admin.system.backlog.access.ping')
+                    ->middleware('throttle:60,1');
+            });
+
+            // การเข้าสู่ระบบ (log_back_login)
+            Route::get('/login', [BackLogLoginController::class, 'index'])->name('admin.system.backlog.login.index');
         });
     });
 });

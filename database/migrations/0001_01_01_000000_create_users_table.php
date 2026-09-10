@@ -19,6 +19,12 @@ return new class extends Migration
             $table->char('status', 1)->default('Y');     // Y = ใช้งาน, N = ไม่ใช้งาน
             $table->char('can_edit', 1)->default('Y');   // N = กลุ่มระบบ ห้ามแก้ไข (เช่น Super Admin)
             $table->char('can_delete', 1)->default('Y'); // N = กลุ่มระบบ ห้ามลบ (เช่น Super Admin)
+
+            // ผู้กระทำ (sys_user.id — เช็ก/ผูกในโค้ด ไม่มี FK เพื่อเลี่ยงปัญหาลำดับ seed / self-reference)
+            $table->unsignedBigInteger('created_by')->nullable(); // ผู้สร้าง
+            $table->unsignedBigInteger('updated_by')->nullable(); // ผู้แก้ไขล่าสุด
+            $table->unsignedBigInteger('deleted_by')->nullable(); // ผู้ลบ
+
             $table->timestamps();
             $table->softDeletes();
         });
@@ -33,6 +39,8 @@ return new class extends Migration
             $table->string('email', 150)->index();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->timestamp('password_changed_at')->nullable();          // เปลี่ยนรหัสผ่านครั้งล่าสุด
+            $table->unsignedBigInteger('password_changed_by')->nullable(); // ผู้เปลี่ยนรหัสผ่านครั้งล่าสุด (sys_user.id)
             $table->string('user_type', 20)->default('back');   // back = ผู้จัดการหลังบ้าน, front = หน้าบ้าน
 
             $table->string('mobile', 20)->nullable();    // เบอร์มือถือ
@@ -48,6 +56,11 @@ return new class extends Migration
             $table->timestamp('last_failed_login_at')->nullable();       // ครั้งล่าสุดที่ login ไม่สำเร็จ
 
             $table->foreignId('usergroup_id')->nullable()->constrained('sys_usergroup')->nullOnDelete();
+
+            // ผู้กระทำ (sys_user.id — เช็ก/ผูกในโค้ด ไม่มี FK)
+            $table->unsignedBigInteger('created_by')->nullable(); // ผู้สร้าง
+            $table->unsignedBigInteger('updated_by')->nullable(); // ผู้แก้ไขล่าสุด
+            $table->unsignedBigInteger('deleted_by')->nullable(); // ผู้ลบ
 
             $table->rememberToken();
             $table->timestamps();
@@ -106,6 +119,8 @@ return new class extends Migration
         Schema::create('sys_usergroup_action', function (Blueprint $table) {
             $table->foreignId('usergroup_id')->constrained('sys_usergroup')->cascadeOnDelete();
             $table->string('action_id', 20);
+            $table->unsignedBigInteger('created_by')->nullable(); // ผู้ผูกสิทธิ์ (sys_user.id)
+            $table->unsignedBigInteger('updated_by')->nullable(); // ผู้แก้ไขสิทธิ์ล่าสุด (sys_user.id)
             $table->timestamps();
             $table->primary(['usergroup_id', 'action_id']);
 
@@ -116,6 +131,8 @@ return new class extends Migration
             $table->string('group', 50);
             $table->string('name', 100);
             $table->text('value')->nullable();
+            $table->unsignedBigInteger('created_by')->nullable(); // ผู้สร้าง (sys_user.id)
+            $table->unsignedBigInteger('updated_by')->nullable(); // ผู้แก้ไขล่าสุด (sys_user.id)
             $table->timestamps();
             $table->softDeletes();
             $table->primary(['group', 'name']); // composite primary key

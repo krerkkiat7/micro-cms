@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\System\AssignUsergroupRightsRequest;
 use App\Http\Requests\Admin\System\StoreUsergroupRequest;
 use App\Http\Requests\Admin\System\UpdateUsergroupRequest;
+use App\Models\LogBackAccess;
 use App\Models\SysAction;
 use App\Models\SysActionGroup;
 use App\Models\UserGroup;
@@ -70,6 +71,11 @@ class UsergroupController extends Controller
                 'can_delete' => $group->can_delete,
             ]);
 
+        // บันทึก log เฉพาะการเข้าหน้ารายการจริง ๆ — ไม่บันทึกตอนค้นหา/กรอง/แบ่งหน้า/เรียง
+        if (count($request->query()) === 0) {
+            LogBackAccess::record('จัดการกลุ่มผู้ใช้งาน');
+        }
+
         return Inertia::render('Admin/System/Usergroup/Index', [
             'groups' => $groups,
             'filters' => $filters,
@@ -91,6 +97,8 @@ class UsergroupController extends Controller
             return redirect()->route('admin.system.usergroup.index');
         }
 
+        LogBackAccess::record('เพิ่มกลุ่มผู้ใช้งาน');
+
         return Inertia::render('Admin/System/Usergroup/Add');
     }
 
@@ -106,6 +114,7 @@ class UsergroupController extends Controller
         $group = UserGroup::create($request->validated() + [
             'can_edit' => 'Y',
             'can_delete' => 'Y',
+            'created_by' => $request->user()->id,
         ]);
 
         return redirect()
@@ -127,6 +136,8 @@ class UsergroupController extends Controller
         if (! $group) {
             return redirect()->route('admin.system.usergroup.index');
         }
+
+        LogBackAccess::record('แก้ไขกลุ่มผู้ใช้งาน');
 
         return Inertia::render('Admin/System/Usergroup/Edit', [
             'group' => [
@@ -168,7 +179,9 @@ class UsergroupController extends Controller
             return back()->withErrors(['name' => 'กลุ่มนี้เป็นกลุ่มระบบ ไม่อนุญาตให้แก้ไข']);
         }
 
-        $group->fill($request->validated())->save();
+        $group->fill($request->validated() + [
+            'updated_by' => $request->user()->id,
+        ])->save();
 
         return redirect()
             ->route('admin.system.usergroup.edit', $group->id)
@@ -199,6 +212,10 @@ class UsergroupController extends Controller
         if ($group->users()->exists()) {
             return back()->withErrors(['group' => 'ไม่สามารถลบกลุ่มที่ยังมีสมาชิกอยู่']);
         }
+
+        // บันทึกผู้ลบก่อน soft delete (runSoftDelete ไม่ save attribute อื่น)
+        $group->deleted_by = $request->user()->id;
+        $group->save();
 
         $group->delete();
 
@@ -237,6 +254,8 @@ class UsergroupController extends Controller
             ->values()
             ->all();
 
+        LogBackAccess::record('กำหนดสิทธิ์กลุ่มผู้ใช้งาน');
+
         return Inertia::render('Admin/System/Usergroup/Rights', [
             'group' => [
                 'id' => $group->id,
@@ -273,7 +292,12 @@ class UsergroupController extends Controller
         $group->actions()->detach();
 
         if ($ids !== []) {
-            $group->actions()->attach($ids);
+            // บันทึกผู้กำหนดสิทธิ์ + วันที่ลง pivot (withTimestamps จัดการ created_at/updated_at)
+            $actorId = $request->user()->id;
+            $group->actions()->attach($ids, [
+                'created_by' => $actorId,
+                'updated_by' => $actorId,
+            ]);
         }
 
         return redirect()

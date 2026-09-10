@@ -35,6 +35,11 @@ class User extends Authenticatable
         'facebook',
         'status',
         'usergroup_id',
+        'created_by',
+        'updated_by',
+        'deleted_by',
+        'password_changed_at',
+        'password_changed_by',
     ];
 
     /**
@@ -59,6 +64,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'last_login_at' => 'datetime',
             'last_failed_login_at' => 'datetime',
+            'password_changed_at' => 'datetime',
         ];
     }
 

@@ -11,7 +11,7 @@
 | 2 | จัดการกลุ่มผู้ใช้งาน + สิทธิ์ | `sys_usergroup`, `sys_action_group`, `sys_action`, `sys_usergroup_action` | 🟢 list/add/edit + หน้ากำหนดสิทธิ์ (tree) เสร็จ |
 | 3 | จัดการเมนู (หลังบ้าน / หน้าบ้าน) | `sys_menu_group`, `sys_menu` / `sys_front_menu` *(เสนอ)* | 🟡 เมนูหลังบ้าน: ตาราง/model/seed ตัวอย่างมี, ยังไม่ต่อ UI · หน้าบ้าน: 🔴 |
 | 4 | จัดการ template | `sys_template` *(เสนอ)* | 🔴 |
-| 5 | ประวัติ login / เข้าชม / การกระทำ | `sys_log_login`, `sys_log_visit`, `sys_log_action` *(เสนอ)* | 🔴 |
+| 5 | ประวัติ login / เข้าชม / การกระทำ | `log_back_access`, `log_back_action`, `log_back_login` (+ `log_front_*`) | 🟡 `log_back_access` + `log_back_login` เสร็จ (บันทึก + หน้ารายการ) · action / ฝั่งหน้าบ้าน 🔴 |
 | 6 | ตั้งค่าระบบ/เว็บไซต์ | `sys_setting` | 🟡 ตาราง/model/seed ตัวอย่างมี, ยังไม่มี UI |
 | 7 | profile | `sys_user` | 🟢 |
 | 8 | dashboard | — | 🟡 placeholder |
@@ -44,10 +44,13 @@
 | `failed_login_count` | `smallint unsigned` default 0 | จำนวนครั้งที่ login ไม่สำเร็จติดต่อกัน |
 | `last_failed_login_at` | timestamp null | เวลาที่ login ไม่สำเร็จครั้งล่าสุด |
 | `usergroup_id` | bigint FK → `sys_usergroup` null (nullOnDelete) | กลุ่มสิทธิ์ |
+| `password_changed_at` | timestamp null | เวลาที่ตั้ง/เปลี่ยนรหัสผ่านครั้งล่าสุด (ตั้งตอนสร้างผู้ใช้ + ตอนเปลี่ยนรหัสผ่าน) |
+| `password_changed_by` | bigint null (`sys_user.id`, ไม่มี FK) | ผู้ตั้ง/เปลี่ยนรหัสผ่านครั้งล่าสุด |
+| `created_by` / `updated_by` / `deleted_by` | bigint null (`sys_user.id`, ไม่มี FK) | ผู้สร้าง / ผู้แก้ไขล่าสุด / ผู้ลบ — controller เซ็ตจาก `$request->user()->id` |
 | `remember_token`, `timestamps`, `deleted_at` | | **soft delete เปิดใช้แล้ว** (`User` ใช้ trait `SoftDeletes`) |
 
 **Model** `App\Models\User` — `SoftDeletes`; accessor `name` คืน `"คำนำหน้า ชื่อ นามสกุล"`;
-cast `last_login_at` / `last_failed_login_at` เป็น datetime
+cast `last_login_at` / `last_failed_login_at` / `password_changed_at` เป็น datetime
 
 ### กติกา email ไม่ซ้ำ (สำคัญ)
 
@@ -90,6 +93,8 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 - `รายการผู้ใช้` — ตาราง (ชื่อ, อีเมล, กลุ่ม, สถานะ, login ล่าสุด), ค้นหา, กรองตามกลุ่ม/สถานะ
 - `ฟอร์มเพิ่ม/แก้ไข` — ข้อมูลชื่อ + ช่องทางติดต่อ + กลุ่มผู้ใช้ + สถานะ + ตั้ง/รีเซ็ตรหัสผ่าน + ปุ่มรีเซ็ต `failed_login_count`
 - ลบผู้ใช้ = soft delete; ระงับชั่วคราวใช้ `status = 'N'`
+- **audit ผู้กระทำ** — สร้าง: `created_by` + `password_changed_at`/`password_changed_by` (ตั้งรหัสผ่านครั้งแรก);
+  แก้ไข: `updated_by`; ลบ: `deleted_by` (save ก่อน soft delete); เปลี่ยนรหัสผ่าน: `password_changed_at`/`password_changed_by` + `updated_by`
 
 **Permission code** — `system.user.view`, `system.user.create` (รวมแก้ไข), `system.user.delete`
 
@@ -121,6 +126,7 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 | `status` | `char(1)` default `Y` | `Y`/`N` |
 | `can_edit` | `char(1)` default `Y` | `N` = กลุ่มระบบ ห้ามแก้ไข (Super Admin seed เป็น `N`) |
 | `can_delete` | `char(1)` default `Y` | `N` = กลุ่มระบบ ห้ามลบ (Super Admin seed เป็น `N`) |
+| `created_by` / `updated_by` / `deleted_by` | bigint null (`sys_user.id`, ไม่มี FK) | ผู้สร้าง / ผู้แก้ไขล่าสุด / ผู้ลบ — controller เซ็ตจาก `$request->user()->id` |
 | `timestamps`, `deleted_at` | | `SoftDeletes` (เปิด trait บน `UserGroup` แล้ว) |
 
 `sys_action_group` (ปรับในเฟส 0) — หมวดของสิทธิ์ เพื่อจัดกลุ่มในหน้าติ๊ก
@@ -151,10 +157,11 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 |---------|------|
 | `usergroup_id` | bigint FK → `sys_usergroup` (cascade) |
 | `action_id` | `varchar(20)` FK → `sys_action` (cascade) |
+| `created_by` / `updated_by` | bigint null (`sys_user.id`, ไม่มี FK) — ผู้กำหนดสิทธิ์ (หน้ากำหนดสิทธิ์ `attach()` พร้อม pivot นี้) |
 | composite PK `(usergroup_id, action_id)` + `timestamps` | |
 
 **Model**
-- `UserGroup::actions()` — belongsToMany ผ่าน pivot · `UserGroup::users()` — hasMany (`usergroup_id`) · `HasFactory` + `SoftDeletes`
+- `UserGroup::actions()` — belongsToMany ผ่าน pivot (`withPivot('created_by', 'updated_by')` + `withTimestamps()`) · `UserGroup::users()` — hasMany (`usergroup_id`) · `HasFactory` + `SoftDeletes`
 - `SysActionGroup::actions()` — hasMany
 - `SysAction::group()` / `parent()` / `children()`
 - `User::hasPermission($code)` / `getPermissionsArray()` — อ่านจาก `group->actions->pluck('code')`
@@ -168,6 +175,8 @@ controller หลังบ้านเรียก `Password::broker('users')->s
   checkbox สะท้อน `sys_usergroup_action` — parent ยังไม่ติ๊ก → ลูก disabled + เคลียร์; ต่อกลุ่มมี "(เลือก/ทั้งหมด)" +
   ปุ่ม "เลือกทั้งหมด" / "ไม่เลือกทั้งหมด"; บันทึกแบบ `detach()` แล้ว `attach()` (ลบ pivot จริง);
   server ตัด action ที่ ancestor ไม่ถูกเลือกทิ้ง (`pruneOrphanActions`); `can_edit='N'` แสดงอย่างเดียว; permission `system.usergroup.rights`
+- **audit ผู้กระทำ** — สร้าง: `created_by`; แก้ไข: `updated_by`; ลบ: `deleted_by` (save ก่อน soft delete);
+  กำหนดสิทธิ์: `attach()` เขียน pivot `created_by`/`updated_by` = ผู้กระทำ + `created_at`/`updated_at` (ผ่าน `withTimestamps()`)
 
 **Permission code (ที่ seed จริง)** — `system.usergroup.view` / `system.usergroup.manage` / `system.usergroup.delete` / `system.usergroup.rights`
 
@@ -285,27 +294,112 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 
 ---
 
-## 5. ประวัติ login / เข้าชม / การกระทำ — 🔴 เสนอ (นอกขอบเขตเฟส 0)
+## 5. ประวัติ login / เข้าชม / การกระทำ — 🟡 `log_back_access` + `log_back_login` เสร็จ · action / ฝั่งหน้าบ้าน ยังไม่ทำ
 
 **วัตถุประสงค์** — เก็บ log เพื่อตรวจสอบย้อนหลังและวิเคราะห์การเข้าชม
 
-| ตาราง (เสนอ) | เก็บอะไร | คอลัมน์หลัก |
-|--------------|---------|-------------|
-| `sys_log_login` | ทุกครั้งที่พยายามล็อกอินหลังบ้าน | `user_id` null, `email`, `ip`, `user_agent`, `success` bool, `created_at` |
-| `sys_log_visit` | การเข้าชมหน้าบ้าน | `url`, `lang`, `ip`, `user_agent`, `referer`, `session_id`, `created_at` |
-| `sys_log_action` | การกระทำในหลังบ้าน (สร้าง/แก้/ลบ) | `user_id`, `action` (`create`/`update`/`delete`), `model`, `model_id`, `changes` json, `ip`, `created_at` |
+เก็บ log แยก 3 ประเภทต่อฝั่ง (หลังบ้าน `log_back_*` / หน้าบ้าน `log_front_*`) รวมทั้งหมด 6 ตาราง —
+ทุกตารางอยู่ในไฟล์ migration กลางไฟล์เดียว `database/migrations/2026_09_10_000001_create_log_tables.php`
+(ตารางถัดไปให้ `Schema::create` เพิ่มในไฟล์นี้ ไม่แยกไฟล์) และเดินตาม convention ของตาราง `sys_*`
+(คอลัมน์ `status` char(1) `'Y'`/`'N'`, `softDeletes`, บล็อก audit `created_by`/`updated_by`/`deleted_by`
+= `sys_user.id` ไม่มี FK, comment คอลัมน์ภาษาไทย)
 
-**การเก็บ** — `sys_log_login` ผูกกับ event `Login`/`Failed`; `sys_log_visit` ผ่าน middleware บน route หน้าบ้าน;
-`sys_log_action` ผ่าน model observer หรือ trait กลาง
+| ตาราง | เก็บอะไร | สถานะ |
+|-------|---------|-------|
+| `log_back_access` / `log_front_access` | การเข้าชม/เข้าถึงหน้า (1 request = 1 แถว) | `log_back_access` 🟢 ตาราง/model + บันทึก + keep-alive + หน้ารายการ · `log_front_access` 🔴 |
+| `log_back_action` / `log_front_action` | การกระทำ (สร้าง/แก้/ลบ) — `user_id`, `action`, `model`, `model_id`, `changes` json, `remote_ip` | 🔴 |
+| `log_back_login` / `log_front_login` | การเข้า/ออกระบบ — `log_type` (`login`/`logout`), `result` (`success`/`fail`/`block`), `username`, `note`, `remote_ip` | `log_back_login` 🟢 ตาราง/model + บันทึก + หน้ารายการ · `log_front_login` 🔴 |
 
-**หน้าจอ** — 3 หน้ารายการ (ตาราง + กรองช่วงวันที่/ผู้ใช้), export CSV
+### `log_back_access` — คอลัมน์
 
-**Permission** — `system.log.login`, `system.log.visit`, `system.log.action`
+| คอลัมน์ | ชนิด | หมายเหตุ |
+|---------|------|----------|
+| `id` | bigint AI | |
+| `user_id` | bigint null | `sys_user.id` (ไม่มี FK) — null = ยังไม่ล็อกอิน |
+| `token` | `varchar(26)` unique null | ULID สาธารณะ — ใช้อ้างอิงตอน keep-alive ping โดยไม่เปิดเผย `id` |
+| `session_id` | `varchar(100)` null | |
+| `uri_string` | `text` null | URI ที่เข้าถึง |
+| `title_name` | `varchar(255)` null | ชื่อหน้า / ชื่อ route |
+| `remote_ip` | `varchar(45)` null | รองรับ IPv6 |
+| `geo_ip` / `geo_ip_city` | `varchar(10)` / `varchar(250)` null | รหัสประเทศ / เมือง จาก IP (ยังไม่มี resolver — ปล่อย null) |
+| `browser` / `browser_version` / `platform` | `varchar(50)` null | แยกจาก User-Agent ด้วย `App\Support\UserAgentParser` (heuristic เบา ๆ ไม่พึ่ง package; ไม่รู้จัก = null) |
+| `mobile` / `device_type` / `robot` | `varchar(50)` null | รุ่นอุปกรณ์ / ประเภท (desktop/tablet/mobile/robot) / ชื่อบอท |
+| `referrer` | `varchar(250)` null | |
+| `agent` | `varchar(255)` null | User-Agent ดิบ |
+| `accept_lang` / `accept_charset` | `varchar(50)` null | |
+| `action_date` | `date` null | ไว้กรอง/สรุปรายวัน (index) — เติมอัตโนมัติใน model |
+| `last_visited` | `datetime` null | เวลาที่อยู่หน้านี้ล่าสุด (keep-alive); ครั้งแรก = `created_at` |
+| `status` | `char(1)` default `Y` | |
+| `created_by` / `updated_by` / `deleted_by` | bigint null | audit (`sys_user.id`, ไม่มี FK) |
+| `created_at` / `updated_at` / `deleted_at` | timestamp null | `timestamps()` + `softDeletes()` |
+
+index: `user_id`, `session_id`, `action_date`, `created_at`
+
+**การเก็บ `log_back_access` (ทำแล้ว)** — static `App\Models\LogBackAccess::record('ชื่อหน้า')` เรียกจาก
+controller ที่ render หน้าจอ **หลังผ่าน permission guard** (dashboard, profile.edit, user/usergroup
+index+add+edit+password/rights) — ตามแบบระบบเดิมที่เรียก static function ในแต่ละ action ไม่ใช่ middleware
+เพราะต้องเลือกได้ว่าหน้าไหนบันทึก. หน้ารายการเรียกเฉพาะเมื่อ `count($request->query()) === 0`
+(ไม่บันทึกตอนค้นหา/กรอง/แบ่งหน้า/เรียง). `record()` เก็บ `token` ลง `$request->attributes` แล้ว
+`HandleInertiaRequests::share()` แชร์เป็น prop `accessLog.token`. `remote_ip` อ่านจาก header ของ
+proxy/CDN ก่อน (`CF-Connecting-IP` → `X-Real-IP` → `X-Forwarded-For` ตัวแรกที่เป็น IP ถูกต้อง)
+ค่อย fallback `$request->ip()` — `App\Support\ClientIp::from()` (header ปลอมได้ถ้าเข้าตรงไม่ผ่าน proxy
+แต่ log ยอมรับได้ — ใช้ร่วมกับ `log_back_login`)
+
+> ฝั่งอื่นที่ยังไม่ทำ: `log_*_action` ผ่าน model observer หรือ trait กลาง;
+> `log_front_access` / `log_front_login` ผ่าน middleware/auth ฝั่งหน้าบ้าน (ต้องสร้างตารางก่อน)
+
+### `log_back_login` — คอลัมน์ + การเก็บ (ทำแล้ว)
+
+`id`, `user_id` (bigint null — เก็บเมื่อ `success`/`logout`), `log_type` `varchar(10)` (`login`/`logout`),
+`username` `varchar(150)` (อีเมลที่กรอก), `result` `varchar(10)` (`success`/`fail`/`block`),
+`note` `varchar(1000)` (เหตุผล), `remote_ip` `varchar(45)`, `action_date` `datetime` (model เติม),
+`status` `char(1)` `Y`, audit + `timestamps` + `softDeletes`. **ไม่มีคอลัมน์ `password`** (ไม่เก็บรหัสที่กรอก).
+index: `user_id`, `username`, `log_type`, `result`, `created_at`
+
+บันทึกด้วย static `App\Models\LogBackLogin::{loginSuccess|loginFailed|loginBlocked|logout}()` เรียกจาก:
+- `App\Http\Requests\Auth\LoginRequest::authenticate()` — สำเร็จ / รหัสผิด (`fail`) / ไม่พบบัญชี (`fail`) /
+  บัญชีถูกระงับ `status='N'` (`block`)
+- `LoginRequest::ensureIsNotRateLimited()` — ถูก throttle เกิน 5 ครั้ง (`block`)
+- `AuthenticatedSessionController::destroy()` — logout (เก็บ `Auth::id()`/email **ก่อน** `Auth::logout()`)
+
+`remote_ip` ผ่าน `App\Support\ClientIp::from()` เช่นเดียวกับ `log_back_access`
+
+**keep-alive `last_visited` (ทำแล้ว)** — composable `resources/js/composables/useAccessHeartbeat.ts`
+(เรียกครั้งเดียวใน `AdminLayout.vue`) อ่าน `accessLog.token` แล้วยิง `navigator.sendBeacon()`
+(fallback `fetch(..., {keepalive:true})`) ไป `POST admin.system.backlog.access.ping` ตอน
+`visibilitychange`→`hidden`, `pagehide`, `onBeforeUnmount` + interval 45 วิ (เฉพาะตอน tab visible).
+`BackLogAccessController@ping` อัปเดต `last_visited = now()` โดย scope `token` + `user_id` ของผู้ใช้
++ `created_at >= -1 วัน` — ไม่เช็ก permission (กันด้วย auth + scope), `throttle:60,1`, ตอบ 204.
+CSRF: route นี้ถูก **ยกเว้น CSRF** ใน `bootstrap/app.php` (`validateCsrfTokens(except: [...])`) เพราะ
+sendBeacon ตั้ง header/`_token` ที่สดไม่ได้ (Inertia ไม่ re-render `<head>` โทเคน meta จะค้างหลัง
+session regenerate → 419) — Inertia จัดการ CSRF ผ่านคุกกี้ `XSRF-TOKEN` เอง ห้ามเซ็ต `X-CSRF-TOKEN` axios default ทับ.
+ไม่ต้องเข้ารหัส `id` เพราะ `token` เป็น ULID เดาไม่ได้ + endpoint ทำได้แค่ bump timestamp
+
+**หน้าจอ `log_back_access` (ทำแล้ว)** — `admin.system.backlog.access.index` → `BackLogAccessController@index`
+(เช็ก `system.backlog.access`, ไม่มีสิทธิ์ redirect ไป dashboard). `Pages/Admin/System/BackLogAccess/Index.vue`:
+ตาราง 6 คอลัมน์ (ชื่อ-นามสกุล [ไม่มี = `-`] / URL / ชื่อหน้า / IP / เวลาที่เข้าชม = `created_at` /
+เวลาที่ออกจากหน้า = `last_visited`) — คลิกแถวเปิด `Components/Admin/DetailDialog.vue` (modal กลาง ใช้ซ้ำได้)
+แสดง field ทั้งหมดของ record. ตัวกรอง: ช่องค้นหาเดียว (URL / ชื่อหน้า / IP), ช่วงวันที่ `date_from`/`date_to`
+(กรอง `created_at`), enter ในช่องหรือปุ่ม "ค้นหา" (ไอคอนแว่นขยาย), ปุ่ม "เริ่มใหม่" (ไอคอน RotateCcw).
+paging + เลือกจำนวนต่อหน้า + แสดง "แสดง X–Y จาก N รายการ". sort default `created_at` desc
+(`sort=name` ใช้ leftJoin `sys_user`). ยังไม่มี export CSV
+
+**หน้าจอ `log_back_login` (ทำแล้ว)** — `admin.system.backlog.login.index` → `BackLogLoginController@index`
+(เช็ก `system.backlog.login`). `Pages/Admin/System/BackLogLogin/Index.vue`: ตาราง ชื่อ-นามสกุล [ไม่มี = `-`] /
+Username / ประเภท / ผลลัพธ์ (pill สี เขียว-แดง-เหลือง) / IP / วันเวลา — คลิกแถวเปิด `DetailDialog`.
+ตัวกรอง: ช่องค้นหา (Username / IP / หมายเหตุ) + select ประเภท + select ผลลัพธ์ + ช่วงวันที่ (กรอง `created_at`).
+paging + per_page + sort default `created_at` desc (`sort=name` leftJoin `sys_user`)
+
+**หน้าจอ log อื่น ๆ** — 🔴 ยังไม่ทำ (action / ฝั่งหน้าบ้าน)
+
+**Permission** — seed ไว้แล้ว: `system.backlog.access`/`.action`/`.login` และ `system.frontlog.access`/`.action`/`.login`
+(เมนู sidebar route_name `admin.system.backlog.*.index` / `admin.system.frontlog.*.index` —
+`backlog.access.index` + `backlog.login.index` มี route จริงแล้ว เมนูคลิกได้; ที่เหลือยังไม่มี route เมนูจึง render จาง)
 
 **หมายเหตุ**
-- พิจารณา retention (ลบอัตโนมัติเกิน N วัน) ผ่าน scheduled command
+- retention: ลบแบบ hard delete เมื่อเกิน N วัน ผ่าน scheduled command (`routes/console.php`) — คนละชั้นกับ `softDeletes`
 - คนละส่วนกับ `sys_user.last_login_at` / `failed_login_count` / `last_failed_login_at` — ฟิลด์บน `sys_user`
-  เก็บ "สถานะล่าสุด" ต่อผู้ใช้ (ใช้ประกอบการล็อกบัญชี) ส่วน `sys_log_login` เก็บประวัติทุกครั้งแบบ append
+  เก็บ "สถานะล่าสุด" ต่อผู้ใช้ (ใช้ประกอบการล็อกบัญชี) ส่วน `log_back_login` เก็บประวัติทุกครั้งแบบ append
 - การล็อกบัญชีเมื่อ `failed_login_count` เกินเกณฑ์: อ่านเกณฑ์จาก `sys_setting` (เสนอกลุ่ม `security`,
   key `max_failed_login`, `lockout_minutes`) — เมื่อถึงเกณฑ์ให้บล็อก login จนกว่าจะพ้นเวลา/แอดมินรีเซ็ต
 
@@ -322,6 +416,7 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 | `group` | `varchar(50)` | ส่วนหนึ่งของ composite PK — เช่น `site` |
 | `name` | `varchar(100)` | ส่วนหนึ่งของ composite PK — เช่น `site_name` |
 | `value` | `text` null | ค่า (string/JSON แล้วแต่ key) |
+| `created_by` / `updated_by` | bigint null (`sys_user.id`, ไม่มี FK) | ผู้สร้าง / ผู้แก้ไขล่าสุด (ยังไม่มี UI เขียน) |
 | `timestamps`, `deleted_at` | | timestamps + softDeletes |
 
 primary key = `(group, name)` — Eloquent ไม่รองรับ composite key เต็มรูปแบบ ให้ค้นด้วย
@@ -535,3 +630,43 @@ sys_menu
 | `tests/Feature/ProfileTest.php` | payload field ใหม่ + `assertSoftDeleted` |
 | `tests/Feature/Auth/RegistrationTest.php` | payload field ใหม่ + เทส email ซ้ำข้าม `user_type` / หลัง soft delete |
 | `tests/Feature/Auth/AuthenticationTest.php` | เทส front user / บัญชีถูกระงับ / บันทึกสถิติ login |
+
+---
+
+## ภาคผนวก: คอลัมน์ audit ผู้กระทำ (created_by / updated_by / deleted_by)
+
+เพิ่มในไฟล์ migration เดิม `0001_01_01_000000_create_users_table.php` — ต้อง `php artisan migrate:fresh --seed` ใหม่
+
+```
+sys_user
++ password_changed_at     timestamp    NULL          // ตั้ง/เปลี่ยนรหัสผ่านครั้งล่าสุด
++ password_changed_by     bigint       NULL          // sys_user.id — ไม่มี FK
++ created_by              bigint       NULL          // sys_user.id — ไม่มี FK
++ updated_by              bigint       NULL
++ deleted_by              bigint       NULL
+
+sys_usergroup
++ created_by / updated_by / deleted_by   bigint NULL  // sys_user.id — ไม่มี FK
+
+sys_usergroup_action (pivot)
++ created_by / updated_by                bigint NULL  // ผู้กำหนดสิทธิ์
+
+sys_setting
++ created_by / updated_by                bigint NULL  // ยังไม่มี UI เขียน
+```
+
+> ไม่ผูก FK เพื่อเลี่ยงปัญหาลำดับ seed / self-reference (แนวเดียวกับ `sys_menu.action_code`) — ตรวจความถูกต้องในโค้ด
+
+### ผลกระทบต่อโค้ด
+
+| ไฟล์ | การเปลี่ยน |
+|------|-----------|
+| `app/Models/User.php` | `fillable` เพิ่ม `created_by`/`updated_by`/`deleted_by`/`password_changed_at`/`password_changed_by`; cast `password_changed_at` เป็น datetime |
+| `app/Models/UserGroup.php` | `fillable` เพิ่ม `created_by`/`updated_by`/`deleted_by`; `actions()` เพิ่ม `withPivot('created_by','updated_by')` + `withTimestamps()` |
+| `app/Models/SysSetting.php` | `fillable` เพิ่ม `created_by`/`updated_by` |
+| `app/Http/Controllers/Admin/System/UserController.php` | `store`: `created_by` + `password_changed_at`/`password_changed_by`; `update`: `updated_by`; `destroy`: `deleted_by` (save ก่อน soft delete); `passwordUpdate`: `password_changed_at`/`password_changed_by` + `updated_by` |
+| `app/Http/Controllers/Admin/System/UsergroupController.php` | `store`: `created_by`; `update`: `updated_by`; `destroy`: `deleted_by` (save ก่อน soft delete); `rightsUpdate`: `attach($ids, ['created_by'=>…, 'updated_by'=>…])` |
+| `tests/Feature/Admin/System/UserManagementTest.php`, `UsergroupManagementTest.php` | assert ค่า audit หลัง store/update/destroy/password/rights |
+
+> **ยังไม่ทำ:** UI แสดงผู้สร้าง/ผู้แก้ไข/ผู้ลบ ในหน้ารายการ/แก้ไข; seeder ปล่อย audit เป็น `null`;
+> ProfileController / Breeze auth (แก้โปรไฟล์ตัวเอง, เปลี่ยนรหัสผ่านตัวเอง, สมัคร) ยังไม่เขียน audit — ทำเพิ่มได้ภายหลัง

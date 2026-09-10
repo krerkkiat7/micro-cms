@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\LogBackLogin;
 use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -67,6 +68,8 @@ class LoginRequest extends FormRequest
 
             RateLimiter::clear($this->throttleKey());
 
+            LogBackLogin::loginSuccess(Auth::user());
+
             return;
         }
 
@@ -79,6 +82,8 @@ class LoginRequest extends FormRequest
 
         // รหัสผ่านถูกต้องแต่บัญชีถูกระงับ (status = 'N') → แจ้งว่าถูก block (ไม่นับเป็น login ไม่สำเร็จ)
         if ($user && $user->status !== 'Y' && Hash::check($password, $user->password)) {
+            LogBackLogin::loginBlocked($email, 'บัญชีถูกระงับการใช้งาน');
+
             throw ValidationException::withMessages([
                 'email' => 'บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ',
             ]);
@@ -91,6 +96,8 @@ class LoginRequest extends FormRequest
                 'last_failed_login_at' => now(),
             ])->save();
         }
+
+        LogBackLogin::loginFailed($email, $user ? 'รหัสผ่านไม่ถูกต้อง' : 'ไม่พบบัญชีผู้ใช้งานหลังบ้าน');
 
         throw ValidationException::withMessages([
             'email' => trans('auth.failed'),
@@ -111,6 +118,8 @@ class LoginRequest extends FormRequest
         event(new Lockout($this));
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
+
+        LogBackLogin::loginBlocked((string) $this->input('email'), 'ถูกระงับชั่วคราว: พยายามเข้าสู่ระบบเกิน 5 ครั้ง');
 
         throw ValidationException::withMessages([
             'email' => trans('auth.throttle', [
