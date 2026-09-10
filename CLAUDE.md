@@ -115,6 +115,7 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 | `sys_menu` | `App\Models\SysMenu` | เมนูย่อยหลังบ้าน; `id` `string(30)` primary; `menu_group_id` FK; `icon` (ชื่อ lucide PascalCase), `route_name` (ลิงก์โมดูล), `action_code` (`sys_action.code` — เช็กในโค้ด, ไม่มี FK), `sort_order`, `status`, softDeletes. seed ใน `MenuSeeder` |
 | `log_back_access` | `App\Models\LogBackAccess` | log การเข้าชมหน้าหลังบ้าน (1 request = 1 แถว); `token` (ULID unique) สำหรับ keep-alive ping, `last_visited` (bump ตอน ping, ครั้งแรก = `created_at`), `action_date` (index, กรองรายวัน), `session_id`/`remote_ip`/`agent`/`browser*`/`platform`/`device_type`/`referrer`/`accept_*`, `status` `char(1)` `Y`, audit `created_by`/`updated_by`/`deleted_by`, `timestamps` + softDeletes. model เติม `token`/`action_date`/`last_visited` อัตโนมัติใน `creating`; static `LogBackAccess::record($title)` = บันทึก 1 แถวจาก request ปัจจุบัน (ดู §ประวัติ). permission `system.backlog.access` (seed แล้ว) |
 | `log_back_login` | `App\Models\LogBackLogin` | log การเข้า/ออกระบบหลังบ้าน (1 เหตุการณ์ = 1 แถว); `log_type` (`login`/`logout`), `result` (`success`/`fail`/`block`), `username` (อีเมลที่กรอก), `note` (เหตุผล), `remote_ip`, `action_date` (`date`, model เติม), `status` `char(1)` `Y`, audit + `timestamps` + softDeletes. **ไม่มีคอลัมน์ password** (ไม่เก็บรหัสที่กรอก). `user_id` เก็บเมื่อสำเร็จ/logout เท่านั้น. static: `loginSuccess(User)` / `loginFailed(username,note)` / `loginBlocked(username,note)` / `logout(userId,username)`. permission `system.backlog.login` (seed แล้ว) |
+| `log_back_action` | `App\Models\LogBackAction` | log การกระทำในหลังบ้าน (create/view/update/delete บนข้อมูล); `module_code` (เช่น `system.user`, `system.usergroup.rights`), `action_type`, `value_string` (ชื่อข้อมูล), `ref_id` (id ข้อมูล), `action_date` (`date`, model เติม), `remote_ip`, `geo_ip`, `status` + audit + `timestamps` + softDeletes. static `LogBackAction::record($moduleCode, $actionType, $valueString, $refId)` — เซ็ต `user_id`/`created_by` = `Auth::id()`, `remote_ip` = `ClientIp::from()`. permission `system.backlog.action` (seed แล้ว). **โมดูล CRUD ใหม่ทุกตัวต้องเรียก `record()` ตาม pattern `system.user`** |
 
 การเช็กสิทธิ์:
 - `$user->hasPermission('system.user.view')` — คืน `bool` (คืน `false` ถ้า user ไม่มี usergroup)
@@ -228,7 +229,15 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   `Auth::id()`/email **ก่อน** logout). หน้ารายการ `admin.system.backlog.login.index` → `BackLogLoginController@index`
   (เช็ก `system.backlog.login`) → `Pages/Admin/System/BackLogLogin/Index.vue` — คอลัมน์ ชื่อ-นามสกุล/Username/ประเภท/
   ผลลัพธ์ (pill สี)/IP/วันเวลา, กรอง q(username,ip,note)+ประเภท+ผลลัพธ์+ช่วงวันที่, คลิกแถวเปิด `DetailDialog`.
-  route ทั้งหมดจัดกลุ่มใต้ `system/backlog` ใน `routes/web.php`. **ยังไม่ทำ**: log ฝั่งหน้าบ้าน, log action
+  route ทั้งหมดจัดกลุ่มใต้ `system/backlog` ใน `routes/web.php`
+- log_back_action (การกระทำ) — `LogBackAction::record($moduleCode, $actionType, $valueString, $refId)` เรียกใน
+  `UserController` (store→`create`, edit→`view`, update→`update`, destroy→`delete` [เก็บ name/id ก่อนลบ],
+  password→`view`, passwordUpdate→`update`; module `system.user` / `system.user.password`) และ `UsergroupController`
+  (เทียบเคียง; module `system.usergroup` / `system.usergroup.rights`) — **หน้ารายการ/หน้า add ไม่บันทึก**.
+  หน้ารายการ `admin.system.backlog.action.index` → `BackLogActionController@index` (เช็ก `system.backlog.action`)
+  → `Pages/Admin/System/BackLogAction/Index.vue` — คอลัมน์ ชื่อ-นามสกุล/โมดูล/ประเภท (pill)/ข้อมูล/IP/วันเวลา,
+  กรอง q(value_string,module_code,ip) + dropdown "โมดูล"/"ประเภทการกระทำ" (distinct จากคอลัมน์) + ช่วงวันที่.
+  `toDate()` helper ย้ายไป base `App\Http\Controllers\Controller` (ใช้ร่วม 3 log viewer). **ยังไม่ทำ**: log ฝั่งหน้าบ้าน
 
 ## ทดสอบ
 

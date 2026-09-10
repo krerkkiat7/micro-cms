@@ -11,7 +11,7 @@
 | 2 | จัดการกลุ่มผู้ใช้งาน + สิทธิ์ | `sys_usergroup`, `sys_action_group`, `sys_action`, `sys_usergroup_action` | 🟢 list/add/edit + หน้ากำหนดสิทธิ์ (tree) เสร็จ |
 | 3 | จัดการเมนู (หลังบ้าน / หน้าบ้าน) | `sys_menu_group`, `sys_menu` / `sys_front_menu` *(เสนอ)* | 🟡 เมนูหลังบ้าน: ตาราง/model/seed ตัวอย่างมี, ยังไม่ต่อ UI · หน้าบ้าน: 🔴 |
 | 4 | จัดการ template | `sys_template` *(เสนอ)* | 🔴 |
-| 5 | ประวัติ login / เข้าชม / การกระทำ | `log_back_access`, `log_back_action`, `log_back_login` (+ `log_front_*`) | 🟡 `log_back_access` + `log_back_login` เสร็จ (บันทึก + หน้ารายการ) · action / ฝั่งหน้าบ้าน 🔴 |
+| 5 | ประวัติ login / เข้าชม / การกระทำ | `log_back_access`, `log_back_action`, `log_back_login` (+ `log_front_*`) | 🟡 หลังบ้านครบ 3 ตัว (บันทึก + หน้ารายการ) · `log_front_*` 🔴 |
 | 6 | ตั้งค่าระบบ/เว็บไซต์ | `sys_setting` | 🟡 ตาราง/model/seed ตัวอย่างมี, ยังไม่มี UI |
 | 7 | profile | `sys_user` | 🟢 |
 | 8 | dashboard | — | 🟡 placeholder |
@@ -294,7 +294,7 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 
 ---
 
-## 5. ประวัติ login / เข้าชม / การกระทำ — 🟡 `log_back_access` + `log_back_login` เสร็จ · action / ฝั่งหน้าบ้าน ยังไม่ทำ
+## 5. ประวัติ login / เข้าชม / การกระทำ — 🟡 ฝั่งหลังบ้านครบ 3 ตัว (`log_back_access` + `log_back_login` + `log_back_action`) · ฝั่งหน้าบ้าน 🔴
 
 **วัตถุประสงค์** — เก็บ log เพื่อตรวจสอบย้อนหลังและวิเคราะห์การเข้าชม
 
@@ -307,7 +307,7 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 | ตาราง | เก็บอะไร | สถานะ |
 |-------|---------|-------|
 | `log_back_access` / `log_front_access` | การเข้าชม/เข้าถึงหน้า (1 request = 1 แถว) | `log_back_access` 🟢 ตาราง/model + บันทึก + keep-alive + หน้ารายการ · `log_front_access` 🔴 |
-| `log_back_action` / `log_front_action` | การกระทำ (สร้าง/แก้/ลบ) — `user_id`, `action`, `model`, `model_id`, `changes` json, `remote_ip` | 🔴 |
+| `log_back_action` / `log_front_action` | การกระทำบนข้อมูล — `module_code`, `action_type` (`create`/`view`/`update`/`delete`), `value_string` (ชื่อข้อมูล), `ref_id`, `remote_ip` | `log_back_action` 🟢 ตาราง/model + บันทึก (system.user + system.usergroup) + หน้ารายการ · `log_front_action` 🔴 |
 | `log_back_login` / `log_front_login` | การเข้า/ออกระบบ — `log_type` (`login`/`logout`), `result` (`success`/`fail`/`block`), `username`, `note`, `remote_ip` | `log_back_login` 🟢 ตาราง/model + บันทึก + หน้ารายการ · `log_front_login` 🔴 |
 
 ### `log_back_access` — คอลัมน์
@@ -364,6 +364,28 @@ index: `user_id`, `username`, `log_type`, `result`, `created_at`
 
 `remote_ip` ผ่าน `App\Support\ClientIp::from()` เช่นเดียวกับ `log_back_access`
 
+### `log_back_action` — คอลัมน์ + การเก็บ (ทำแล้ว)
+
+`id`, `user_id` (ผู้กระทำ), `module_code` `varchar(50)` (เช่น `system.user`, `system.usergroup.rights`),
+`action_type` `varchar(50)` (`create`/`view`/`update`/`delete`/…), `value_string` `varchar(500)` (ชื่อข้อมูล),
+`ref_id` (id ข้อมูล), `action_date` `date` (model เติม), `remote_ip` `varchar(45)`, `geo_ip` `varchar(10)`,
+`status` `char(1)` `Y`, audit + `timestamps` + `softDeletes`.
+index: `user_id`, `module_code`, `action_type`, `action_date`, `created_at`, `[module_code, ref_id]`
+
+บันทึกด้วย static `App\Models\LogBackAction::record($moduleCode, $actionType, $valueString, $refId)`
+(เซ็ต `user_id`/`created_by` = `Auth::id()`, `remote_ip` = `ClientIp::from()`) เรียกจาก controller
+**หลัง DB op สำเร็จ ก่อน redirect** (หรือคู่กับ `LogBackAccess::record()` สำหรับหน้า view):
+
+| จุด | module_code | action_type |
+|---|---|---|
+| `UserController` store / edit / update / destroy | `system.user` | create / view / update / delete |
+| `UserController` password / passwordUpdate | `system.user.password` | view / update |
+| `UsergroupController` store / edit / update / destroy | `system.usergroup` | create / view / update / delete |
+| `UsergroupController` rights / rightsUpdate | `system.usergroup.rights` | view / update |
+
+หน้ารายการ (`index`) และหน้าฟอร์มสร้าง (`add`) **ไม่บันทึก** action.
+`destroy` เก็บ `name`/`id` ไว้ก่อนลบ. **โมดูล CRUD หลังบ้านที่ทำต่อไปทุกตัว ต้องเรียก `record()` ตาม pattern นี้**
+
 **keep-alive `last_visited` (ทำแล้ว)** — composable `resources/js/composables/useAccessHeartbeat.ts`
 (เรียกครั้งเดียวใน `AdminLayout.vue`) อ่าน `accessLog.token` แล้วยิง `navigator.sendBeacon()`
 (fallback `fetch(..., {keepalive:true})`) ไป `POST admin.system.backlog.access.ping` ตอน
@@ -390,11 +412,17 @@ Username / ประเภท / ผลลัพธ์ (pill สี เขีย�
 ตัวกรอง: ช่องค้นหา (Username / IP / หมายเหตุ) + select ประเภท + select ผลลัพธ์ + ช่วงวันที่ (กรอง `created_at`).
 paging + per_page + sort default `created_at` desc (`sort=name` leftJoin `sys_user`)
 
-**หน้าจอ log อื่น ๆ** — 🔴 ยังไม่ทำ (action / ฝั่งหน้าบ้าน)
+**หน้าจอ `log_back_action` (ทำแล้ว)** — `admin.system.backlog.action.index` → `BackLogActionController@index`
+(เช็ก `system.backlog.action`). `Pages/Admin/System/BackLogAction/Index.vue`: ตาราง ชื่อ-นามสกุล [`-` ถ้า null] /
+โมดูล / ประเภทการกระทำ (pill สี — เพิ่ม/ดู/แก้ไข/ลบ) / ข้อมูล / IP / วันเวลา — คลิกแถวเปิด `DetailDialog`.
+ตัวกรอง: ช่องค้นหา (`value_string` / `module_code` / IP) + dropdown **"โมดูล"** และ **"ประเภทการกระทำ"**
+(จาก `SELECT DISTINCT` ของคอลัมน์นั้น ๆ) + ช่วงวันที่. `toDate()` ของ 3 log viewer ย้ายไป base `Controller`
+
+**หน้าจอ log ฝั่งหน้าบ้าน** — 🔴 ยังไม่ทำ
 
 **Permission** — seed ไว้แล้ว: `system.backlog.access`/`.action`/`.login` และ `system.frontlog.access`/`.action`/`.login`
 (เมนู sidebar route_name `admin.system.backlog.*.index` / `admin.system.frontlog.*.index` —
-`backlog.access.index` + `backlog.login.index` มี route จริงแล้ว เมนูคลิกได้; ที่เหลือยังไม่มี route เมนูจึง render จาง)
+`backlog.*` ทั้ง 3 มี route จริงแล้ว เมนูคลิกได้; `frontlog.*` ยังไม่มี route เมนูจึง render จาง)
 
 **หมายเหตุ**
 - retention: ลบแบบ hard delete เมื่อเกิน N วัน ผ่าน scheduled command (`routes/console.php`) — คนละชั้นกับ `softDeletes`

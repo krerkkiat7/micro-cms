@@ -89,6 +89,37 @@ return new class extends Migration
             $table->index('result');
             $table->index('created_at');
         });
+
+        // log_back_action — การกระทำในระบบหลังบ้าน (create / view / update / delete บนข้อมูล)
+        Schema::create('log_back_action', function (Blueprint $table) {
+            $table->id();
+
+            $table->unsignedBigInteger('user_id')->nullable();   // ผู้กระทำ (sys_user.id — เช็กในโค้ด ไม่มี FK)
+            $table->string('module_code', 50)->nullable();       // รหัสโมดูล เช่น system.user, system.usergroup.rights
+            $table->string('action_type', 50)->nullable();       // ประเภทการกระทำ เช่น create / view / update / delete
+            $table->string('value_string', 500)->nullable();     // ชื่อข้อมูลที่ถูกกระทำ (เช่น ชื่อ-นามสกุลผู้ใช้)
+            $table->unsignedBigInteger('ref_id')->nullable();    // id ของข้อมูลที่ถูกกระทำ
+            $table->date('action_date')->nullable();             // วันที่บันทึก — model เติมอัตโนมัติ
+            $table->string('remote_ip', 45)->nullable();         // IP address (รองรับ IPv6)
+            $table->string('geo_ip', 10)->nullable();            // รหัสประเทศจาก IP (ยังไม่มี resolver)
+
+            $table->char('status', 1)->default('Y');             // Y = ใช้งาน, N = ไม่ใช้งาน
+
+            // ผู้กระทำ (sys_user.id — เช็ก/ผูกในโค้ด ไม่มี FK)
+            $table->unsignedBigInteger('created_by')->nullable(); // ผู้สร้าง
+            $table->unsignedBigInteger('updated_by')->nullable(); // ผู้แก้ไขล่าสุด
+            $table->unsignedBigInteger('deleted_by')->nullable(); // ผู้ลบ
+
+            $table->timestamps();
+            $table->softDeletes();
+
+            $table->index('user_id');
+            $table->index('module_code');
+            $table->index('action_type');
+            $table->index('action_date');
+            $table->index('created_at');
+            $table->index(['module_code', 'ref_id']); // ประวัติของข้อมูลชิ้นเดียว
+        });
     }
 
     /**
@@ -96,6 +127,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('log_back_action');
         Schema::dropIfExists('log_back_login');
         Schema::dropIfExists('log_back_access');
     }

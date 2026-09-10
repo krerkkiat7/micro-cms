@@ -7,7 +7,6 @@ use App\Models\LogBackAccess;
 use App\Models\LogBackLogin;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 
@@ -91,23 +90,5 @@ class BackLogLoginController extends Controller
             'direction' => $direction,
             'perPageOptions' => self::PER_PAGE_OPTIONS,
         ]);
-    }
-
-    /**
-     * แปลง input วันที่ (Y-m-d) เป็นสตริงวันที่ — คืน null ถ้าว่างหรือ parse ไม่ได้
-     */
-    private function toDate(mixed $value): ?string
-    {
-        $value = trim((string) $value);
-
-        if ($value === '') {
-            return null;
-        }
-
-        try {
-            return Carbon::parse($value)->toDateString();
-        } catch (\Exception) {
-            return null;
-        }
     }
 }

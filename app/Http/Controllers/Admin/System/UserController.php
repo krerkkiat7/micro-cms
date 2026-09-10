@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\System\StoreUserRequest;
 use App\Http\Requests\Admin\System\UpdateUserPasswordRequest;
 use App\Http\Requests\Admin\System\UpdateUserRequest;
 use App\Models\LogBackAccess;
+use App\Models\LogBackAction;
 use App\Models\User;
 use App\Models\UserGroup;
 use Illuminate\Database\Eloquent\Collection;
@@ -160,6 +161,8 @@ class UserController extends Controller
             'password_changed_by' => $actorId,
         ]);
 
+        LogBackAction::record('system.user', 'create', $user->name, $user->id);
+
         return redirect()
             ->route('admin.system.user.edit', $user->id)
             ->with('success', 'เพิ่มผู้ใช้งานเรียบร้อยแล้ว');
@@ -181,6 +184,7 @@ class UserController extends Controller
         }
 
         LogBackAccess::record('แก้ไขผู้ใช้งาน');
+        LogBackAction::record('system.user', 'view', $model->name, $model->id);
 
         return Inertia::render('Admin/System/User/Edit', [
             'user' => [
@@ -247,6 +251,8 @@ class UserController extends Controller
             'updated_by' => $request->user()->id,
         ])->save();
 
+        LogBackAction::record('system.user', 'update', $model->name, $model->id);
+
         return redirect()
             ->route('admin.system.user.edit', $model->id)
             ->with('success', 'บันทึกข้อมูลเรียบร้อยแล้ว');
@@ -272,11 +278,17 @@ class UserController extends Controller
             return back()->withErrors(['user' => 'ไม่สามารถลบบัญชีของตัวเองได้']);
         }
 
+        // เก็บข้อมูลไว้ก่อนลบ เพื่อบันทึก log
+        $name = $model->name;
+        $id = $model->id;
+
         // บันทึกผู้ลบก่อน soft delete (runSoftDelete ไม่ save attribute อื่น)
         $model->deleted_by = $request->user()->id;
         $model->save();
 
         $model->delete();
+
+        LogBackAction::record('system.user', 'delete', $name, $id);
 
         return redirect()
             ->route('admin.system.user.index')
@@ -299,6 +311,7 @@ class UserController extends Controller
         }
 
         LogBackAccess::record('เปลี่ยนรหัสผ่านผู้ใช้งาน');
+        LogBackAction::record('system.user.password', 'view', $model->name, $model->id);
 
         return Inertia::render('Admin/System/User/Password', [
             'user' => [
@@ -332,6 +345,8 @@ class UserController extends Controller
             'password_changed_by' => $actorId,
             'updated_by' => $actorId,
         ]);
+
+        LogBackAction::record('system.user.password', 'update', $model->name, $model->id);
 
         return redirect()
             ->route('admin.system.user.edit', $model->id)

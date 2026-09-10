@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\System\AssignUsergroupRightsRequest;
 use App\Http\Requests\Admin\System\StoreUsergroupRequest;
 use App\Http\Requests\Admin\System\UpdateUsergroupRequest;
 use App\Models\LogBackAccess;
+use App\Models\LogBackAction;
 use App\Models\SysAction;
 use App\Models\SysActionGroup;
 use App\Models\UserGroup;
@@ -117,6 +118,8 @@ class UsergroupController extends Controller
             'created_by' => $request->user()->id,
         ]);
 
+        LogBackAction::record('system.usergroup', 'create', $group->name, $group->id);
+
         return redirect()
             ->route('admin.system.usergroup.edit', $group->id)
             ->with('success', 'เพิ่มกลุ่มผู้ใช้งานเรียบร้อยแล้ว');
@@ -138,6 +141,7 @@ class UsergroupController extends Controller
         }
 
         LogBackAccess::record('แก้ไขกลุ่มผู้ใช้งาน');
+        LogBackAction::record('system.usergroup', 'view', $group->name, $group->id);
 
         return Inertia::render('Admin/System/Usergroup/Edit', [
             'group' => [
@@ -183,6 +187,8 @@ class UsergroupController extends Controller
             'updated_by' => $request->user()->id,
         ])->save();
 
+        LogBackAction::record('system.usergroup', 'update', $group->name, $group->id);
+
         return redirect()
             ->route('admin.system.usergroup.edit', $group->id)
             ->with('success', 'บันทึกข้อมูลเรียบร้อยแล้ว');
@@ -213,11 +219,17 @@ class UsergroupController extends Controller
             return back()->withErrors(['group' => 'ไม่สามารถลบกลุ่มที่ยังมีสมาชิกอยู่']);
         }
 
+        // เก็บข้อมูลไว้ก่อนลบ เพื่อบันทึก log
+        $name = $group->name;
+        $id = $group->id;
+
         // บันทึกผู้ลบก่อน soft delete (runSoftDelete ไม่ save attribute อื่น)
         $group->deleted_by = $request->user()->id;
         $group->save();
 
         $group->delete();
+
+        LogBackAction::record('system.usergroup', 'delete', $name, $id);
 
         return redirect()
             ->route('admin.system.usergroup.index')
@@ -255,6 +267,7 @@ class UsergroupController extends Controller
             ->all();
 
         LogBackAccess::record('กำหนดสิทธิ์กลุ่มผู้ใช้งาน');
+        LogBackAction::record('system.usergroup.rights', 'view', $group->name, $group->id);
 
         return Inertia::render('Admin/System/Usergroup/Rights', [
             'group' => [
@@ -299,6 +312,8 @@ class UsergroupController extends Controller
                 'updated_by' => $actorId,
             ]);
         }
+
+        LogBackAction::record('system.usergroup.rights', 'update', $group->name, $group->id);
 
         return redirect()
             ->route('admin.system.usergroup.rights', $group->id)

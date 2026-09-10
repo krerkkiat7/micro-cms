@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\System\BackLogAccessController;
+use App\Http\Controllers\Admin\System\BackLogActionController;
 use App\Http\Controllers\Admin\System\BackLogLoginController;
 use App\Http\Controllers\Admin\System\UserController;
 use App\Http\Controllers\Admin\System\UsergroupController;
@@ -95,6 +96,9 @@ Route::prefix('admin')->group(function () {
 
             // การเข้าสู่ระบบ (log_back_login)
             Route::get('/login', [BackLogLoginController::class, 'index'])->name('admin.system.backlog.login.index');
+
+            // การกระทำ (log_back_action)
+            Route::get('/action', [BackLogActionController::class, 'index'])->name('admin.system.backlog.action.index');
         });
     });
 });
