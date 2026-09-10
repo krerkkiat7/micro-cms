@@ -71,7 +71,7 @@ return new class extends Migration
             $table->string('result', 10)->nullable();          // success / fail / block
             $table->string('note', 1000)->nullable();          // เหตุผล (สำเร็จ / รหัสผิด / ไม่พบบัญชี / ถูกระงับ ฯลฯ)
             $table->string('remote_ip', 45)->nullable();       // IP address (รองรับ IPv6)
-            $table->dateTime('action_date')->nullable();       // เวลาที่บันทึก — model เติมอัตโนมัติ
+            $table->date('action_date')->nullable();           // วันที่บันทึก — model เติมอัตโนมัติ
 
             $table->char('status', 1)->default('Y');           // Y = ใช้งาน, N = ไม่ใช้งาน
 

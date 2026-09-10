@@ -37,14 +37,14 @@ class LogBackLogin extends Model
     protected function casts(): array
     {
         return [
-            'action_date' => 'datetime',
+            'action_date' => 'date',
         ];
     }
 
     protected static function booted(): void
     {
         static::creating(function (self $log) {
-            $log->action_date ??= now();
+            $log->action_date ??= now()->toDateString();
         });
     }
 

@@ -352,7 +352,7 @@ proxy/CDN ก่อน (`CF-Connecting-IP` → `X-Real-IP` → `X-Forwarded-For`
 
 `id`, `user_id` (bigint null — เก็บเมื่อ `success`/`logout`), `log_type` `varchar(10)` (`login`/`logout`),
 `username` `varchar(150)` (อีเมลที่กรอก), `result` `varchar(10)` (`success`/`fail`/`block`),
-`note` `varchar(1000)` (เหตุผล), `remote_ip` `varchar(45)`, `action_date` `datetime` (model เติม),
+`note` `varchar(1000)` (เหตุผล), `remote_ip` `varchar(45)`, `action_date` `date` (model เติม),
 `status` `char(1)` `Y`, audit + `timestamps` + `softDeletes`. **ไม่มีคอลัมน์ `password`** (ไม่เก็บรหัสที่กรอก).
 index: `user_id`, `username`, `log_type`, `result`, `created_at`
 
