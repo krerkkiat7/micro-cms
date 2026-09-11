@@ -81,6 +81,8 @@ export type PageProps<
     auth: {
         user: User;
     };
+    /** ชื่อไซต์จากการตั้งค่าระบบ (sys_setting กลุ่ม site) — fallback เป็น .env APP_NAME ถ้าไม่ได้ตั้งค่า */
+    siteName: string;
     menu: MenuGroup[];
     flash?: {
         success?: string | null;

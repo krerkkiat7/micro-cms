@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\SysMenuGroup;
 use App\Models\User;
+use App\Support\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Middleware;
@@ -50,6 +51,8 @@ class HandleInertiaRequests extends Middleware
                     'permissions' => $request->user()->getPermissionsArray(),
                 ] : null,
             ],
+            // ชื่อไซต์จากการตั้งค่าระบบ — ใช้แสดงผลทั่วไป (title, โลโก้ใน sidebar/หน้า auth)
+            'siteName' => fn () => Setting::siteName(),
             // เมนู sidebar หลังบ้าน สร้างจาก sys_menu_group + sys_menu กรองตามสิทธิ์ของผู้ใช้
             // (closure = ประเมินเฉพาะตอนที่ Inertia ต้องส่ง prop นี้จริง)
             'menu' => fn () => $this->adminMenu($request->user()),

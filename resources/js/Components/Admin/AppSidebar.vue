@@ -41,7 +41,7 @@ const showText = computed(() => isExpanded.value || isMobileOpen.value);
         >
             <Link :href="route('admin.dashboard')" class="flex items-center gap-2.5 text-white">
                 <ApplicationLogo class="size-8 shrink-0 fill-current" />
-                <span v-show="showText" class="text-lg font-semibold tracking-tight">My CMS</span>
+                <span v-show="showText" class="text-lg font-semibold tracking-tight">{{ page.props.siteName }}</span>
             </Link>
         </div>
 

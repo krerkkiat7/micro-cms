@@ -4,6 +4,8 @@ namespace App\Http\Requests\Auth;
 
 use App\Models\LogBackLogin;
 use App\Models\User;
+use App\Support\Recaptcha;
+use App\Support\Setting;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -33,6 +35,7 @@ class LoginRequest extends FormRequest
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
+            'g-recaptcha-response' => [Recaptcha::enabled() ? 'required' : 'nullable', 'string'],
         ];
     }
 
@@ -47,6 +50,12 @@ class LoginRequest extends FormRequest
     public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
+
+        if (Recaptcha::enabled() && ! Recaptcha::verify($this->input('g-recaptcha-response'), $this->ip())) {
+            throw ValidationException::withMessages([
+                'email' => 'กรุณายืนยันว่าคุณไม่ใช่โปรแกรมอัตโนมัติ',
+            ]);
+        }
 
         $email = (string) $this->input('email');
         $password = (string) $this->input('password');
@@ -95,6 +104,21 @@ class LoginRequest extends FormRequest
                 'failed_login_count' => $user->failed_login_count + 1,
                 'last_failed_login_at' => now(),
             ])->save();
+
+            // ครบจำนวนครั้งที่ตั้งไว้ (login_back.lockout_enabled) → ระงับบัญชีอัตโนมัติ (status = 'N')
+            $lockoutCount = (int) Setting::get('login_back', 'lockout_count', 0);
+
+            if (Setting::get('login_back', 'lockout_enabled', 'N') === 'Y'
+                && $lockoutCount > 0
+                && $user->failed_login_count >= $lockoutCount) {
+                $user->forceFill(['status' => 'N'])->save();
+
+                LogBackLogin::loginBlocked($email, "ถูกระงับอัตโนมัติ: เข้าสู่ระบบผิดพลาดเกิน {$lockoutCount} ครั้ง");
+
+                throw ValidationException::withMessages([
+                    'email' => 'บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ',
+                ]);
+            }
         }
 
         LogBackLogin::loginFailed($email, $user ? 'รหัสผ่านไม่ถูกต้อง' : 'ไม่พบบัญชีผู้ใช้งานหลังบ้าน');

@@ -6,24 +6,63 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { onMounted } from 'vue';
 
-defineProps<{
+declare global {
+    interface Window {
+        grecaptcha?: {
+            ready: (callback: () => void) => void;
+            execute: (siteKey: string, options: { action: string }) => Promise<string>;
+        };
+    }
+}
+
+const props = defineProps<{
     canResetPassword?: boolean;
     status?: string;
+    recaptcha?: { enabled: boolean; siteKey: string | null };
 }>();
 
 const form = useForm({
     email: '',
     password: '',
     remember: false,
+    'g-recaptcha-response': '',
 });
 
-const submit = () => {
+// reCAPTCHA v3 (invisible) — โหลดสคริปต์เฉพาะตอนเปิดใช้งาน + มี site key ครบ
+onMounted(() => {
+    if (props.recaptcha?.enabled && props.recaptcha.siteKey && ! window.grecaptcha) {
+        const script = document.createElement('script');
+        script.src = `https://www.google.com/recaptcha/api.js?render=${props.recaptcha.siteKey}`;
+        script.async = true;
+        document.head.appendChild(script);
+    }
+});
+
+function submitLogin() {
     form.post(route('admin.login'), {
         onFinish: () => {
             form.reset('password');
         },
     });
+}
+
+const submit = () => {
+    if (props.recaptcha?.enabled && props.recaptcha.siteKey) {
+        const siteKey = props.recaptcha.siteKey;
+
+        window.grecaptcha?.ready(() => {
+            window.grecaptcha!.execute(siteKey, { action: 'login' }).then((token) => {
+                form['g-recaptcha-response'] = token;
+                submitLogin();
+            });
+        });
+
+        return;
+    }
+
+    submitLogin();
 };
 </script>
 
@@ -75,6 +114,8 @@ const submit = () => {
                     ลืมรหัสผ่าน?
                 </Link>
             </div>
+
+            <InputError :message="form.errors['g-recaptcha-response']" />
 
             <PrimaryButton class="w-full" :disabled="form.processing">
                 เข้าสู่ระบบ

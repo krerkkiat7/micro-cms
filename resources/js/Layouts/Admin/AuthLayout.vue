@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 
 defineProps<{
     title?: string;
     description?: string;
 }>();
+
+const page = usePage();
 </script>
 
 <template>
@@ -15,7 +17,7 @@ defineProps<{
             <div class="mx-auto w-full max-w-md">
                 <Link href="/" class="mb-8 flex items-center gap-2.5 text-gray-900">
                     <ApplicationLogo class="size-9 shrink-0 fill-current" />
-                    <span class="text-lg font-semibold tracking-tight">My CMS</span>
+                    <span class="text-lg font-semibold tracking-tight">{{ page.props.siteName }}</span>
                 </Link>
 
                 <h1 v-if="title" class="text-2xl font-semibold text-gray-800">{{ title }}</h1>

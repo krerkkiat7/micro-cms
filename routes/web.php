@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\System\BackLogAccessController;
 use App\Http\Controllers\Admin\System\BackLogActionController;
 use App\Http\Controllers\Admin\System\BackLogLoginController;
+use App\Http\Controllers\Admin\System\SettingController;
 use App\Http\Controllers\Admin\System\UserController;
 use App\Http\Controllers\Admin\System\UsergroupController;
 use App\Http\Controllers\Front\HomeController;
@@ -99,6 +100,19 @@ Route::prefix('admin')->group(function () {
 
             // การกระทำ (log_back_action)
             Route::get('/action', [BackLogActionController::class, 'index'])->name('admin.system.backlog.action.index');
+        });
+
+        // ตั้งค่าระบบ (sys_setting) + ล้างแคช — ตรวจสอบสิทธิ์ในแต่ละ method ของ SettingController
+        Route::prefix('system/setting')->group(function () {
+            Route::get('/', [SettingController::class, 'index'])->name('admin.system.setting.index');
+            Route::put('/site', [SettingController::class, 'updateSite'])->name('admin.system.setting.update.site');
+            Route::put('/smtp', [SettingController::class, 'updateSmtp'])->name('admin.system.setting.update.smtp');
+            Route::put('/recaptcha', [SettingController::class, 'updateRecaptcha'])->name('admin.system.setting.update.recaptcha');
+            Route::put('/login-back', [SettingController::class, 'updateLoginBack'])->name('admin.system.setting.update.login_back');
+
+            Route::get('/clearcache', [SettingController::class, 'clearcache'])->name('admin.system.setting.clearcache');
+            Route::post('/clearcache/{group}', [SettingController::class, 'clearCacheGroup'])->name('admin.system.setting.clearcache.group');
+            Route::post('/clearcache-all', [SettingController::class, 'clearCacheAll'])->name('admin.system.setting.clearcache.all');
         });
     });
 });
