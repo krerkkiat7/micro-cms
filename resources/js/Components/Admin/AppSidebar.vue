@@ -40,7 +40,7 @@ const showText = computed(() => isExpanded.value || isMobileOpen.value);
             :class="showText ? 'justify-start' : 'lg:justify-center'"
         >
             <Link :href="route('admin.dashboard')" class="flex items-center gap-2.5 text-white">
-                <ApplicationLogo class="size-8 shrink-0 fill-current" />
+                <ApplicationLogo class="size-8 shrink-0 stroke-current" />
                 <span v-show="showText" class="text-lg font-semibold tracking-tight">{{ page.props.siteName }}</span>
             </Link>
         </div>

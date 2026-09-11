@@ -16,7 +16,7 @@ const page = usePage();
         <div class="flex w-full flex-col justify-center px-6 py-12 lg:w-1/2 lg:px-16">
             <div class="mx-auto w-full max-w-md">
                 <Link href="/" class="mb-8 flex items-center gap-2.5 text-gray-900">
-                    <ApplicationLogo class="size-9 shrink-0 fill-current" />
+                    <ApplicationLogo class="size-9 shrink-0 stroke-current" />
                     <span class="text-lg font-semibold tracking-tight">{{ page.props.siteName }}</span>
                 </Link>
 
@@ -34,7 +34,7 @@ const page = usePage();
             <div
                 class="absolute inset-0 flex flex-col items-center justify-center gap-6 px-16 text-center"
             >
-                <ApplicationLogo class="size-16 fill-current text-white/90" />
+                <ApplicationLogo class="size-16 stroke-current text-white/90" />
                 <p class="text-xl font-medium text-white">ระบบจัดการเนื้อหา</p>
                 <p class="max-w-sm text-sm text-gray-400">
                     เข้าสู่ระบบเพื่อจัดการเนื้อหาและตั้งค่าเว็บไซต์ของคุณ
