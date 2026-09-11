@@ -6,6 +6,11 @@
 
         <title inertia>{{ \App\Support\Setting::siteName() }}</title>
 
+        <!-- Favicon — ใช้ไฟล์ default ใน public/ ไปก่อน
+             ภายหลังเมื่อมีระบบจัดการไฟล์ (system.file.manage) ค่อยเปลี่ยนมาอ่านจากการตั้งค่า
+             แล้ว fallback มาไฟล์นี้เมื่อยังไม่ได้กำหนด -->
+        <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=sarabun:400,500,600,700&display=swap" rel="stylesheet" />
