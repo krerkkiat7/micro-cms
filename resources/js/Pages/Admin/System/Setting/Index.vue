@@ -17,7 +17,7 @@ interface Props {
     settings: {
         site: Record<string, string>;
         smtp: Record<string, string>;
-        recaptcha: Record<string, string>;
+        turnstile: Record<string, string>;
         login_back: Record<string, string>;
     };
 }
@@ -73,19 +73,19 @@ function submitSmtp() {
     smtpForm.put(route('admin.system.setting.update.smtp'), { preserveScroll: true });
 }
 
-// ---------- กลุ่ม "reCAPTCHA" ----------
-const recaptchaForm = useForm({
-    site_key: props.settings.recaptcha?.site_key ?? '',
-    key_secret: props.settings.recaptcha?.key_secret ?? '',
+// ---------- กลุ่ม "Turnstile CAPTCHA" ----------
+const turnstileForm = useForm({
+    site_key: props.settings.turnstile?.site_key ?? '',
+    key_secret: props.settings.turnstile?.key_secret ?? '',
 });
 
-function submitRecaptcha() {
-    recaptchaForm.put(route('admin.system.setting.update.recaptcha'), { preserveScroll: true });
+function submitTurnstile() {
+    turnstileForm.put(route('admin.system.setting.update.turnstile'), { preserveScroll: true });
 }
 
 // ---------- กลุ่ม "การเข้าสู่ระบบหลังบ้าน" ----------
 const loginBackForm = useForm({
-    recaptcha_enabled: props.settings.login_back?.recaptcha_enabled ?? 'N',
+    captcha_enabled: props.settings.login_back?.captcha_enabled ?? 'N',
     lockout_enabled: props.settings.login_back?.lockout_enabled ?? 'N',
     lockout_count: props.settings.login_back?.lockout_count ?? '',
 });
@@ -247,29 +247,29 @@ function submitLoginBack() {
                 </div>
             </form>
 
-            <!-- reCAPTCHA -->
+            <!-- Turnstile CAPTCHA -->
             <form
                 class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8"
-                @submit.prevent="submitRecaptcha"
+                @submit.prevent="submitTurnstile"
             >
-                <h2 class="text-base font-semibold text-gray-800">reCAPTCHA</h2>
+                <h2 class="text-base font-semibold text-gray-800">Turnstile CAPTCHA</h2>
 
                 <div class="mt-5 grid gap-4 sm:grid-cols-6">
                     <div class="sm:col-span-3">
-                        <InputLabel for="recaptcha_site_key" value="Site Key" />
-                        <TextInput id="recaptcha_site_key" v-model="recaptchaForm.site_key" type="text" />
-                        <InputError :message="recaptchaForm.errors.site_key" />
+                        <InputLabel for="turnstile_site_key" value="Site Key" />
+                        <TextInput id="turnstile_site_key" v-model="turnstileForm.site_key" type="text" />
+                        <InputError :message="turnstileForm.errors.site_key" />
                     </div>
 
                     <div class="sm:col-span-3">
-                        <InputLabel for="recaptcha_key_secret" value="Key Secret" />
-                        <TextInput id="recaptcha_key_secret" v-model="recaptchaForm.key_secret" type="text" />
-                        <InputError :message="recaptchaForm.errors.key_secret" />
+                        <InputLabel for="turnstile_key_secret" value="Key Secret" />
+                        <TextInput id="turnstile_key_secret" v-model="turnstileForm.key_secret" type="text" />
+                        <InputError :message="turnstileForm.errors.key_secret" />
                     </div>
                 </div>
 
                 <div class="mt-6">
-                    <PrimaryButton type="submit" :disabled="recaptchaForm.processing">
+                    <PrimaryButton type="submit" :disabled="turnstileForm.processing">
                         <Save class="mr-1.5 size-4" /> บันทึก
                     </PrimaryButton>
                 </div>
@@ -284,16 +284,16 @@ function submitLoginBack() {
 
                 <div class="mt-5 grid gap-4 sm:grid-cols-6">
                     <div class="sm:col-span-6">
-                        <InputLabel value="เปิดใช้งาน reCAPTCHA" required />
+                        <InputLabel value="เปิดใช้งาน Turnstile CAPTCHA" required />
                         <RadioGroup
-                            v-model="loginBackForm.recaptcha_enabled"
-                            name="login_back_recaptcha_enabled"
+                            v-model="loginBackForm.captcha_enabled"
+                            name="login_back_captcha_enabled"
                             :options="[
                                 { label: 'ใช่', value: 'Y' },
                                 { label: 'ไม่', value: 'N' },
                             ]"
                         />
-                        <InputError :message="loginBackForm.errors.recaptcha_enabled" />
+                        <InputError :message="loginBackForm.errors.captcha_enabled" />
                     </div>
 
                     <div class="sm:col-span-6">

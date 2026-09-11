@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class Setting
 {
-    public const GROUPS = ['site', 'smtp', 'recaptcha', 'login_back'];
+    public const GROUPS = ['site', 'smtp', 'turnstile', 'login_back'];
 
     /**
      * ค่าตั้งค่าทั้งกลุ่ม เป็น array แบบ name => value — แคชไว้ 1 วัน

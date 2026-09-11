@@ -4,8 +4,8 @@ namespace App\Http\Requests\Auth;
 
 use App\Models\LogBackLogin;
 use App\Models\User;
-use App\Support\Recaptcha;
 use App\Support\Setting;
+use App\Support\Turnstile;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -35,7 +35,7 @@ class LoginRequest extends FormRequest
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
-            'g-recaptcha-response' => [Recaptcha::enabled() ? 'required' : 'nullable', 'string'],
+            'cf-turnstile-response' => [Turnstile::enabled() ? 'required' : 'nullable', 'string'],
         ];
     }
 
@@ -51,7 +51,7 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (Recaptcha::enabled() && ! Recaptcha::verify($this->input('g-recaptcha-response'), $this->ip())) {
+        if (Turnstile::enabled() && ! Turnstile::verify($this->input('cf-turnstile-response'), $this->ip())) {
             throw ValidationException::withMessages([
                 'email' => 'กรุณายืนยันว่าคุณไม่ใช่โปรแกรมอัตโนมัติ',
             ]);

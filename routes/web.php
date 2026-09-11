@@ -107,7 +107,7 @@ Route::prefix('admin')->group(function () {
             Route::get('/', [SettingController::class, 'index'])->name('admin.system.setting.index');
             Route::put('/site', [SettingController::class, 'updateSite'])->name('admin.system.setting.update.site');
             Route::put('/smtp', [SettingController::class, 'updateSmtp'])->name('admin.system.setting.update.smtp');
-            Route::put('/recaptcha', [SettingController::class, 'updateRecaptcha'])->name('admin.system.setting.update.recaptcha');
+            Route::put('/turnstile', [SettingController::class, 'updateTurnstile'])->name('admin.system.setting.update.turnstile');
             Route::put('/login-back', [SettingController::class, 'updateLoginBack'])->name('admin.system.setting.update.login_back');
 
             Route::get('/clearcache', [SettingController::class, 'clearcache'])->name('admin.system.setting.clearcache');

@@ -23,7 +23,7 @@ const tabs = computed(() => [
 const groups = [
     { group: 'site', label: 'ล้างแคช - ตั้งค่าระบบ : ข้อมูลระบบ' },
     { group: 'smtp', label: 'ล้างแคช - ตั้งค่าระบบ : SMTP' },
-    { group: 'recaptcha', label: 'ล้างแคช - ตั้งค่าระบบ : reCAPTCHA' },
+    { group: 'turnstile', label: 'ล้างแคช - ตั้งค่าระบบ : Turnstile' },
     { group: 'login_back', label: 'ล้างแคช - ตั้งค่าระบบ : การเข้าสู่ระบบหลังบ้าน' },
 ];
 

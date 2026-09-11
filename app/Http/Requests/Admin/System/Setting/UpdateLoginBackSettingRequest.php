@@ -14,7 +14,7 @@ class UpdateLoginBackSettingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'recaptcha_enabled' => ['required', Rule::in(['Y', 'N'])],
+            'captcha_enabled' => ['required', Rule::in(['Y', 'N'])],
             'lockout_enabled' => ['required', Rule::in(['Y', 'N'])],
             'lockout_count' => ['nullable', 'required_if:lockout_enabled,Y', 'integer', 'min:1'],
         ];

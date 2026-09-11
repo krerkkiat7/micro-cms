@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Admin\System;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\System\Setting\UpdateLoginBackSettingRequest;
-use App\Http\Requests\Admin\System\Setting\UpdateRecaptchaSettingRequest;
 use App\Http\Requests\Admin\System\Setting\UpdateSiteSettingRequest;
 use App\Http\Requests\Admin\System\Setting\UpdateSmtpSettingRequest;
+use App\Http\Requests\Admin\System\Setting\UpdateTurnstileSettingRequest;
 use App\Models\LogBackAccess;
 use App\Models\LogBackAction;
 use App\Models\SysSetting;
@@ -24,7 +24,7 @@ class SettingController extends Controller
     private const GROUP_LABELS = [
         'site' => 'ข้อมูลระบบ',
         'smtp' => 'SMTP',
-        'recaptcha' => 'reCAPTCHA',
+        'turnstile' => 'Turnstile',
         'login_back' => 'การเข้าสู่ระบบหลังบ้าน',
     ];
 
@@ -69,9 +69,9 @@ class SettingController extends Controller
         return $this->saveGroup($request, 'smtp', $data);
     }
 
-    public function updateRecaptcha(UpdateRecaptchaSettingRequest $request): RedirectResponse
+    public function updateTurnstile(UpdateTurnstileSettingRequest $request): RedirectResponse
     {
-        return $this->saveGroup($request, 'recaptcha');
+        return $this->saveGroup($request, 'turnstile');
     }
 
     public function updateLoginBack(UpdateLoginBackSettingRequest $request): RedirectResponse
