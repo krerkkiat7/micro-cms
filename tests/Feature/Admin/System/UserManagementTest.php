@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\FileInfo;
 use App\Models\User;
 use App\Models\UserGroup;
 use Database\Seeders\DatabaseSeeder;
@@ -257,6 +258,84 @@ test('update blocks suspending your own account', function () {
         ->assertInvalid('status');
 
     expect($me->fresh()->status)->toBe('Y');
+});
+
+// ---------------------------------------------------------------- profile_image_id
+
+test('store accepts a profile image that belongs to the actor', function () {
+    $me = actingAsUserWithPermissions(['system.user.manage']);
+    $image = FileInfo::create([
+        'user_id' => $me->id, 'name' => 'me.jpg', 'hash_name' => 'me.jpg',
+        'extension' => 'jpg', 'path' => 'x', 'status' => 'Y',
+    ]);
+
+    $this->post(route('admin.system.user.store'), validUserPayload(
+        superAdminGroupId(),
+        ['profile_image_id' => $image->id]
+    ));
+
+    $user = User::where('email', 'newperson@example.com')->firstOrFail();
+    expect($user->profile_image_id)->toBe($image->id);
+});
+
+test('store rejects a profile image that belongs to another user', function () {
+    actingAsUserWithPermissions(['system.user.manage']);
+    $other = User::factory()->create();
+    $image = FileInfo::create([
+        'user_id' => $other->id, 'name' => 'theirs.jpg', 'hash_name' => 'theirs.jpg',
+        'extension' => 'jpg', 'path' => 'x', 'status' => 'Y',
+    ]);
+
+    $this->post(route('admin.system.user.store'), validUserPayload(
+        superAdminGroupId(),
+        ['profile_image_id' => $image->id]
+    ))->assertInvalid('profile_image_id');
+});
+
+test('update replaces the profile image', function () {
+    $me = actingAsUserWithPermissions(['system.user.manage']);
+    $target = User::factory()->create();
+    $first = FileInfo::create([
+        'user_id' => $me->id, 'name' => 'first.jpg', 'hash_name' => 'first.jpg',
+        'extension' => 'jpg', 'path' => 'x', 'status' => 'Y',
+    ]);
+    $second = FileInfo::create([
+        'user_id' => $me->id, 'name' => 'second.jpg', 'hash_name' => 'second.jpg',
+        'extension' => 'jpg', 'path' => 'x', 'status' => 'Y',
+    ]);
+    $target->update(['profile_image_id' => $first->id]);
+
+    $this->put(route('admin.system.user.update', $target->id), [
+        'titlename' => $target->titlename,
+        'firstname' => $target->firstname,
+        'lastname' => $target->lastname,
+        'email' => $target->email,
+        'usergroup_id' => superAdminGroupId(),
+        'status' => 'Y',
+        'profile_image_id' => $second->id,
+    ])->assertSessionHasNoErrors();
+
+    expect($target->fresh()->profile_image_id)->toBe($second->id);
+});
+
+test('edit exposes the current profile image and falls back to null when unset', function () {
+    actingAsUserWithPermissions(['system.user.view']);
+    $target = User::factory()->create();
+    $image = FileInfo::create([
+        'user_id' => $target->id, 'name' => 'avatar.png', 'hash_name' => 'avatar.png',
+        'extension' => 'png', 'path' => 'x', 'status' => 'Y',
+    ]);
+    $target->update(['profile_image_id' => $image->id]);
+
+    $this->get(route('admin.system.user.edit', $target->id))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('user.profile_image.id', $image->id)
+            ->where('user.profile_image.hash_name', 'avatar.png')
+        );
+
+    $withoutImage = User::factory()->create();
+    $this->get(route('admin.system.user.edit', $withoutImage->id))
+        ->assertInertia(fn (Assert $page) => $page->where('user.profile_image', null));
 });
 
 // ---------------------------------------------------------------- destroy

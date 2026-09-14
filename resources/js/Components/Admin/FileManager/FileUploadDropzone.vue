@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { reactive, ref } from 'vue';
 import axios from 'axios';
 import { AlertCircle, CheckCircle2, UploadCloud, X } from 'lucide-vue-next';
 import { formatFileSize } from '@/utils/formatFileSize';
@@ -11,6 +11,9 @@ const ALLOWED_EXTENSIONS = [
     'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'pdf', 'mp3', 'mp4',
 ];
 const MAX_SIZE_BYTES = 5 * 1024 * 1024;
+
+/** เวลาที่ค้างแถวไว้หลังอัพโหลดสำเร็จ ก่อนจะ fade หายไปเอง (มิลลิวินาที) */
+const SUCCESS_DISMISS_DELAY = 5000;
 
 const props = defineProps<{
     folderId: number | null;
@@ -66,13 +69,16 @@ async function addFiles(fileList: FileList) {
 /** อัพโหลดไฟล์เดียว — คืน true ถ้าสำเร็จ (ใช้ตัดสินใจว่าต้อง reload รายการไฟล์หรือไม่) */
 async function uploadOne(file: File): Promise<boolean> {
     const jobId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const job: UploadJob = {
+    // ต้องเป็น reactive() ก่อน push ลง array — ถ้า push object ธรรมดาแล้วมาแก้ property ทีหลัง
+    // (job.status = 'success' ใน callback async) การแก้จะไปแก้ที่ raw object ไม่ผ่าน proxy ของ array
+    // ทำให้ Vue ไม่รู้ว่าต้อง re-render (เห็นเป็นไอคอนหมุนค้างทั้งที่ response กลับมาแล้ว)
+    const job = reactive<UploadJob>({
         id: jobId,
         fileName: file.name,
         fileSize: file.size,
         progress: 0,
         status: 'uploading',
-    };
+    });
     jobs.value.push(job);
 
     const ext = extensionOf(file.name);
@@ -105,6 +111,7 @@ async function uploadOne(file: File): Promise<boolean> {
         });
         job.status = 'success';
         job.progress = 100;
+        setTimeout(() => dismiss(job.id), SUCCESS_DISMISS_DELAY);
 
         return true;
     } catch (e: unknown) {
@@ -118,6 +125,30 @@ async function uploadOne(file: File): Promise<boolean> {
 
 function dismiss(jobId: string) {
     jobs.value = jobs.value.filter((j) => j.id !== jobId);
+}
+
+/**
+ * ยุบแถวลง (fade + พับความสูง) ก่อนลบออกจริง — ตั้งความสูงปัจจุบันเป็นค่าคงที่ก่อน แล้วค่อย transition
+ * ไปที่ 0 เพราะ CSS transition ปกติทำกับ height: auto ไม่ได้ (ใช้ :css="false" ให้ควบคุมเองเต็มที่)
+ */
+function onLeave(el: Element, done: () => void) {
+    const element = el as HTMLElement;
+    const height = element.offsetHeight;
+
+    element.style.height = `${height}px`;
+    element.style.overflow = 'hidden';
+    void element.offsetHeight; // บังคับ reflow ก่อนเปลี่ยนค่าเป้าหมาย ไม่งั้น transition จะไม่เล่น
+
+    element.style.transition = 'height 300ms ease, opacity 250ms ease, margin 300ms ease';
+    element.style.opacity = '0';
+    element.style.height = '0px';
+    element.style.marginTop = '0px';
+    element.style.marginBottom = '0px';
+
+    element.addEventListener('transitionend', function handler() {
+        element.removeEventListener('transitionend', handler);
+        done();
+    });
 }
 </script>
 
@@ -154,7 +185,15 @@ function dismiss(jobId: string) {
             />
         </div>
 
-        <div v-if="jobs.length" class="mt-3 space-y-2">
+        <TransitionGroup
+            v-if="jobs.length"
+            tag="div"
+            class="mt-3 space-y-2"
+            move-class="transition-transform duration-300"
+            enter-active-class="transition duration-200 ease-out"
+            enter-from-class="opacity-0 -translate-y-1"
+            @leave="onLeave"
+        >
             <div
                 v-for="job in jobs"
                 :key="job.id"
@@ -182,6 +221,6 @@ function dismiss(jobId: string) {
                     <X class="size-4" />
                 </button>
             </div>
-        </div>
+        </TransitionGroup>
     </div>
 </template>

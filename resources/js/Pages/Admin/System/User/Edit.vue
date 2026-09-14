@@ -9,10 +9,11 @@ import SelectInput from '@/Components/SelectInput.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
+import FilePickerField from '@/Components/Admin/FileManager/FilePickerField.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { Save, Trash2 } from 'lucide-vue-next';
-import { computed, ref } from 'vue';
-import type { UserGroupOption } from '@/types';
+import { computed, ref, watch } from 'vue';
+import type { FileItem, UserGroupOption } from '@/types';
 import { formatDateTime } from '@/utils/date';
 
 interface EditUser {
@@ -32,6 +33,7 @@ interface EditUser {
     last_login_at: string | null;
     failed_login_count: number;
     last_failed_login_at: string | null;
+    profile_image: FileItem | null;
 }
 
 const props = defineProps<{
@@ -50,8 +52,15 @@ const form = useForm({
     phone: props.user.phone ?? '',
     line: props.user.line ?? '',
     facebook: props.user.facebook ?? '',
+    profile_image_id: props.user.profile_image?.id ?? null,
     usergroup_id: props.user.usergroup_id ? String(props.user.usergroup_id) : '',
     status: props.user.status,
+});
+
+// FilePickerField ทำงานกับ array ของไฟล์เสมอ (เลือกได้ 1 รูป) — เลือกใหม่ = แทนที่ของเดิมทั้งหมด
+const profileImage = ref<FileItem[]>(props.user.profile_image ? [props.user.profile_image] : []);
+watch(profileImage, (files) => {
+    form.profile_image_id = files[0]?.id ?? null;
 });
 
 function submit() {
@@ -198,6 +207,14 @@ const systemInfo = computed(() => [
                                 type="text"
                             />
                             <InputError :message="form.errors.facebook" />
+                        </div>
+                        <div class="sm:col-span-6">
+                            <InputLabel value="รูปโปรไฟล์" />
+                            <FilePickerField
+                                v-model="profileImage"
+                                :accept="['jpg', 'jpeg', 'png', 'gif', 'webp']"
+                            />
+                            <InputError :message="form.errors.profile_image_id" />
                         </div>
 
                         <div class="sm:col-span-3">

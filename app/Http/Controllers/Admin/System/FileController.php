@@ -47,14 +47,19 @@ class FileController extends Controller
      */
     public function folders(Request $request): JsonResponse
     {
+        $userId = $request->user()->id;
+
         $folders = FolderInfo::query()
-            ->ownedBy($request->user()->id)
+            ->ownedBy($userId)
             ->where('status', 'Y')
             ->withCount('files')
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        return response()->json(['data' => $folders]);
+        // จำนวนไฟล์ในโฟลเดอร์ราก ("ไม่มีโฟลเดอร์") — แสดงคู่กับ badge จำนวนของโฟลเดอร์อื่น ๆ เหมือนกัน
+        $rootCount = FileInfo::query()->ownedBy($userId)->whereNull('folder_id')->count();
+
+        return response()->json(['data' => $folders, 'root_count' => $rootCount]);
     }
 
     /**

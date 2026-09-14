@@ -151,6 +151,7 @@ class UserController extends Controller
             'phone' => $data['phone'] ?? null,
             'line' => $data['line'] ?? null,
             'facebook' => $data['facebook'] ?? null,
+            'profile_image_id' => $data['profile_image_id'] ?? null,
             'usergroup_id' => $data['usergroup_id'],
             'status' => $data['status'],
             'password' => Hash::make($data['password']),
@@ -186,6 +187,8 @@ class UserController extends Controller
         LogBackAccess::record('แก้ไขผู้ใช้งาน');
         LogBackAction::record('system.user', 'view', $model->name, $model->id);
 
+        $profileImage = $model->profileImage; // อาจเป็น null ทั้งกรณียังไม่ได้เลือก และไฟล์ถูกลบไปแล้ว
+
         return Inertia::render('Admin/System/User/Edit', [
             'user' => [
                 'id' => $model->id,
@@ -204,6 +207,15 @@ class UserController extends Controller
                 'last_login_at' => $model->last_login_at,
                 'failed_login_count' => $model->failed_login_count,
                 'last_failed_login_at' => $model->last_failed_login_at,
+                'profile_image' => $profileImage ? [
+                    'id' => $profileImage->id,
+                    'name' => $profileImage->name,
+                    'hash_name' => $profileImage->hash_name,
+                    'extension' => $profileImage->extension,
+                    'file_size' => $profileImage->file_size,
+                    'is_image' => $profileImage->isImage(),
+                    'created_at' => $profileImage->created_at,
+                ] : null,
             ],
             'userGroups' => $this->userGroupOptions(),
             'isSelf' => $model->id === $request->user()->id,
@@ -246,6 +258,7 @@ class UserController extends Controller
             'phone' => $data['phone'] ?? null,
             'line' => $data['line'] ?? null,
             'facebook' => $data['facebook'] ?? null,
+            'profile_image_id' => $data['profile_image_id'] ?? null,
             'usergroup_id' => $data['usergroup_id'],
             'status' => $data['status'],
             'updated_by' => $request->user()->id,

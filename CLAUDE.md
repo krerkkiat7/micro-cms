@@ -106,7 +106,7 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 
 | ตาราง | Model | หมายเหตุ |
 |-------|-------|----------|
-| `sys_user` | `App\Models\User` | ชื่อแยกเป็น `titlename`/`firstname`/`lastname` (+ accessor `name` = ชื่อเต็ม); ช่องทางติดต่อ `mobile`/`phone`/`line`/`facebook`; `user_type` (`back`/`front`, default `back`), `status` `char(1)` default `Y`; สถิติ login `last_login_at`/`failed_login_count`/`last_failed_login_at`; `password_changed_at`/`password_changed_by` (ตั้ง/เปลี่ยนรหัสผ่านครั้งล่าสุด); audit `created_by`/`updated_by`/`deleted_by` (`sys_user.id`, ไม่มี FK); `usergroup_id`; **`SoftDeletes` (เปิดใช้ trait แล้ว)**. `email` **ไม่ unique ระดับ DB** |
+| `sys_user` | `App\Models\User` | ชื่อแยกเป็น `titlename`/`firstname`/`lastname` (+ accessor `name` = ชื่อเต็ม); ช่องทางติดต่อ `mobile`/`phone`/`line`/`facebook`; `profile_image_id` (FK จริง → `file_info.id`, nullOnDelete — รูปโปรไฟล์ที่เลือกจากโมดูลจัดการไฟล์, `profileImage()` belongsTo); `user_type` (`back`/`front`, default `back`), `status` `char(1)` default `Y`; สถิติ login `last_login_at`/`failed_login_count`/`last_failed_login_at`; `password_changed_at`/`password_changed_by` (ตั้ง/เปลี่ยนรหัสผ่านครั้งล่าสุด); audit `created_by`/`updated_by`/`deleted_by` (`sys_user.id`, ไม่มี FK); `usergroup_id`; **`SoftDeletes` (เปิดใช้ trait แล้ว)**. `email` **ไม่ unique ระดับ DB** |
 | `sys_usergroup` | `App\Models\UserGroup` | `status` `char(1)` default `Y`; `can_edit`/`can_delete` `char(1)` default `Y` (`N` = กลุ่มระบบ ห้ามแก้/ห้ามลบ — Super Admin seed เป็น `N`); audit `created_by`/`updated_by`/`deleted_by` (`sys_user.id`, ไม่มี FK); **`SoftDeletes` + `HasFactory` (เปิด trait แล้ว)**; relations `actions()` belongsToMany (`withPivot(created_by,updated_by)` + `withTimestamps()`), `users()` hasMany |
 | `sys_action_group` | `App\Models\SysActionGroup` | `id` เป็น `string(20)` primary (กำหนดเอง); มี `sort_order`, `status` `char(1)` default `Y`, `actions()` hasMany |
 | `sys_action` | `App\Models\SysAction` | `id` เป็น `string(20)` primary; มี `code` (unique) เช่น `system.user.view`, `parent_id` (tree, self-FK), `sort_order` |
@@ -249,6 +249,18 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   ที่เคย seed ไว้ก่อนหน้าออกจาก `MenuSeeder.php` แล้ว). ส่วน "เลือกไฟล์" ทำเป็น component reusable
   (`Components/Admin/FileManager/FilePickerField.vue` + `FilePickerDialog.vue`) — ยังไม่ผูกกับฟิลด์จริง
   เพราะ `sys_user`/บทความยังไม่มีฟิลด์รูปภาพ. รายละเอียดเต็มดู `docs/PRD-system.md` §9
+- ปรับปรุงโมดูลจัดการไฟล์รอบสอง: `FolderList.vue` แสดง "[ไม่มีโฟลเดอร์]" พร้อมจำนวนไฟล์ (endpoint
+  `admin.system.file.folders` ส่ง `root_count` เพิ่ม) เหมือนโฟลเดอร์อื่น; `FileBrowser.vue` เพิ่มตัวเลือก
+  สลับมุมมองการ์ด/แถว (`viewMode`) — มุมมองแถวแสดงรูป/ไอคอนซ้าย ชื่อเต็ม 1 บรรทัด แล้วอีกบรรทัดแยกขนาด/
+  นามสกุล; ปุ่ม paging เปลี่ยนป้าย "Previous"/"Next" เป็น `<<`/`>>`, จัด layout ใหม่เป็น 3 โซน (ซ้าย=จำนวน
+  รายการ, กลาง=เลขหน้า, ขวา=จำนวนต่อหน้าไม่มีข้อความกำกับ) กลางตกบรรทัดใหม่เองที่จอแคบ (breakpoint `sm`).
+  แก้บั๊ก `FileUploadDropzone.vue`: push object ธรรมดาลง `ref([])` แล้วแก้ property ทีหลังใน callback async
+  ไม่ trigger re-render (ต้อง `reactive()` ก่อน push) ทำให้ไอคอนค้างเป็นหมุนทั้งที่อัพโหลดเสร็จแล้ว; เพิ่ม
+  auto-dismiss แถวที่สำเร็จหลัง 5 วินาทีด้วย fade+พับความสูง (`TransitionGroup` + JS `leave` hook)
+- เพิ่ม `sys_user.profile_image_id` (migration แยก `2026_09_14_000002_...`, FK จริง → `file_info.id`
+  nullOnDelete) — ฟิลด์ "รูปโปรไฟล์" ในฟอร์มเพิ่ม/แก้ไขผู้ใช้งาน (ต่อจาก Facebook) ใช้
+  `FilePickerField.vue` เลือกได้ 1 รูป จำกัดเฉพาะนามสกุลรูปภาพ; validate ว่าไฟล์ต้องเป็นของผู้กระทำเอง
+  (คนที่กำลังแก้ไขผู้ใช้ ไม่ใช่เจ้าของบัญชีที่ถูกแก้) ผ่าน `StoreUserRequest`/`UpdateUserRequest`
 
 ## ทดสอบ
 

@@ -6,9 +6,11 @@ import InputError from '@/Components/InputError.vue';
 import TextInput from '@/Components/TextInput.vue';
 import SelectInput from '@/Components/SelectInput.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
+import FilePickerField from '@/Components/Admin/FileManager/FilePickerField.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { Save } from 'lucide-vue-next';
-import type { UserGroupOption } from '@/types';
+import { ref, watch } from 'vue';
+import type { FileItem, UserGroupOption } from '@/types';
 
 defineProps<{
     userGroups: UserGroupOption[];
@@ -23,10 +25,17 @@ const form = useForm({
     phone: '',
     line: '',
     facebook: '',
+    profile_image_id: null as number | null,
     usergroup_id: '',
     password: '',
     password_confirmation: '',
     status: 'Y',
+});
+
+// FilePickerField ทำงานกับ array ของไฟล์เสมอ (เลือกได้ 1 รูป) — sync กลับเป็น id เดี่ยวก่อนส่งฟอร์ม
+const profileImage = ref<FileItem[]>([]);
+watch(profileImage, (files) => {
+    form.profile_image_id = files[0]?.id ?? null;
 });
 
 function submit() {
@@ -118,6 +127,11 @@ const passwordHint =
                         <InputLabel for="facebook" value="Facebook" />
                         <TextInput id="facebook" v-model="form.facebook" type="text" />
                         <InputError :message="form.errors.facebook" />
+                    </div>
+                    <div class="sm:col-span-6">
+                        <InputLabel value="รูปโปรไฟล์" />
+                        <FilePickerField v-model="profileImage" :accept="['jpg', 'jpeg', 'png', 'gif', 'webp']" />
+                        <InputError :message="form.errors.profile_image_id" />
                     </div>
                 </div>
             </div>

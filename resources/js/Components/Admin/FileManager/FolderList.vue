@@ -10,6 +10,7 @@ import type { FolderItem } from '@/types';
 const selected = defineModel<number | null>({ required: true });
 
 const folders = ref<FolderItem[]>([]);
+const rootCount = ref(0);
 const loading = ref(true);
 const newFolderName = ref('');
 const creating = ref(false);
@@ -18,8 +19,9 @@ const error = ref('');
 async function load() {
     loading.value = true;
     try {
-        const { data } = await axios.get<{ data: FolderItem[] }>(route('admin.system.file.folders'));
+        const { data } = await axios.get<{ data: FolderItem[]; root_count: number }>(route('admin.system.file.folders'));
         folders.value = data.data;
+        rootCount.value = data.root_count;
     } finally {
         loading.value = false;
     }
@@ -76,12 +78,15 @@ defineExpose({ reload: load });
         <div class="flex-1 space-y-1 overflow-y-auto">
             <button
                 type="button"
-                class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors"
+                class="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors"
                 :class="selected === null ? 'bg-brand-50 text-brand-700' : 'text-gray-700 hover:bg-gray-50'"
                 @click="selected = null"
             >
-                <Folder class="size-4 shrink-0" />
-                ไม่มีโฟลเดอร์
+                <span class="flex min-w-0 items-center gap-2">
+                    <Folder class="size-4 shrink-0" />
+                    <span class="truncate">[ไม่มีโฟลเดอร์]</span>
+                </span>
+                <span class="shrink-0 text-xs text-gray-400">{{ rootCount }}</span>
             </button>
 
             <button

@@ -33,6 +33,7 @@ class User extends Authenticatable
         'phone',
         'line',
         'facebook',
+        'profile_image_id',
         'status',
         'usergroup_id',
         'created_by',
@@ -85,6 +86,14 @@ class User extends Authenticatable
     public function group()
     {
         return $this->belongsTo(UserGroup::class, 'usergroup_id');
+    }
+
+    /**
+     * รูปโปรไฟล์ที่เลือกจากโมดูลจัดการไฟล์ (file_info) — null ได้ทั้งยังไม่ได้เลือก และไฟล์ถูกลบไปแล้ว
+     */
+    public function profileImage()
+    {
+        return $this->belongsTo(FileInfo::class, 'profile_image_id');
     }
 
     public function hasPermission(string $actionCode): bool

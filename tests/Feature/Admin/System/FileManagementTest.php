@@ -48,6 +48,20 @@ test('a user can create a folder and see only their own folders', function () {
     $list->assertOk()->assertJsonCount(1, 'data');
 });
 
+test('folders endpoint reports the root ("no folder") file count', function () {
+    $user = User::factory()->create();
+    FileInfo::create(['user_id' => $user->id, 'name' => 'a.jpg', 'hash_name' => 'a.jpg', 'extension' => 'jpg', 'path' => 'x', 'status' => 'Y', 'folder_id' => null]);
+    FileInfo::create(['user_id' => $user->id, 'name' => 'b.jpg', 'hash_name' => 'b.jpg', 'extension' => 'jpg', 'path' => 'x', 'status' => 'Y', 'folder_id' => null]);
+    $folder = FolderInfo::create(['user_id' => $user->id, 'name' => 'งาน', 'status' => 'Y']);
+    FileInfo::create(['user_id' => $user->id, 'name' => 'c.jpg', 'hash_name' => 'c.jpg', 'extension' => 'jpg', 'path' => 'x', 'status' => 'Y', 'folder_id' => $folder->id]);
+
+    $this->actingAs($user)
+        ->getJson(route('admin.system.file.folders'))
+        ->assertOk()
+        ->assertJsonPath('root_count', 2)
+        ->assertJsonPath('data.0.files_count', 1);
+});
+
 test('folder name must be unique per user but can repeat across users', function () {
     $user = User::factory()->create();
     FolderInfo::create(['user_id' => $user->id, 'name' => 'ซ้ำ', 'status' => 'Y']);
