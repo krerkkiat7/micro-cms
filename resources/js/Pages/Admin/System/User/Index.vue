@@ -213,17 +213,21 @@ const breadcrumbs = [
                                 @click="goToEdit(row.id)"
                             >
                                 <td class="px-4 py-3">
-                                    <img
+                                    <div
                                         v-if="row.profile_image_hash_name"
-                                        :src="
-                                            route('admin.system.file.get.thumbnail.size', {
-                                                size: 80,
-                                                hashname: row.profile_image_hash_name,
-                                            })
-                                        "
-                                        :alt="row.name"
-                                        class="size-10 rounded-full object-cover"
-                                    />
+                                        class="size-10 shrink-0 overflow-hidden rounded-full bg-gray-100"
+                                    >
+                                        <img
+                                            :src="
+                                                route('admin.system.file.get.thumbnail.size', {
+                                                    size: 80,
+                                                    hashname: row.profile_image_hash_name,
+                                                })
+                                            "
+                                            :alt="row.name"
+                                            class="size-full object-cover"
+                                        />
+                                    </div>
                                 </td>
                                 <td class="px-4 py-3">
                                     <Link
