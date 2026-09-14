@@ -233,28 +233,24 @@ const breadcrumbs = [
                 </div>
             </div>
 
-            <!-- ท้ายตาราง -->
+            <!-- ท้ายตาราง: จำนวนรายการอยู่ซ้าย, เลขหน้าอยู่กึ่งกลาง (ตกลงบรรทัดใหม่ถ้าที่ไม่พอ), จำนวนต่อหน้าชิดขวา -->
             <div class="flex flex-wrap items-center justify-between gap-3">
-                <div class="flex items-center gap-2 text-sm text-gray-500">
-                    <span>
-                        แสดง {{ groups.from ?? 0 }}–{{ groups.to ?? 0 }} จาก
-                        {{ groups.total }} รายการ
-                    </span>
-                    <SelectInput
-                        v-model="form.per_page"
-                        class="w-auto"
-                        @update:model-value="search"
-                    >
-                        <option
-                            v-for="opt in perPageOptions"
-                            :key="opt"
-                            :value="String(opt)"
-                        >
-                            {{ opt }} / หน้า
-                        </option>
+                <p class="order-1 shrink-0 text-sm text-gray-500">
+                    แสดง {{ groups.from ?? 0 }}–{{ groups.to ?? 0 }} จาก {{ groups.total }} รายการ
+                </p>
+
+                <Pagination
+                    :current-page="groups.current_page"
+                    :last-page="groups.last_page"
+                    class="order-3 w-full sm:order-2 sm:w-auto sm:flex-1"
+                    @navigate="(page) => visit({ page })"
+                />
+
+                <div class="order-2 w-20 shrink-0 sm:order-3">
+                    <SelectInput v-model="form.per_page" class="text-sm" @update:model-value="search">
+                        <option v-for="opt in perPageOptions" :key="opt" :value="String(opt)">{{ opt }}</option>
                     </SelectInput>
                 </div>
-                <Pagination :links="groups.links" />
             </div>
         </div>
     </AdminLayout>

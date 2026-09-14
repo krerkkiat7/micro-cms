@@ -7,9 +7,10 @@ import TextInput from '@/Components/TextInput.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
+import Pagination from '@/Components/Pagination.vue';
 import { fileTypeIcon } from './fileTypeIcons';
 import { formatFileSize } from '@/utils/formatFileSize';
-import type { FileItem, PaginationLink } from '@/types';
+import type { FileItem } from '@/types';
 
 const PER_PAGE_OPTIONS = ['10', '25', '50', '100'];
 const SORT_OPTIONS = [
@@ -49,8 +50,7 @@ const viewMode = ref<'grid' | 'list'>('grid');
 
 const loading = ref(false);
 const files = ref<FileItem[]>([]);
-const links = ref<PaginationLink[]>([]);
-const meta = reactive({ from: 0, to: 0, total: 0 });
+const meta = reactive({ from: 0, to: 0, total: 0, currentPage: 1, lastPage: 1 });
 
 const deleteTarget = ref<FileItem | null>(null);
 const deleting = ref(false);
@@ -119,10 +119,11 @@ async function load() {
         }
 
         files.value = rows;
-        links.value = data.links;
         meta.from = data.from ?? 0;
         meta.to = data.to ?? 0;
         meta.total = data.total ?? 0;
+        meta.currentPage = data.current_page ?? 1;
+        meta.lastPage = data.last_page ?? 1;
     } finally {
         loading.value = false;
     }
@@ -141,25 +142,8 @@ function resetFilters() {
     load();
 }
 
-/** ป้ายกำกับปุ่มเดิน้าเพจ — แทนที่ "« Previous" / "Next »" ของ Laravel ด้วย << / >> ธรรมดา */
-function pagerLabel(label: string): string {
-    if (label.includes('Previous')) {
-        return '<<';
-    }
-
-    if (label.includes('Next')) {
-        return '>>';
-    }
-
-    return label;
-}
-
-function goToPage(url: string | null) {
-    if (!url) {
-        return;
-    }
-
-    page.value = Number(new URL(url).searchParams.get('page') ?? '1');
+function goToPage(target: number) {
+    page.value = target;
     load();
 }
 
@@ -332,31 +316,15 @@ defineExpose({ reload: load });
         </div>
 
         <!-- paging: จำนวนรายการอยู่ซ้าย, เลขหน้าอยู่กึ่งกลาง (ตกลงบรรทัดใหม่ถ้าที่ไม่พอ), จำนวนต่อหน้าชิดขวา -->
-        <div class="mt-4 flex flex-wrap items-center gap-3">
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
             <p class="order-1 shrink-0 text-sm text-gray-500">แสดง {{ meta.from }}–{{ meta.to }} จาก {{ meta.total }} รายการ</p>
 
-            <nav
-                v-if="links.length > 3"
-                class="order-3 flex w-full flex-wrap items-center justify-center gap-1 sm:order-2 sm:w-auto sm:flex-1"
-            >
-                <button
-                    v-for="(link, i) in links"
-                    :key="i"
-                    type="button"
-                    class="rounded-lg border px-3 py-1.5 text-sm transition-colors"
-                    :class="
-                        link.active
-                            ? 'border-brand-500 bg-brand-500 text-white'
-                            : link.url
-                              ? 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                              : 'cursor-default border-gray-200 text-gray-300'
-                    "
-                    :disabled="!link.url"
-                    @click="goToPage(link.url)"
-                >
-                    {{ pagerLabel(link.label) }}
-                </button>
-            </nav>
+            <Pagination
+                :current-page="meta.currentPage"
+                :last-page="meta.lastPage"
+                class="order-3 w-full sm:order-2 sm:w-auto sm:flex-1"
+                @navigate="goToPage"
+            />
 
             <div class="order-2 w-20 shrink-0 sm:order-3">
                 <SelectInput v-model="filters.per_page" class="!py-1.5 text-sm" @change="search">
