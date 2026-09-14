@@ -50,7 +50,7 @@ class UserController extends Controller
 
         $users = User::query()
             ->where('user_type', 'back')
-            ->with('group:id,name')
+            ->with(['group:id,name', 'profileImage:id,hash_name'])
             ->when($filters['q'] !== null, function ($query) use ($filters) {
                 $term = $filters['q'];
 
@@ -94,6 +94,7 @@ class UserController extends Controller
                 'status' => $user->status,
                 'created_at' => $user->created_at,
                 'last_login_at' => $user->last_login_at,
+                'profile_image_hash_name' => $user->profileImage?->hash_name,
             ]);
 
         // บันทึก log เฉพาะการเข้าหน้ารายการจริง ๆ — ไม่บันทึกตอนค้นหา/กรอง/แบ่งหน้า/เรียง

@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import axios from 'axios';
 import { AlertCircle, CheckCircle2, UploadCloud, X } from 'lucide-vue-next';
 import { formatFileSize } from '@/utils/formatFileSize';
 
 // ต้องตรงกับ config('filemanagement.allowed') ฝั่ง backend — backend เป็นตัวตัดสินสุดท้ายเสมอ
 // (รายการนี้ใช้แค่กรองตัวเลือกไฟล์ในกล่อง browse + เช็กเบื้องต้นฝั่ง client เพื่อ feedback ที่เร็วขึ้น)
-const ALLOWED_EXTENSIONS = [
+const ALL_EXTENSIONS = [
     'jpg', 'jpeg', 'png', 'gif', 'webp',
     'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'pdf', 'mp3', 'mp4',
 ];
@@ -15,9 +15,18 @@ const MAX_SIZE_BYTES = 5 * 1024 * 1024;
 /** เวลาที่ค้างแถวไว้หลังอัพโหลดสำเร็จ ก่อนจะ fade หายไปเอง (มิลลิวินาที) */
 const SUCCESS_DISMISS_DELAY = 5000;
 
-const props = defineProps<{
-    folderId: number | null;
-}>();
+const props = withDefaults(
+    defineProps<{
+        folderId: number | null;
+        /** จำกัดนามสกุลที่อัพโหลดได้ (เช่น dialog เลือกไฟล์ที่ระบุ accept เป็นรูปภาพ) — ไม่ระบุ = อัพโหลดได้ทุกนามสกุลที่ระบบรองรับ */
+        accept?: string[];
+    }>(),
+    {
+        accept: undefined,
+    },
+);
+
+const allowedExtensions = computed(() => (props.accept?.length ? props.accept : ALL_EXTENSIONS));
 
 const emit = defineEmits<{
     uploaded: [];
@@ -82,7 +91,7 @@ async function uploadOne(file: File): Promise<boolean> {
     jobs.value.push(job);
 
     const ext = extensionOf(file.name);
-    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    if (!allowedExtensions.value.includes(ext)) {
         job.status = 'error';
         job.error = 'ไม่รองรับไฟล์นามสกุลนี้';
 
@@ -173,14 +182,14 @@ function onLeave(el: Element, done: () => void) {
                 </button>
             </p>
             <p class="mt-1 text-xs text-gray-400">
-                รองรับ {{ ALLOWED_EXTENSIONS.join(', ') }} — ไม่เกิน 5 MB ต่อไฟล์ (เลือกได้หลายไฟล์พร้อมกัน)
+                รองรับ {{ allowedExtensions.join(', ') }} — ไม่เกิน 5 MB ต่อไฟล์ (เลือกได้หลายไฟล์พร้อมกัน)
             </p>
             <input
                 ref="inputEl"
                 type="file"
                 multiple
                 class="hidden"
-                :accept="ALLOWED_EXTENSIONS.map((e) => '.' + e).join(',')"
+                :accept="allowedExtensions.map((e) => '.' + e).join(',')"
                 @change="onPick"
             />
         </div>

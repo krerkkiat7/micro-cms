@@ -21,6 +21,7 @@ interface Row {
     status: string;
     created_at: string | null;
     last_login_at: string | null;
+    profile_image_hash_name: string | null;
 }
 
 const props = defineProps<{
@@ -179,6 +180,7 @@ const breadcrumbs = [
                             class="border-b border-gray-200 bg-gray-50 text-xs uppercase tracking-wide text-gray-500"
                         >
                             <tr>
+                                <th class="w-14 px-4 py-3 font-medium">รูป</th>
                                 <th
                                     v-for="col in columns"
                                     :key="col.key"
@@ -211,6 +213,19 @@ const breadcrumbs = [
                                 @click="goToEdit(row.id)"
                             >
                                 <td class="px-4 py-3">
+                                    <img
+                                        v-if="row.profile_image_hash_name"
+                                        :src="
+                                            route('admin.system.file.get.thumbnail.size', {
+                                                size: 80,
+                                                hashname: row.profile_image_hash_name,
+                                            })
+                                        "
+                                        :alt="row.name"
+                                        class="size-10 rounded-full object-cover"
+                                    />
+                                </td>
+                                <td class="px-4 py-3">
                                     <Link
                                         :href="route('admin.system.user.edit', row.id)"
                                         class="font-medium text-brand-600 hover:text-brand-700"
@@ -235,7 +250,7 @@ const breadcrumbs = [
                             </tr>
                             <tr v-if="users.data.length === 0">
                                 <td
-                                    :colspan="columns.length"
+                                    :colspan="columns.length + 1"
                                     class="px-4 py-10 text-center text-gray-500"
                                 >
                                     ไม่พบผู้ใช้งานตามเงื่อนไข

@@ -329,13 +329,18 @@ defineExpose({ reload: load });
             </p>
         </div>
 
-        <!-- paging: ซ้าย = จำนวนรายการ, กลาง = เลขหน้า (ตกลงบรรทัดใหม่ถ้าที่ไม่พอ), ขวา = จำนวนต่อหน้า -->
+        <!-- paging: จำนวนรายการ + จำนวนต่อหน้าอยู่แถวเดียวกัน (ซ้าย), เลขหน้าอยู่กึ่งกลาง (ตกลงบรรทัดใหม่ถ้าที่ไม่พอ) -->
         <div class="mt-4 flex flex-wrap items-center gap-3">
-            <p class="order-1 shrink-0 text-sm text-gray-500">แสดง {{ meta.from }}–{{ meta.to }} จาก {{ meta.total }} รายการ</p>
+            <div class="flex shrink-0 items-center gap-2 text-sm text-gray-500">
+                <span>แสดง {{ meta.from }}–{{ meta.to }} จาก {{ meta.total }} รายการ</span>
+                <SelectInput v-model="filters.per_page" class="w-20 !py-1.5 text-sm" @change="search">
+                    <option v-for="n in PER_PAGE_OPTIONS" :key="n" :value="n">{{ n }}</option>
+                </SelectInput>
+            </div>
 
             <nav
                 v-if="links.length > 3"
-                class="order-3 flex w-full flex-wrap items-center justify-center gap-1 sm:order-2 sm:w-auto sm:flex-1"
+                class="flex w-full flex-wrap items-center justify-center gap-1 sm:w-auto sm:flex-1"
             >
                 <button
                     v-for="(link, i) in links"
@@ -355,10 +360,6 @@ defineExpose({ reload: load });
                     {{ pagerLabel(link.label) }}
                 </button>
             </nav>
-
-            <SelectInput v-model="filters.per_page" class="order-2 w-20 shrink-0 !py-1.5 text-sm sm:order-3" @change="search">
-                <option v-for="n in PER_PAGE_OPTIONS" :key="n" :value="n">{{ n }}</option>
-            </SelectInput>
         </div>
 
         <ConfirmDialog

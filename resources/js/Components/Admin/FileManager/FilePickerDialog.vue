@@ -4,6 +4,7 @@ import { X } from 'lucide-vue-next';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import FolderList from './FolderList.vue';
+import FileUploadDropzone from './FileUploadDropzone.vue';
 import FileBrowser from './FileBrowser.vue';
 import type { FileItem } from '@/types';
 
@@ -33,6 +34,11 @@ const emit = defineEmits<{
 
 const selectedFolderId = ref<number | null>(null);
 const pending = ref<FileItem[]>([]);
+const browser = ref<InstanceType<typeof FileBrowser> | null>(null);
+
+function onUploaded() {
+    browser.value?.reload();
+}
 
 const pendingHashNames = computed(() => pending.value.map((f) => f.hash_name));
 
@@ -100,14 +106,19 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
                             <FolderList v-model="selectedFolderId" />
                         </div>
                         <div class="overflow-y-auto">
-                            <FileBrowser
-                                :folder-id="selectedFolderId"
-                                selectable
-                                :accept="accept"
-                                :selected-hash-names="pendingHashNames"
-                                :disabled-hash-names="alreadySelected"
-                                @toggle="toggle"
-                            />
+                            <FileUploadDropzone :folder-id="selectedFolderId" :accept="accept" @uploaded="onUploaded" />
+
+                            <div class="mt-4">
+                                <FileBrowser
+                                    ref="browser"
+                                    :folder-id="selectedFolderId"
+                                    selectable
+                                    :accept="accept"
+                                    :selected-hash-names="pendingHashNames"
+                                    :disabled-hash-names="alreadySelected"
+                                    @toggle="toggle"
+                                />
+                            </div>
                         </div>
                     </div>
 

@@ -58,6 +58,23 @@ test('index renders for a user with system.user.view', function () {
         );
 });
 
+test('index includes the profile image hash_name (or null when unset)', function () {
+    actingAsUserWithPermissions(['system.user.view']);
+    $withImage = User::factory()->create(['user_type' => 'back', 'email' => 'has-avatar@example.com']);
+    $image = FileInfo::create([
+        'user_id' => $withImage->id, 'name' => 'avatar.jpg', 'hash_name' => 'avatar-hash.jpg',
+        'extension' => 'jpg', 'path' => 'x', 'status' => 'Y',
+    ]);
+    $withImage->update(['profile_image_id' => $image->id]);
+    User::factory()->create(['user_type' => 'back', 'email' => 'no-avatar@example.com']);
+
+    $this->get(route('admin.system.user.index', ['q' => 'has-avatar@example.com']))
+        ->assertInertia(fn (Assert $page) => $page->where('users.data.0.profile_image_hash_name', 'avatar-hash.jpg'));
+
+    $this->get(route('admin.system.user.index', ['q' => 'no-avatar@example.com']))
+        ->assertInertia(fn (Assert $page) => $page->where('users.data.0.profile_image_hash_name', null));
+});
+
 test('index only lists back users and matches the search term', function () {
     actingAsUserWithPermissions(['system.user.view']);
 
