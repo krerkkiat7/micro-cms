@@ -199,9 +199,11 @@ defineExpose({ reload: load });
     <div>
         <form class="flex flex-wrap items-end gap-3" @submit.prevent="search">
             <TextInput v-model="filters.q" placeholder="ค้นหาชื่อไฟล์..." class="min-w-[200px] flex-1 text-sm" />
-            <SelectInput v-model="filters.sort" class="w-56 shrink-0 text-sm">
-                <option v-for="opt in SORT_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-            </SelectInput>
+            <div class="w-56 shrink-0">
+                <SelectInput v-model="filters.sort" class="text-sm">
+                    <option v-for="opt in SORT_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                </SelectInput>
+            </div>
             <PrimaryButton type="submit"><Search class="mr-1.5 size-4" /> ค้นหา</PrimaryButton>
             <SecondaryButton type="button" @click="resetFilters"><RotateCcw class="mr-1.5 size-4" /> เริ่มใหม่</SecondaryButton>
 
@@ -356,9 +358,11 @@ defineExpose({ reload: load });
                 </button>
             </nav>
 
-            <SelectInput v-model="filters.per_page" class="order-2 w-20 shrink-0 !py-1.5 text-sm sm:order-3" @change="search">
-                <option v-for="n in PER_PAGE_OPTIONS" :key="n" :value="n">{{ n }}</option>
-            </SelectInput>
+            <div class="order-2 w-20 shrink-0 sm:order-3">
+                <SelectInput v-model="filters.per_page" class="!py-1.5 text-sm" @change="search">
+                    <option v-for="n in PER_PAGE_OPTIONS" :key="n" :value="n">{{ n }}</option>
+                </SelectInput>
+            </div>
         </div>
 
         <ConfirmDialog
