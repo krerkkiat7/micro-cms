@@ -47,6 +47,8 @@ class HandleInertiaRequests extends Middleware
                     'phone' => $request->user()->phone,
                     'line' => $request->user()->line,
                     'facebook' => $request->user()->facebook,
+                    // รูปโปรไฟล์ที่เลือกจากโมดูลจัดการไฟล์ — ส่งแค่ hash_name ไปสร้าง URL thumbnail ฝั่ง frontend เอง
+                    'profile_image_hash_name' => $request->user()->profileImage?->hash_name,
                     // โยน Array ของ Action Codes เช่น ['article.view', 'article.create', 'article.delete'] ไปยัง Vue
                     'permissions' => $request->user()->getPermissionsArray(),
                 ] : null,

@@ -14,9 +14,20 @@ const page = usePage();
                 class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-gray-200 transition-colors hover:bg-white/10"
             >
                 <span
-                    class="flex size-8 items-center justify-center rounded-full bg-brand-500/20 text-brand-200"
+                    class="flex size-8 items-center justify-center overflow-hidden rounded-full bg-brand-500/20 text-brand-200"
                 >
-                    <UserCircle class="size-5" />
+                    <img
+                        v-if="page.props.auth.user.profile_image_hash_name"
+                        :src="
+                            route('admin.system.file.get.thumbnail.size', {
+                                size: 80,
+                                hashname: page.props.auth.user.profile_image_hash_name,
+                            })
+                        "
+                        :alt="page.props.auth.user.name"
+                        class="size-full object-cover"
+                    />
+                    <UserCircle v-else class="size-5" />
                 </span>
                 <span class="hidden font-medium sm:block">{{ page.props.auth.user.name }}</span>
                 <ChevronDown class="size-4 text-gray-400" />

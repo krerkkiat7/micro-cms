@@ -10,6 +10,8 @@ export interface User {
     phone?: string | null;
     line?: string | null;
     facebook?: string | null;
+    /** hash_name ของรูปโปรไฟล์ (file_info) — null = ยังไม่ได้เลือก/ไฟล์ถูกลบไปแล้ว */
+    profile_image_hash_name?: string | null;
     permissions?: string[];
 }
 
