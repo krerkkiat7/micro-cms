@@ -1,14 +1,21 @@
 <script setup lang="ts">
 import AdminLayout from '@/Layouts/Admin/AdminLayout.vue';
-import DeleteUserForm from './Partials/DeleteUserForm.vue';
+import PageHeader from '@/Components/Admin/PageHeader.vue';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue';
 import { Head } from '@inertiajs/vue3';
+import type { FileItem } from '@/types';
 
 defineProps<{
     mustVerifyEmail?: boolean;
     status?: string;
+    profileImage: FileItem | null;
 }>();
+
+const breadcrumbs = [
+    { label: 'Dashboard', href: route('admin.dashboard') },
+    { label: 'โปรไฟล์' },
+];
 </script>
 
 <template>
@@ -16,24 +23,20 @@ defineProps<{
 
     <AdminLayout>
         <template #header>
-            <h1 class="text-xl font-semibold text-gray-800">โปรไฟล์</h1>
-            <p class="mt-1 text-sm text-gray-500">จัดการข้อมูลบัญชีและรหัสผ่านของคุณ</p>
+            <PageHeader title="โปรไฟล์" :breadcrumbs="breadcrumbs" />
         </template>
 
-        <div class="max-w-3xl space-y-6">
+        <div class="space-y-6">
             <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8">
                 <UpdateProfileInformationForm
                     :must-verify-email="mustVerifyEmail"
                     :status="status"
+                    :profile-image="profileImage"
                 />
             </div>
 
             <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8">
                 <UpdatePasswordForm />
-            </div>
-
-            <div class="rounded-2xl border border-red-200 bg-white p-6 shadow-xs lg:p-8">
-                <DeleteUserForm />
             </div>
         </div>
     </AdminLayout>

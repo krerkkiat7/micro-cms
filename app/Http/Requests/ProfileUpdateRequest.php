@@ -17,7 +17,7 @@ class ProfileUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'titlename' => ['nullable', 'string', 'max:30'],
+            'titlename' => ['required', 'string', 'max:30'],
             'firstname' => ['required', 'string', 'max:100'],
             'lastname' => ['required', 'string', 'max:100'],
             'mobile' => ['nullable', 'string', 'max:20'],
@@ -36,6 +36,14 @@ class ProfileUpdateRequest extends FormRequest
                     ->where(fn ($query) => $query
                         ->where('user_type', $this->user()->user_type)
                         ->whereNull('deleted_at')),
+            ],
+            'profile_image_id' => [
+                'nullable', 'integer',
+                // ต้องเป็นไฟล์ของตัวเองที่ยังใช้งานอยู่และยังไม่ถูกลบ
+                Rule::exists('file_info', 'id')->where(fn ($query) => $query
+                    ->where('user_id', $this->user()->id)
+                    ->where('status', 'Y')
+                    ->whereNull('deleted_at')),
             ],
         ];
     }

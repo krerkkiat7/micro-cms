@@ -8,7 +8,6 @@ use App\Models\LogBackAccess;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -22,9 +21,20 @@ class ProfileController extends Controller
     {
         LogBackAccess::record('ข้อมูลส่วนตัว');
 
+        $profileImage = $request->user()->profileImage; // อาจเป็น null ทั้งกรณียังไม่ได้เลือก และไฟล์ถูกลบไปแล้ว
+
         return Inertia::render('Admin/Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
+            'profileImage' => $profileImage ? [
+                'id' => $profileImage->id,
+                'name' => $profileImage->name,
+                'hash_name' => $profileImage->hash_name,
+                'extension' => $profileImage->extension,
+                'file_size' => $profileImage->file_size,
+                'is_image' => $profileImage->isImage(),
+                'created_at' => $profileImage->created_at,
+            ] : null,
         ]);
     }
 
@@ -41,28 +51,6 @@ class ProfileController extends Controller
 
         $request->user()->save();
 
-        return Redirect::route('admin.profile.edit');
-    }
-
-    /**
-     * Delete the user's account.
-     */
-    public function destroy(Request $request): RedirectResponse
-    {
-        $request->validate([
-            'password' => ['required', 'current_password'],
-        ]);
-
-        $user = $request->user();
-
-        Auth::logout();
-
-        $user->delete();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        // return Redirect::to('/');
-        return Redirect::route('admin.login');
+        return Redirect::route('admin.profile.edit')->with('success', 'บันทึกข้อมูลโปรไฟล์เรียบร้อยแล้ว');
     }
 }

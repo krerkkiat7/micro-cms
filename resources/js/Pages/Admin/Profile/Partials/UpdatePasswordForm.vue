@@ -4,6 +4,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { useForm } from '@inertiajs/vue3';
+import { Save } from 'lucide-vue-next';
 import { ref } from 'vue';
 
 const passwordInput = ref<HTMLInputElement | null>(null);
@@ -14,6 +15,10 @@ const form = useForm({
     password: '',
     password_confirmation: '',
 });
+
+// เงื่อนไขเดียวกับการตั้ง/เปลี่ยนรหัสผ่านในโมดูลจัดการผู้ใช้งาน (Password::min(8)->mixedCase()->numbers()->symbols())
+const passwordHint =
+    'อย่างน้อย 8 ตัวอักษร ประกอบด้วยตัวพิมพ์ใหญ่ พิมพ์เล็ก ตัวเลข และอักขระพิเศษ อย่างน้อยอย่างละ 1 ตัว';
 
 const updatePassword = () => {
     form.put(route('admin.password.update'), {
@@ -47,7 +52,7 @@ const updatePassword = () => {
 
         <form @submit.prevent="updatePassword" class="mt-6 space-y-6">
             <div>
-                <InputLabel for="current_password" value="รหัสผ่านปัจจุบัน" />
+                <InputLabel for="current_password" value="รหัสผ่านปัจจุบัน" required />
 
                 <TextInput
                     id="current_password"
@@ -61,7 +66,7 @@ const updatePassword = () => {
             </div>
 
             <div>
-                <InputLabel for="password" value="รหัสผ่านใหม่" />
+                <InputLabel for="password" value="รหัสผ่านใหม่" required />
 
                 <TextInput
                     id="password"
@@ -71,11 +76,12 @@ const updatePassword = () => {
                     autocomplete="new-password"
                 />
 
+                <p class="mt-1.5 text-xs text-gray-500">{{ passwordHint }}</p>
                 <InputError :message="form.errors.password" />
             </div>
 
             <div>
-                <InputLabel for="password_confirmation" value="ยืนยันรหัสผ่านใหม่" />
+                <InputLabel for="password_confirmation" value="ยืนยันรหัสผ่านใหม่" required />
 
                 <TextInput
                     id="password_confirmation"
@@ -88,21 +94,9 @@ const updatePassword = () => {
             </div>
 
             <div class="flex items-center gap-4">
-                <PrimaryButton :disabled="form.processing">บันทึก</PrimaryButton>
-
-                <Transition
-                    enter-active-class="transition ease-in-out"
-                    enter-from-class="opacity-0"
-                    leave-active-class="transition ease-in-out"
-                    leave-to-class="opacity-0"
-                >
-                    <p
-                        v-if="form.recentlySuccessful"
-                        class="text-sm text-gray-500"
-                    >
-                        บันทึกแล้ว
-                    </p>
-                </Transition>
+                <PrimaryButton type="submit" :disabled="form.processing">
+                    <Save class="mr-1.5 size-4" /> บันทึก
+                </PrimaryButton>
             </div>
         </form>
     </section>

@@ -60,7 +60,6 @@ Route::prefix('admin')->group(function () {
         // เพิ่ม Route หลังบ้านอื่นๆ ตรงนี้...
         Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('admin.profile.update');
-        Route::delete('/profile', [ProfileController::class, 'destroy'])->name('admin.profile.destroy');
 
         // จัดการผู้ใช้งานหลังบ้าน (user_type = back) — ตรวจสอบสิทธิ์ในแต่ละ method ของ UserController
         Route::prefix('system/user')->group(function () {

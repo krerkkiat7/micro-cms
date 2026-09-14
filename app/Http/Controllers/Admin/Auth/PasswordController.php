@@ -17,13 +17,14 @@ class PasswordController extends Controller
     {
         $validated = $request->validate([
             'current_password' => ['required', 'current_password'],
-            'password' => ['required', Password::defaults(), 'confirmed'],
+            // เงื่อนไขเดียวกับการตั้ง/เปลี่ยนรหัสผ่านในโมดูลจัดการผู้ใช้งาน (StoreUserRequest/UpdateUserPasswordRequest)
+            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
         ]);
 
         $request->user()->update([
             'password' => Hash::make($validated['password']),
         ]);
 
-        return back();
+        return back()->with('success', 'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว');
     }
 }

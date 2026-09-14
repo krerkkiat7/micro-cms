@@ -3,11 +3,16 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
+import FilePickerField from '@/Components/Admin/FileManager/FilePickerField.vue';
 import { Link, useForm, usePage } from '@inertiajs/vue3';
+import { Save } from 'lucide-vue-next';
+import { ref, watch } from 'vue';
+import type { FileItem } from '@/types';
 
-defineProps<{
-    mustVerifyEmail?: Boolean;
-    status?: String;
+const props = defineProps<{
+    mustVerifyEmail?: boolean;
+    status?: string;
+    profileImage: FileItem | null;
 }>();
 
 const user = usePage().props.auth.user;
@@ -21,6 +26,13 @@ const form = useForm({
     line: user.line ?? '',
     facebook: user.facebook ?? '',
     email: user.email,
+    profile_image_id: props.profileImage?.id ?? null,
+});
+
+// FilePickerField ทำงานกับ array ของไฟล์เสมอ (เลือกได้ 1 รูป) — เลือกใหม่ = แทนที่รูปเดิม
+const profileImage = ref<FileItem[]>(props.profileImage ? [props.profileImage] : []);
+watch(profileImage, (files) => {
+    form.profile_image_id = files[0]?.id ?? null;
 });
 </script>
 
@@ -38,9 +50,9 @@ const form = useForm({
             @submit.prevent="form.patch(route('admin.profile.update'))"
             class="mt-6 space-y-6"
         >
-            <div class="grid gap-4 sm:grid-cols-3">
-                <div>
-                    <InputLabel for="titlename" value="คำนำหน้า" />
+            <div class="grid gap-4 sm:grid-cols-6">
+                <div class="sm:col-span-2">
+                    <InputLabel for="titlename" value="คำนำหน้า" required />
 
                     <TextInput
                         id="titlename"
@@ -52,38 +64,33 @@ const form = useForm({
                     <InputError :message="form.errors.titlename" />
                 </div>
 
-                <div>
-                    <InputLabel for="firstname" value="ชื่อ" />
+                <div class="sm:col-span-2">
+                    <InputLabel for="firstname" value="ชื่อ" required />
 
                     <TextInput
                         id="firstname"
                         type="text"
                         v-model="form.firstname"
-                        required
-                        autofocus
                         autocomplete="given-name"
                     />
 
                     <InputError :message="form.errors.firstname" />
                 </div>
 
-                <div>
-                    <InputLabel for="lastname" value="นามสกุล" />
+                <div class="sm:col-span-2">
+                    <InputLabel for="lastname" value="นามสกุล" required />
 
                     <TextInput
                         id="lastname"
                         type="text"
                         v-model="form.lastname"
-                        required
                         autocomplete="family-name"
                     />
 
                     <InputError :message="form.errors.lastname" />
                 </div>
-            </div>
 
-            <div class="grid gap-4 sm:grid-cols-2">
-                <div>
+                <div class="sm:col-span-3">
                     <InputLabel for="mobile" value="เบอร์มือถือ" />
 
                     <TextInput
@@ -96,7 +103,7 @@ const form = useForm({
                     <InputError :message="form.errors.mobile" />
                 </div>
 
-                <div>
+                <div class="sm:col-span-3">
                     <InputLabel for="phone" value="เบอร์ติดต่อ" />
 
                     <TextInput
@@ -108,7 +115,7 @@ const form = useForm({
                     <InputError :message="form.errors.phone" />
                 </div>
 
-                <div>
+                <div class="sm:col-span-3">
                     <InputLabel for="line" value="LINE" />
 
                     <TextInput
@@ -120,7 +127,7 @@ const form = useForm({
                     <InputError :message="form.errors.line" />
                 </div>
 
-                <div>
+                <div class="sm:col-span-3">
                     <InputLabel for="facebook" value="Facebook" />
 
                     <TextInput
@@ -131,20 +138,25 @@ const form = useForm({
 
                     <InputError :message="form.errors.facebook" />
                 </div>
-            </div>
 
-            <div>
-                <InputLabel for="email" value="อีเมล" />
+                <div class="sm:col-span-3">
+                    <InputLabel for="email" value="อีเมล" required />
 
-                <TextInput
-                    id="email"
-                    type="email"
-                    v-model="form.email"
-                    required
-                    autocomplete="username"
-                />
+                    <TextInput
+                        id="email"
+                        type="email"
+                        v-model="form.email"
+                        autocomplete="username"
+                    />
 
-                <InputError :message="form.errors.email" />
+                    <InputError :message="form.errors.email" />
+                </div>
+
+                <div class="sm:col-span-6">
+                    <InputLabel value="รูปโปรไฟล์" />
+                    <FilePickerField v-model="profileImage" :accept="['jpg', 'jpeg', 'png', 'gif', 'webp']" />
+                    <InputError :message="form.errors.profile_image_id" />
+                </div>
             </div>
 
             <div v-if="mustVerifyEmail && user.email_verified_at === null">
@@ -169,21 +181,9 @@ const form = useForm({
             </div>
 
             <div class="flex items-center gap-4">
-                <PrimaryButton :disabled="form.processing">บันทึก</PrimaryButton>
-
-                <Transition
-                    enter-active-class="transition ease-in-out"
-                    enter-from-class="opacity-0"
-                    leave-active-class="transition ease-in-out"
-                    leave-to-class="opacity-0"
-                >
-                    <p
-                        v-if="form.recentlySuccessful"
-                        class="text-sm text-gray-500"
-                    >
-                        บันทึกแล้ว
-                    </p>
-                </Transition>
+                <PrimaryButton type="submit" :disabled="form.processing">
+                    <Save class="mr-1.5 size-4" /> บันทึก
+                </PrimaryButton>
             </div>
         </form>
     </section>
