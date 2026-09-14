@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\FileInfo;
+use App\Models\LogBackAction;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -38,6 +39,30 @@ test('profile information can be updated', function () {
     $this->assertSame('นาย Test User', $user->name);
     $this->assertSame('test@example.com', $user->email);
     $this->assertNull($user->email_verified_at);
+});
+
+test('updating profile information sets updated_by and updated_at, and records a log_back_action row', function () {
+    $user = User::factory()->create();
+    $originalUpdatedAt = $user->updated_at;
+
+    $this->travel(1)->minutes();
+
+    $this->actingAs($user)->patch('/admin/profile', [
+        'titlename' => 'นาย',
+        'firstname' => 'Test',
+        'lastname' => 'User',
+        'email' => $user->email,
+    ]);
+
+    $user->refresh();
+    expect($user->updated_by)->toBe($user->id)
+        ->and($user->updated_at)->not->toEqual($originalUpdatedAt);
+
+    $log = LogBackAction::where('module_code', 'profile')->where('action_type', 'update')->first();
+    expect($log)->not->toBeNull()
+        ->and($log->user_id)->toBe($user->id)
+        ->and($log->ref_id)->toBe($user->id)
+        ->and($log->value_string)->toBe($user->name);
 });
 
 test('email verification status is unchanged when the email address is unchanged', function () {
@@ -186,6 +211,26 @@ test('password can be updated with a flash success message', function () {
     $response
         ->assertSessionHasNoErrors()
         ->assertSessionHas('success');
+});
+
+test('updating the password sets password_changed_at/by, and records a log_back_action row', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->put('/admin/password', [
+        'current_password' => 'password',
+        'password' => 'Aa1!aaaa',
+        'password_confirmation' => 'Aa1!aaaa',
+    ]);
+
+    $user->refresh();
+    expect($user->password_changed_by)->toBe($user->id)
+        ->and($user->password_changed_at)->not->toBeNull();
+
+    $log = LogBackAction::where('module_code', 'profile.password')->where('action_type', 'update')->first();
+    expect($log)->not->toBeNull()
+        ->and($log->user_id)->toBe($user->id)
+        ->and($log->ref_id)->toBe($user->id)
+        ->and($log->value_string)->toBe($user->name);
 });
 
 test('a weak new password is rejected', function () {
