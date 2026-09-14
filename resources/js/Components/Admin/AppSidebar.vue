@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
-import { LayoutGrid, UserCircle } from 'lucide-vue-next';
+import { FolderOpen, LayoutGrid, UserCircle } from 'lucide-vue-next';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import SidebarItem from '@/Components/Admin/SidebarItem.vue';
 import SidebarGroup from '@/Components/Admin/SidebarGroup.vue';
@@ -86,6 +86,12 @@ const showText = computed(() => isExpanded.value || isMobileOpen.value);
                         :href="route('admin.profile.edit')"
                         active="admin.profile"
                         :icon="UserCircle"
+                    />
+                    <SidebarItem
+                        label="จัดการไฟล์"
+                        :href="route('admin.system.file.index')"
+                        active="admin.system.file"
+                        :icon="FolderOpen"
                     />
                 </div>
             </div>

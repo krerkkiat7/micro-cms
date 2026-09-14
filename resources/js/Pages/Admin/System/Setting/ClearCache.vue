@@ -38,6 +38,12 @@ const allForm = useForm({});
 function clearAll() {
     allForm.post(route('admin.system.setting.clearcache.all'), { preserveScroll: true });
 }
+
+const filesForm = useForm({});
+
+function clearFiles() {
+    filesForm.post(route('admin.system.setting.clearcache.files'), { preserveScroll: true });
+}
 </script>
 
 <template>
@@ -66,6 +72,20 @@ function clearAll() {
                         @click="clearGroup(item.group)"
                     >
                         <Trash2 class="mr-1.5 size-4" /> {{ item.label }}
+                    </PrimaryButton>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8">
+                <h2 class="text-base font-semibold text-gray-800">ล้างแคชไฟล์</h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    ล้างแคชผลการค้นหาไฟล์ในโมดูลจัดการไฟล์ — ใช้เมื่อลิงก์ไฟล์/รูปภาพแสดงผลไม่ตรงกับข้อมูลล่าสุด
+                    (การล้างนี้จะล้างแคชของระบบทั้งหมดไปด้วย เพราะ cache driver ปัจจุบันไม่รองรับการล้างแยกกลุ่ม)
+                </p>
+
+                <div class="mt-5">
+                    <PrimaryButton type="button" :disabled="filesForm.processing" @click="clearFiles">
+                        <Trash2 class="mr-1.5 size-4" /> ล้าง Cache ไฟล์
                     </PrimaryButton>
                 </div>
             </div>

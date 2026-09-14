@@ -59,6 +59,24 @@ export interface Paginated<T> {
     per_page: number;
 }
 
+/** โฟลเดอร์ในโมดูลจัดการไฟล์ (folder_info) */
+export interface FolderItem {
+    id: number;
+    name: string;
+    files_count?: number;
+}
+
+/** ไฟล์ในโมดูลจัดการไฟล์ (file_info) */
+export interface FileItem {
+    id: number;
+    name: string;
+    hash_name: string;
+    extension: string | null;
+    file_size: number;
+    is_image: boolean;
+    created_at: string;
+}
+
 /** โหนดสิทธิ์ (sys_action) แบบ tree — ใช้ในหน้ากำหนดสิทธิ์ของกลุ่มผู้ใช้งาน */
 export interface ActionNode {
     id: string;

@@ -75,9 +75,13 @@ class MenuSeeder extends Seeder
             ['system-front-log-access', 'system', 'ประวัติการใช้งาน - หน้าบ้าน', 'History', 'admin.system.frontlog.access.index', 'system.frontlog.access', 14],
             ['system-front-log-action', 'system', 'ประวัติการกระทำ - หน้าบ้าน', 'History', 'admin.system.frontlog.action.index', 'system.frontlog.action', 15],
             ['system-front-log-login', 'system', 'ประวัติการเข้าสู่ระบบ - หน้าบ้าน', 'History', 'admin.system.frontlog.login.index', 'system.frontlog.login', 16],
-            ['system-file', 'system', 'จัดการไฟล์', 'FolderOpen', 'admin.system.file.index', 'system.file.manage', 98],
             ['system-setting', 'system', 'ตั้งค่าระบบ', 'SlidersHorizontal', 'admin.system.setting.index', 'system.setting.manage', 99],
         ];
+
+        // "จัดการไฟล์" เปลี่ยนมาเป็นลิงก์ hardcode ใน AppSidebar.vue (ต่อจากโปรไฟล์ เหมือน Dashboard/Profile)
+        // ไม่ผ่าน sys_menu แล้ว — ลบ record เดิมที่เคย seed ไว้ (id 'system-file') ออกจาก DB จริงด้วย
+        // เพื่อให้ seeder รันซ้ำแล้วไม่มี row ค้าง
+        SysMenu::where('id', 'system-file')->forceDelete();
 
         foreach ($menus as [$id, $groupId, $name, $icon, $routeName, $actionCode, $sortOrder]) {
             SysMenu::updateOrCreate(['id' => $id], [

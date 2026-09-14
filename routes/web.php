@@ -5,6 +5,8 @@ use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\System\BackLogAccessController;
 use App\Http\Controllers\Admin\System\BackLogActionController;
 use App\Http\Controllers\Admin\System\BackLogLoginController;
+use App\Http\Controllers\Admin\System\FileController;
+use App\Http\Controllers\Admin\System\FileServeController;
 use App\Http\Controllers\Admin\System\SettingController;
 use App\Http\Controllers\Admin\System\UserController;
 use App\Http\Controllers\Admin\System\UsergroupController;
@@ -113,6 +115,29 @@ Route::prefix('admin')->group(function () {
             Route::get('/clearcache', [SettingController::class, 'clearcache'])->name('admin.system.setting.clearcache');
             Route::post('/clearcache/{group}', [SettingController::class, 'clearCacheGroup'])->name('admin.system.setting.clearcache.group');
             Route::post('/clearcache-all', [SettingController::class, 'clearCacheAll'])->name('admin.system.setting.clearcache.all');
+            Route::post('/clearcache-files', [SettingController::class, 'clearCacheFiles'])->name('admin.system.setting.clearcache.files');
+        });
+
+        // จัดการไฟล์ (file_info/folder_info) — ทุกคนที่ login เข้าได้เหมือน Dashboard/Profile
+        // ไม่เช็ก permission เพราะเป็นพื้นที่ไฟล์ส่วนตัว เห็นเฉพาะของตัวเองเท่านั้น (scope user_id ใน controller)
+        Route::prefix('system/file')->group(function () {
+            Route::get('/', [FileController::class, 'index'])->name('admin.system.file.index');
+            Route::get('/folders', [FileController::class, 'folders'])->name('admin.system.file.folders');
+            Route::post('/folders', [FileController::class, 'storeFolder'])->name('admin.system.file.folders.store');
+            Route::get('/list', [FileController::class, 'list'])->name('admin.system.file.list');
+            Route::post('/upload', [FileController::class, 'upload'])->name('admin.system.file.upload');
+            Route::delete('/{file}', [FileController::class, 'destroy'])->name('admin.system.file.destroy');
+        });
+
+        // เสิร์ฟไฟล์ (แสดง/ดาวน์โหลด/thumbnail) ด้วย hash_name — ต้อง login เท่านั้น ไม่จำกัดเจ้าของไฟล์
+        // (hash_name เป็น ULID เดาไม่ได้) — path ตรงตามที่กำหนด: /admin/file/...
+        Route::prefix('file')->group(function () {
+            Route::get('/get/{hashname}', [FileServeController::class, 'show'])->name('admin.system.file.get');
+            Route::get('/type/download/get/{hashname}', [FileServeController::class, 'download'])->name('admin.system.file.get.download');
+            Route::get('/type/thumbnail/get/{hashname}', [FileServeController::class, 'thumbnail'])->name('admin.system.file.get.thumbnail');
+            Route::get('/type/thumbnail/size/{size}/get/{hashname}', [FileServeController::class, 'thumbnail'])
+                ->name('admin.system.file.get.thumbnail.size')
+                ->where('size', '[0-9]+');
         });
     });
 });

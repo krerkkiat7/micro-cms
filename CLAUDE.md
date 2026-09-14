@@ -19,6 +19,7 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 | Frontend | Inertia.js 2 + Vue 3 (`<script setup>` + TypeScript) + Tailwind CSS **v4** (CSS-first config ใน `resources/css/app.css`) |
 | Build | Vite 7, `laravel-vite-plugin`, `@tailwindcss/vite`, `vue-tsc` — ไม่มี `postcss.config.js`/`tailwind.config.js` |
 | Icons | `lucide-vue-next` (ใช้ในหลังบ้าน) |
+| Image processing | `intervention/image` (GD driver) — ใช้ generate thumbnail ในโมดูลจัดการไฟล์ (ต้องเปิด ext-gd) |
 | Database | MySQL 8+ (dev ผ่าน `docker-compose.yml`) |
 | Session / Cache | Redis (client = `predis`, ไม่ใช่ ext-phpredis) |
 | Queue | database |
@@ -238,6 +239,16 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   → `Pages/Admin/System/BackLogAction/Index.vue` — คอลัมน์ ชื่อ-นามสกุล/โมดูล/ประเภท (pill)/ข้อมูล/IP/วันเวลา,
   กรอง q(value_string,module_code,ip) + dropdown "โมดูล"/"ประเภทการกระทำ" (distinct จากคอลัมน์) + ช่วงวันที่.
   `toDate()` helper ย้ายไป base `App\Http\Controllers\Controller` (ใช้ร่วม 3 log viewer). **ยังไม่ทำ**: log ฝั่งหน้าบ้าน
+- โมดูลจัดการไฟล์ (`file_info`/`folder_info`, migration `2026_09_14_000001_create_file_management_tables.php`)
+  — พื้นที่ไฟล์ส่วนตัวของผู้ใช้หลังบ้านแต่ละคน (`Admin\System\FileController` ajax ทั้งหมด ไม่ใช่ Inertia
+  visit ยกเว้นหน้า index) + เสิร์ฟไฟล์ผ่าน `Admin\System\FileServeController`/`App\Support\FileDelivery`
+  (`BinaryFileResponse` รองรับ Range/206 อัตโนมัติจาก `Router::toResponse()`, ETag/304, thumbnail cache ไฟล์
+  บน disk ด้วย `intervention/image`) + cache DB lookup ด้วย `App\Support\FileCache` (ปุ่มล้างที่หน้า
+  ตั้งค่าระบบ → ล้างแคช). **ไม่มี permission gate** (เหมือน Dashboard/Profile) — เมนู "จัดการไฟล์" เป็นลิงก์
+  hardcode ใน `AppSidebar.vue` (ต่อจากโปรไฟล์) + `UserMenu.vue` ไม่ผ่าน `sys_menu` (ลบ row `system-file`
+  ที่เคย seed ไว้ก่อนหน้าออกจาก `MenuSeeder.php` แล้ว). ส่วน "เลือกไฟล์" ทำเป็น component reusable
+  (`Components/Admin/FileManager/FilePickerField.vue` + `FilePickerDialog.vue`) — ยังไม่ผูกกับฟิลด์จริง
+  เพราะ `sys_user`/บทความยังไม่มีฟิลด์รูปภาพ. รายละเอียดเต็มดู `docs/PRD-system.md` §9
 
 ## ทดสอบ
 

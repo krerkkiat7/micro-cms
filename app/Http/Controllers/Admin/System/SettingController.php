@@ -10,6 +10,7 @@ use App\Http\Requests\Admin\System\Setting\UpdateTurnstileSettingRequest;
 use App\Models\LogBackAccess;
 use App\Models\LogBackAction;
 use App\Models\SysSetting;
+use App\Support\FileCache;
 use App\Support\Setting;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\RedirectResponse;
@@ -167,5 +168,22 @@ class SettingController extends Controller
         LogBackAction::record('system.setting.cache', 'clear', 'ทั้งหมด');
 
         return back()->with('success', 'ล้างแคชทั้งหมดเรียบร้อยแล้ว');
+    }
+
+    /**
+     * ล้างแคชของโมดูลจัดการไฟล์ (ผลการค้นหา file_info ด้วย hash_name) — driver cache เป็น
+     * `database` ไม่รองรับ tag จึง flush ทั้ง cache store (ดู App\Support\FileCache::forgetAll())
+     */
+    public function clearCacheFiles(Request $request): RedirectResponse
+    {
+        if (! $request->user()->hasPermission('system.setting.manage')) {
+            return redirect()->route('admin.dashboard');
+        }
+
+        FileCache::forgetAll();
+
+        LogBackAction::record('system.setting.cache', 'clear', 'ไฟล์ทั้งหมด');
+
+        return back()->with('success', 'ล้างแคชไฟล์เรียบร้อยแล้ว');
     }
 }

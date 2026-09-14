@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { ChevronDown, LogOut, UserCircle } from 'lucide-vue-next';
+import { ChevronDown, FolderOpen, LogOut, UserCircle } from 'lucide-vue-next';
 import Dropdown from '@/Components/Dropdown.vue';
 
 const page = usePage();
@@ -34,6 +34,13 @@ const page = usePage();
             >
                 <UserCircle class="size-4 text-gray-400" />
                 โปรไฟล์
+            </Link>
+            <Link
+                :href="route('admin.system.file.index')"
+                class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50"
+            >
+                <FolderOpen class="size-4 text-gray-400" />
+                จัดการไฟล์
             </Link>
             <Link
                 :href="route('admin.logout')"

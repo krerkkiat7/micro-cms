@@ -15,7 +15,7 @@
 | 6 | ตั้งค่าระบบ/เว็บไซต์ | `sys_setting` | 🟡 ตาราง/model/seed ตัวอย่างมี, ยังไม่มี UI |
 | 7 | profile | `sys_user` | 🟢 |
 | 8 | dashboard | — | 🟡 placeholder |
-| 9 | file management | `sys_file` *(เสนอ)* | 🔴 |
+| 9 | file management | `file_info`, `folder_info` | 🟢 หน้าเต็ม + dialog เลือกไฟล์ (reusable, ยังไม่ผูกฟิลด์จริง) เสร็จ |
 
 ---
 
@@ -491,29 +491,81 @@ primary key = `(group, name)` — Eloquent ไม่รองรับ composite
 
 ---
 
-## 9. file management — 🔴 เสนอ
+## 9. file management — 🟢 มีแล้ว
 
-**วัตถุประสงค์** — คลังไฟล์/รูปกลางสำหรับใช้ในทุกโมดูล (แนบใน rich text, รูปปก, banner ฯลฯ)
+**วัตถุประสงค์** — พื้นที่ไฟล์ส่วนตัวของผู้ใช้หลังบ้านแต่ละคน (เห็นเฉพาะไฟล์ของตัวเอง) ใช้ทั้งแบบเข้าเมนู
+"จัดการไฟล์" เต็มหน้า และแบบ dialog เลือกไฟล์ที่ยกไปฝังในฟอร์มของโมดูลอื่น (ยังไม่มีฟิลด์จริงผูกไว้ในตอนนี้
+เพราะ `sys_user`/บทความยังไม่มีฟิลด์รูปภาพ — component พร้อมใช้ทันทีที่มีฟิลด์จริง ดู
+`Components/Admin/FileManager/FilePickerField.vue`)
 
-**Data model เสนอ — `sys_file`**
+**ไม่มี permission gate** — ต่างจากโมดูล `system.*` อื่น ๆ เมนู "จัดการไฟล์" (sidebar ต่อจากโปรไฟล์ +
+header user-dropdown) และ `Admin\System\FileController`/`FileServeController` ไม่เช็ก `hasPermission()`
+เหมือน Dashboard/Profile เพราะเป็นพื้นที่ส่วนตัว ทุก query กรองด้วย `user_id` แทน permission action
+`system.file.manage` (`system908`) ยังเก็บไว้เผื่ออนาคตทำมุมมองแอดมินข้าม user
 
-| คอลัมน์ | ชนิด | หมายเหตุ |
-|---------|------|----------|
-| `id` | bigint PK | |
-| `disk` | `varchar(20)` default `public` | ใช้ disk `public` ที่มีอยู่ (`storage/app/public` → `/storage`) |
-| `path` | `varchar(255)` | path บน disk |
-| `original_name` | `varchar(255)` | |
-| `mime` | `varchar(100)` | |
-| `size` | unsigned bigint | ไบต์ |
-| `folder` | `varchar(255)` null | โฟลเดอร์เสมือนสำหรับจัดหมวด |
-| `uploaded_by` | bigint FK → `sys_user` null | |
-| `timestamps`, `deleted_at` | | |
+**Data model — `file_info` / `folder_info`** (migration
+`2026_09_14_000001_create_file_management_tables.php`) — แปลงจากระบบเดิม (schema แบบ
+`ID/UserID/Name/HashName/...`) มาเป็น convention ของโปรเจกต์ (snake_case, `timestamps()`+`softDeletes()`,
+`status` char(1) `Y`/`N`, audit `created_by`/`updated_by`/`deleted_by`)
 
-**หน้าจอ** — ตัวเลือกไฟล์ (grid + อัปโหลด drag & drop + เลือกโฟลเดอร์), ใช้เป็น modal picker ในฟอร์มโมดูล
+| ตาราง | คอลัมน์สำคัญ | หมายเหตุ |
+|-------|-------------|----------|
+| `folder_info` | `user_id`, `name`, `status` | โฟลเดอร์ของผู้ใช้ 1 คน — เพิ่มได้อย่างเดียวจากหน้าจอ (ยังไม่มีลบ/แก้ไข) |
+| `file_info` | `user_id`, `folder_id` (FK → `folder_info`, nullOnDelete), `name` (ชื่อไฟล์จริง), `hash_name` (unique, ULID+นามสกุล — ใช้เป็นค่าใน URL เสิร์ฟไฟล์), `file_size`, `extension`, `mime_type`, `path` (path บน disk) | `folder_id = null` = โฟลเดอร์ราก ("ไม่มีโฟลเดอร์") |
 
-**Permission** — `system.file.view`, `system.file.upload`, `system.file.delete`
+**Model** — `App\Models\FolderInfo` (`files()` hasMany, scope `ownedBy()`) / `App\Models\FileInfo`
+(`folder()` belongsTo, scope `ownedBy()`, `isImage()`, เติม `hash_name` อัตโนมัติใน `booted()` แบบเดียวกับ
+`token` ของ `LogBackAccess`) — ทั้งคู่ `SoftDeletes`
 
-**หมายเหตุ** — ต้องรัน `php artisan storage:link` (config ไว้แล้ว) ; พิจารณาจำกัดชนิด/ขนาดไฟล์ใน config
+**การจัดเก็บไฟล์จริง** — disk `local` (`storage/app/private`, ไม่ symlink ไป public) โครงสร้าง
+`filemanager/{ปี}/{เดือน}/{วัน}/{hash_name}` ตั้งค่าที่ `config/filemanagement.php` (นามสกุล/mime ที่อนุญาต,
+ขนาดสูงสุด 5MB, ความกว้าง thumbnail ค่าเริ่มต้น) — อัพโหลดตรวจทั้งนามสกุล (`File::types()`) และ mime จริง
+ให้ตรงกับนามสกุลที่ระบุ (`StoreFileUploadRequest::withValidator()`)
+
+**Route** (ทั้งหมดใต้ `Route::middleware(['auth','verified'])`)
+
+| Method | Path | route name | หมายเหตุ |
+|---|---|---|---|
+| GET | `/admin/system/file` | `admin.system.file.index` | หน้า Inertia — โหลดข้อมูลจริงด้วย ajax หลัง mount |
+| GET | `/admin/system/file/folders` | `admin.system.file.folders` | JSON รายการโฟลเดอร์ (scope user) |
+| POST | `/admin/system/file/folders` | `admin.system.file.folders.store` | JSON สร้างโฟลเดอร์ |
+| GET | `/admin/system/file/list` | `admin.system.file.list` | JSON paginate ไฟล์ (ค้นหา/เรียง/paging) |
+| POST | `/admin/system/file/upload` | `admin.system.file.upload` | JSON อัพโหลดทีละไฟล์ (frontend ยิงขนานหลาย request สำหรับ multi-file) |
+| DELETE | `/admin/system/file/{file}` | `admin.system.file.destroy` | soft delete (scope user) |
+| GET | `/admin/file/get/{hashname}` | `admin.system.file.get` | เสิร์ฟไฟล์ inline — login เท่านั้น ไม่ scope เจ้าของ (hash เดาไม่ได้) |
+| GET | `/admin/file/type/download/get/{hashname}` | `admin.system.file.get.download` | บังคับดาวน์โหลด ใช้ชื่อไฟล์จริง |
+| GET | `/admin/file/type/thumbnail/get/{hashname}` | `admin.system.file.get.thumbnail` | thumbnail กว้าง 500px (default) |
+| GET | `/admin/file/type/thumbnail/size/{size}/get/{hashname}` | `admin.system.file.get.thumbnail.size` | thumbnail กำหนดความกว้างเอง |
+
+> `FileServeController::thumbnail()` อ่าน `{size}`/`{hashname}` ผ่าน `$request->route()` ตรง ๆ แทนพารามิเตอร์
+> ของเมธอด — เพราะ Laravel bind พารามิเตอร์ primitive แบบเรียงตามตำแหน่งในลำดับของ URI ไม่ใช่ตามชื่อ
+> พารามิเตอร์ของเมธอด และ route มี `{size}` นำหน้า `{hashname}` ต่างจาก route อื่นที่ไม่มี `{size}`
+
+**การเสิร์ฟไฟล์ (`App\Support\FileDelivery`)** — ฟังก์ชันกลาง ใช้ `Symfony\BinaryFileResponse` (Laravel
+เรียก `$response->prepare($request)` ให้อัตโนมัติใน `Router::toResponse()` ซึ่งจัดการ `Range`/`206 Partial
+Content` ให้เอง — ทดสอบแล้วว่า mp3/mp4 seek ได้ผ่าน route เดียวกัน ไม่ต้อง parse header เอง), ตั้ง
+`ETag`/`Last-Modified`/`Cache-Control: private, max-age=86400` ทุก response และเช็ก `If-None-Match` คืน
+`304` ก่อนอ่านไฟล์จริงถ้าตรงกัน — thumbnail generate ครั้งแรกด้วย `intervention/image` (GD driver) แล้ว cache
+ไฟล์ที่ resize ไว้ที่ `filemanager/thumbnails/{width}/{hash_name}` (ไม่ resize ซ้ำทุก request)
+
+**Cache** — `App\Support\FileCache` (cache-first lookup `file_info` ด้วย `hash_name`, TTL 6 ชั่วโมง) —
+ปุ่ม "ล้าง Cache ไฟล์" อยู่ที่หน้า `admin.system.setting.clearcache` (route
+`admin.system.setting.clearcache.files`) — driver cache เป็น `database` ไม่รองรับ tag จึงล้างทั้ง cache
+store (`Cache::flush()`)
+
+**Frontend** — `Pages/Admin/System/File/Index.vue` + component ใต้ `Components/Admin/FileManager/`
+(`FolderList`, `FileUploadDropzone`, `FileBrowser`, `FilePickerDialog`, `FilePickerField`) — ทั้งหมดคุยกับ
+backend ด้วย ajax (axios) ไม่ใช่ Inertia visit เพราะต้องใช้ซ้ำได้จาก dialog ที่ฝังในหน้าอื่น
+
+**หมายเหตุ / follow-up ในอนาคต**
+- performance เพิ่มเติมระดับ web server: nginx รองรับ `X-Accel-Redirect` และ Apache รองรับ
+  `X-Sendfile`/`mod_xsendfile` เพื่อให้ web server เป็นคน stream ไฟล์แทน PHP-FPM โดยตรง (ยังไม่ได้ wire
+  เพราะขึ้นกับ config ของเครื่อง deploy จริง) — แนวทาง: ให้ `FileServeController` ส่ง header
+  `X-Accel-Redirect`/`X-Sendfile` ชี้ไป internal path แทนการ return `BinaryFileResponse` ตรง ๆ
+- path สาธารณะแบบไม่ต้อง login (โลโก้/favicon ในอนาคต) ให้เขียน controller ใหม่ต่างหากแล้วเรียก
+  `App\Support\FileDelivery::respond()` ซ้ำได้เลย (ตัวตรวจสิทธิ์เป็นหน้าที่ของแต่ละ controller ไม่ใช่ของ
+  `FileDelivery`)
+- ยังไม่มี UI ผูก `FilePickerField.vue` เข้ากับฟิลด์จริง (รอ `sys_user` เพิ่มคอลัมน์รูปโปรไฟล์ / โมดูลบทความ)
 
 ---
 
