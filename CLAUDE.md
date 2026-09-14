@@ -259,8 +259,10 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   auto-dismiss แถวที่สำเร็จหลัง 5 วินาทีด้วย fade+พับความสูง (`TransitionGroup` + JS `leave` hook)
 - เพิ่ม `sys_user.profile_image_id` (migration แยก `2026_09_14_000002_...`, FK จริง → `file_info.id`
   nullOnDelete) — ฟิลด์ "รูปโปรไฟล์" ในฟอร์มเพิ่ม/แก้ไขผู้ใช้งาน (ต่อจาก Facebook) ใช้
-  `FilePickerField.vue` เลือกได้ 1 รูป จำกัดเฉพาะนามสกุลรูปภาพ; validate ว่าไฟล์ต้องเป็นของผู้กระทำเอง
-  (คนที่กำลังแก้ไขผู้ใช้ ไม่ใช่เจ้าของบัญชีที่ถูกแก้) ผ่าน `StoreUserRequest`/`UpdateUserRequest`
+  `FilePickerField.vue` เลือกได้ 1 รูป จำกัดเฉพาะนามสกุลรูปภาพ; validate แค่ว่า `file_info` แถวนั้นมีอยู่จริง
+  และ `status='Y'` ผ่าน `StoreUserRequest`/`UpdateUserRequest`/`ProfileUpdateRequest` — **ไม่จำกัดว่าต้องเป็น
+  ไฟล์ของใคร** (เลือกไฟล์ที่คนอื่นอัพโหลดไว้ในระบบมาใช้ได้ ตามที่ตั้งใจ — เดิมเคยจำกัดด้วย `user_id` ของผู้กระทำ
+  แล้วพบว่าเช็กไม่ได้ผลตามต้องการ จึงเปลี่ยนมาเช็กแค่ว่าไฟล์มีอยู่จริงแทน)
 
 ## ทดสอบ
 

@@ -295,7 +295,7 @@ test('store accepts a profile image that belongs to the actor', function () {
     expect($user->profile_image_id)->toBe($image->id);
 });
 
-test('store rejects a profile image that belongs to another user', function () {
+test('store accepts a profile image that belongs to another user (only existence is checked)', function () {
     actingAsUserWithPermissions(['system.user.manage']);
     $other = User::factory()->create();
     $image = FileInfo::create([
@@ -306,6 +306,18 @@ test('store rejects a profile image that belongs to another user', function () {
     $this->post(route('admin.system.user.store'), validUserPayload(
         superAdminGroupId(),
         ['profile_image_id' => $image->id]
+    ))->assertSessionHasNoErrors();
+
+    $user = User::where('email', 'newperson@example.com')->firstOrFail();
+    expect($user->profile_image_id)->toBe($image->id);
+});
+
+test('store rejects a profile image id that does not exist', function () {
+    actingAsUserWithPermissions(['system.user.manage']);
+
+    $this->post(route('admin.system.user.store'), validUserPayload(
+        superAdminGroupId(),
+        ['profile_image_id' => 999999]
     ))->assertInvalid('profile_image_id');
 });
 

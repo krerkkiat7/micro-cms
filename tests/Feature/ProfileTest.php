@@ -99,7 +99,7 @@ test('email must not collide with another back-office user', function () {
         ->assertInvalid('email');
 });
 
-test('profile image must belong to the user themself', function () {
+test('profile image can be a file that belongs to another user (only existence is checked)', function () {
     $user = User::factory()->create();
     $other = User::factory()->create();
     $othersImage = FileInfo::create([
@@ -114,6 +114,22 @@ test('profile image must belong to the user themself', function () {
             'lastname' => $user->lastname,
             'email' => $user->email,
             'profile_image_id' => $othersImage->id,
+        ])
+        ->assertSessionHasNoErrors();
+
+    $this->assertSame($othersImage->id, $user->fresh()->profile_image_id);
+});
+
+test('profile image id must reference a file that actually exists', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->patch('/admin/profile', [
+            'titlename' => $user->titlename,
+            'firstname' => $user->firstname,
+            'lastname' => $user->lastname,
+            'email' => $user->email,
+            'profile_image_id' => 999999,
         ])
         ->assertInvalid('profile_image_id');
 });

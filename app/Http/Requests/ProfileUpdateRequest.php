@@ -39,9 +39,8 @@ class ProfileUpdateRequest extends FormRequest
             ],
             'profile_image_id' => [
                 'nullable', 'integer',
-                // ต้องเป็นไฟล์ของตัวเองที่ยังใช้งานอยู่และยังไม่ถูกลบ
+                // เช็กแค่ว่าไฟล์นี้มีอยู่จริงและยังใช้งานอยู่ — ไม่จำกัดว่าต้องเป็นไฟล์ของใคร
                 Rule::exists('file_info', 'id')->where(fn ($query) => $query
-                    ->where('user_id', $this->user()->id)
                     ->where('status', 'Y')
                     ->whereNull('deleted_at')),
             ],
