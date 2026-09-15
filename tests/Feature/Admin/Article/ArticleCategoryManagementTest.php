@@ -74,6 +74,34 @@ test('index shows the default-language title and filters by search term', functi
         ->assertInertia(fn (Assert $page) => $page->has('categories.data', 0));
 });
 
+test('index defaults to sorting by title ascending and accepts a sort override', function () {
+    actingAsUserWithPermissions(['article.category.view', 'article.category.manage']);
+
+    $this->post(route('admin.article.category.store'), validCategoryPayload([
+        'sort_order' => '9',
+        'detail' => ['th' => ['title' => 'ก ทดสอบเรียงลำดับ A', 'slug' => 'sort-a-th'], 'en' => ['title' => 'Sort A', 'slug' => 'sort-a-en']],
+    ]));
+    $this->post(route('admin.article.category.store'), validCategoryPayload([
+        'sort_order' => '1',
+        'detail' => ['th' => ['title' => 'ข ทดสอบเรียงลำดับ B', 'slug' => 'sort-b-th'], 'en' => ['title' => 'Sort B', 'slug' => 'sort-b-en']],
+    ]));
+
+    // ค่าเริ่มต้น: ชื่อ (ภาษาหลัก) น้อยไปมาก — "ก ทดสอบ..." ต้องมาก่อน "ข ทดสอบ..."
+    $this->get(route('admin.article.category.index', ['q' => 'ทดสอบเรียงลำดับ']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('sort', 'title')
+            ->where('direction', 'asc')
+            ->where('categories.data.0.title', fn ($title) => str_starts_with($title, 'ก'))
+        );
+
+    // เรียงตามลำดับ (sort_order) น้อยไปมาก — รายการ sort_order=1 ต้องมาก่อน sort_order=9
+    $this->get(route('admin.article.category.index', ['q' => 'ทดสอบเรียงลำดับ', 'sort' => 'sort_order', 'direction' => 'asc']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('sort', 'sort_order')
+            ->where('categories.data.0.sort_order', 1)
+        );
+});
+
 test('index filters by status', function () {
     actingAsUserWithPermissions(['article.category.view', 'article.category.manage']);
 

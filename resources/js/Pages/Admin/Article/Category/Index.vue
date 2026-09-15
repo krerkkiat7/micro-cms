@@ -8,13 +8,14 @@ import SelectInput from '@/Components/SelectInput.vue';
 import StatusBadge from '@/Components/StatusBadge.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { Plus, RotateCcw, Search } from 'lucide-vue-next';
+import { ArrowDown, ArrowUp, ArrowUpDown, Plus, RotateCcw, Search } from 'lucide-vue-next';
 import { reactive } from 'vue';
 import type { Paginated } from '@/types';
 
 interface Row {
     id: number;
     title: string | null;
+    sort_order: number;
     article_count: number;
     status: string;
 }
@@ -26,6 +27,8 @@ const props = defineProps<{
         status: string | null;
         per_page: number;
     };
+    sort: string;
+    direction: 'asc' | 'desc';
     perPageOptions: number[];
     can: { manage: boolean };
 }>();
@@ -43,6 +46,8 @@ function visit(extra: Record<string, unknown> = {}) {
             q: form.q !== '' ? form.q : undefined,
             status: form.status !== '' ? form.status : undefined,
             per_page: form.per_page,
+            sort: props.sort,
+            direction: props.direction,
             ...extra,
         },
         { preserveState: true, preserveScroll: true, replace: true },
@@ -58,6 +63,16 @@ function resetFilters() {
     form.status = '';
     form.per_page = String(props.perPageOptions[0]);
     router.get(route('admin.article.category.index'), {}, { preserveScroll: true, replace: true });
+}
+
+function sortBy(column: string) {
+    const direction = props.sort === column && props.direction === 'asc' ? 'desc' : 'asc';
+    visit({ sort: column, direction, page: undefined });
+}
+
+function sortIcon(column: string) {
+    if (props.sort !== column) return ArrowUpDown;
+    return props.direction === 'asc' ? ArrowUp : ArrowDown;
 }
 
 function goToEdit(id: number) {
@@ -127,14 +142,42 @@ const breadcrumbs = [
                 class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs"
             >
                 <div class="overflow-x-auto">
-                    <table class="w-full min-w-[600px] text-left text-sm">
+                    <table class="w-full min-w-[680px] text-left text-sm">
                         <thead
                             class="border-b border-gray-200 bg-gray-50 text-xs uppercase tracking-wide text-gray-500"
                         >
                             <tr>
-                                <th class="px-4 py-3 font-medium">ชื่อ</th>
-                                <th class="px-4 py-3 font-medium">จำนวนบทความ</th>
-                                <th class="px-4 py-3 font-medium">สถานะ</th>
+                                <th class="px-4 py-3 font-medium">
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center gap-1 transition-colors hover:text-gray-700"
+                                        @click="sortBy('title')"
+                                    >
+                                        ชื่อ
+                                        <component :is="sortIcon('title')" class="size-3.5" :class="sort === 'title' ? 'text-brand-500' : 'text-gray-400'" />
+                                    </button>
+                                </th>
+                                <th class="w-20 px-4 py-3 font-medium">
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center gap-1 transition-colors hover:text-gray-700"
+                                        @click="sortBy('sort_order')"
+                                    >
+                                        ลำดับ
+                                        <component :is="sortIcon('sort_order')" class="size-3.5" :class="sort === 'sort_order' ? 'text-brand-500' : 'text-gray-400'" />
+                                    </button>
+                                </th>
+                                <th class="w-28 px-4 py-3 font-medium">จำนวนบทความ</th>
+                                <th class="w-28 px-4 py-3 font-medium">
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center gap-1 transition-colors hover:text-gray-700"
+                                        @click="sortBy('status')"
+                                    >
+                                        สถานะ
+                                        <component :is="sortIcon('status')" class="size-3.5" :class="sort === 'status' ? 'text-brand-500' : 'text-gray-400'" />
+                                    </button>
+                                </th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -153,14 +196,15 @@ const breadcrumbs = [
                                         {{ row.title ?? '(ไม่มีชื่อ)' }}
                                     </Link>
                                 </td>
-                                <td class="px-4 py-3 text-gray-600">{{ row.article_count }}</td>
-                                <td class="px-4 py-3">
+                                <td class="w-20 px-4 py-3 text-gray-600">{{ row.sort_order }}</td>
+                                <td class="w-28 px-4 py-3 text-gray-600">{{ row.article_count }}</td>
+                                <td class="w-28 px-4 py-3">
                                     <StatusBadge :status="row.status" />
                                 </td>
                             </tr>
                             <tr v-if="categories.data.length === 0">
                                 <td
-                                    colspan="3"
+                                    colspan="4"
                                     class="px-4 py-10 text-center text-gray-500"
                                 >
                                     ไม่พบหมวดหมู่ตามเงื่อนไข

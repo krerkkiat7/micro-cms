@@ -45,6 +45,12 @@ class ArticleCategoryController extends Controller
             'per_page' => in_array($perPage, self::PER_PAGE_OPTIONS, true) ? $perPage : self::PER_PAGE_OPTIONS[0],
         ];
 
+        // เรียงจากชื่อ (ภาษาหลัก) น้อยไปมากเป็นค่าเริ่มต้น
+        $sortable = ['title', 'sort_order', 'status'];
+        $sort = in_array($request->query('sort'), $sortable, true) ? $request->query('sort') : 'title';
+        $direction = $request->query('direction') === 'desc' ? 'desc' : 'asc';
+        $sortColumn = $sort === 'title' ? 'd.title' : "article_category_info.{$sort}";
+
         $categories = ArticleCategoryInfo::query()
             ->join('article_category_detail as d', function ($join) use ($defaultLang) {
                 $join->on('d.id', '=', 'article_category_info.id')->where('d.lang', $defaultLang);
@@ -58,19 +64,20 @@ class ArticleCategoryController extends Controller
                     ->orWhere('d.intro_text', 'like', "%{$term}%"));
             })
             ->when($filters['status'] !== null, fn ($query) => $query->where('article_category_info.status', $filters['status']))
-            ->orderBy('article_category_info.sort_order')
-            ->orderBy('article_category_info.id')
+            ->orderBy($sortColumn, $direction)
+            ->orderBy('article_category_info.id') // tie-breaker ให้ลำดับเสถียร
             ->paginate($filters['per_page'])
             ->withQueryString()
             ->through(fn (ArticleCategoryInfo $category) => [
                 'id' => $category->id,
                 'title' => $category->title,
+                'sort_order' => $category->sort_order,
                 // ยังไม่มีตาราง article_item — จะผูกจำนวนบทความจริงตอนออกแบบโมดูลบทความ (ดู docs/PRD-article.md §2)
                 'article_count' => 0,
                 'status' => $category->status,
             ]);
 
-        // บันทึก log เฉพาะการเข้าหน้ารายการจริง ๆ — ไม่บันทึกตอนค้นหา/กรอง/แบ่งหน้า
+        // บันทึก log เฉพาะการเข้าหน้ารายการจริง ๆ — ไม่บันทึกตอนค้นหา/กรอง/แบ่งหน้า/เรียง
         if (count($request->query()) === 0) {
             LogBackAccess::record('รายการหมวดหมู่บทความ');
         }
@@ -78,6 +85,8 @@ class ArticleCategoryController extends Controller
         return Inertia::render('Admin/Article/Category/Index', [
             'categories' => $categories,
             'filters' => $filters,
+            'sort' => $sort,
+            'direction' => $direction,
             'perPageOptions' => self::PER_PAGE_OPTIONS,
             'can' => [
                 'manage' => $request->user()->hasPermission('article.category.manage'),
