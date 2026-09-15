@@ -10,9 +10,11 @@ import SelectInput from '@/Components/SelectInput.vue';
 import RadioGroup from '@/Components/RadioGroup.vue';
 import Checkbox from '@/Components/Checkbox.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
+import SecondaryButton from '@/Components/SecondaryButton.vue';
 import FilePickerField from '@/Components/Admin/FileManager/FilePickerField.vue';
+import TestSmtpDialog from '@/Components/Admin/TestSmtpDialog.vue';
 import { Head, useForm } from '@inertiajs/vue3';
-import { Save } from 'lucide-vue-next';
+import { Save, Send } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import type { FileItem } from '@/types';
 
@@ -128,6 +130,11 @@ watch(
 function submitSmtp() {
     smtpForm.put(route('admin.system.setting.update.smtp'), { preserveScroll: true });
 }
+
+// ปุ่ม "ทดสอบส่งอีเมล" ใช้ค่า SMTP ที่บันทึกไว้แล้วเท่านั้น (props.settings.smtp มาจาก DB จริง ไม่ใช่
+// ค่าที่พิมพ์ค้างใน smtpForm) — ยังไม่เคยบันทึก host เลยก็ปิดปุ่มไว้ก่อน กันกดแล้วงงว่าทำไมส่งไม่ได้
+const canTestSmtp = computed(() => !!props.settings.smtp?.host);
+const showTestSmtpDialog = ref(false);
 
 // ---------- กลุ่ม "Turnstile CAPTCHA" ----------
 const turnstileForm = useForm({
@@ -336,12 +343,22 @@ function submitLoginBack() {
                     </div>
                 </div>
 
-                <div class="mt-6">
+                <div class="mt-6 flex flex-wrap items-center gap-3">
                     <PrimaryButton type="submit" :disabled="smtpForm.processing">
                         <Save class="mr-1.5 size-4" /> บันทึก
                     </PrimaryButton>
+                    <SecondaryButton
+                        type="button"
+                        :disabled="!canTestSmtp"
+                        :title="canTestSmtp ? '' : 'กรุณาบันทึกการตั้งค่า SMTP ก่อน'"
+                        @click="showTestSmtpDialog = true"
+                    >
+                        <Send class="mr-1.5 size-4" /> ทดสอบส่งอีเมล
+                    </SecondaryButton>
                 </div>
             </form>
+
+            <TestSmtpDialog :show="showTestSmtpDialog" @close="showTestSmtpDialog = false" />
 
             <!-- Turnstile CAPTCHA -->
             <form

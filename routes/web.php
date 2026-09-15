@@ -118,6 +118,10 @@ Route::prefix('admin')->group(function () {
             Route::get('/', [SettingController::class, 'index'])->name('admin.system.setting.index');
             Route::put('/site', [SettingController::class, 'updateSite'])->name('admin.system.setting.update.site');
             Route::put('/smtp', [SettingController::class, 'updateSmtp'])->name('admin.system.setting.update.smtp');
+            // ทดสอบส่งอีเมลด้วยค่า SMTP ที่บันทึกไว้ — throttle กันสแปม/กดรัวเป็น cannon เมล
+            Route::post('/smtp/test', [SettingController::class, 'testSmtp'])
+                ->name('admin.system.setting.smtp.test')
+                ->middleware('throttle:10,1');
             Route::put('/turnstile', [SettingController::class, 'updateTurnstile'])->name('admin.system.setting.update.turnstile');
             Route::put('/login-back', [SettingController::class, 'updateLoginBack'])->name('admin.system.setting.update.login_back');
 

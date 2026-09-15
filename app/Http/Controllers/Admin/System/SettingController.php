@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin\System;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\System\Setting\TestSmtpSettingRequest;
 use App\Http\Requests\Admin\System\Setting\UpdateLoginBackSettingRequest;
 use App\Http\Requests\Admin\System\Setting\UpdateSiteSettingRequest;
 use App\Http\Requests\Admin\System\Setting\UpdateSmtpSettingRequest;
 use App\Http\Requests\Admin\System\Setting\UpdateTurnstileSettingRequest;
+use App\Mail\TestSmtpMail;
 use App\Models\FileInfo;
 use App\Models\LogBackAccess;
 use App\Models\LogBackAction;
@@ -18,8 +20,11 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class SettingController extends Controller
 {
@@ -99,6 +104,40 @@ class SettingController extends Controller
         }
 
         return $this->saveGroup($request, 'smtp', $data);
+    }
+
+    /**
+     * ทดสอบส่งอีเมลด้วยการตั้งค่า SMTP ที่ "บันทึกไว้แล้ว" ใน sys_setting (ไม่ใช่ค่าที่พิมพ์ค้างในฟอร์ม
+     * ที่ยังไม่กดบันทึก) — App\Providers\AppServiceProvider::applySmtpSetting() ผูก mail.mailers.smtp.*
+     * จาก Setting::group('smtp') ให้ทุก request อยู่แล้ว จึงแค่เรียก Mail::raw() ตรง ๆ ได้เลย
+     */
+    public function testSmtp(TestSmtpSettingRequest $request): RedirectResponse
+    {
+        if (! $request->user()->hasPermission('system.setting.manage')) {
+            return redirect()->route('admin.dashboard');
+        }
+
+        // ยังไม่เคยบันทึก host เลย mail.default จะยังเป็น 'log' (เขียนลง log เฉย ๆ ไม่ได้ส่งจริง)
+        // ซึ่งจะ "สำเร็จ" เสมอ ทั้งที่ไม่ได้ทดสอบอะไรจริง — กันไว้ก่อนด้วยการเช็ก host ให้ชัดเจน
+        if (! Setting::get('smtp', 'host')) {
+            throw ValidationException::withMessages([
+                'send' => 'ยังไม่ได้บันทึกการตั้งค่า SMTP (Host) กรุณาบันทึกการตั้งค่าก่อนทดสอบส่งอีเมล',
+            ]);
+        }
+
+        $data = $request->validated();
+
+        try {
+            Mail::to($data['to'])->send(new TestSmtpMail($data['subject'], $data['body']));
+        } catch (Throwable $e) {
+            throw ValidationException::withMessages([
+                'send' => 'ส่งอีเมลไม่สำเร็จ: '.$e->getMessage(),
+            ]);
+        }
+
+        LogBackAction::record('system.setting.smtp', 'test', $data['to']);
+
+        return back()->with('success', 'ส่งอีเมลทดสอบเรียบร้อยแล้ว กรุณาตรวจสอบใน Inbox และ Junk/Spam Box');
     }
 
     public function updateTurnstile(UpdateTurnstileSettingRequest $request): RedirectResponse
