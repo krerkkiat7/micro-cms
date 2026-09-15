@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\System\FileServeController;
 use App\Http\Controllers\Admin\System\SettingController;
 use App\Http\Controllers\Admin\System\UserController;
 use App\Http\Controllers\Admin\System\UsergroupController;
+use App\Http\Controllers\AppAssetController;
 use App\Http\Controllers\Front\HomeController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +25,12 @@ use Inertia\Inertia;
 Route::get('/', function () {
     return redirect('/th');
 });
+
+// โลโก้/favicon สาธารณะของระบบ — ไม่ต้อง login, ไม่มี prefix ภาษา {lang} และไม่อยู่ใต้ /admin
+// เพราะเป็น asset ที่ทั้งฝั่งแอดมินและหน้าบ้านใช้ร่วมกัน (ดู App\Http\Controllers\AppAssetController)
+// ชื่อ route (app.logo/app.favicon) เป็นข้อยกเว้นของ convention front.*/admin.* ปกติ ตามที่กำหนดไว้โดยเฉพาะ
+Route::get('/apps/logo.png', [AppAssetController::class, 'logo'])->name('app.logo');
+Route::get('/apps/favicon.ico', [AppAssetController::class, 'favicon'])->name('app.favicon');
 
 // Group ทุก Route ของหน้าบ้านไว้ภายใต้ Prefix ภาษา ({lang} = th หรือ en)
 Route::group([

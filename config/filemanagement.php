@@ -39,6 +39,7 @@ return [
         'pdf' => 'application/pdf',
         'mp3' => 'audio/mpeg',
         'mp4' => 'video/mp4',
+        'ico' => 'image/vnd.microsoft.icon', // favicon ของตั้งค่าระบบ — mime จริงตรวจได้หลายแบบ ดู StoreFileUploadRequest::ICO_MIME_FALLBACKS
     ],
 
 ];

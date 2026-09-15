@@ -35,14 +35,17 @@ class FileDelivery
 
     /**
      * สร้าง response สำหรับส่งไฟล์ 1 รายการ ตามประเภทที่ขอ
+     *
+     * $public: false (ค่าเริ่มต้น) = ต้อง login ถึงเข้าถึงได้ ห้าม shared cache (proxy/CDN) เก็บ —
+     * ใช้ true เฉพาะ path สาธารณะไม่ต้อง login จริง ๆ (เช่น โลโก้/favicon ผ่าน AppAssetController)
      */
-    public static function respond(Request $request, FileInfo $file, string $type = self::TYPE_SHOW, ?int $thumbnailWidth = null): SymfonyResponse
+    public static function respond(Request $request, FileInfo $file, string $type = self::TYPE_SHOW, ?int $thumbnailWidth = null, bool $public = false): SymfonyResponse
     {
         $disk = config('filemanagement.disk');
 
         // thumbnail เฉพาะไฟล์รูปภาพ — ไฟล์ประเภทอื่นตกมาที่ show/download ปกติ
         if ($type === self::TYPE_THUMBNAIL && $file->isImage()) {
-            return self::respondThumbnail($request, $file, $thumbnailWidth ?? (int) config('filemanagement.thumbnail_default_width'));
+            return self::respondThumbnail($request, $file, $thumbnailWidth ?? (int) config('filemanagement.thumbnail_default_width'), $public);
         }
 
         if (! Storage::disk($disk)->exists($file->path)) {
@@ -57,7 +60,7 @@ class FileDelivery
 
         $response = new BinaryFileResponse(Storage::disk($disk)->path($file->path));
         $response->headers->set('Content-Type', $file->mime_type ?: 'application/octet-stream');
-        self::applyCacheHeaders($response, $etag, $file);
+        self::applyCacheHeaders($response, $etag, $file, $public);
 
         if ($type === self::TYPE_DOWNLOAD) {
             $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $file->name);
@@ -70,7 +73,7 @@ class FileDelivery
      * เสิร์ฟ thumbnail — generate ครั้งแรกแล้ว cache ไฟล์ที่ resize แล้วไว้บน disk เพื่อไม่ต้อง
      * resize ซ้ำทุก request (ประเด็น performance)
      */
-    private static function respondThumbnail(Request $request, FileInfo $file, int $width): SymfonyResponse
+    private static function respondThumbnail(Request $request, FileInfo $file, int $width, bool $public = false): SymfonyResponse
     {
         $disk = config('filemanagement.disk');
         $thumbPath = config('filemanagement.base_path').'/thumbnails/'.$width.'/'.$file->hash_name;
@@ -95,7 +98,7 @@ class FileDelivery
 
         $response = new BinaryFileResponse(Storage::disk($disk)->path($thumbPath));
         $response->headers->set('Content-Type', $file->mime_type ?: 'application/octet-stream');
-        self::applyCacheHeaders($response, $etag, $file);
+        self::applyCacheHeaders($response, $etag, $file, $public);
 
         return $response;
     }
@@ -117,11 +120,17 @@ class FileDelivery
         return response('', SymfonyResponse::HTTP_NOT_MODIFIED)->header('ETag', '"'.$etag.'"');
     }
 
-    private static function applyCacheHeaders(BinaryFileResponse $response, string $etag, FileInfo $file): void
+    private static function applyCacheHeaders(BinaryFileResponse $response, string $etag, FileInfo $file, bool $public = false): void
     {
         $response->setEtag($etag);
         $response->setLastModified($file->updated_at);
-        $response->setPrivate(); // ต้อง login ถึงเข้าถึงได้ — ห้าม shared cache (proxy/CDN) เก็บ
+
+        if ($public) {
+            $response->setPublic(); // asset สาธารณะ (โลโก้/favicon) — ให้ shared cache (proxy/CDN) เก็บได้
+        } else {
+            $response->setPrivate(); // ต้อง login ถึงเข้าถึงได้ — ห้าม shared cache (proxy/CDN) เก็บ
+        }
+
         $response->setMaxAge(86400);
     }
 }

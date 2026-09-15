@@ -9,9 +9,11 @@ import Textarea from '@/Components/Textarea.vue';
 import SelectInput from '@/Components/SelectInput.vue';
 import RadioGroup from '@/Components/RadioGroup.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
+import FilePickerField from '@/Components/Admin/FileManager/FilePickerField.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { Save } from 'lucide-vue-next';
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
+import type { FileItem } from '@/types';
 
 interface Props {
     settings: {
@@ -20,6 +22,8 @@ interface Props {
         turnstile: Record<string, string>;
         login_back: Record<string, string>;
     };
+    logoFile: FileItem | null;
+    faviconFile: FileItem | null;
 }
 
 const props = defineProps<Props>();
@@ -39,8 +43,21 @@ const siteForm = useForm({
     site_name: props.settings.site?.site_name ?? '',
     site_email: props.settings.site?.site_email ?? '',
     site_description: props.settings.site?.site_description ?? '',
+    logo_id: props.logoFile?.id ?? null,
+    favicon_id: props.faviconFile?.id ?? null,
     copyright_year: props.settings.site?.copyright_year ?? '',
     copyright_owner: props.settings.site?.copyright_owner ?? '',
+});
+
+// FilePickerField ทำงานกับ array ของไฟล์เสมอ (เลือกได้ 1 ไฟล์) — เลือกใหม่/เอาออก = แทนที่/ล้าง logo_id เดิม
+const logoFile = ref<FileItem[]>(props.logoFile ? [props.logoFile] : []);
+watch(logoFile, (files) => {
+    siteForm.logo_id = files[0]?.id ?? null;
+});
+
+const faviconFile = ref<FileItem[]>(props.faviconFile ? [props.faviconFile] : []);
+watch(faviconFile, (files) => {
+    siteForm.favicon_id = files[0]?.id ?? null;
 });
 
 function submitSite() {
@@ -139,6 +156,18 @@ function submitLoginBack() {
                         <InputLabel for="site_description" value="รายละเอียด" />
                         <Textarea id="site_description" v-model="siteForm.site_description" rows="3" />
                         <InputError :message="siteForm.errors.site_description" />
+                    </div>
+
+                    <div class="sm:col-span-3">
+                        <InputLabel value="รูปโลโก้ (.png)" />
+                        <FilePickerField v-model="logoFile" :accept="['png']" />
+                        <InputError :message="siteForm.errors.logo_id" />
+                    </div>
+
+                    <div class="sm:col-span-3">
+                        <InputLabel value="Favicon (.ico)" />
+                        <FilePickerField v-model="faviconFile" :accept="['ico']" />
+                        <InputError :message="siteForm.errors.favicon_id" />
                     </div>
 
                     <div class="sm:col-span-3">

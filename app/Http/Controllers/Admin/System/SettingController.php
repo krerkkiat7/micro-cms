@@ -7,9 +7,11 @@ use App\Http\Requests\Admin\System\Setting\UpdateLoginBackSettingRequest;
 use App\Http\Requests\Admin\System\Setting\UpdateSiteSettingRequest;
 use App\Http\Requests\Admin\System\Setting\UpdateSmtpSettingRequest;
 use App\Http\Requests\Admin\System\Setting\UpdateTurnstileSettingRequest;
+use App\Models\FileInfo;
 use App\Models\LogBackAccess;
 use App\Models\LogBackAction;
 use App\Models\SysSetting;
+use App\Support\AppAsset;
 use App\Support\FileCache;
 use App\Support\Setting;
 use Illuminate\Foundation\Http\FormRequest;
@@ -49,7 +51,30 @@ class SettingController extends Controller
 
         return Inertia::render('Admin/System/Setting/Index', [
             'settings' => $settings,
+            'logoFile' => $this->fileToArray($settings->get('site')?->get('logo_id')),
+            'faviconFile' => $this->fileToArray($settings->get('site')?->get('favicon_id')),
         ]);
+    }
+
+    /**
+     * แปลง id ของ file_info เป็น array แบบเดียวกับที่ Components/Admin/FileManager/FilePickerField.vue
+     * ใช้แสดงผล (ดู ProfileController::edit()) — คืน null ถ้าไม่มีค่า/ไฟล์ถูกลบไปแล้ว
+     *
+     * @return array<string, mixed>|null
+     */
+    private function fileToArray(?string $fileId): ?array
+    {
+        $file = $fileId ? FileInfo::find($fileId) : null;
+
+        return $file ? [
+            'id' => $file->id,
+            'name' => $file->name,
+            'hash_name' => $file->hash_name,
+            'extension' => $file->extension,
+            'file_size' => $file->file_size,
+            'is_image' => $file->isImage(),
+            'created_at' => $file->created_at,
+        ] : null;
     }
 
     public function updateSite(UpdateSiteSettingRequest $request): RedirectResponse
@@ -115,6 +140,10 @@ class SettingController extends Controller
 
         Setting::forget($group);
 
+        if ($group === 'site') {
+            AppAsset::forgetCache(); // logo_id/favicon_id อยู่ในกลุ่มนี้ — เคลียร์คู่กันเสมอ
+        }
+
         LogBackAction::record('system.setting', 'update', self::GROUP_LABELS[$group]);
 
         return back()->with('success', 'บันทึกการตั้งค่าเรียบร้อยแล้ว');
@@ -149,6 +178,10 @@ class SettingController extends Controller
 
         Setting::forget($group);
 
+        if ($group === 'site') {
+            AppAsset::forgetCache();
+        }
+
         LogBackAction::record('system.setting.cache', 'clear', self::GROUP_LABELS[$group]);
 
         return back()->with('success', 'ล้างแคชเรียบร้อยแล้ว');
@@ -164,6 +197,7 @@ class SettingController extends Controller
         }
 
         Setting::forgetAll();
+        AppAsset::forgetCache();
 
         LogBackAction::record('system.setting.cache', 'clear', 'ทั้งหมด');
 

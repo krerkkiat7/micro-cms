@@ -21,6 +21,12 @@ class StoreFileUploadRequest extends FormRequest
 
     private const ZIP_MIME_FALLBACKS = ['application/zip', 'application/x-zip-compressed', 'application/octet-stream'];
 
+    /**
+     * .ico ถูกตรวจ mime จริงได้หลายค่าต่างกันไปตามระบบ/เบราว์เซอร์ที่สร้างไฟล์ (ไม่เหมือน png/jpg
+     * ที่ magic byte ชัดเจน) — ยอมรับทุกค่านี้แทนการเทียบตรง ๆ กับ filemanagement.allowed.ico ค่าเดียว
+     */
+    private const ICO_MIME_FALLBACKS = ['image/vnd.microsoft.icon', 'image/x-icon', 'image/icon', 'application/octet-stream'];
+
     public function rules(): array
     {
         return [
@@ -65,6 +71,10 @@ class StoreFileUploadRequest extends FormRequest
 
             if (in_array($extension, self::ZIP_BASED_EXTENSIONS, true)
                 && in_array($actualMime, self::ZIP_MIME_FALLBACKS, true)) {
+                return;
+            }
+
+            if ($extension === 'ico' && in_array($actualMime, self::ICO_MIME_FALLBACKS, true)) {
                 return;
             }
 
