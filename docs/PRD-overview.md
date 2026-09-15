@@ -39,12 +39,14 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 
 ## 3. โมดูลเนื้อหา
 
-> สถานะปัจจุบัน: **ยังไม่ได้เริ่ม** — มีแค่ไฟล์ว่าง `app/Http/Controllers/Admin/PostController.php`
+> สถานะปัจจุบัน: **บทความ (article) เริ่มแล้ว** — schema หมวดหมู่ (`article_category_info`/`article_category_detail`)
+> เสร็จ รายละเอียดเต็มดู [PRD-article.md](PRD-article.md) ที่เหลือ (banner/popup/intropage/page/contact us)
+> ยังไม่ได้เริ่ม มีแค่ไฟล์ว่าง `app/Http/Controllers/Admin/PostController.php`
 > ตารางด้านล่างเป็นเป้าหมายที่จะทยอยทำ (ยังไม่ได้ออกแบบ schema ละเอียด)
 
-| โมดูล | วัตถุประสงค์ | ข้อมูลหลัก (ร่าง) | หน้าจอ | permission code (เสนอ) |
+| โมดูล | วัตถุประสงค์ | ข้อมูลหลัก (ร่าง) | หน้าจอ | permission code |
 |-------|-------------|------------------|--------|------------------------|
-| **บทความ (article)** | ข่าว/บทความ มีหมวดหมู่ แสดงตามภาษา | หัวข้อ, slug, เนื้อหา (rich text), รูปปก, หมวดหมู่, สถานะเผยแพร่, วันเผยแพร่, ภาษา | list + ค้นหา/กรอง, form สร้าง/แก้ไข, เผยแพร่/ถอน | `article.view` `article.create` `article.delete` |
+| **บทความ (article)** — [PRD-article.md](PRD-article.md) | ข่าว/บทความ มีหมวดหมู่ 1 ระดับ (1 บทความ 1 หมวดหมู่), รองรับ SEO/AEO/GEO และหลายภาษาตาม `sys_setting` | หมวดหมู่: รูปปก+ลำดับ+สถานะ (ร่วม) + หัวข้อ/slug/SEO (แยกภาษา) · บทความ: เนื้อหาแบบแบ่ง part (ข้อความ/รูปภาพ/วิดีโอ/เอกสาร) *(เสนอ ยังไม่ออกแบบ)* | หมวดหมู่: list, form *(ยังไม่ทำ)* · บทความ: *(ยังไม่ออกแบบ)* | `article.category.view/manage/delete` `article.item.view/manage/delete` `article.setting.manage` (seed แล้ว) |
 | **banner** | แบนเนอร์สไลด์/โปรโมชันตามตำแหน่ง | รูป (ต่อภาษา), ลิงก์, ตำแหน่งแสดง, ช่วงเวลาแสดง, ลำดับ, สถานะ | list เรียงลำดับได้, form | `banner.view` `banner.create` `banner.delete` |
 | **popup** | ป๊อปอัปประกาศเมื่อเข้าเว็บ | รูป/เนื้อหา, ลิงก์, ช่วงเวลาแสดง, เงื่อนไขแสดง (หน้าไหน/ความถี่), สถานะ | list, form | `popup.view` `popup.create` `popup.delete` |
 | **intropage** | หน้าคั่นก่อนเข้าเว็บ (splash/โปรโมชัน) | รูป/วิดีโอพื้นหลัง, ปุ่ม, ช่วงเวลาแสดง, เปิด/ปิด | form เดี่ยว + preview | `intropage.view` `intropage.create` |

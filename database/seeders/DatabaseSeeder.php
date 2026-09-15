@@ -158,5 +158,8 @@ class DatabaseSeeder extends Seeder
 
         // เมนูหลังบ้าน (ข้อมูลตัวอย่าง — แยกไฟล์)
         $this->call(MenuSeeder::class);
+
+        // หมวดหมู่บทความตัวอย่าง (ข้อมูลตัวอย่าง — แยกไฟล์)
+        $this->call(ArticleSeeder::class);
     }
 }
