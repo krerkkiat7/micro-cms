@@ -42,6 +42,12 @@ export interface UserGroupOption {
     name: string;
 }
 
+/** รหัสภาษาที่ระบบเปิดใช้งาน (sys_setting: site.lang_selected/lang_default) — ใช้สร้างฟอร์มข้อมูลแยกภาษา */
+export interface LanguageOption {
+    code: string;
+    is_default: boolean;
+}
+
 /** ลิงก์หน้าใน paginator ของ Laravel */
 export interface PaginationLink {
     url: string | null;

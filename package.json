@@ -21,6 +21,11 @@
         "vue-tsc": "^2.0.24"
     },
     "dependencies": {
+        "@tiptap/extension-link": "^3.31.3",
+        "@tiptap/extension-underline": "^3.31.3",
+        "@tiptap/pm": "^3.31.3",
+        "@tiptap/starter-kit": "^3.31.3",
+        "@tiptap/vue-3": "^3.31.3",
         "lucide-vue-next": "^0.544.0"
     }
 }
