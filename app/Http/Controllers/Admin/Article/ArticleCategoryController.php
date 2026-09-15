@@ -290,9 +290,14 @@ class ArticleCategoryController extends Controller
     {
         $defaultLang = Setting::defaultLanguage();
 
+        // ภาษาหลักอยู่ซ้ายสุดเสมอ ภาษาที่เหลือเรียงตามตัวอักษรต่อจากนั้น
+        $others = array_values(array_filter(Setting::selectedLanguages(), fn (string $code) => $code !== $defaultLang));
+        sort($others);
+        $ordered = array_merge([$defaultLang], $others);
+
         return array_map(
             fn (string $code) => ['code' => $code, 'is_default' => $code === $defaultLang],
-            Setting::selectedLanguages(),
+            $ordered,
         );
     }
 

@@ -3,6 +3,8 @@
 use App\Models\ArticleCategoryDetail;
 use App\Models\ArticleCategoryInfo;
 use App\Models\LogBackAction;
+use App\Models\SysSetting;
+use App\Support\Setting;
 use Database\Seeders\DatabaseSeeder;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -108,6 +110,23 @@ test('add page renders with the system languages', function () {
                 ['code' => 'en', 'is_default' => false],
             ])
         );
+});
+
+test('languages are ordered with the default language first, then alphabetically', function () {
+    actingAsUserWithPermissions(['article.category.manage']);
+
+    // ตั้งค่าให้ลำดับที่เก็บใน sys_setting ไม่ใช่ default-first และไม่เรียงตามตัวอักษร
+    // เพื่อยืนยันว่า languageOptions() เป็นผู้จัดลำดับเอง ไม่ใช่แค่คืนค่าตามที่เก็บไว้
+    SysSetting::where('group', 'site')->where('name', 'lang_selected')->update(['value' => 'en,zh,th']);
+    SysSetting::where('group', 'site')->where('name', 'lang_default')->update(['value' => 'th']);
+    Setting::forget('site');
+
+    $this->get(route('admin.article.category.add'))
+        ->assertInertia(fn (Assert $page) => $page->where('languages', [
+            ['code' => 'th', 'is_default' => true],
+            ['code' => 'en', 'is_default' => false],
+            ['code' => 'zh', 'is_default' => false],
+        ]));
 });
 
 test('store requires the title only for the default language', function () {

@@ -112,69 +112,97 @@ const breadcrumbs = [
                 </div>
             </div>
 
-            <div class="space-y-4">
-                <LangFieldGroup label="ชื่อ" :languages="languages">
-                    <template #default="{ lang }">
-                        <TextInput v-model="form.detail[lang.code].title" type="text" />
-                        <InputError :message="detailError(lang.code, 'title')" />
-                    </template>
-                </LangFieldGroup>
+            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8">
+                <h2 class="text-base font-semibold text-gray-800">ข้อมูลหมวดหมู่</h2>
 
-                <LangFieldGroup label="ข้อความเกริ่นนำ" :languages="languages">
-                    <template #default="{ lang }">
-                        <Textarea v-model="form.detail[lang.code].intro_text" rows="3" />
-                        <InputError :message="detailError(lang.code, 'intro_text')" />
-                    </template>
-                </LangFieldGroup>
+                <div class="mt-5 space-y-4">
+                    <LangFieldGroup label="ชื่อ" :languages="languages" required>
+                        <template #default="{ lang }">
+                            <TextInput v-model="form.detail[lang.code].title" type="text" />
+                            <InputError :message="detailError(lang.code, 'title')" />
+                        </template>
+                    </LangFieldGroup>
 
-                <LangFieldGroup label="รายละเอียด" :languages="languages">
-                    <template #default="{ lang }">
-                        <RichTextEditor v-model="form.detail[lang.code].detail" />
-                        <InputError :message="detailError(lang.code, 'detail')" />
-                    </template>
-                </LangFieldGroup>
+                    <LangFieldGroup label="ข้อความเกริ่นนำ" :languages="languages">
+                        <template #default="{ lang }">
+                            <Textarea v-model="form.detail[lang.code].intro_text" rows="3" />
+                            <InputError :message="detailError(lang.code, 'intro_text')" />
+                        </template>
+                    </LangFieldGroup>
+
+                    <LangFieldGroup label="รายละเอียด" :languages="languages">
+                        <template #default="{ lang }">
+                            <RichTextEditor v-model="form.detail[lang.code].detail" />
+                            <InputError :message="detailError(lang.code, 'detail')" />
+                        </template>
+                    </LangFieldGroup>
+                </div>
             </div>
 
             <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8">
                 <h2 class="text-base font-semibold text-gray-800">SEO / AEO / GEO</h2>
 
                 <div class="mt-5 space-y-4">
-                    <LangFieldGroup label="Slug" :languages="languages">
+                    <LangFieldGroup
+                        label="Slug"
+                        description="ส่วนของ URL ที่ใช้แทนหมวดหมู่นี้ (เช่น example.com/category/slug-ที่ตั้งไว้) ควรใช้ตัวอักษรอังกฤษพิมพ์เล็ก ตัวเลข และเครื่องหมายขีด (-) แทนการเว้นวรรค"
+                        :languages="languages"
+                    >
                         <template #default="{ lang }">
                             <TextInput v-model="form.detail[lang.code].slug" type="text" />
                             <InputError :message="detailError(lang.code, 'slug')" />
                         </template>
                     </LangFieldGroup>
 
-                    <LangFieldGroup label="Meta Title" :languages="languages">
+                    <LangFieldGroup
+                        label="Meta Title"
+                        description="หัวข้อที่แสดงบนแท็บเบราว์เซอร์และหัวข้อผลการค้นหา (SEO) ถ้าไม่กรอกจะใช้ชื่อหมวดหมู่แทน"
+                        :languages="languages"
+                    >
                         <template #default="{ lang }">
                             <TextInput v-model="form.detail[lang.code].meta_title" type="text" />
                             <InputError :message="detailError(lang.code, 'meta_title')" />
                         </template>
                     </LangFieldGroup>
 
-                    <LangFieldGroup label="Meta Description" :languages="languages">
+                    <LangFieldGroup
+                        label="Meta Description"
+                        description="คำอธิบายสั้น ๆ ที่แสดงใต้หัวข้อในผลการค้นหา (SEO) ควรกระชับและดึงดูดให้คนอยากคลิกเข้ามาอ่าน"
+                        :languages="languages"
+                    >
                         <template #default="{ lang }">
                             <Textarea v-model="form.detail[lang.code].meta_description" rows="2" />
                             <InputError :message="detailError(lang.code, 'meta_description')" />
                         </template>
                     </LangFieldGroup>
 
-                    <LangFieldGroup label="Meta Keywords" :languages="languages">
+                    <LangFieldGroup
+                        label="Meta Keywords"
+                        description="คำสำคัญที่เกี่ยวข้องกับหมวดหมู่นี้ คั่นด้วยเครื่องหมายจุลภาค (,) — search engine ส่วนใหญ่ในปัจจุบันไม่ได้ใช้จัดอันดับแล้ว แต่ยังกรอกไว้เพื่ออ้างอิงได้"
+                        :languages="languages"
+                    >
                         <template #default="{ lang }">
                             <TextInput v-model="form.detail[lang.code].meta_keywords" type="text" />
                             <InputError :message="detailError(lang.code, 'meta_keywords')" />
                         </template>
                     </LangFieldGroup>
 
-                    <LangFieldGroup label="OG Title" :languages="languages">
+                    <LangFieldGroup
+                        label="OG Title"
+                        description="หัวข้อที่แสดงตอนแชร์ลิงก์นี้ไปยังโซเชียลมีเดีย เช่น Facebook, Line (Open Graph) ถ้าไม่กรอกจะใช้ Meta Title หรือชื่อหมวดหมู่แทน"
+                        :languages="languages"
+                    >
                         <template #default="{ lang }">
                             <TextInput v-model="form.detail[lang.code].og_title" type="text" />
                             <InputError :message="detailError(lang.code, 'og_title')" />
                         </template>
                     </LangFieldGroup>
 
-                    <LangFieldGroup label="OG Description" :languages="languages">
+                    <LangFieldGroup
+                        label="OG Description"
+                        description="คำอธิบายที่แสดงตอนแชร์ลิงก์นี้ไปยังโซเชียลมีเดีย ถ้าไม่กรอกจะใช้ Meta Description แทน"
+                        :languages="languages"
+                    >
                         <template #default="{ lang }">
                             <Textarea v-model="form.detail[lang.code].og_description" rows="2" />
                             <InputError :message="detailError(lang.code, 'og_description')" />
