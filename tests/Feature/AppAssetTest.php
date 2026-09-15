@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\SysSetting;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -32,7 +31,7 @@ test('the public asset routes need no login', function () {
 test('logo route serves the configured file and is publicly cacheable', function () {
     $file = fakeFileInfo('logo.png', 'logo-hash.png', 'png', 'image/png');
 
-    SysSetting::create(['group' => 'site', 'name' => 'logo_id', 'value' => (string) $file->id]);
+    setSiteSetting('logo_id', (string) $file->id);
 
     $response = $this->get(route('app.logo'))->assertOk()->assertHeader('Content-Type', 'image/png');
 
@@ -40,7 +39,7 @@ test('logo route serves the configured file and is publicly cacheable', function
 });
 
 test('favicon route falls back to default when the configured file_info row no longer exists', function () {
-    SysSetting::create(['group' => 'site', 'name' => 'favicon_id', 'value' => '99999']);
+    setSiteSetting('favicon_id', '99999');
 
     $this->get(route('app.favicon'))
         ->assertOk()
@@ -56,7 +55,7 @@ test('the shared appLogoUrl prop is null when no logo is configured — frontend
 
 test('the shared appLogoUrl prop points at the app.logo route once a logo is configured', function () {
     $file = fakeFileInfo('logo.png', 'shared-logo.png', 'png', 'image/png');
-    SysSetting::create(['group' => 'site', 'name' => 'logo_id', 'value' => (string) $file->id]);
+    setSiteSetting('logo_id', (string) $file->id);
 
     $this->get(route('front.home', ['lang' => 'th']))
         ->assertInertia(fn (Assert $page) => $page->where('appLogoUrl', route('app.logo')));

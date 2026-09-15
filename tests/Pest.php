@@ -2,8 +2,10 @@
 
 use App\Models\FileInfo;
 use App\Models\SysAction;
+use App\Models\SysSetting;
 use App\Models\User;
 use App\Models\UserGroup;
+use App\Support\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -99,4 +101,16 @@ function fakeFileInfo(string $name, string $hashName, string $extension, ?string
         'path' => $path,
         'status' => 'Y',
     ]);
+}
+
+/**
+ * เขียน sys_setting ตรง ๆ (ไม่ผ่าน SettingController) แล้วล้างแคชของกลุ่มนั้นทันที — routes/web.php เอง
+ * ก็อ่าน App\Support\Setting::group('site') ตอน register route กลุ่ม {lang} (ผ่าน languageRoutePattern())
+ * ทำให้แคชถูก warm ไว้ตั้งแต่ตอน boot ของเทสแล้ว (ก่อนโค้ดในเทสจะรันด้วยซ้ำ) — เขียนตรง ๆ โดยไม่ forget()
+ * ค่านั้นจะไม่ถูกเห็นจนกว่า cache TTL (1 วัน) จะหมดอายุ ต่างจากการเขียนผ่าน controller จริงที่ forget() ให้เสมออยู่แล้ว
+ */
+function setSiteSetting(string $name, string $value): void
+{
+    SysSetting::create(['group' => 'site', 'name' => $name, 'value' => $value]);
+    Setting::forget('site');
 }

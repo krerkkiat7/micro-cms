@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\System\UserController;
 use App\Http\Controllers\Admin\System\UsergroupController;
 use App\Http\Controllers\AppAssetController;
 use App\Http\Controllers\Front\HomeController;
+use App\Support\Setting;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -21,9 +22,9 @@ use Inertia\Inertia;
 | 1. Front-Office Routes (Multi-language Support)
 |--------------------------------------------------------------------------
 */
-// Redirect จากหน้า Root (/) ไปที่ภาษาเริ่มต้น เช่น /th
+// Redirect จากหน้า Root (/) ไปที่ภาษาหลักตามตั้งค่าระบบ (sys_setting: site.lang_default)
 Route::get('/', function () {
-    return redirect('/th');
+    return redirect('/'.Setting::defaultLanguage());
 });
 
 // โลโก้/favicon สาธารณะของระบบ — ไม่ต้อง login, ไม่มี prefix ภาษา {lang} และไม่อยู่ใต้ /admin
@@ -32,11 +33,13 @@ Route::get('/', function () {
 Route::get('/apps/logo.png', [AppAssetController::class, 'logo'])->name('app.logo');
 Route::get('/apps/favicon.ico', [AppAssetController::class, 'favicon'])->name('app.favicon');
 
-// Group ทุก Route ของหน้าบ้านไว้ภายใต้ Prefix ภาษา ({lang} = th หรือ en)
+// Group ทุก Route ของหน้าบ้านไว้ภายใต้ Prefix ภาษา — {lang} รับเฉพาะภาษาที่เปิดใช้งานจริงตามตั้งค่าระบบ
+// (sys_setting: site.lang_selected, ดู App\Support\Setting::languageRoutePattern()) ไม่ hardcode th|en อีกต่อไป
+// หมายเหตุ: ถ้าใช้ `route:cache` ในอนาคต ต้องรัน route:cache ใหม่ทุกครั้งที่แก้ค่านี้ เพราะ where ถูกฝังไว้ตอน cache
 Route::group([
     'prefix' => '{lang}',
-    'where' => ['lang' => 'th|en'],
-    'middleware' => ['web', 'setLocale'], // เดี๋ยวเราจะใส่ SetLocale Middleware ที่นี่
+    'where' => ['lang' => Setting::languageRoutePattern()],
+    'middleware' => ['web', 'setLocale'],
 ], function () {
 
     Route::get('/', [HomeController::class, 'index'])->name('front.home');

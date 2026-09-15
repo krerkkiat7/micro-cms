@@ -86,11 +86,26 @@ class Setting
     }
 
     /**
-     * รหัสภาษาหลักของระบบ (sys_setting: site.lang_default) — ยังไม่ได้ตั้งค่า fallback ไปที่ภาษาแรกใน
-     * selectedLanguages()
+     * รหัสภาษาหลักของระบบ (sys_setting: site.lang_default) — ยังไม่ได้ตั้งค่า หรือค่าที่ตั้งไว้ไม่อยู่ใน
+     * selectedLanguages() อีกแล้ว (เช่น แก้ข้อมูลตรง ๆ ใน DB) fallback ไปที่ภาษาแรกใน selectedLanguages() เสมอ
+     * — การันตีว่าค่าที่คืนไปใช้ redirect ('/') จะตรงกับ route {lang} ที่อนุญาตไว้จริงเสมอ
      */
     public static function defaultLanguage(): string
     {
-        return self::get('site', 'lang_default') ?? self::selectedLanguages()[0] ?? 'th';
+        $selected = self::selectedLanguages();
+        $default = self::get('site', 'lang_default');
+
+        return $default !== null && in_array($default, $selected, true) ? $default : ($selected[0] ?? 'th');
+    }
+
+    /**
+     * regex สำหรับ route `where('lang', ...)` (routes/web.php) — สร้างจาก selectedLanguages() เสมอ
+     * เพื่อให้ URL /{lang}/... รับเฉพาะภาษาที่เปิดใช้งานจริงในตั้งค่าระบบ (ไม่ hardcode th|en อีกต่อไป)
+     */
+    public static function languageRoutePattern(): string
+    {
+        $selected = self::selectedLanguages();
+
+        return implode('|', array_map('preg_quote', $selected !== [] ? $selected : ['th', 'en']));
     }
 }
