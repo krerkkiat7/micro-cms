@@ -1,9 +1,11 @@
 <?php
 
+use App\Models\FileInfo;
 use App\Models\SysAction;
 use App\Models\User;
 use App\Models\UserGroup;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /*
@@ -77,4 +79,24 @@ function actingAsUserWithPermissions(array $codes, array $attributes = []): User
     test()->actingAs($user);
 
     return $user;
+}
+
+/**
+ * สร้าง file_info พร้อมไฟล์จริงบน disk (fake) — ใช้เป็นโลโก้/favicon/ไฟล์ทั่วไปในเทส
+ * (ต้อง Storage::fake('local') ไว้ก่อนในเทสที่เรียกใช้)
+ */
+function fakeFileInfo(string $name, string $hashName, string $extension, ?string $mimeType = null): FileInfo
+{
+    $path = "filemanager/{$hashName}";
+    Storage::disk('local')->put($path, 'fake-bytes');
+
+    return FileInfo::create([
+        'name' => $name,
+        'hash_name' => $hashName,
+        'extension' => $extension,
+        'mime_type' => $mimeType,
+        'file_size' => 10,
+        'path' => $path,
+        'status' => 'Y',
+    ]);
 }

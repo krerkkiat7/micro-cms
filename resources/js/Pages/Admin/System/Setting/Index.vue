@@ -8,6 +8,7 @@ import TextInput from '@/Components/TextInput.vue';
 import Textarea from '@/Components/Textarea.vue';
 import SelectInput from '@/Components/SelectInput.vue';
 import RadioGroup from '@/Components/RadioGroup.vue';
+import Checkbox from '@/Components/Checkbox.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import FilePickerField from '@/Components/Admin/FileManager/FilePickerField.vue';
 import { Head, useForm } from '@inertiajs/vue3';
@@ -39,6 +40,13 @@ const tabs = computed(() => [
 ]);
 
 // ---------- กลุ่ม "ข้อมูลระบบ" ----------
+
+/** ภาษาที่ระบบรองรับให้เลือกได้ตอนนี้ — ต้องตรงกับ UpdateSiteSettingRequest::AVAILABLE_LANGUAGES ฝั่ง backend */
+const LANGUAGE_OPTIONS = [
+    { code: 'th', label: 'ภาษาไทย' },
+    { code: 'en', label: 'ภาษาอังกฤษ' },
+];
+
 const siteForm = useForm({
     site_name: props.settings.site?.site_name ?? '',
     site_email: props.settings.site?.site_email ?? '',
@@ -47,7 +55,38 @@ const siteForm = useForm({
     favicon_id: props.faviconFile?.id ?? null,
     copyright_year: props.settings.site?.copyright_year ?? '',
     copyright_owner: props.settings.site?.copyright_owner ?? '',
+    // เก็บรวมเป็น 1 record คั่นด้วย , ในฐานข้อมูล (ดู App\Support\Setting::selectedLanguages()) — ฝั่งฟอร์มแยกเป็น array
+    lang_selected: (props.settings.site?.lang_selected ?? 'th,en').split(',').filter(Boolean),
+    lang_default: props.settings.site?.lang_default ?? 'th',
 });
+
+/** ตัวเลือกของ dropdown "ภาษาหลัก" — จำกัดเฉพาะภาษาที่ติ๊กเลือกไว้ใน "ภาษาในระบบ" เท่านั้น */
+const availableDefaultLanguages = computed(() =>
+    LANGUAGE_OPTIONS.filter((lang) => siteForm.lang_selected.includes(lang.code)),
+);
+
+function toggleLang(code: string) {
+    const idx = siteForm.lang_selected.indexOf(code);
+
+    if (idx !== -1) {
+        if (siteForm.lang_selected.length <= 1) {
+            return; // ต้องเลือกไว้อย่างน้อย 1 ภาษาเสมอ
+        }
+        siteForm.lang_selected.splice(idx, 1);
+    } else {
+        siteForm.lang_selected.push(code);
+    }
+}
+
+// เอาภาษาที่เลือกไว้เป็น "ภาษาหลัก" ออกจาก "ภาษาในระบบ" ไปแล้ว — เปลี่ยนภาษาหลักไปที่ตัวแรกที่เหลือให้อัตโนมัติ
+watch(
+    () => siteForm.lang_selected.slice(),
+    (selected) => {
+        if (!selected.includes(siteForm.lang_default)) {
+            siteForm.lang_default = selected[0] ?? '';
+        }
+    },
+);
 
 // FilePickerField ทำงานกับ array ของไฟล์เสมอ (เลือกได้ 1 ไฟล์) — เลือกใหม่/เอาออก = แทนที่/ล้าง logo_id เดิม
 const logoFile = ref<FileItem[]>(props.logoFile ? [props.logoFile] : []);
@@ -180,6 +219,34 @@ function submitLoginBack() {
                         <InputLabel for="copyright_owner" value="ชื่อเจ้าของลิขสิทธิ์" />
                         <TextInput id="copyright_owner" v-model="siteForm.copyright_owner" type="text" />
                         <InputError :message="siteForm.errors.copyright_owner" />
+                    </div>
+
+                    <div class="sm:col-span-3">
+                        <InputLabel value="ภาษาในระบบ" required />
+                        <div class="mt-1 flex flex-wrap gap-4">
+                            <label
+                                v-for="lang in LANGUAGE_OPTIONS"
+                                :key="lang.code"
+                                class="flex cursor-pointer items-center gap-2 text-sm text-gray-700"
+                            >
+                                <Checkbox
+                                    :checked="siteForm.lang_selected.includes(lang.code)"
+                                    @update:checked="toggleLang(lang.code)"
+                                />
+                                <span>{{ lang.label }} ({{ lang.code }})</span>
+                            </label>
+                        </div>
+                        <InputError :message="siteForm.errors.lang_selected" />
+                    </div>
+
+                    <div class="sm:col-span-3">
+                        <InputLabel for="lang_default" value="ภาษาหลัก" required />
+                        <SelectInput id="lang_default" v-model="siteForm.lang_default">
+                            <option v-for="lang in availableDefaultLanguages" :key="lang.code" :value="lang.code">
+                                {{ lang.label }} ({{ lang.code }})
+                            </option>
+                        </SelectInput>
+                        <InputError :message="siteForm.errors.lang_default" />
                     </div>
                 </div>
 

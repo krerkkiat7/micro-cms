@@ -79,7 +79,13 @@ class SettingController extends Controller
 
     public function updateSite(UpdateSiteSettingRequest $request): RedirectResponse
     {
-        return $this->saveGroup($request, 'site');
+        $data = $request->validated();
+
+        // เก็บภาษาที่เลือกรวมเป็น 1 record (คั่นด้วย ,) ไม่แยกเก็บทีละภาษา — รองรับเพิ่มภาษาในอนาคตได้
+        // โดยไม่ต้องแก้ schema (ดู App\Support\Setting::selectedLanguages())
+        $data['lang_selected'] = implode(',', $data['lang_selected']);
+
+        return $this->saveGroup($request, 'site', $data);
     }
 
     public function updateSmtp(UpdateSmtpSettingRequest $request): RedirectResponse

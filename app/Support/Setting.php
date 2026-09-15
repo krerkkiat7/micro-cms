@@ -70,4 +70,27 @@ class Setting
     {
         return self::get('site', 'site_name') ?? config('app.name', 'Laravel');
     }
+
+    /**
+     * รหัสภาษาที่เปิดใช้ในระบบ (sys_setting: site.lang_selected) — เก็บรวมเป็น string เดียวคั่นด้วย ,
+     * (ไม่แยกเก็บทีละภาษา) เพื่อให้เพิ่มภาษาในอนาคตได้โดยไม่ต้องแก้ schema — ยังไม่ได้ตั้งค่า fallback เป็น
+     * th,en เพื่อให้ตรงกับพฤติกรรมเดิมของระบบ (ก่อนมีฟีเจอร์นี้)
+     *
+     * ใช้กำหนดว่า route ส่วน {lang} (routes/web.php) จะรับค่าอะไรได้บ้าง
+     *
+     * @return list<string>
+     */
+    public static function selectedLanguages(): array
+    {
+        return array_values(array_filter(explode(',', (string) self::get('site', 'lang_selected', 'th,en'))));
+    }
+
+    /**
+     * รหัสภาษาหลักของระบบ (sys_setting: site.lang_default) — ยังไม่ได้ตั้งค่า fallback ไปที่ภาษาแรกใน
+     * selectedLanguages()
+     */
+    public static function defaultLanguage(): string
+    {
+        return self::get('site', 'lang_default') ?? self::selectedLanguages()[0] ?? 'th';
+    }
 }

@@ -8,6 +8,9 @@ use Illuminate\Validation\Rule;
 
 class UpdateSiteSettingRequest extends FormRequest
 {
+    /** รหัสภาษาที่ระบบรองรับให้เลือกได้ตอนนี้ — เพิ่มภาษาใหม่ในอนาคตแค่เพิ่มในนี้ (ค่าที่เก็บจริงเป็น string เดียวคั่นด้วย , ไม่ผูกจำนวน) */
+    private const AVAILABLE_LANGUAGES = ['th', 'en'];
+
     /**
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -34,6 +37,11 @@ class UpdateSiteSettingRequest extends FormRequest
             ],
             'copyright_year' => ['nullable', 'digits:4'],
             'copyright_owner' => ['nullable', 'string', 'max:150'],
+            // ภาษาในระบบ — เลือกได้หลายภาษา อย่างน้อย 1 ภาษา (เก็บรวมเป็น 1 record ใน saveGroup())
+            'lang_selected' => ['required', 'array', 'min:1'],
+            'lang_selected.*' => [Rule::in(self::AVAILABLE_LANGUAGES)],
+            // ภาษาหลัก — ต้องเป็นหนึ่งในภาษาที่เลือกไว้ในฟิลด์ข้างบนเท่านั้น
+            'lang_default' => ['required', 'string', Rule::in($this->input('lang_selected', []))],
         ];
     }
 }

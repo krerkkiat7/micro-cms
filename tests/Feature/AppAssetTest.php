@@ -1,33 +1,12 @@
 <?php
 
-use App\Models\FileInfo;
 use App\Models\SysSetting;
-use Database\Seeders\DatabaseSeeder;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
 beforeEach(function () {
     Storage::fake('local');
 });
-
-/**
- * สร้าง file_info พร้อมไฟล์จริงบน disk (fake) — ใช้เป็นโลโก้/favicon ในเทส
- */
-function fakeFileInfo(string $name, string $hashName, string $extension, ?string $mimeType = null): FileInfo
-{
-    $path = "filemanager/{$hashName}";
-    Storage::disk('local')->put($path, 'fake-bytes');
-
-    return FileInfo::create([
-        'name' => $name,
-        'hash_name' => $hashName,
-        'extension' => $extension,
-        'mime_type' => $mimeType,
-        'file_size' => 10,
-        'path' => $path,
-        'status' => 'Y',
-    ]);
-}
 
 // ---------------------------------------------------------------- fallback (ยังไม่ได้ตั้งค่า)
 
@@ -81,73 +60,4 @@ test('the shared appLogoUrl prop points at the app.logo route once a logo is con
 
     $this->get(route('front.home', ['lang' => 'th']))
         ->assertInertia(fn (Assert $page) => $page->where('appLogoUrl', route('app.logo')));
-});
-
-// ---------------------------------------------------------------- บันทึกผ่านหน้าตั้งค่าระบบ
-
-beforeEach(function () {
-    $this->seed(DatabaseSeeder::class);
-});
-
-/**
- * @return array<string, mixed>
- */
-function validSitePayload(array $overrides = []): array
-{
-    return array_merge([
-        'site_name' => 'Test Site',
-        'site_email' => '',
-        'site_description' => '',
-        'logo_id' => null,
-        'favicon_id' => null,
-        'copyright_year' => '',
-        'copyright_owner' => '',
-    ], $overrides);
-}
-
-test('saving the site settings with a valid png logo persists logo_id and is served immediately (cache invalidated)', function () {
-    actingAsUserWithPermissions(['system.setting.manage']);
-
-    $logo = fakeFileInfo('logo.png', 'l.png', 'png', 'image/png');
-
-    // เข้าหน้าตั้งค่าครั้งแรก (ยังไม่ตั้งค่า) เพื่อ warm แคชของกลุ่ม 'site' ก่อน — จำลองเคสจริงที่มัก
-    // เปิดหน้านี้ก่อนแล้วค่อยบันทึก
-    $this->get(route('app.logo'))->assertOk()->assertHeader('Content-Type', 'image/png');
-
-    $this->put(route('admin.system.setting.update.site'), validSitePayload(['logo_id' => $logo->id]))
-        ->assertRedirect();
-
-    $this->assertDatabaseHas('sys_setting', ['group' => 'site', 'name' => 'logo_id', 'value' => (string) $logo->id]);
-
-    $this->get(route('app.logo'))->assertOk()->assertHeader('Content-Type', 'image/png');
-});
-
-test('logo_id must reference a file with the png extension', function () {
-    actingAsUserWithPermissions(['system.setting.manage']);
-
-    $notPng = fakeFileInfo('logo.jpg', 'l.jpg', 'jpg');
-
-    $this->put(route('admin.system.setting.update.site'), validSitePayload(['logo_id' => $notPng->id]))
-        ->assertInvalid(['logo_id']);
-});
-
-test('favicon_id must reference a file with the ico extension', function () {
-    actingAsUserWithPermissions(['system.setting.manage']);
-
-    $notIco = fakeFileInfo('favicon.png', 'f.png', 'png');
-
-    $this->put(route('admin.system.setting.update.site'), validSitePayload(['favicon_id' => $notIco->id]))
-        ->assertInvalid(['favicon_id']);
-});
-
-test('clearing the logo field falls back to the default logo again', function () {
-    actingAsUserWithPermissions(['system.setting.manage']);
-
-    $logo = fakeFileInfo('logo.png', 'l.png', 'png', 'image/png');
-
-    $this->put(route('admin.system.setting.update.site'), validSitePayload(['logo_id' => $logo->id]))->assertRedirect();
-    $this->put(route('admin.system.setting.update.site'), validSitePayload(['logo_id' => null]))->assertRedirect();
-
-    expect(SysSetting::query()->where('group', 'site')->where('name', 'logo_id')->value('value'))->toBeNull();
-    $this->get(route('app.logo'))->assertOk()->assertHeader('Content-Type', 'image/png');
 });

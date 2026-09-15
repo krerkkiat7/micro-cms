@@ -144,6 +144,9 @@ class DatabaseSeeder extends Seeder
             ['group' => 'site', 'name' => 'site_name', 'value' => 'My CMS'],
             ['group' => 'site', 'name' => 'site_email', 'value' => 'admin@admin.com'],
             ['group' => 'site', 'name' => 'site_description', 'value' => 'Micro-CMS ติดตั้งง่าย ใช้งานง่าย'],
+            // ภาษาในระบบ — เก็บรวมเป็น 1 record คั่นด้วย , (ไม่แยกเก็บทีละภาษา) ดู App\Support\Setting::selectedLanguages()
+            ['group' => 'site', 'name' => 'lang_selected', 'value' => 'th,en'],
+            ['group' => 'site', 'name' => 'lang_default', 'value' => 'th'],
         ];
 
         foreach ($settings as $setting) {
