@@ -4,6 +4,7 @@ use App\Models\FileInfo;
 use App\Models\SysSetting;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Testing\AssertableInertia as Assert;
 
 beforeEach(function () {
     Storage::fake('local');
@@ -65,6 +66,21 @@ test('favicon route falls back to default when the configured file_info row no l
     $this->get(route('app.favicon'))
         ->assertOk()
         ->assertHeader('Content-Type', 'image/x-icon');
+});
+
+// ---------------------------------------------------------------- shared prop appLogoUrl (frontend AppLogo.vue)
+
+test('the shared appLogoUrl prop is null when no logo is configured — frontend keeps the default icon', function () {
+    $this->get(route('front.home', ['lang' => 'th']))
+        ->assertInertia(fn (Assert $page) => $page->where('appLogoUrl', null));
+});
+
+test('the shared appLogoUrl prop points at the app.logo route once a logo is configured', function () {
+    $file = fakeFileInfo('logo.png', 'shared-logo.png', 'png', 'image/png');
+    SysSetting::create(['group' => 'site', 'name' => 'logo_id', 'value' => (string) $file->id]);
+
+    $this->get(route('front.home', ['lang' => 'th']))
+        ->assertInertia(fn (Assert $page) => $page->where('appLogoUrl', route('app.logo')));
 });
 
 // ---------------------------------------------------------------- บันทึกผ่านหน้าตั้งค่าระบบ

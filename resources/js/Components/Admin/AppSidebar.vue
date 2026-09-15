@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import { FolderOpen, LayoutGrid, UserCircle } from 'lucide-vue-next';
-import ApplicationLogo from '@/Components/ApplicationLogo.vue';
+import AppLogo from '@/Components/AppLogo.vue';
 import SidebarItem from '@/Components/Admin/SidebarItem.vue';
 import SidebarGroup from '@/Components/Admin/SidebarGroup.vue';
 import type { MenuGroup } from '@/types';
@@ -40,7 +40,7 @@ const showText = computed(() => isExpanded.value || isMobileOpen.value);
             :class="showText ? 'justify-start' : 'lg:justify-center'"
         >
             <Link :href="route('admin.dashboard')" class="flex items-center gap-2.5 text-white">
-                <ApplicationLogo class="size-8 shrink-0 stroke-current" />
+                <AppLogo class="size-8 shrink-0 stroke-current" />
                 <span v-show="showText" class="text-lg font-semibold tracking-tight">{{ page.props.siteName }}</span>
             </Link>
         </div>

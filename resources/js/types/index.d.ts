@@ -103,6 +103,8 @@ export type PageProps<
     };
     /** ชื่อไซต์จากการตั้งค่าระบบ (sys_setting กลุ่ม site) — fallback เป็น .env APP_NAME ถ้าไม่ได้ตั้งค่า */
     siteName: string;
+    /** URL โลโก้ที่ตั้งค่าไว้ (sys_setting: site.logo_id) — null ถ้ายังไม่ได้ตั้งค่า (ดู Components/AppLogo.vue) */
+    appLogoUrl: string | null;
     menu: MenuGroup[];
     flash?: {
         success?: string | null;
