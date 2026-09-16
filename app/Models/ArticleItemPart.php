@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * part_type: text, image, images, video, document, documents
  * images_display_type ใช้เฉพาะ part_type = images (thumbnail_carousel, multi_carousel, grid_lightbox,
  * full_width_slider, masonry_grid, justified_grid, stacked_cards)
+ * show_title: แสดงหัวเรื่องของ part นี้ที่หน้าบ้านหรือไม่ (Y/N)
+ * status: แสดง/ซ่อน part นี้ทั้งอันที่หน้าบ้าน (Y/N) — คนละความหมายกับ soft delete
  */
 class ArticleItemPart extends Model
 {
@@ -23,6 +25,8 @@ class ArticleItemPart extends Model
         'sort_order',
         'part_type',
         'images_display_type',
+        'show_title',
+        'status',
         'setting',
         'created_by',
         'updated_by',

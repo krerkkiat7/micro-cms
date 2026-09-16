@@ -9,11 +9,11 @@ import InputError from '@/Components/InputError.vue';
 import TextInput from '@/Components/TextInput.vue';
 import Textarea from '@/Components/Textarea.vue';
 import SelectInput from '@/Components/SelectInput.vue';
-import Checkbox from '@/Components/Checkbox.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
 import FilePickerField from '@/Components/Admin/FileManager/FilePickerField.vue';
+import TagPicker from '@/Components/Admin/ArticleTag/TagPicker.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { Save, Trash2 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
@@ -46,14 +46,16 @@ interface CategoryOption {
     title: string | null;
 }
 
-interface TagOption {
+interface TagChip {
     id: number;
-    name: string | null;
+    name: string;
 }
 
 interface ServerPart {
     part_type: PartData['part_type'];
     images_display_type: string | null;
+    show_title: 'Y' | 'N';
+    status: 'Y' | 'N';
     setting: Record<string, unknown> | null;
     detail: Record<string, { title: string; detail: string }>;
     files: Array<{
@@ -69,10 +71,9 @@ const props = defineProps<{
     item: EditItem;
     details: Record<string, DetailFields>;
     parts: ServerPart[];
-    tagIds: number[];
+    tags: TagChip[];
     languages: LanguageOption[];
     categories: CategoryOption[];
-    tags: TagOption[];
     can: { manage: boolean; delete: boolean };
 }>();
 
@@ -82,7 +83,7 @@ const form = useForm({
     publish_date: props.item.publish_date,
     publish_down: props.item.publish_down,
     status: props.item.status,
-    tags: [...props.tagIds],
+    tags: props.tags.map((t) => t.id),
     detail: { ...props.details } as Record<string, DetailFields>,
     parts: partsFromServer(props.parts, props.languages) as PartData[],
 });
@@ -94,10 +95,6 @@ watch(introImage, (files) => {
 
 function detailError(lang: string, field: string): string | undefined {
     return (form.errors as Record<string, string>)[`detail.${lang}.${field}`];
-}
-
-function toggleTag(tagId: number, checked: boolean) {
-    form.tags = checked ? [...form.tags, tagId] : form.tags.filter((id) => id !== tagId);
 }
 
 function submit() {
@@ -173,14 +170,9 @@ const breadcrumbs = computed(() => [
                         <FilePickerField v-model="introImage" :accept="['jpg', 'jpeg', 'png', 'gif', 'webp']" />
                         <InputError :message="form.errors.intro_image_id" />
                     </div>
-                    <div v-if="tags.length" class="sm:col-span-6">
+                    <div class="sm:col-span-6">
                         <InputLabel value="แท็ก" />
-                        <div class="flex flex-wrap gap-x-5 gap-y-2">
-                            <label v-for="tag in tags" :key="tag.id" class="flex items-center gap-2 text-sm text-gray-700">
-                                <Checkbox :checked="form.tags.includes(tag.id)" @update:checked="(v) => toggleTag(tag.id, v)" />
-                                {{ tag.name }}
-                            </label>
-                        </div>
+                        <TagPicker v-model="form.tags" :languages="languages" :initial-chips="tags" />
                         <InputError :message="form.errors.tags" />
                     </div>
                 </div>
@@ -208,7 +200,7 @@ const breadcrumbs = computed(() => [
 
             <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8">
                 <h2 class="text-base font-semibold text-gray-800">เนื้อหา</h2>
-                <p class="mt-0.5 text-xs text-gray-500">ลากที่ไอคอนซ้ายของแต่ละส่วนเพื่อสลับลำดับ</p>
+                <p class="mt-0.5 text-xs text-gray-500">กดไอคอนจัดลำดับที่แต่ละส่วนเพื่อเปิดหน้าต่างสลับลำดับ</p>
 
                 <div class="mt-5">
                     <PartList v-model="form.parts" :languages="languages" :form-errors="(form.errors as Record<string, string>)" />

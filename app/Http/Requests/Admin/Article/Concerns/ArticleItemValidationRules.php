@@ -90,6 +90,8 @@ trait ArticleItemValidationRules
                 'nullable',
                 Rule::in(['thumbnail_carousel', 'multi_carousel', 'grid_lightbox', 'full_width_slider', 'masonry_grid', 'justified_grid', 'stacked_cards']),
             ],
+            'parts.*.show_title' => ['nullable', Rule::in(['Y', 'N'])],
+            'parts.*.status' => ['nullable', Rule::in(['Y', 'N'])],
             'parts.*.setting' => ['nullable', 'array'],
             'parts.*.detail' => ['nullable', 'array'],
             'parts.*.files' => ['nullable', 'array'],

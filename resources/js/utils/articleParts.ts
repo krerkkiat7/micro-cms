@@ -6,6 +6,16 @@ import type { FileItem, LanguageOption } from '@/types';
  */
 export type PartType = 'text' | 'image' | 'images' | 'video' | 'document' | 'documents';
 
+/** ป้ายชื่อภาษาไทยของแต่ละประเภท part — ใช้ทั้งใน PartCard.vue และ PartReorderDialog.vue */
+export const PART_TYPE_LABELS: Record<PartType, string> = {
+    text: 'ข้อความ',
+    image: 'รูปภาพเดี่ยว',
+    images: 'กลุ่มรูปภาพ',
+    video: 'วิดีโอ',
+    document: 'เอกสารเดี่ยว',
+    documents: 'กลุ่มเอกสาร',
+};
+
 /** รูปแบบแสดงผลของ part ประเภทกลุ่มรูปภาพ — slug ต้องตรงกับที่ backend ยอมรับ (ดู migration) */
 export const IMAGES_DISPLAY_TYPES: { value: string; label: string }[] = [
     { value: 'thumbnail_carousel', label: 'Thumbnail Carousel' },
@@ -62,11 +72,31 @@ export interface PartData {
     _key: string;
     part_type: PartType;
     images_display_type: string;
+    /** แสดงหัวเรื่องของ part นี้ที่หน้าบ้านหรือไม่ (Y/N ตาม convention ของโปรเจกต์) */
+    show_title: 'Y' | 'N';
+    /** แสดง/ซ่อน part นี้ทั้งอันที่หน้าบ้าน (Y/N) — คนละความหมายกับการลบ */
+    status: 'Y' | 'N';
     /** ตั้งค่าที่ไม่แยกภาษาของ part — รูปร่างต่างกันไปตามประเภท (ดูคอมเมนต์ใน createPart), เป็น `any` ด้วยเหตุผลเดียวกับ PartFileRow.description */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setting: Record<string, any>;
     detail: Record<string, PartDetailLang>;
     files: PartFileRow[];
+}
+
+/** หาข้อความหัวเรื่องของ part สำหรับแสดงแบบย่อ (เช่นใน PartReorderDialog.vue) — ใช้ของภาษาหลักก่อน
+ *  แล้วค่อย fallback ไปภาษาอื่นที่กรอกไว้ ถ้าไม่มีเลยให้แสดง "(ไม่มีชื่อ)"
+ */
+export function partDisplayTitle(part: PartData, languages: LanguageOption[]): string {
+    const defaultLang = languages.find((lang) => lang.is_default)?.code;
+    const defaultTitle = defaultLang ? part.detail[defaultLang]?.title : '';
+
+    if (defaultTitle && defaultTitle.trim() !== '') {
+        return defaultTitle;
+    }
+
+    const fallback = Object.values(part.detail).find((d) => d.title.trim() !== '');
+
+    return fallback?.title ?? '(ไม่มีชื่อ)';
 }
 
 let keySeed = 0;
@@ -136,6 +166,8 @@ export function createPart(type: PartType, languages: LanguageOption[]): PartDat
         _key: nextKey('part'),
         part_type: type,
         images_display_type: type === 'images' ? 'grid_lightbox' : '',
+        show_title: 'Y',
+        status: 'Y',
         setting: defaultSetting(type),
         detail: createEmptyDetail(languages),
         files: [],
@@ -153,6 +185,8 @@ export function partsFromServer(
     parts: Array<{
         part_type: PartType;
         images_display_type: string | null;
+        show_title: 'Y' | 'N';
+        status: 'Y' | 'N';
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         setting: Record<string, any> | null;
         detail: Record<string, PartDetailLang>;
@@ -171,6 +205,8 @@ export function partsFromServer(
         _key: nextKey('part'),
         part_type: part.part_type,
         images_display_type: part.images_display_type ?? (part.part_type === 'images' ? 'grid_lightbox' : ''),
+        show_title: part.show_title ?? 'Y',
+        status: part.status ?? 'Y',
         setting: part.setting && Object.keys(part.setting).length > 0 ? part.setting : defaultSetting(part.part_type),
         detail: languages.reduce<Record<string, PartDetailLang>>((acc, lang) => {
             acc[lang.code] = part.detail?.[lang.code] ?? { title: '', detail: '' };
@@ -193,6 +229,8 @@ export function partsToPayload(parts: PartData[]) {
     return parts.map((part) => ({
         part_type: part.part_type,
         images_display_type: part.part_type === 'images' ? part.images_display_type : null,
+        show_title: part.show_title,
+        status: part.status,
         setting: part.setting,
         detail: part.detail,
         files: part.files.map((row) => ({

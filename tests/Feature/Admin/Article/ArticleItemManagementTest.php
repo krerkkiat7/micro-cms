@@ -133,7 +133,8 @@ test('add page redirects without article.item.manage', function () {
         ->assertRedirect(route('admin.article.item.index'));
 });
 
-test('add page renders languages, categories and tags', function () {
+test('add page renders languages and categories', function () {
+    // ไม่ส่ง prop 'tags' อีกต่อไป — เลือก/สร้างแท็กทำผ่าน TagPicker.vue ที่ค้นหา/สร้างแบบ ajax แทน
     actingAsUserWithPermissions(['article.item.manage']);
 
     $this->get(route('admin.article.item.add'))
@@ -142,7 +143,7 @@ test('add page renders languages, categories and tags', function () {
             ->component('Admin/Article/Item/Add')
             ->has('languages')
             ->has('categories')
-            ->has('tags')
+            ->missing('tags')
         );
 });
 
@@ -211,6 +212,34 @@ test('store creates the article with per-language details, a text part and logs 
         ->where('action_type', 'create')
         ->where('ref_id', $item->id)
         ->exists())->toBeTrue();
+});
+
+test('store defaults a part\'s show_title and status to Y, and persists explicit overrides', function () {
+    actingAsUserWithPermissions(['article.item.manage', 'article.item.view']);
+
+    $this->post(route('admin.article.item.store'), validItemPayload($this->category->id));
+    $defaultItem = ArticleItemInfo::query()->latest('id')->first();
+    $defaultPart = ArticleItemPart::where('article_item_info_id', $defaultItem->id)->first();
+
+    expect($defaultPart->show_title)->toBe('Y')->and($defaultPart->status)->toBe('Y');
+
+    $this->post(route('admin.article.item.store'), validItemPayload($this->category->id, [
+        'detail' => ['th' => ['title' => 'บทความซ่อน part', 'slug' => 'hide-part-th'], 'en' => ['title' => 'Hide Part', 'slug' => 'hide-part-en']],
+        'parts' => [
+            ['part_type' => 'text', 'show_title' => 'N', 'status' => 'N', 'detail' => ['th' => ['detail' => 'ซ่อนไว้']]],
+        ],
+    ]));
+    $hiddenItem = ArticleItemInfo::query()->latest('id')->first();
+    $hiddenPart = ArticleItemPart::where('article_item_info_id', $hiddenItem->id)->first();
+
+    expect($hiddenPart->show_title)->toBe('N')->and($hiddenPart->status)->toBe('N');
+
+    // ต้องกลับมาที่หน้าแก้ไขได้ครบเหมือนกัน (round-trip ผ่าน partToArray())
+    $this->get(route('admin.article.item.edit', $hiddenItem->id))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('parts.0.show_title', 'N')
+            ->where('parts.0.status', 'N')
+        );
 });
 
 test('store allows saving with no parts at all', function () {
@@ -310,7 +339,7 @@ test('edit renders article details, parts and tags, and logs access + view actio
             ->component('Admin/Article/Item/Edit')
             ->where('details.th.title', 'บทความทดสอบ')
             ->where('details.en.title', 'Test Article')
-            ->where('tagIds', [$tag->id])
+            ->where('tags.0.id', $tag->id)
             ->has('parts', 1)
             ->where('parts.0.part_type', 'text')
             ->where('can.manage', true)

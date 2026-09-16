@@ -11,7 +11,6 @@ use App\Models\ArticleItemInfo;
 use App\Models\ArticleItemPart;
 use App\Models\ArticleItemPartDetail;
 use App\Models\ArticleItemPartFile;
-use App\Models\ArticleTagInfo;
 use App\Models\FileInfo;
 use App\Models\LogBackAccess;
 use App\Models\LogBackAction;
@@ -127,7 +126,6 @@ class ArticleItemController extends Controller
         return Inertia::render('Admin/Article/Item/Add', [
             'languages' => $this->languageOptions(),
             'categories' => $this->categoryOptions(),
-            'tags' => $this->tagOptions(),
         ]);
     }
 
@@ -213,10 +211,9 @@ class ArticleItemController extends Controller
                 $lang['code'] => $this->detailToArray($details->get($lang['code'])),
             ]),
             'parts' => $parts->map(fn (ArticleItemPart $part) => $this->partToArray($part))->values(),
-            'tagIds' => $model->tags()->pluck('article_tag_info.id')->values(),
+            'tags' => $this->attachedTagChips($model),
             'languages' => $this->languageOptions(),
             'categories' => $this->categoryOptions(),
-            'tags' => $this->tagOptions(),
             'can' => [
                 'manage' => $request->user()->hasPermission('article.item.manage'),
                 'delete' => $request->user()->hasPermission('article.item.delete'),
@@ -355,21 +352,18 @@ class ArticleItemController extends Controller
     }
 
     /**
-     * ตัวเลือกแท็ก (เฉพาะที่เปิดใช้งาน) สำหรับผูกกับบทความ — ชื่อเป็นของภาษาหลัก
+     * แท็กที่ผูกกับบทความนี้อยู่แล้ว (ชื่อเป็นของภาษาหลัก) — ใช้แสดงเป็นกล่องข้อความเริ่มต้นใน TagPicker.vue
      *
      * @return list<array{id: int, name: string|null}>
      */
-    private function tagOptions(): array
+    private function attachedTagChips(ArticleItemInfo $model): array
     {
         $defaultLang = Setting::defaultLanguage();
 
-        return ArticleTagInfo::query()
+        return $model->tags()
             ->join('article_tag_detail as d', function ($join) use ($defaultLang) {
                 $join->on('d.id', '=', 'article_tag_info.id')->where('d.lang', $defaultLang);
             })
-            ->whereNull('d.deleted_at')
-            ->where('article_tag_info.status', 'Y')
-            ->orderBy('d.name')
             ->get(['article_tag_info.id', 'd.name as name'])
             ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
             ->values()
@@ -445,6 +439,8 @@ class ArticleItemController extends Controller
         return [
             'part_type' => $part->part_type,
             'images_display_type' => $part->images_display_type,
+            'show_title' => $part->show_title,
+            'status' => $part->status,
             'setting' => $part->setting ?? [],
             'detail' => collect($this->languageOptions())->mapWithKeys(fn (array $lang) => [
                 $lang['code'] => [
@@ -503,6 +499,8 @@ class ArticleItemController extends Controller
                 'sort_order' => $index,
                 'part_type' => $partData['part_type'],
                 'images_display_type' => $partData['images_display_type'] ?? null,
+                'show_title' => $partData['show_title'] ?? 'Y',
+                'status' => $partData['status'] ?? 'Y',
                 'setting' => $partData['setting'] ?? null,
                 'created_by' => $actorId,
             ]);

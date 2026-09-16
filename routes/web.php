@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\Article\ArticleCategoryController;
 use App\Http\Controllers\Admin\Article\ArticleItemController;
+use App\Http\Controllers\Admin\Article\ArticleTagController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\System\BackLogAccessController;
@@ -91,6 +92,12 @@ Route::prefix('admin')->group(function () {
             Route::get('/{item}/edit', [ArticleItemController::class, 'edit'])->name('admin.article.item.edit');
             Route::put('/{item}', [ArticleItemController::class, 'update'])->name('admin.article.item.update');
             Route::delete('/{item}', [ArticleItemController::class, 'destroy'])->name('admin.article.item.destroy');
+        });
+
+        // ค้นหา/สร้างแท็กบทความแบบ ajax (ใช้จาก TagPicker.vue) — ตรวจสิทธิ์ในแต่ละ method ของ ArticleTagController
+        Route::prefix('article/tag')->group(function () {
+            Route::get('/search', [ArticleTagController::class, 'search'])->name('admin.article.tag.search');
+            Route::post('/', [ArticleTagController::class, 'store'])->name('admin.article.tag.store');
         });
 
         // จัดการผู้ใช้งานหลังบ้าน (user_type = back) — ตรวจสอบสิทธิ์ในแต่ละ method ของ UserController

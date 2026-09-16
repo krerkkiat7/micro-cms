@@ -8,8 +8,8 @@
 | # | หัวข้อ | ตารางหลัก | สถานะ |
 |---|--------|-----------|-------|
 | 1 | หมวดหมู่บทความ | `article_category_info`, `article_category_detail` | 🟢 schema + controller/route/UI (list, add, edit) เสร็จครบ |
-| 2 | บทความ | `article_item_info`, `article_item_detail`, `article_item_part`, `article_item_part_file`, `article_item_part_detail` | 🟡 schema + model + seeder ตัวอย่างเสร็จ ยังไม่มี controller/route/UI |
-| 2.1 | แท็กบทความ | `article_tag_info`, `article_tag_detail`, `article_item_tag` (pivot) | 🟡 schema + model + seeder ตัวอย่างเสร็จ ยังไม่มี UI จัดการ |
+| 2 | บทความ | `article_item_info`, `article_item_detail`, `article_item_part`, `article_item_part_file`, `article_item_part_detail` | 🟢 schema + controller/route/UI (list, add, edit) พร้อม part editor เสร็จครบ |
+| 2.1 | แท็กบทความ | `article_tag_info`, `article_tag_detail`, `article_item_tag` (pivot) | 🟢 schema + เลือก/สร้างแท็กแบบ autocomplete จากในฟอร์มบทความเสร็จ (ไม่มีหน้าจัดการแยก) |
 | 3 | ตั้งค่าโมดูลบทความ | — *(เสนอ)* | 🔴 |
 
 ---
@@ -173,8 +173,10 @@ part ที่เกี่ยวกับรูปภาพ/เอกสาร/�
 | `sort_order` | `unsigned int` default 0 | ลำดับ part (ลากสลับได้) |
 | `part_type` | `varchar(10)` | `text`/`image`/`images`/`video`/`document`/`documents` |
 | `images_display_type` | `varchar(20)` null | เฉพาะ `part_type = images` — ดูตาราง slug ที่ §0 |
+| `show_title` | `char(1)` default `Y` | แสดงหัวเรื่องของ part นี้ที่หน้าบ้านหรือไม่ (checkbox ในฟอร์ม) |
+| `status` | `char(1)` default `Y` | แสดง/ซ่อน part นี้ทั้งอันที่หน้าบ้าน (ไอคอนรูปตา/ตาขีดทับในฟอร์ม) — คนละความหมายกับ soft delete |
 | `setting` | `json` null | ตั้งค่าเพิ่มเติมตามประเภท เช่น เปิด/ปิด pdf preview — cast เป็น `array` ใน model |
-| `created_by` / `updated_by` / `deleted_by`, `timestamps`, `deleted_at` | | ไม่มีคอลัมน์ `status` แยก (ลบแถวใช้ soft delete แทนการปิด/เปิด) |
+| `created_by` / `updated_by` / `deleted_by`, `timestamps`, `deleted_at` | | |
 
 **Data model — `article_item_part_file`** (ไฟล์ของแต่ละ part — รูปภาพ/เอกสาร/วิดีโอ เรียงด้วย `sort_order`)
 
@@ -212,11 +214,16 @@ part ที่เกี่ยวกับรูปภาพ/เอกสาร/�
 ตัวอย่างที่มีอยู่ ทำเครื่องหมาย `is_temp = 'Y'` แต่ละบทความมี part ประเภท `text` 1 อัน (ยังไม่มี part
 รูปภาพ/วิดีโอ/เอกสารตัวอย่าง เพราะไม่มีไฟล์ตัวอย่างใน `file_info` — โมดูลจัดการไฟล์เป็นพื้นที่ส่วนตัวต่อผู้ใช้)
 
-**หน้าจอ** (ยังไม่ทำ — รอบถัดไป)
-- list บทความ (ค้นหา/กรองสถานะ+หมวดหมู่+แท็ก, เรียงลำดับ/paging)
-- form เพิ่ม/แก้ไข ตามรูปแบบ "กลุ่มข้อมูลร่วม" + "กลุ่มข้อมูลแยกภาษา" (§0) + part editor ลากสลับลำดับ
-  (ต้องเพิ่ม drag-reorder library เช่น `vuedraggable@next` — ยังไม่มี pattern นี้ในโปรเจกต์) ใช้
-  `FilePickerField.vue`/`FilePickerDialog.vue` ของโมดูลจัดการไฟล์สำหรับเลือกรูป/เอกสาร/วิดีโอ
+**หน้าจอ** — เสร็จแล้ว (`Admin/Article/Item/{Index,Add,Edit}.vue`)
+- list บทความ (ค้นหาชื่อ+ข้อความเกริ่นนำ, กรองหมวดหมู่+สถานะ, เรียงลำดับได้ทุกคอลัมน์ default เรียงชื่อ, paging)
+- form เพิ่ม/แก้ไข ตามรูปแบบ "กลุ่มข้อมูลร่วม" + "กลุ่มข้อมูลแยกภาษา" (§0) ใช้ `FilePickerField.vue` เลือกรูป/เอกสาร/วิดีโอ
+  และ `TagPicker.vue` (§2.1) เลือก/สร้างแท็ก
+- part editor (`Components/Admin/ArticlePart/*`) — ลากสลับลำดับรูปภาพ/เอกสารภายในกลุ่มโดยตรง (`vuedraggable`,
+  ghost placeholder แบบ SortableJS Simple List ให้เห็นขอบเขตตำแหน่งที่จะวางชัดเจน) แต่การสลับลำดับ **part**
+  ทำผ่าน dialog แยก (`PartReorderDialog.vue`) แทนการลากตรง ๆ ในหน้าฟอร์ม — เพราะ part แต่ละอันสูงมาก ลากข้ามที่ไกล ๆ
+  ยาก dialog แสดงแค่ `[ประเภท] : [หัวเรื่อง]` แถวเตี้ย ๆ เห็นภาพรวมทั้งหมด ลากสลับในนั้นแล้วกด "ยืนยันลำดับ"
+  ถึงจะเปลี่ยนลำดับจริง (ยกเลิกได้โดยไม่กระทบ) — แต่ละ part มีปุ่ม checkbox "แสดงหัวเรื่องที่หน้าบ้าน" (`show_title`)
+  และไอคอนตา/ตาขีดทับสลับ แสดง/ซ่อน part (`status`) ก่อนไอคอนลบ
 
 **Permission code** (seed ไว้แล้ว) — `article.item.view`, `article.item.manage`, `article.item.delete`
 
@@ -260,7 +267,12 @@ part ที่เกี่ยวกับรูปภาพ/เอกสาร/�
 
 **Seeder** — สร้างแท็กตัวอย่าง 4 แท็ก (ประชาสัมพันธ์/กิจกรรม/ความรู้/อัปเดต) ใน `ArticleSeeder.php`
 
-**หน้าจอ** — ยังไม่มีหน้าจัดการแท็กแยก (รอบถัดไปจะพิจารณาว่าจัดการผ่านหน้าบทความ หรือแยกหน้า list/form ต่างหาก)
+**หน้าจอ** — ยังไม่มีหน้าจัดการแท็กแยก แต่เลือก/สร้างแท็กได้จากในฟอร์มบทความผ่าน
+`Components/Admin/ArticleTag/TagPicker.vue`: ไม่มีรายการมาให้ล่วงหน้า พิมพ์ค้นหาจากชื่อภาษาหลักแบบ autocomplete
+(ajax `admin.article.tag.search`) เลือกจากผลลัพธ์ = ใช้แท็กเดิม แสดงเป็นกล่องข้อความ (chip) ลบออกได้; พิมพ์แล้วกด
+"เพิ่ม" โดยไม่เลือก — ถ้ามีชื่อตรงกับแท็กที่มีอยู่แล้วก็ใช้ตัวนั้นเหมือนกัน แต่ถ้ายังไม่มีจะเปิด
+`NewTagDialog.vue` ให้กรอกชื่อแท็กใหม่ครบทุกภาษาก่อนสร้างจริง (ajax `admin.article.tag.store`, สร้างทันทีไม่รอบันทึกฟอร์มบทความ)
+— ทั้งสอง endpoint อยู่ใน `Admin\Article\ArticleTagController`, ตรวจสิทธิ์ `article.item.manage` เหมือนกัน
 
 ## 3. ตั้งค่าโมดูลบทความ (เสนอ — ยังไม่ออกแบบ)
 
@@ -276,6 +288,6 @@ part ที่เกี่ยวกับรูปภาพ/เอกสาร/�
 |-----|--------|-------|
 | 0 — schema หมวดหมู่ | `article_category_info`/`article_category_detail` + `ArticleSeeder` ตัวอย่าง | ✅ เสร็จ |
 | 1 — CRUD หมวดหมู่ | controller/route/หน้า Vue list+form ตามต้นแบบ `system.user` (ดู `docs/PRD-system.md` §1) | ✅ เสร็จ |
-| **2 — schema บทความ + content part + แท็ก** *(รอบนี้)* | `article_item_*` + ตาราง part (ข้อความ/รูปภาพ/วิดีโอ/เอกสาร) + `article_tag_*` + `ArticleSeeder` ตัวอย่าง | ✅ เสร็จ |
-| 3 — CRUD บทความ | controller/route/หน้า Vue พร้อม part editor ลากสลับลำดับ (ต้องเพิ่ม drag-reorder library), ใช้ `FilePickerField.vue` เลือกไฟล์ | 🔴 ยังไม่ทำ |
+| 2 — schema บทความ + content part + แท็ก | `article_item_*` + ตาราง part (ข้อความ/รูปภาพ/วิดีโอ/เอกสาร) + `article_tag_*` + `ArticleSeeder` ตัวอย่าง | ✅ เสร็จ |
+| **3 — CRUD บทความ** *(รอบนี้)* | controller/route/หน้า Vue list+add+edit พร้อม part editor (ลากสลับลำดับรูป/เอกสารในกลุ่มตรง ๆ, สลับลำดับ part ผ่าน dialog), `TagPicker.vue` เลือก/สร้างแท็กแบบ autocomplete, แสดง/ซ่อน part + ตัวเลือกแสดงหัวเรื่อง | ✅ เสร็จ |
 | 4 — ตั้งค่าโมดูลบทความ | หน้า `admin.article.setting.index` | 🔴 ยังไม่ทำ |

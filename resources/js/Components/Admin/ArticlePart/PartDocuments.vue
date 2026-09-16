@@ -41,6 +41,8 @@ function removeDocument(index: number) {
                 :list="part.files"
                 item-key="_key"
                 handle=".document-drag-handle"
+                ghost-class="drag-ghost"
+                :animation="150"
                 class="space-y-2"
             >
                 <template #item="{ element, index }">
@@ -75,3 +77,14 @@ function removeDocument(index: number) {
         </div>
     </div>
 </template>
+
+<style scoped>
+/* placeholder ที่ตำแหน่งที่จะวาง (เหมือนตัวอย่าง Simple List ของ SortableJS) ให้เห็นขอบเขตชัดเจน
+ระหว่างลาก แยกจากรายการที่กำลังถูกลากอยู่ */
+.drag-ghost {
+    opacity: 0.4;
+    background-color: #eff6ff;
+    border: 2px dashed #93c5fd;
+}
+</style>
+
