@@ -39,14 +39,15 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 
 ## 3. โมดูลเนื้อหา
 
-> สถานะปัจจุบัน: **บทความ (article) เริ่มแล้ว** — schema หมวดหมู่ (`article_category_info`/`article_category_detail`)
-> เสร็จ รายละเอียดเต็มดู [PRD-article.md](PRD-article.md) ที่เหลือ (banner/popup/intropage/page/contact us)
-> ยังไม่ได้เริ่ม มีแค่ไฟล์ว่าง `app/Http/Controllers/Admin/PostController.php`
+> สถานะปัจจุบัน: **บทความ (article) กำลังทำ** — หมวดหมู่ (`article_category_info`/`article_category_detail`)
+> เสร็จครบ schema+CRUD+UI แล้ว; ตัวบทความ (`article_item_*` + content part + แท็ก) เสร็จ schema/model/seeder
+> ตัวอย่างแล้ว ยังไม่มี controller/route/UI รายละเอียดเต็มดู [PRD-article.md](PRD-article.md) ที่เหลือ
+> (banner/popup/intropage/page/contact us) ยังไม่ได้เริ่ม มีแค่ไฟล์ว่าง `app/Http/Controllers/Admin/PostController.php`
 > ตารางด้านล่างเป็นเป้าหมายที่จะทยอยทำ (ยังไม่ได้ออกแบบ schema ละเอียด)
 
 | โมดูล | วัตถุประสงค์ | ข้อมูลหลัก (ร่าง) | หน้าจอ | permission code |
 |-------|-------------|------------------|--------|------------------------|
-| **บทความ (article)** — [PRD-article.md](PRD-article.md) | ข่าว/บทความ มีหมวดหมู่ 1 ระดับ (1 บทความ 1 หมวดหมู่), รองรับ SEO/AEO/GEO และหลายภาษาตาม `sys_setting` | หมวดหมู่: รูปปก+ลำดับ+สถานะ (ร่วม) + หัวข้อ/slug/SEO (แยกภาษา) · บทความ: เนื้อหาแบบแบ่ง part (ข้อความ/รูปภาพ/วิดีโอ/เอกสาร) *(เสนอ ยังไม่ออกแบบ)* | หมวดหมู่: list, form *(ยังไม่ทำ)* · บทความ: *(ยังไม่ออกแบบ)* | `article.category.view/manage/delete` `article.item.view/manage/delete` `article.setting.manage` (seed แล้ว) |
+| **บทความ (article)** — [PRD-article.md](PRD-article.md) | ข่าว/บทความ มีหมวดหมู่ 1 ระดับ (1 บทความ 1 หมวดหมู่), รองรับ SEO/AEO/GEO และหลายภาษาตาม `sys_setting` | หมวดหมู่: รูปปก+ลำดับ+สถานะ (ร่วม) + หัวข้อ/slug/SEO (แยกภาษา) · บทความ: หมวดหมู่+รูปปก+วันเผยแพร่ (ร่วม) + หัวข้อ/slug/SEO (แยกภาษา) + เนื้อหาแบบแบ่ง part (ข้อความ/รูปภาพ/วิดีโอ/เอกสาร) + แท็ก | หมวดหมู่: list, form (เสร็จ) · บทความ: *(ยังไม่ทำ — มี schema แล้ว)* | `article.category.view/manage/delete` `article.item.view/manage/delete` `article.setting.manage` (seed แล้ว) |
 | **banner** | แบนเนอร์สไลด์/โปรโมชันตามตำแหน่ง | รูป (ต่อภาษา), ลิงก์, ตำแหน่งแสดง, ช่วงเวลาแสดง, ลำดับ, สถานะ | list เรียงลำดับได้, form | `banner.view` `banner.create` `banner.delete` |
 | **popup** | ป๊อปอัปประกาศเมื่อเข้าเว็บ | รูป/เนื้อหา, ลิงก์, ช่วงเวลาแสดง, เงื่อนไขแสดง (หน้าไหน/ความถี่), สถานะ | list, form | `popup.view` `popup.create` `popup.delete` |
 | **intropage** | หน้าคั่นก่อนเข้าเว็บ (splash/โปรโมชัน) | รูป/วิดีโอพื้นหลัง, ปุ่ม, ช่วงเวลาแสดง, เปิด/ปิด | form เดี่ยว + preview | `intropage.view` `intropage.create` |
@@ -167,7 +168,7 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 | จัดการกลุ่มผู้ใช้งาน (CRUD `sys_usergroup` + กำหนดสิทธิ์) | ✅ list + add + edit + **หน้ากำหนดสิทธิ์** (tree `sys_action_group`/`sys_action`, checkbox parent→ลูก, เลือก/ไม่เลือกทั้งหมดต่อกลุ่ม, บันทึกแบบ detach+attach); `can_edit`/`can_delete`, guard ชื่อซ้ำ/มีสมาชิก | — |
 | profile | ✅ มี (แก้ชื่อ/ช่องทางติดต่อ/อีเมล) | เพิ่มอัปโหลดรูปโปรไฟล์ (อนาคต) |
 | dashboard | 🟡 placeholder (การ์ดสถิติ "—") | ต่อสถิติจริงเมื่อมีโมดูล |
-| โมดูลเนื้อหาทั้ง 6 | ❌ ยังไม่มี | ทยอยทำ |
+| โมดูลเนื้อหาทั้ง 6 | 🟡 บทความ (article) เริ่มแล้ว — หมวดหมู่เสร็จครบ, ตัวบทความมี schema/seeder ตัวอย่างแล้ว (ยังไม่มี UI); banner/popup/intropage/page/contact us ยังไม่มี | ทยอยทำ |
 | จัดการเมนูหลังบ้าน (`sys_menu_group`/`sys_menu`) | 🟢 ตาราง + seed + `AppSidebar` อ่านจาก DB (กรองตามสิทธิ์) | หน้า CRUD จัดเมนู |
 | จัดการเมนูหน้าบ้าน / template / ประวัติ / file management | ❌ ยังไม่มี | ทยอยทำ (ดู PRD-system.md) |
 | ตั้งค่าระบบ (`sys_setting`) | 🟡 มีตาราง + seed ตัวอย่างแล้ว | หน้า UI จัดการ + helper อ่านค่า |
