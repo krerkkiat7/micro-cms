@@ -20,6 +20,8 @@ class ArticleItemPartFile extends Model
         'sort_order',
         'file_id',
         'cover_image_id',
+        'video_type',
+        'youtube_url',
         'description',
         'created_by',
         'updated_by',

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\Article\ArticleCategoryController;
+use App\Http\Controllers\Admin\Article\ArticleItemController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\System\BackLogAccessController;
@@ -80,6 +81,16 @@ Route::prefix('admin')->group(function () {
             Route::get('/{category}/edit', [ArticleCategoryController::class, 'edit'])->name('admin.article.category.edit');
             Route::put('/{category}', [ArticleCategoryController::class, 'update'])->name('admin.article.category.update');
             Route::delete('/{category}', [ArticleCategoryController::class, 'destroy'])->name('admin.article.category.destroy');
+        });
+
+        // บทความ — ตรวจสอบสิทธิ์ในแต่ละ method ของ ArticleItemController
+        Route::prefix('article/item')->group(function () {
+            Route::get('/', [ArticleItemController::class, 'index'])->name('admin.article.item.index');
+            Route::get('/add', [ArticleItemController::class, 'add'])->name('admin.article.item.add');
+            Route::post('/', [ArticleItemController::class, 'store'])->name('admin.article.item.store');
+            Route::get('/{item}/edit', [ArticleItemController::class, 'edit'])->name('admin.article.item.edit');
+            Route::put('/{item}', [ArticleItemController::class, 'update'])->name('admin.article.item.update');
+            Route::delete('/{item}', [ArticleItemController::class, 'destroy'])->name('admin.article.item.destroy');
         });
 
         // จัดการผู้ใช้งานหลังบ้าน (user_type = back) — ตรวจสอบสิทธิ์ในแต่ละ method ของ UserController

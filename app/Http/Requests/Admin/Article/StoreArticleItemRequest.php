@@ -1,0 +1,39 @@
+<?php
+
+namespace App\Http\Requests\Admin\Article;
+
+use App\Http\Requests\Admin\Article\Concerns\ArticleItemValidationRules;
+use App\Support\Setting;
+use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Foundation\Http\FormRequest;
+
+class StoreArticleItemRequest extends FormRequest
+{
+    use ArticleItemValidationRules;
+
+    /**
+     * @return array<string, ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array
+    {
+        return $this->commonRules() + $this->languageDetailRules() + $this->partRules();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        $messages = [
+            'article_category_info_id.required' => 'กรุณาเลือกหมวดหมู่',
+            'publish_date.required' => 'กรุณากรอกวันที่เผยแพร่',
+            'publish_down.after' => 'วันที่ปิดการเผยแพร่ต้องมากกว่าวันที่เผยแพร่',
+        ];
+
+        foreach (Setting::selectedLanguages() as $lang) {
+            $messages["detail.{$lang}.title.required"] = "กรุณากรอกชื่อ ({$lang})";
+        }
+
+        return $messages;
+    }
+}

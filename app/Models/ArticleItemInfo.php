@@ -28,6 +28,14 @@ class ArticleItemInfo extends Model
         'deleted_by',
     ];
 
+    // ต้อง cast เป็น datetime ชัดเจน — ไม่งั้น $model->publish_date จะเป็น string ธรรมดา ทำให้
+    // optional($model->publish_date)->format(...) ในคอนโทรลเลอร์คืนค่า null เงียบ ๆ (Optional::__call
+    // เรียก method ต่อเมื่อ is_object() เท่านั้น)
+    protected $casts = [
+        'publish_date' => 'datetime',
+        'publish_down' => 'datetime',
+    ];
+
     /**
      * หมวดหมู่ของบทความนี้
      */
