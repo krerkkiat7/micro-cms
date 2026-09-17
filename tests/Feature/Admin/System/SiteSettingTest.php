@@ -3,6 +3,7 @@
 use App\Models\SysSetting;
 use App\Support\Setting;
 use Database\Seeders\DatabaseSeeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
@@ -82,6 +83,20 @@ test('clearing the logo field falls back to the default logo again', function ()
 test('the database seeder seeds th,en selected and th as the default language', function () {
     $this->assertDatabaseHas('sys_setting', ['group' => 'site', 'name' => 'lang_selected', 'value' => 'th,en']);
     $this->assertDatabaseHas('sys_setting', ['group' => 'site', 'name' => 'lang_default', 'value' => 'th']);
+});
+
+test('re-running the database seeder overwrites an existing sys_setting value instead of erroring', function () {
+    // sys_setting มี primary key แบบ composite (group, name) ไม่มีคอลัมน์ id ของตัวเอง — seeder ต้องใช้
+    // DB::table()->upsert() ตรง ๆ ไม่ใช่ SysSetting::updateOrCreate() (Eloquent) มิฉะนั้นตอน "update" แถวที่มี
+    // อยู่แล้วจริง ๆ (ค่าต่างจากเดิม) จะพังด้วย query ที่มี WHERE id = ... ซึ่งไม่มีคอลัมน์นี้อยู่จริง
+    $this->assertDatabaseHas('sys_setting', ['group' => 'site', 'name' => 'site_name', 'value' => 'My CMS']);
+
+    DB::table('sys_setting')->where('group', 'site')->where('name', 'site_name')->update(['value' => 'Changed Name']);
+    $this->assertDatabaseHas('sys_setting', ['group' => 'site', 'name' => 'site_name', 'value' => 'Changed Name']);
+
+    $this->seed(DatabaseSeeder::class);
+
+    $this->assertDatabaseHas('sys_setting', ['group' => 'site', 'name' => 'site_name', 'value' => 'My CMS']);
 });
 
 test('saving lang_selected stores it as a single comma-separated record, not one row per language', function () {

@@ -4,11 +4,11 @@ namespace Database\Seeders;
 
 use App\Models\SysAction;
 use App\Models\SysActionGroup;
-use App\Models\SysSetting;
 use App\Models\User;
 use App\Models\UserGroup;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
@@ -144,6 +144,9 @@ class DatabaseSeeder extends Seeder
         );
 
         // ตัวอย่างการตั้งค่าเว็บไซต์ (กลุ่ม site) — เติมเพิ่มเองได้ภายหลัง
+        // ใช้ DB::table()->upsert() ตรง ๆ ไม่ใช่ SysSetting::updateOrCreate() — sys_setting มี primary key
+        // แบบ composite (group, name) ไม่มีคอลัมน์ id เอง Eloquent ที่ไม่รู้จัก key นี้จะพัง (WHERE id = ...)
+        // ทันทีที่ต้อง UPDATE แถวที่มีอยู่แล้วจริง ๆ (ต่างจากตอน insert ใหม่ที่ไม่มีปัญหา จึงไม่เคยเจอตอนเทส)
         $settings = [
             ['group' => 'site', 'name' => 'site_name', 'value' => 'My CMS'],
             ['group' => 'site', 'name' => 'site_email', 'value' => 'admin@admin.com'],
@@ -153,12 +156,11 @@ class DatabaseSeeder extends Seeder
             ['group' => 'site', 'name' => 'lang_default', 'value' => 'th'],
         ];
 
-        foreach ($settings as $setting) {
-            SysSetting::updateOrCreate(
-                ['group' => $setting['group'], 'name' => $setting['name']],
-                ['value' => $setting['value']],
-            );
-        }
+        DB::table('sys_setting')->upsert(
+            array_map(fn (array $s) => $s + ['created_at' => now(), 'updated_at' => now()], $settings),
+            ['group', 'name'],
+            ['value', 'updated_at'],
+        );
 
         // เมนูหลังบ้าน (ข้อมูลตัวอย่าง — แยกไฟล์)
         $this->call(MenuSeeder::class);

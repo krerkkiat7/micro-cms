@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\Article\ArticleCategoryController;
 use App\Http\Controllers\Admin\Article\ArticleItemController;
+use App\Http\Controllers\Admin\Article\ArticleSettingController;
 use App\Http\Controllers\Admin\Article\ArticleTagController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProfileController;
@@ -106,6 +107,16 @@ Route::prefix('admin')->group(function () {
             Route::get('/{tag}/edit', [ArticleTagController::class, 'edit'])->name('admin.article.tag.edit');
             Route::put('/{tag}', [ArticleTagController::class, 'update'])->name('admin.article.tag.update');
             Route::delete('/{tag}', [ArticleTagController::class, 'destroy'])->name('admin.article.tag.destroy');
+        });
+
+        // ตั้งค่าโมดูลบทความ — ตรวจสอบสิทธิ์ในแต่ละ method ของ ArticleSettingController (article.setting.manage เดียว)
+        Route::prefix('article/setting')->group(function () {
+            Route::get('/', [ArticleSettingController::class, 'index'])->name('admin.article.setting.index');
+            Route::put('/', [ArticleSettingController::class, 'update'])->name('admin.article.setting.update');
+
+            Route::get('/clearcache', [ArticleSettingController::class, 'clearcache'])->name('admin.article.setting.clearcache');
+            Route::post('/clearcache/setting', [ArticleSettingController::class, 'clearCacheSetting'])->name('admin.article.setting.clearcache.setting');
+            Route::post('/clearcache-all', [ArticleSettingController::class, 'clearCacheAll'])->name('admin.article.setting.clearcache.all');
         });
 
         // จัดการผู้ใช้งานหลังบ้าน (user_type = back) — ตรวจสอบสิทธิ์ในแต่ละ method ของ UserController

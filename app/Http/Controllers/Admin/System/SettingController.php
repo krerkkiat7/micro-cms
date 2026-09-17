@@ -28,16 +28,23 @@ use Throwable;
 
 class SettingController extends Controller
 {
-    /** ชื่อกลุ่มภาษาไทย — ใช้แสดงผล log และข้อความแจ้งเตือน */
+    /** ชื่อกลุ่มภาษาไทย — ใช้แสดงผล log และข้อความแจ้งเตือน (รวมทุกกลุ่มที่ลงทะเบียนใน Setting::GROUPS แม้จะไม่ใช่ของหน้านี้เอง) */
     private const GROUP_LABELS = [
         'site' => 'ข้อมูลระบบ',
         'smtp' => 'SMTP',
         'turnstile' => 'Turnstile',
         'login_back' => 'การเข้าสู่ระบบหลังบ้าน',
+        'article' => 'โมดูลบทความ',
     ];
 
     /**
-     * หน้าตั้งค่าระบบ — ฟอร์มแยกกลุ่มตาม Setting::GROUPS
+     * กลุ่มตั้งค่าที่หน้านี้ (ตั้งค่าระบบ) มีฟอร์มให้แก้ไขเอง — ไม่ใช่ทุกกลุ่มใน Setting::GROUPS เพราะกลุ่มอื่น
+     * (เช่น 'article') เป็นของโมดูลนั้น ๆ ที่มีหน้าตั้งค่าแยกของตัวเอง แค่มาลงทะเบียนแคชร่วมทะเบียนเดียวกัน
+     */
+    private const OWN_GROUPS = ['site', 'smtp', 'turnstile', 'login_back'];
+
+    /**
+     * หน้าตั้งค่าระบบ — ฟอร์มแยกกลุ่มตาม self::OWN_GROUPS
      */
     public function index(Request $request): Response|RedirectResponse
     {
@@ -49,7 +56,7 @@ class SettingController extends Controller
             LogBackAccess::record('ตั้งค่าระบบ');
         }
 
-        $settings = collect(Setting::GROUPS)
+        $settings = collect(self::OWN_GROUPS)
             ->mapWithKeys(fn (string $group) => [
                 $group => SysSetting::query()->where('group', $group)->pluck('value', 'name'),
             ]);
@@ -233,7 +240,8 @@ class SettingController extends Controller
     }
 
     /**
-     * ล้างแคชของตั้งค่าทุกกลุ่ม
+     * ล้างแคชของตั้งค่าทุกกลุ่มที่ลงทะเบียนไว้ใน Setting::GROUPS — รวมกลุ่มของโมดูลอื่น (เช่น 'article')
+     * ที่มาลงทะเบียนร่วมทะเบียนเดียวกันด้วย ไม่ได้จำกัดแค่ self::OWN_GROUPS
      */
     public function clearCacheAll(Request $request): RedirectResponse
     {

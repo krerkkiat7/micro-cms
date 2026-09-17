@@ -20,11 +20,13 @@ const tabs = computed(() => [
 ]);
 
 // รายการปุ่มล้างแคชรายกลุ่ม — group ต้องตรงกับ App\Support\Setting::GROUPS ฝั่ง backend
+// (รวมกลุ่มของโมดูลอื่นที่มาลงทะเบียนร่วมทะเบียนเดียวกัน เช่น 'article' — ไม่ใช่แค่กลุ่มของตั้งค่าระบบเอง)
 const groups = [
     { group: 'site', label: 'ล้างแคช - ตั้งค่าระบบ : ข้อมูลระบบ' },
     { group: 'smtp', label: 'ล้างแคช - ตั้งค่าระบบ : SMTP' },
     { group: 'turnstile', label: 'ล้างแคช - ตั้งค่าระบบ : Turnstile' },
     { group: 'login_back', label: 'ล้างแคช - ตั้งค่าระบบ : การเข้าสู่ระบบหลังบ้าน' },
+    { group: 'article', label: 'ล้างแคช - โมดูลบทความ : ตั้งค่า' },
 ];
 
 const groupForm = useForm({});
@@ -92,7 +94,9 @@ function clearFiles() {
 
             <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8">
                 <h2 class="text-base font-semibold text-gray-800">ล้างแคชทั้งหมด</h2>
-                <p class="mt-1 text-sm text-gray-500">ล้างแคชของค่าตั้งค่าระบบทุกกลุ่มในครั้งเดียว</p>
+                <p class="mt-1 text-sm text-gray-500">
+                    ล้างแคชของค่าตั้งค่าทุกกลุ่มในครั้งเดียว รวมถึงตั้งค่าของโมดูลอื่น (เช่น บทความ) ด้วย
+                </p>
 
                 <div class="mt-5">
                     <DangerButton type="button" :disabled="allForm.processing" @click="clearAll">

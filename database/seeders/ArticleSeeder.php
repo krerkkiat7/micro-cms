@@ -13,11 +13,12 @@ use App\Models\ArticleTagInfo;
 use App\Support\Setting;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 /**
- * ข้อมูลตัวอย่างโมดูลบทความ (หมวดหมู่ + แท็ก + บทความ) ทำเครื่องหมาย is_temp = 'Y' ไว้ทุกแถว
- * เพื่อให้ลบออกได้ภายหลัง (หรือจะใช้ต่อไปก็ได้) บทความตัวอย่างมีแค่ part ประเภทข้อความ เพราะยังไม่มี
- * ไฟล์ตัวอย่างใน file_info ให้ผูก (โมดูลจัดการไฟล์เป็นพื้นที่ส่วนตัวต่อผู้ใช้ ไม่มี seed ไฟล์กลาง)
+ * ข้อมูลตัวอย่างโมดูลบทความ (ตั้งค่าโมดูล + หมวดหมู่ + แท็ก + บทความ) หมวดหมู่/แท็ก/บทความทำเครื่องหมาย
+ * is_temp = 'Y' ไว้ทุกแถว เพื่อให้ลบออกได้ภายหลัง (หรือจะใช้ต่อไปก็ได้) บทความตัวอย่างมีแค่ part ประเภทข้อความ
+ * เพราะยังไม่มีไฟล์ตัวอย่างใน file_info ให้ผูก (โมดูลจัดการไฟล์เป็นพื้นที่ส่วนตัวต่อผู้ใช้ ไม่มี seed ไฟล์กลาง)
  *
  * รันเดี่ยว: php artisan db:seed --class=ArticleSeeder
  */
@@ -31,6 +32,21 @@ class ArticleSeeder extends Seeder
         if ($languages === []) {
             $languages = ['th', 'en'];
         }
+
+        // ตั้งค่าโมดูลบทความ (sys_setting group = article) — ดู Admin\Article\ArticleSettingController
+        // ใช้ DB::table()->upsert() ตรง ๆ ไม่ใช่ SysSetting::updateOrCreate() — sys_setting มี primary key
+        // แบบ composite (group, name) ไม่มีคอลัมน์ id เอง Eloquent ที่ไม่รู้จัก key นี้จะพัง (WHERE id = ...)
+        // ทันทีที่ต้อง UPDATE แถวที่มีอยู่แล้วจริง ๆ (ต่างจากตอน insert ใหม่ที่ไม่มีปัญหา จึงไม่เคยเจอตอนเทส)
+        $settings = [
+            ['group' => 'article', 'name' => 'list_per_page', 'value' => '10'],
+            ['group' => 'article', 'name' => 'list_display_mode', 'value' => 'card'],
+        ];
+
+        DB::table('sys_setting')->upsert(
+            array_map(fn (array $s) => $s + ['created_at' => now(), 'updated_at' => now()], $settings),
+            ['group', 'name'],
+            ['value', 'updated_at'],
+        );
 
         // หมวดหมู่ตัวอย่าง — key = สำหรับ derive slug ภาษาอังกฤษ, title/intro_text ต่อภาษา (th/en)
         // ภาษาอื่นที่ระบบเปิดใช้นอกเหนือจากนี้ จะ fallback ไปใช้ข้อมูลชุด th

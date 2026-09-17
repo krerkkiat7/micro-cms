@@ -10,7 +10,7 @@
 | 1 | หมวดหมู่บทความ | `article_category_info`, `article_category_detail` | 🟢 schema + controller/route/UI (list, add, edit) เสร็จครบ |
 | 2 | บทความ | `article_item_info`, `article_item_detail`, `article_item_part`, `article_item_part_file`, `article_item_part_detail` | 🟢 schema + controller/route/UI (list, add, edit) พร้อม part editor เสร็จครบ |
 | 2.1 | แท็กบทความ | `article_tag_info`, `article_tag_detail`, `article_item_tag` (pivot) | 🟢 schema + หน้าจัดการเต็มรูปแบบ (list, add, edit) + เลือก/สร้างแท็กแบบ autocomplete จากในฟอร์มบทความ เสร็จครบ |
-| 3 | ตั้งค่าโมดูลบทความ | — *(เสนอ)* | 🔴 |
+| 3 | ตั้งค่าโมดูลบทความ | `sys_setting` (group = `article`) | 🟢 หน้าตั้งค่า + ล้างแคช เสร็จครบ |
 
 ---
 
@@ -305,11 +305,49 @@ log action module_code = `article.tag`
 แท็กนี้ไม่ใช้งานอยู่ (`attachedTagChips()` ใน `ArticleItemController` ก็ส่ง `status` ไปด้วยเพื่อให้หน้าแก้ไข
 บทความแสดงกล่องแท็กเดิมที่ไม่ใช้งานเป็นสีเทาเช่นกัน)
 
-## 3. ตั้งค่าโมดูลบทความ (เสนอ — ยังไม่ออกแบบ)
+## 3. ตั้งค่าโมดูลบทความ
 
-**Permission code** (seed ไว้แล้ว) — `article.setting.manage`
+**วัตถุประสงค์** — ตั้งค่าที่มีผลกับโมดูลบทความ เก็บใน `sys_setting` กลุ่ม `article` (เทียบเคียงกลุ่มตั้งค่าอื่น
+ของตั้งค่าระบบ) แยกกลุ่มย่อยตามหัวข้อได้เหมือนตั้งค่าระบบ แต่ **รวมทุกกลุ่มไว้ในฟอร์มเดียว ปุ่มบันทึกอยู่นอกกล่อง
+กลุ่มทั้งหมด** (เหมือนฟอร์มเพิ่ม/แก้ไขบทความทั่วไป) — ไม่แยกฟอร์ม/ปุ่มบันทึกต่อกลุ่มแบบตั้งค่าระบบ
 
-**Route** (ผูกไว้ใน `MenuSeeder.php`) — `admin.article.setting.index`
+**Permission code** — `article.setting.manage` ตัวเดียว ใช้ทั้งตรวจสอบสิทธิ์เข้าหน้าและบันทึก (ไม่มี `.view` แยก)
+
+**กลุ่ม "รายการบทความ"** (ตอนนี้มีกลุ่มเดียว เพิ่มกลุ่มอื่นได้ในอนาคต):
+
+| ชื่อ (sys_setting.name) | ชนิด | ค่าเริ่มต้น | หมายเหตุ |
+|--------------------------|------|-------------|----------|
+| `list_per_page` | integer (1–100) | `10` | จำนวนรายการบทความที่แสดงต่อหน้า (หน้าบ้าน) |
+| `list_display_mode` | `card` \| `row` | `card` | รูปแบบการแสดงผลรายการบทความ — การ์ด/แถว |
+
+**Controller** — `Admin\Article\ArticleSettingController` (`index`/`update`/`clearcache`/`clearCacheSetting`/
+`clearCacheAll`) log action module_code = `article.setting` (บันทึก) / `article.setting.cache` (ล้างแคช)
+
+**Route** — `admin.article.setting.{index,update,clearcache,clearcache.setting,clearcache.all}`
+
+**หน้าจอ** — `Pages/Admin/Article/Setting/{Index,ClearCache}.vue` มี `TabNav` สลับ "ตั้งค่า"/"ล้างแคช" เหมือนหน้า
+ตั้งค่าระบบ หน้าล้างแคชแสดงรายการแคชของโมดูลนี้ทีละอัน (ตอนนี้มีแค่ "ตั้งค่าบทความ" — อนาคตถ้าเพิ่มแคชอื่นของ
+โมดูลนี้ เช่น รายละเอียดบทความ/รายการบทความที่ใช้ในหน้าบ้าน ให้เพิ่มแถวในนี้ + endpoint ล้างแคชของตัวเองด้วย)
+พร้อมปุ่ม "ล้างแคชทั้งหมดของบทความ"
+
+**Seeder** — ค่าเริ่มต้นเพิ่มใน `ArticleSeeder.php` (กลุ่ม `article` ใน `sys_setting`)
+
+**การลงทะเบียนแคชร่วมกับตั้งค่าระบบ** — เพิ่ม `'article'` เข้า `App\Support\Setting::GROUPS` (ทะเบียนกลุ่ม
+`sys_setting` ทั้งหมดที่มีแคช ไม่ใช่แค่ของตั้งค่าระบบ) ทำให้:
+- หน้า "ล้างแคช" ของตั้งค่าระบบ (`admin.system.setting.clearcache`) มีปุ่มล้างแคชกลุ่ม `article` เพิ่มมาด้วย
+- ปุ่ม "ล้างแคชทั้งหมด" ของตั้งค่าระบบ (`Setting::forgetAll()` วนทุกกลุ่มใน `GROUPS`) ครอบคลุมกลุ่ม `article` ไปด้วยอัตโนมัติ
+- แต่หน้าฟอร์มตั้งค่าระบบเอง (`Admin\System\SettingController::index()`) ยังคง**ไม่**แสดงฟอร์มของกลุ่ม `article`
+  (แยก const `OWN_GROUPS` ออกจาก `Setting::GROUPS` โดยเฉพาะ เพื่อไม่ให้กลุ่มของโมดูลอื่นที่มาลงทะเบียนร่วม
+  ทะเบียนเดียวกันหลุดเข้าไปในหน้าฟอร์มของตั้งค่าระบบ)
+
+> **บั๊กที่แก้ไปพร้อมกัน (ประวัติ อย่าทำซ้ำ)** — seeder เดิม (`DatabaseSeeder.php`/`ArticleSeeder.php`) ใช้
+> `SysSetting::updateOrCreate(...)` (Eloquent) เพื่อ seed ค่าตั้งค่า แต่ `sys_setting` มี primary key แบบ
+> composite (`group`,`name`) ไม่มีคอลัมน์ `id` ของตัวเอง — Eloquent ที่ไม่รู้จัก key นี้ (ไม่ได้ override
+> `$primaryKey`) จะพังด้วย query `WHERE id = ...` ทันทีที่ต้อง **update** แถวที่มีอยู่แล้วจริง ๆ (ค่าต่างจากเดิม)
+> ตอน insert ใหม่ไม่มีปัญหาเพราะไม่ต้องมี WHERE จึงไม่เคยเจอบั๊กนี้ตอนเทส (sqlite `:memory:` สร้างใหม่ทุกครั้ง)
+> แก้โดยเปลี่ยนเป็น `DB::table('sys_setting')->upsert($rows, ['group','name'], ['value','updated_at'])`
+> (query builder ตรง ๆ ไม่ผ่าน Eloquent) ทั้งสองไฟล์ — มีเทส regression ทั้งฝั่ง `site`
+> (`SiteSettingTest.php`) และ `article` (`ArticleSettingManagementTest.php`)
 
 ---
 
@@ -320,5 +358,5 @@ log action module_code = `article.tag`
 | 0 — schema หมวดหมู่ | `article_category_info`/`article_category_detail` + `ArticleSeeder` ตัวอย่าง | ✅ เสร็จ |
 | 1 — CRUD หมวดหมู่ | controller/route/หน้า Vue list+form ตามต้นแบบ `system.user` (ดู `docs/PRD-system.md` §1) | ✅ เสร็จ |
 | 2 — schema บทความ + content part + แท็ก | `article_item_*` + ตาราง part (ข้อความ/รูปภาพ/วิดีโอ/เอกสาร) + `article_tag_*` + `ArticleSeeder` ตัวอย่าง | ✅ เสร็จ |
-| **3 — CRUD บทความ** *(รอบนี้)* | controller/route/หน้า Vue list+add+edit พร้อม part editor (ลากสลับลำดับรูป/เอกสารในกลุ่มตรง ๆ, สลับลำดับ part ผ่าน dialog), `TagPicker.vue` เลือก/สร้างแท็กแบบ autocomplete, แสดง/ซ่อน part + ตัวเลือกแสดงหัวเรื่อง | ✅ เสร็จ |
-| 4 — ตั้งค่าโมดูลบทความ | หน้า `admin.article.setting.index` | 🔴 ยังไม่ทำ |
+| 3 — CRUD บทความ | controller/route/หน้า Vue list+add+edit พร้อม part editor (ลากสลับลำดับรูป/เอกสารในกลุ่มตรง ๆ, สลับลำดับ part ผ่าน dialog), `TagPicker.vue` เลือก/สร้างแท็กแบบ autocomplete, แสดง/ซ่อน part + ตัวเลือกแสดงหัวเรื่อง | ✅ เสร็จ |
+| **4 — ตั้งค่าโมดูลบทความ** *(รอบนี้)* | หน้า `admin.article.setting.index` + ล้างแคช (`sys_setting` group `article`) + ลงทะเบียนร่วมกับล้างแคชของตั้งค่าระบบ | ✅ เสร็จ |
