@@ -38,12 +38,12 @@ test('search returns nothing for an empty query', function () {
         ->assertJson(['data' => []]);
 });
 
-// ---------------------------------------------------------------- store
+// ---------------------------------------------------------------- quickStore (ajax, ใช้จาก TagPicker.vue)
 
 test('creating a tag requires article.item.manage', function () {
     actingAsUserWithPermissions(['article.item.view']);
 
-    $this->postJson(route('admin.article.tag.store'), [
+    $this->postJson(route('admin.article.tag.quickStore'), [
         'name' => ['th' => 'แท็กทดสอบ', 'en' => 'Test Tag'],
     ])->assertForbidden();
 });
@@ -51,15 +51,15 @@ test('creating a tag requires article.item.manage', function () {
 test('creating a tag requires a name for every selected language', function () {
     actingAsUserWithPermissions(['article.item.manage']);
 
-    $this->postJson(route('admin.article.tag.store'), [
+    $this->postJson(route('admin.article.tag.quickStore'), [
         'name' => ['th' => 'แท็กทดสอบ', 'en' => ''],
     ])->assertInvalid(['name.en']);
 });
 
-test('store creates a tag with detail rows for every language and returns the default-language name', function () {
+test('quickStore creates a tag with detail rows for every language and returns the default-language name', function () {
     $me = actingAsUserWithPermissions(['article.item.manage']);
 
-    $response = $this->postJson(route('admin.article.tag.store'), [
+    $response = $this->postJson(route('admin.article.tag.quickStore'), [
         'name' => ['th' => 'แท็กทดสอบใหม่', 'en' => 'Brand New Tag'],
     ]);
 

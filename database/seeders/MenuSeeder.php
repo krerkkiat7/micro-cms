@@ -44,6 +44,7 @@ class MenuSeeder extends Seeder
             // module : article
             ['article-category', 'article', 'หมวดหมู่', 'FolderTree', 'admin.article.category.index', 'article.category.view', 1],
             ['article-item', 'article', 'บทความ', 'List', 'admin.article.item.index', 'article.item.view', 2],
+            ['article-tag', 'article', 'แท็ก', 'Tags', 'admin.article.tag.index', 'article.tag.view', 3],
             ['article-setting', 'article', 'ตั้งค่า', 'SlidersHorizontal', 'admin.article.setting.index', 'article.setting.manage', 99],
 
             // module : banner

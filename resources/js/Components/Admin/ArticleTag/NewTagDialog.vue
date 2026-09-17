@@ -47,7 +47,7 @@ async function save() {
     Object.keys(errors).forEach((key) => delete errors[key]);
 
     try {
-        const { data } = await axios.post<{ data: { id: number; name: string } }>(route('admin.article.tag.store'), {
+        const { data } = await axios.post<{ data: { id: number; name: string } }>(route('admin.article.tag.quickStore'), {
             name: names,
         });
         emit('created', data.data);

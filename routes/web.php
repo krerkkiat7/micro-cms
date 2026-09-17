@@ -94,10 +94,18 @@ Route::prefix('admin')->group(function () {
             Route::delete('/{item}', [ArticleItemController::class, 'destroy'])->name('admin.article.item.destroy');
         });
 
-        // ค้นหา/สร้างแท็กบทความแบบ ajax (ใช้จาก TagPicker.vue) — ตรวจสิทธิ์ในแต่ละ method ของ ArticleTagController
+        // แท็กบทความ — จัดการเต็มรูปแบบ + endpoint ajax ค้นหา/สร้างด่วนที่ใช้จาก TagPicker.vue
+        // (แยกเส้นทาง 'quick' ออกจาก store ปกติ เพราะเป็นคนละการกระทำ: quickStore สร้างจากในฟอร์มบทความ,
+        // store เป็นการบันทึกจากหน้าจัดการแท็กโดยตรง) ตรวจสิทธิ์ในแต่ละ method ของ ArticleTagController
         Route::prefix('article/tag')->group(function () {
+            Route::get('/', [ArticleTagController::class, 'index'])->name('admin.article.tag.index');
+            Route::get('/add', [ArticleTagController::class, 'add'])->name('admin.article.tag.add');
             Route::get('/search', [ArticleTagController::class, 'search'])->name('admin.article.tag.search');
+            Route::post('/quick', [ArticleTagController::class, 'quickStore'])->name('admin.article.tag.quickStore');
             Route::post('/', [ArticleTagController::class, 'store'])->name('admin.article.tag.store');
+            Route::get('/{tag}/edit', [ArticleTagController::class, 'edit'])->name('admin.article.tag.edit');
+            Route::put('/{tag}', [ArticleTagController::class, 'update'])->name('admin.article.tag.update');
+            Route::delete('/{tag}', [ArticleTagController::class, 'destroy'])->name('admin.article.tag.destroy');
         });
 
         // จัดการผู้ใช้งานหลังบ้าน (user_type = back) — ตรวจสอบสิทธิ์ในแต่ละ method ของ UserController

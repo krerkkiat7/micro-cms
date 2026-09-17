@@ -9,7 +9,7 @@
 |---|--------|-----------|-------|
 | 1 | หมวดหมู่บทความ | `article_category_info`, `article_category_detail` | 🟢 schema + controller/route/UI (list, add, edit) เสร็จครบ |
 | 2 | บทความ | `article_item_info`, `article_item_detail`, `article_item_part`, `article_item_part_file`, `article_item_part_detail` | 🟢 schema + controller/route/UI (list, add, edit) พร้อม part editor เสร็จครบ |
-| 2.1 | แท็กบทความ | `article_tag_info`, `article_tag_detail`, `article_item_tag` (pivot) | 🟢 schema + เลือก/สร้างแท็กแบบ autocomplete จากในฟอร์มบทความเสร็จ (ไม่มีหน้าจัดการแยก) |
+| 2.1 | แท็กบทความ | `article_tag_info`, `article_tag_detail`, `article_item_tag` (pivot) | 🟢 schema + หน้าจัดการเต็มรูปแบบ (list, add, edit) + เลือก/สร้างแท็กแบบ autocomplete จากในฟอร์มบทความ เสร็จครบ |
 | 3 | ตั้งค่าโมดูลบทความ | — *(เสนอ)* | 🔴 |
 
 ---
@@ -265,14 +265,26 @@ part ที่เกี่ยวกับรูปภาพ/เอกสาร/�
 **Model** — `App\Models\ArticleTagInfo` (`details()` hasMany, `items()` belongsToMany), `App\Models\ArticleTagDetail`
 (`$incrementing = false`, `tag()` belongsTo)
 
+**Permission code** (seed ไว้แล้ว) — `article.tag.view`, `article.tag.manage`, `article.tag.delete`
+(เทียบเคียงชุด view/manage/delete ของ `article.item.*`)
+
 **Seeder** — สร้างแท็กตัวอย่าง 4 แท็ก (ประชาสัมพันธ์/กิจกรรม/ความรู้/อัปเดต) ใน `ArticleSeeder.php`
 
-**หน้าจอ** — ยังไม่มีหน้าจัดการแท็กแยก แต่เลือก/สร้างแท็กได้จากในฟอร์มบทความผ่าน
+**หน้าจัดการแท็ก** (`Admin\Article\ArticleTagController` + `Pages/Admin/Article/Tag/{Index,Add,Edit}.vue`) —
+list/add/edit ตามต้นแบบหมวดหมู่บทความ แต่ตัดฟิลด์ที่ไม่มีในตาราง (รูปหน้าปก/ลำดับ) ออก และ **ไม่มีฟิลด์ slug
+ในฟอร์ม** — หน้าบ้านที่จะดึงบทความตามแท็กใช้ชื่อแท็กตรง ๆ ไม่ผ่าน slug คอลัมน์ `slug` ในตารางจึงถูกปล่อยว่างจากทางนี้
+(มีค่าเฉพาะแท็กที่สร้างผ่านตัวเลือกด้านล่าง) หน้ารายการมีคอลัมน์ "จำนวนบทความ" (นับจาก `article_item_tag` ผ่าน
+`withCount('items')`) ช่วยตัดสินใจก่อนลบ. `route` ใช้ชื่อมาตรฐาน `admin.article.tag.{index,add,store,edit,update,destroy}`
+log action module_code = `article.tag`
+
+**เลือก/สร้างแท็กด่วนจากในฟอร์มบทความ** — แยกจาก CRUD หลักข้างต้น ใช้เฉพาะจาก
 `Components/Admin/ArticleTag/TagPicker.vue`: ไม่มีรายการมาให้ล่วงหน้า พิมพ์ค้นหาจากชื่อภาษาหลักแบบ autocomplete
 (ajax `admin.article.tag.search`) เลือกจากผลลัพธ์ = ใช้แท็กเดิม แสดงเป็นกล่องข้อความ (chip) ลบออกได้; พิมพ์แล้วกด
 "เพิ่ม" โดยไม่เลือก — ถ้ามีชื่อตรงกับแท็กที่มีอยู่แล้วก็ใช้ตัวนั้นเหมือนกัน แต่ถ้ายังไม่มีจะเปิด
-`NewTagDialog.vue` ให้กรอกชื่อแท็กใหม่ครบทุกภาษาก่อนสร้างจริง (ajax `admin.article.tag.store`, สร้างทันทีไม่รอบันทึกฟอร์มบทความ)
-— ทั้งสอง endpoint อยู่ใน `Admin\Article\ArticleTagController`, ตรวจสิทธิ์ `article.item.manage` เหมือนกัน
+`NewTagDialog.vue` ให้กรอกชื่อแท็กใหม่ครบทุกภาษาก่อนสร้างจริง (ajax `admin.article.tag.quickStore`,
+สร้างทันทีไม่รอบันทึกฟอร์มบทความ — สร้าง `slug` อัตโนมัติจากชื่อเพราะไม่มีฟอร์มให้กรอกเอง)
+— ทั้งสอง endpoint (`search`/`quickStore`) อยู่ใน `Admin\Article\ArticleTagController` เช่นกัน แต่ตรวจสิทธิ์
+`article.item.manage` แทน เพราะเป็นการกระทำที่เกิดขึ้นจากในฟอร์มบทความเท่านั้น ไม่เกี่ยวกับสิทธิ์ `article.tag.*`
 
 ## 3. ตั้งค่าโมดูลบทความ (เสนอ — ยังไม่ออกแบบ)
 
