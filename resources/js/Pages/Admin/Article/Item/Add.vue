@@ -8,7 +8,6 @@ import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
 import TextInput from '@/Components/TextInput.vue';
 import Textarea from '@/Components/Textarea.vue';
-import SelectInput from '@/Components/SelectInput.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import FilePickerField from '@/Components/Admin/FileManager/FilePickerField.vue';
@@ -16,6 +15,7 @@ import TagPicker from '@/Components/Admin/ArticleTag/TagPicker.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { Save } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
+import { STATUS_OPTIONS } from '@/utils/options';
 import { createPart, partsToPayload } from '@/utils/articleParts';
 import type { PartData } from '@/utils/articleParts';
 import type { FileItem, LanguageOption } from '@/types';
@@ -123,10 +123,7 @@ const breadcrumbs = [
                     </div>
                     <div class="sm:col-span-3">
                         <InputLabel value="สถานะ" required />
-                        <SelectInput v-model="form.status">
-                            <option value="Y">ใช้งาน</option>
-                            <option value="N">ไม่ใช้งาน</option>
-                        </SelectInput>
+                        <SearchableSelect v-model="form.status" :options="STATUS_OPTIONS" />
                         <InputError :message="form.errors.status" />
                     </div>
                     <div class="sm:col-span-3">

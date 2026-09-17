@@ -4,12 +4,13 @@ import PageHeader from '@/Components/Admin/PageHeader.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
-import SelectInput from '@/Components/SelectInput.vue';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 import StatusBadge from '@/Components/StatusBadge.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ArrowDown, ArrowUp, ArrowUpDown, Plus, RotateCcw, Search } from 'lucide-vue-next';
-import { reactive } from 'vue';
+import { computed, reactive } from 'vue';
+import { STATUS_FILTER_OPTIONS } from '@/utils/options';
 import type { Paginated } from '@/types';
 
 interface Row {
@@ -47,6 +48,13 @@ const form = reactive({
     category_id: props.filters.category_id ? String(props.filters.category_id) : '',
     per_page: String(props.filters.per_page),
 });
+
+const categoryFilterOptions = computed(() => [
+    { value: '', label: 'ทุกหมวดหมู่' },
+    ...props.categories.map((cat) => ({ value: String(cat.id), label: cat.title ?? '(ไม่มีชื่อ)' })),
+]);
+
+const perPageSelectOptions = computed(() => props.perPageOptions.map((n) => ({ value: String(n), label: String(n) })));
 
 function visit(extra: Record<string, unknown> = {}) {
     router.get(
@@ -120,15 +128,8 @@ const breadcrumbs = [
                     <div class="lg:col-span-2">
                         <TextInput v-model="form.q" type="text" placeholder="ค้นหาชื่อ, ข้อความเกริ่นนำ" @keyup.enter="search" />
                     </div>
-                    <SelectInput v-model="form.category_id">
-                        <option value="">ทุกหมวดหมู่</option>
-                        <option v-for="cat in categories" :key="cat.id" :value="String(cat.id)">{{ cat.title }}</option>
-                    </SelectInput>
-                    <SelectInput v-model="form.status">
-                        <option value="">ทุกสถานะ</option>
-                        <option value="Y">ใช้งาน</option>
-                        <option value="N">ไม่ใช้งาน</option>
-                    </SelectInput>
+                    <SearchableSelect v-model="form.category_id" :options="categoryFilterOptions" />
+                    <SearchableSelect v-model="form.status" :options="STATUS_FILTER_OPTIONS" />
                 </div>
                 <div class="mt-3 flex flex-wrap items-center gap-2">
                     <PrimaryButton type="submit">
@@ -226,9 +227,7 @@ const breadcrumbs = [
                 />
 
                 <div class="order-2 w-20 shrink-0 sm:order-3">
-                    <SelectInput v-model="form.per_page" class="text-sm" @update:model-value="search">
-                        <option v-for="opt in perPageOptions" :key="opt" :value="String(opt)">{{ opt }}</option>
-                    </SelectInput>
+                    <SearchableSelect v-model="form.per_page" :options="perPageSelectOptions" class="text-sm" @update:model-value="search" />
                 </div>
             </div>
         </div>

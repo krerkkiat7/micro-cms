@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import LangFieldGroup from '@/Components/Admin/LangFieldGroup.vue';
 import TextInput from '@/Components/TextInput.vue';
-import SelectInput from '@/Components/SelectInput.vue';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 import Checkbox from '@/Components/Checkbox.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
@@ -38,10 +38,13 @@ function fileError(field: string): string | undefined {
 
         <div>
             <InputLabel value="ประเภทของวิดีโอ" />
-            <SelectInput v-model="row.video_type">
-                <option value="file">ไฟล์วิดีโอ</option>
-                <option value="youtube">YouTube</option>
-            </SelectInput>
+            <SearchableSelect
+                v-model="row.video_type"
+                :options="[
+                    { value: 'file', label: 'ไฟล์วิดีโอ' },
+                    { value: 'youtube', label: 'YouTube' },
+                ]"
+            />
         </div>
 
         <div v-if="row.video_type === 'file'">
@@ -65,20 +68,26 @@ function fileError(field: string): string | undefined {
         <div class="grid gap-4 sm:grid-cols-4">
             <div>
                 <InputLabel value="การจัดตำแหน่ง" />
-                <SelectInput v-model="(part.setting.alignment as string)">
-                    <option value="left">ชิดซ้าย</option>
-                    <option value="center">กึ่งกลาง</option>
-                    <option value="right">ชิดขวา</option>
-                </SelectInput>
+                <SearchableSelect
+                    v-model="(part.setting.alignment as string)"
+                    :options="[
+                        { value: 'left', label: 'ชิดซ้าย' },
+                        { value: 'center', label: 'กึ่งกลาง' },
+                        { value: 'right', label: 'ชิดขวา' },
+                    ]"
+                />
             </div>
             <div>
                 <InputLabel value="ขนาดเครื่องเล่น" />
-                <SelectInput v-model="(part.setting.player_size as string)">
-                    <option value="small">เล็ก</option>
-                    <option value="medium">กลาง</option>
-                    <option value="large">ใหญ่</option>
-                    <option value="full">เต็มความกว้าง</option>
-                </SelectInput>
+                <SearchableSelect
+                    v-model="(part.setting.player_size as string)"
+                    :options="[
+                        { value: 'small', label: 'เล็ก' },
+                        { value: 'medium', label: 'กลาง' },
+                        { value: 'large', label: 'ใหญ่' },
+                        { value: 'full', label: 'เต็มความกว้าง' },
+                    ]"
+                />
             </div>
             <div class="flex items-end pb-2.5">
                 <label class="flex items-center gap-2 text-sm text-gray-700">

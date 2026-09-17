@@ -4,12 +4,13 @@ import PageHeader from '@/Components/Admin/PageHeader.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
-import SelectInput from '@/Components/SelectInput.vue';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 import StatusBadge from '@/Components/StatusBadge.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ArrowDown, ArrowUp, ArrowUpDown, Plus, RotateCcw, Search } from 'lucide-vue-next';
-import { reactive } from 'vue';
+import { computed, reactive } from 'vue';
+import { STATUS_FILTER_OPTIONS } from '@/utils/options';
 import type { Paginated, UserGroupOption } from '@/types';
 import { formatDateTime } from '@/utils/date';
 
@@ -45,6 +46,13 @@ const form = reactive({
     status: props.filters.status ?? '',
     per_page: String(props.filters.per_page),
 });
+
+const userGroupFilterOptions = computed(() => [
+    { value: '', label: 'ทุกกลุ่มผู้ใช้งาน' },
+    ...props.userGroups.map((g) => ({ value: String(g.id), label: g.name })),
+]);
+
+const perPageSelectOptions = computed(() => props.perPageOptions.map((n) => ({ value: String(n), label: String(n) })));
 
 const columns: { key: string; label: string }[] = [
     { key: 'name', label: 'ชื่อ - นามสกุล' },
@@ -131,21 +139,8 @@ const breadcrumbs = [
                             @keyup.enter="search"
                         />
                     </div>
-                    <SelectInput v-model="form.usergroup_id">
-                        <option value="">ทุกกลุ่มผู้ใช้งาน</option>
-                        <option
-                            v-for="g in userGroups"
-                            :key="g.id"
-                            :value="String(g.id)"
-                        >
-                            {{ g.name }}
-                        </option>
-                    </SelectInput>
-                    <SelectInput v-model="form.status">
-                        <option value="">ทุกสถานะ</option>
-                        <option value="Y">ใช้งาน</option>
-                        <option value="N">ไม่ใช้งาน</option>
-                    </SelectInput>
+                    <SearchableSelect v-model="form.usergroup_id" :options="userGroupFilterOptions" />
+                    <SearchableSelect v-model="form.status" :options="STATUS_FILTER_OPTIONS" />
                 </div>
                 <div class="mt-3 flex flex-wrap items-center gap-2">
                     <PrimaryButton type="submit">
@@ -279,9 +274,7 @@ const breadcrumbs = [
                 />
 
                 <div class="order-2 w-20 shrink-0 sm:order-3">
-                    <SelectInput v-model="form.per_page" class="text-sm" @update:model-value="search">
-                        <option v-for="opt in perPageOptions" :key="opt" :value="String(opt)">{{ opt }}</option>
-                    </SelectInput>
+                    <SearchableSelect v-model="form.per_page" :options="perPageSelectOptions" class="text-sm" @update:model-value="search" />
                 </div>
             </div>
         </div>

@@ -4,7 +4,7 @@ import PageHeader from '@/Components/Admin/PageHeader.vue';
 import Pagination from '@/Components/Pagination.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
-import SelectInput from '@/Components/SelectInput.vue';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 import TextInput from '@/Components/TextInput.vue';
 import AdminLayout from '@/Layouts/Admin/AdminLayout.vue';
 import type { Paginated } from '@/types';
@@ -81,6 +81,18 @@ function actionLabel(value: string | null): string {
 function actionClass(value: string | null): string {
     return (value && ACTION_CLASS[value]) || 'bg-gray-100 text-gray-600';
 }
+
+const moduleFilterOptions = computed(() => [
+    { value: '', label: 'ทุกโมดูล' },
+    ...props.moduleOptions.map((opt) => ({ value: opt, label: opt })),
+]);
+
+const actionTypeFilterOptions = computed(() => [
+    { value: '', label: 'ทุกประเภทการกระทำ' },
+    ...props.actionTypeOptions.map((opt) => ({ value: opt, label: actionLabel(opt) })),
+]);
+
+const perPageSelectOptions = computed(() => props.perPageOptions.map((n) => ({ value: String(n), label: String(n) })));
 
 function visit(extra: Record<string, unknown> = {}) {
     router.get(
@@ -190,26 +202,8 @@ const detailRows = computed<{ label: string; value: string }[]>(() => {
                             @keyup.enter="search"
                         />
                     </div>
-                    <SelectInput v-model="form.module_code">
-                        <option value="">ทุกโมดูล</option>
-                        <option
-                            v-for="opt in moduleOptions"
-                            :key="opt"
-                            :value="opt"
-                        >
-                            {{ opt }}
-                        </option>
-                    </SelectInput>
-                    <SelectInput v-model="form.action_type">
-                        <option value="">ทุกประเภทการกระทำ</option>
-                        <option
-                            v-for="opt in actionTypeOptions"
-                            :key="opt"
-                            :value="opt"
-                        >
-                            {{ actionLabel(opt) }}
-                        </option>
-                    </SelectInput>
+                    <SearchableSelect v-model="form.module_code" :options="moduleFilterOptions" />
+                    <SearchableSelect v-model="form.action_type" :options="actionTypeFilterOptions" />
                     <label class="flex items-center gap-2">
                         <span class="whitespace-nowrap text-sm text-gray-500">
                             ตั้งแต่
@@ -330,9 +324,7 @@ const detailRows = computed<{ label: string; value: string }[]>(() => {
                 />
 
                 <div class="order-2 w-20 shrink-0 sm:order-3">
-                    <SelectInput v-model="form.per_page" class="text-sm" @update:model-value="search">
-                        <option v-for="opt in perPageOptions" :key="opt" :value="String(opt)">{{ opt }}</option>
-                    </SelectInput>
+                    <SearchableSelect v-model="form.per_page" :options="perPageSelectOptions" class="text-sm" @update:model-value="search" />
                 </div>
             </div>
         </div>

@@ -5,10 +5,11 @@ import LangFieldGroup from '@/Components/Admin/LangFieldGroup.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
 import TextInput from '@/Components/TextInput.vue';
-import SelectInput from '@/Components/SelectInput.vue';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { Save } from 'lucide-vue-next';
+import { STATUS_OPTIONS } from '@/utils/options';
 import type { LanguageOption } from '@/types';
 
 const props = defineProps<{
@@ -66,10 +67,7 @@ const breadcrumbs = [
 
                     <div class="sm:w-1/3">
                         <InputLabel value="สถานะ" required />
-                        <SelectInput v-model="form.status">
-                            <option value="Y">ใช้งาน</option>
-                            <option value="N">ไม่ใช้งาน</option>
-                        </SelectInput>
+                        <SearchableSelect v-model="form.status" :options="STATUS_OPTIONS" />
                         <InputError :message="form.errors.status" />
                     </div>
                 </div>

@@ -5,10 +5,11 @@ import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
 import TextInput from '@/Components/TextInput.vue';
 import Textarea from '@/Components/Textarea.vue';
-import SelectInput from '@/Components/SelectInput.vue';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { Save } from 'lucide-vue-next';
+import { STATUS_OPTIONS } from '@/utils/options';
 
 const form = useForm({
     name: '',
@@ -56,10 +57,7 @@ const breadcrumbs = [
 
                     <div class="sm:col-span-2">
                         <InputLabel for="status" value="สถานะ" required />
-                        <SelectInput id="status" v-model="form.status">
-                            <option value="Y">ใช้งาน</option>
-                            <option value="N">ไม่ใช้งาน</option>
-                        </SelectInput>
+                        <SearchableSelect id="status" v-model="form.status" :options="STATUS_OPTIONS" />
                         <InputError :message="form.errors.status" />
                     </div>
                 </div>

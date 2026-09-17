@@ -4,7 +4,7 @@ import PageHeader from '@/Components/Admin/PageHeader.vue';
 import Pagination from '@/Components/Pagination.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
-import SelectInput from '@/Components/SelectInput.vue';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 import TextInput from '@/Components/TextInput.vue';
 import AdminLayout from '@/Layouts/Admin/AdminLayout.vue';
 import type { Paginated } from '@/types';
@@ -55,6 +55,8 @@ const form = reactive({
     date_to: props.filters.date_to ?? '',
     per_page: String(props.filters.per_page),
 });
+
+const perPageSelectOptions = computed(() => props.perPageOptions.map((n) => ({ value: String(n), label: String(n) })));
 
 const columns: { key: string; label: string; sortable: boolean }[] = [
     { key: 'name', label: 'ชื่อ - นามสกุล', sortable: true },
@@ -294,9 +296,7 @@ const detailRows = computed<{ label: string; value: string }[]>(() => {
                 />
 
                 <div class="order-2 w-20 shrink-0 sm:order-3">
-                    <SelectInput v-model="form.per_page" class="text-sm" @update:model-value="search">
-                        <option v-for="opt in perPageOptions" :key="opt" :value="String(opt)">{{ opt }}</option>
-                    </SelectInput>
+                    <SearchableSelect v-model="form.per_page" :options="perPageSelectOptions" class="text-sm" @update:model-value="search" />
                 </div>
             </div>
         </div>

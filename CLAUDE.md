@@ -139,6 +139,9 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 - อีเมล reset password: URL ผูกกับ `route('admin.password.reset')` ผ่าน
   `ResetPassword::createUrlUsing()` ใน `AppServiceProvider::boot()` (Laravel default ใช้ `password.reset` ที่ไม่มี)
 - comment ในโค้ดเป็นภาษาไทยได้ (โปรเจกต์ใช้อยู่แล้ว)
+- **Dropdown ทุกจุดในระบบใช้ `Components/SearchableSelect.vue`** (พิมพ์ค้นหาตัวเลือกได้) ไม่ใช่ native `<select>`/
+  `SelectInput.vue` เดิม (ลบไฟล์นี้ออกไปแล้ว) — v-model เป็น string, ส่งตัวเลือกผ่าน prop `options`
+  (`{value,label,disabled?}[]`) แทนการเขียน `<option>` ลูก รายละเอียด/ตัวอย่างการแปลงดู `docs/PRD-overview.md` §5.7
 
 ## หมายเหตุ / ความไม่สอดคล้องที่ควรรู้
 

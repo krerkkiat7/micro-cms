@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import TextInput from '@/Components/TextInput.vue';
-import SelectInput from '@/Components/SelectInput.vue';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { X } from 'lucide-vue-next';
 
@@ -22,6 +22,8 @@ const model = defineModel<string | null>({ required: true });
 
 const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
 const minutes = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
+const hourOptions = hours.map((h) => ({ value: h, label: h }));
+const minuteOptions = minutes.map((m) => ({ value: m, label: m }));
 
 function parse(value: string | null) {
     if (!value) {
@@ -53,13 +55,9 @@ function clear() {
 <template>
     <div class="flex flex-wrap items-center gap-2">
         <div class="w-44"><TextInput v-model="date" type="date" /></div>
-        <div class="w-20"><SelectInput v-model="hour">
-            <option v-for="h in hours" :key="h" :value="h">{{ h }}</option>
-        </SelectInput></div>
+        <div class="w-20"><SearchableSelect v-model="hour" :options="hourOptions" /></div>
         <span class="text-gray-400">:</span>
-        <div class="w-20"><SelectInput v-model="minute">
-            <option v-for="m in minutes" :key="m" :value="m">{{ m }}</option>
-        </SelectInput></div>
+        <div class="w-20"><SearchableSelect v-model="minute" :options="minuteOptions" /></div>
         <SecondaryButton v-if="clearable && date" type="button" @click="clear">
             <X class="mr-1 size-4" /> ล้างค่า
         </SecondaryButton>

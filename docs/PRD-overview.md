@@ -108,7 +108,7 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
   map เฉพาะฟิลด์ที่ตารางใช้), `filters` (ค่าที่กรองอยู่ตอนนี้), `sort` + `direction`, `*Options` สำหรับ dropdown,
   `can` (อย่างน้อย `manage`)
 - **UI:** `<AdminLayout>` → `#header` = `<PageHeader :title :breadcrumbs>` (breadcrumb เริ่มจาก Dashboard, ตัวสุดท้ายเป็นข้อความ)
-- **กล่องกรอง** (การ์ดขาว): `<TextInput>` ค้นหา (`@keyup.enter`), `<SelectInput>` ต่อ 1 ตัวกรอง,
+- **กล่องกรอง** (การ์ดขาว): `<TextInput>` ค้นหา (`@keyup.enter`), `<SearchableSelect>` ต่อ 1 ตัวกรอง,
   ปุ่ม **"ค้นหา"** (icon `Search`) + **"เริ่มใหม่"** (icon `RotateCcw`); ปุ่ม **"เพิ่ม…"** (icon `Plus`, `v-if="can.manage"`)
   ต่อท้ายในแถวเดียวกันโดยมี divider (`w-px bg-gray-200`) คั่น
 - **ยิงค้นหา/กรอง/เรียง/เปลี่ยนหน้า:** `router.get(route('...index'), params, { preserveState: true, preserveScroll: true, replace: true })`
@@ -116,7 +116,7 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
   `ArrowUpDown` (ยังไม่เรียง); คลิกทั้งแถว → ไปหน้าแก้ไข; คอลัมน์สถานะใช้ `<StatusBadge :status>`;
   วันที่ format ด้วย `@/utils/date` (`formatDate` / `formatDateTime`)
 - **ค่าเริ่มต้น:** เรียงจาก `created_at` มากไปน้อย
-- **ท้ายตาราง:** ข้อความ "แสดง X–Y จาก Z รายการ" + `<SelectInput>` จำนวนต่อหน้า (`[10, 25, 50, 100]`) + `<Pagination :links="items.links">`
+- **ท้ายตาราง:** ข้อความ "แสดง X–Y จาก Z รายการ" + `<SearchableSelect>` จำนวนต่อหน้า (`[10, 25, 50, 100]`) + `<Pagination :links="items.links">`
 
 ### 5.4 หน้าแบบฟอร์ม (add / edit)
 
@@ -126,7 +126,7 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
   - รหัสผ่าน: `Password::min(8)->mixedCase()->numbers()->symbols()` + แสดง hint ใต้ช่อง
 - **UI:** `<AdminLayout>` → `#header` `<PageHeader>`; ฟอร์ม**เต็มความกว้าง** (ไม่จำกัด `max-width`);
   แบ่งเป็นการ์ด `rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8`
-- **field block:** `<InputLabel :required>` (ใส่ `required` → มี `*` สีแดงหลัง label) → `<TextInput>` / `<SelectInput>` →
+- **field block:** `<InputLabel :required>` (ใส่ `required` → มี `*` สีแดงหลัง label) → `<TextInput>` / `<SearchableSelect>` →
   `<InputError :message="form.errors.<field>">` (ข้อความสีแดงใต้ช่อง)
 - **ปุ่ม** อยู่**นอกการ์ด** แถวล่างสุด: **"บันทึก"** (`v-if="can.manage"`, icon `Save`, `type="submit"`) +
   **"ลบ"** (`v-if="can.delete && !isSelf"`, `<DangerButton>` icon `Trash2` → เปิด `<ConfirmDialog>`) + ลิงก์ **"ยกเลิก/กลับไปหน้ารายการ"**
@@ -149,12 +149,33 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 ### 5.6 Component / helper กลางที่ต้องใช้ซ้ำ
 
 - **shared** (`resources/js/Components/`): `PageHeader`, `Breadcrumbs`, `TabNav` (อยู่ใต้ `Admin/`);
-  `SelectInput`, `Pagination`, `StatusBadge`, `SuccessDialog`, `ConfirmDialog`, `InputLabel` (prop `required`),
+  `SearchableSelect` (dropdown พิมพ์ค้นหาได้ — ใช้แทน `<select>` ทุกจุดในระบบ ดู §5.7), `Pagination`, `StatusBadge`,
+  `SuccessDialog`, `ConfirmDialog`, `InputLabel` (prop `required`),
   `InputError`, `TextInput`, `PrimaryButton` / `SecondaryButton` / `DangerButton`
 - **helper:** `@/utils/date` → `formatDate(iso)` / `formatDateTime(iso)` (คืน `'-'` เมื่อว่าง)
 - **เทส:** helper `actingAsUserWithPermissions([...codes])` ใน `tests/Pest.php` (สร้าง usergroup + attach action + `actingAs`);
   seed `DatabaseSeeder` ใน `beforeEach`; assert `->assertRedirect(...)` สำหรับเคสไม่มีสิทธิ์,
   `->assertInertia(fn (Assert $page) => …)` สำหรับ props, `->assertSessionHas('success')` หลังบันทึก
+
+### 5.7 Dropdown — ใช้ `SearchableSelect.vue` เสมอ (ไม่มี `SelectInput.vue`/`<select>` ธรรมดาแล้ว)
+
+`resources/js/Components/SearchableSelect.vue` แทนที่ `<select>`/`SelectInput.vue` เดิมทุกจุดในระบบแล้ว
+(ลบไฟล์ `SelectInput.vue` ออกไปทั้งหมด) — dropdown ใหม่ทุกจุดในอนาคต **ต้องใช้ตัวนี้** ไม่ใช่ native `<select>`
+
+- **v-model** เป็น `string` เสมอ เทียบเคียงของเดิม — ผูกกับ `option.value` ที่ตรงกันเท่านั้น
+- **prop `options`**: `{ value: string; label: string; disabled?: boolean }[]` (แทนการเขียน `<option>` ลูก)
+  ถ้าตัวเลือกมาจาก prop/array ที่มีอยู่แล้ว (เช่นรายการหมวดหมู่, กลุ่มผู้ใช้งาน) แปลงเป็น `computed(() => ...map(...))`
+  ก่อนส่งเข้า `:options` — ถ้าเป็นชุดคงที่ (เช่นสถานะ Y/N) เขียนเป็น literal array ในเทมเพลตตรง ๆ ได้เลย
+  ค่า Y/N มาตรฐานมี `STATUS_OPTIONS`/`STATUS_FILTER_OPTIONS` ให้ใช้ร่วมกันแล้วที่ `@/utils/options`
+- **prop `placeholder`**: ข้อความตอนยังไม่มีค่าเลือก (เทียบเคียง `<option disabled>` เดิม) — ไม่ต้องใส่ถ้า option
+  ที่มี `value: ''` มีอยู่แล้วในชุดตัวเลือกเอง (เช่น dropdown กรองที่มี "ทุกสถานะ" เป็นตัวเลือกจริง)
+- **prop `disabled`**: ปิดทั้งฟิลด์ (เทียบเคียง `<select disabled>`) ส่วน `option.disabled` ปิดเฉพาะตัวเลือกเดียว
+  (เทียบเคียง `<option disabled>` เดิม เช่น ห้ามระงับบัญชีของตัวเอง)
+- **`id` prop**: ผูกกับ `<label for="...">` ได้เหมือนเดิม (component จัดการ bind ให้ปุ่ม/ช่องค้นหาที่กำลังแสดงอยู่เอง
+  ไม่ใช่ div ครอบนอก) — ต้องส่งผ่าน prop `id` ไม่ใช่ปล่อยให้ fallthrough attrs ทำเอง
+- **event ที่ยิงตอนค่าเปลี่ยน**: ใช้ `@update:model-value="..."` เสมอ (ไม่มี native `change` event ให้ฟังอีกต่อไป
+  เพราะ root ไม่ใช่ `<select>` จริง) — จุดที่เคย `@change="search"` (เช่น per_page dropdown ท้ายตาราง) ให้เปลี่ยนเป็น
+  `@update:model-value="search"` แทน ทำงานเหมือนเดิมเพราะ `defineModel` ก็ยิง event นี้ตอนค่าเปลี่ยนอยู่แล้ว
 
 ## 6. สถานะปัจจุบัน vs เป้าหมาย
 

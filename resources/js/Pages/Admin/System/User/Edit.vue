@@ -5,7 +5,7 @@ import TabNav from '@/Components/Admin/TabNav.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
 import TextInput from '@/Components/TextInput.vue';
-import SelectInput from '@/Components/SelectInput.vue';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
@@ -75,6 +75,13 @@ function destroy() {
         onSuccess: () => (confirmingDeletion.value = false),
     });
 }
+
+const userGroupOptions = computed(() => props.userGroups.map((g) => ({ value: String(g.id), label: g.name })));
+
+const statusOptions = computed(() => [
+    { value: 'Y', label: 'ใช้งาน' },
+    { value: 'N', label: 'ไม่ใช้งาน', disabled: props.isSelf },
+]);
 
 const breadcrumbs = computed(() => [
     { label: 'Dashboard', href: route('admin.dashboard') },
@@ -168,19 +175,7 @@ const systemInfo = computed(() => [
                                 value="กลุ่มผู้ใช้งาน"
                                 required
                             />
-                            <SelectInput
-                                id="usergroup_id"
-                                v-model="form.usergroup_id"
-                            >
-                                <option value="" disabled>เลือกกลุ่มผู้ใช้งาน</option>
-                                <option
-                                    v-for="g in userGroups"
-                                    :key="g.id"
-                                    :value="String(g.id)"
-                                >
-                                    {{ g.name }}
-                                </option>
-                            </SelectInput>
+                            <SearchableSelect id="usergroup_id" v-model="form.usergroup_id" :options="userGroupOptions" placeholder="เลือกกลุ่มผู้ใช้งาน" />
                             <InputError :message="form.errors.usergroup_id" />
                         </div>
 
@@ -219,12 +214,7 @@ const systemInfo = computed(() => [
 
                         <div class="sm:col-span-3">
                             <InputLabel for="status" value="สถานะ" required />
-                            <SelectInput id="status" v-model="form.status">
-                                <option value="Y">ใช้งาน</option>
-                                <option value="N" :disabled="isSelf">
-                                    ไม่ใช้งาน
-                                </option>
-                            </SelectInput>
+                            <SearchableSelect id="status" v-model="form.status" :options="statusOptions" />
                             <p
                                 v-if="isSelf"
                                 class="mt-1.5 text-xs text-gray-500"

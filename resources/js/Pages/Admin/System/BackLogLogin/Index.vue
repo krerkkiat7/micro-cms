@@ -4,7 +4,7 @@ import PageHeader from '@/Components/Admin/PageHeader.vue';
 import Pagination from '@/Components/Pagination.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
-import SelectInput from '@/Components/SelectInput.vue';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 import TextInput from '@/Components/TextInput.vue';
 import AdminLayout from '@/Layouts/Admin/AdminLayout.vue';
 import type { Paginated } from '@/types';
@@ -47,6 +47,21 @@ const form = reactive({
     date_to: props.filters.date_to ?? '',
     per_page: String(props.filters.per_page),
 });
+
+const LOG_TYPE_OPTIONS = [
+    { value: '', label: 'ทุกประเภท' },
+    { value: 'login', label: 'เข้าสู่ระบบ' },
+    { value: 'logout', label: 'ออกจากระบบ' },
+];
+
+const RESULT_OPTIONS = [
+    { value: '', label: 'ทุกผลลัพธ์' },
+    { value: 'success', label: 'สำเร็จ' },
+    { value: 'fail', label: 'ไม่สำเร็จ' },
+    { value: 'block', label: 'ถูกบล็อก' },
+];
+
+const perPageSelectOptions = computed(() => props.perPageOptions.map((n) => ({ value: String(n), label: String(n) })));
 
 const columns: { key: string; label: string; sortable: boolean }[] = [
     { key: 'name', label: 'ชื่อ - นามสกุล', sortable: true },
@@ -191,17 +206,8 @@ const detailRows = computed<{ label: string; value: string }[]>(() => {
                             @keyup.enter="search"
                         />
                     </div>
-                    <SelectInput v-model="form.log_type">
-                        <option value="">ทุกประเภท</option>
-                        <option value="login">เข้าสู่ระบบ</option>
-                        <option value="logout">ออกจากระบบ</option>
-                    </SelectInput>
-                    <SelectInput v-model="form.result">
-                        <option value="">ทุกผลลัพธ์</option>
-                        <option value="success">สำเร็จ</option>
-                        <option value="fail">ไม่สำเร็จ</option>
-                        <option value="block">ถูกบล็อก</option>
-                    </SelectInput>
+                    <SearchableSelect v-model="form.log_type" :options="LOG_TYPE_OPTIONS" />
+                    <SearchableSelect v-model="form.result" :options="RESULT_OPTIONS" />
                     <label class="flex items-center gap-2">
                         <span class="whitespace-nowrap text-sm text-gray-500">
                             ตั้งแต่
@@ -319,9 +325,7 @@ const detailRows = computed<{ label: string; value: string }[]>(() => {
                 />
 
                 <div class="order-2 w-20 shrink-0 sm:order-3">
-                    <SelectInput v-model="form.per_page" class="text-sm" @update:model-value="search">
-                        <option v-for="opt in perPageOptions" :key="opt" :value="String(opt)">{{ opt }}</option>
-                    </SelectInput>
+                    <SearchableSelect v-model="form.per_page" :options="perPageSelectOptions" class="text-sm" @update:model-value="search" />
                 </div>
             </div>
         </div>

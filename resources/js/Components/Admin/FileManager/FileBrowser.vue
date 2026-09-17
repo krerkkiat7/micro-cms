@@ -2,7 +2,7 @@
 import { onMounted, reactive, ref, watch } from 'vue';
 import axios from 'axios';
 import { Download, LayoutGrid, List, RotateCcw, Search, Trash2 } from 'lucide-vue-next';
-import SelectInput from '@/Components/SelectInput.vue';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 import TextInput from '@/Components/TextInput.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
@@ -13,6 +13,7 @@ import { formatFileSize } from '@/utils/formatFileSize';
 import type { FileItem } from '@/types';
 
 const PER_PAGE_OPTIONS = ['10', '25', '50', '100'];
+const PER_PAGE_SELECT_OPTIONS = PER_PAGE_OPTIONS.map((n) => ({ value: n, label: n }));
 const SORT_OPTIONS = [
     { value: 'newest', label: 'วันที่อัพโหลดล่าสุด' },
     { value: 'oldest', label: 'วันที่อัพโหลดเก่าสุด' },
@@ -184,9 +185,7 @@ defineExpose({ reload: load });
         <form class="flex flex-wrap items-end gap-3" @submit.prevent="search">
             <TextInput v-model="filters.q" placeholder="ค้นหาชื่อไฟล์..." class="min-w-[200px] flex-1 text-sm" />
             <div class="w-56 shrink-0">
-                <SelectInput v-model="filters.sort" class="text-sm">
-                    <option v-for="opt in SORT_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-                </SelectInput>
+                <SearchableSelect v-model="filters.sort" :options="SORT_OPTIONS" class="text-sm" />
             </div>
             <PrimaryButton type="submit"><Search class="mr-1.5 size-4" /> ค้นหา</PrimaryButton>
             <SecondaryButton type="button" @click="resetFilters"><RotateCcw class="mr-1.5 size-4" /> เริ่มใหม่</SecondaryButton>
@@ -327,9 +326,7 @@ defineExpose({ reload: load });
             />
 
             <div class="order-2 w-20 shrink-0 sm:order-3">
-                <SelectInput v-model="filters.per_page" class="!py-1.5 text-sm" @change="search">
-                    <option v-for="n in PER_PAGE_OPTIONS" :key="n" :value="n">{{ n }}</option>
-                </SelectInput>
+                <SearchableSelect v-model="filters.per_page" :options="PER_PAGE_SELECT_OPTIONS" class="!py-1.5 text-sm" @update:model-value="search" />
             </div>
         </div>
 

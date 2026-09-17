@@ -6,7 +6,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
 import TextInput from '@/Components/TextInput.vue';
 import Textarea from '@/Components/Textarea.vue';
-import SelectInput from '@/Components/SelectInput.vue';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 import RadioGroup from '@/Components/RadioGroup.vue';
 import Checkbox from '@/Components/Checkbox.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -65,6 +65,10 @@ const siteForm = useForm({
 /** ตัวเลือกของ dropdown "ภาษาหลัก" — จำกัดเฉพาะภาษาที่ติ๊กเลือกไว้ใน "ภาษาในระบบ" เท่านั้น */
 const availableDefaultLanguages = computed(() =>
     LANGUAGE_OPTIONS.filter((lang) => siteForm.lang_selected.includes(lang.code)),
+);
+
+const availableDefaultLanguageOptions = computed(() =>
+    availableDefaultLanguages.value.map((lang) => ({ value: lang.code, label: `${lang.label} (${lang.code})` })),
 );
 
 function toggleLang(code: string) {
@@ -248,11 +252,7 @@ function submitLoginBack() {
 
                     <div class="sm:col-span-3">
                         <InputLabel for="lang_default" value="ภาษาหลัก" required />
-                        <SelectInput id="lang_default" v-model="siteForm.lang_default">
-                            <option v-for="lang in availableDefaultLanguages" :key="lang.code" :value="lang.code">
-                                {{ lang.label }} ({{ lang.code }})
-                            </option>
-                        </SelectInput>
+                        <SearchableSelect id="lang_default" v-model="siteForm.lang_default" :options="availableDefaultLanguageOptions" />
                         <InputError :message="siteForm.errors.lang_default" />
                     </div>
                 </div>
@@ -322,11 +322,15 @@ function submitLoginBack() {
 
                     <div class="sm:col-span-3">
                         <InputLabel for="smtp_ssl_type" value="ประเภท SSL" required />
-                        <SelectInput id="smtp_ssl_type" v-model="smtpForm.ssl_type">
-                            <option value="none">ไม่มี</option>
-                            <option value="ssl">SSL</option>
-                            <option value="tls">TLS</option>
-                        </SelectInput>
+                        <SearchableSelect
+                            id="smtp_ssl_type"
+                            v-model="smtpForm.ssl_type"
+                            :options="[
+                                { value: 'none', label: 'ไม่มี' },
+                                { value: 'ssl', label: 'SSL' },
+                                { value: 'tls', label: 'TLS' },
+                            ]"
+                        />
                         <InputError :message="smtpForm.errors.ssl_type" />
                     </div>
 
