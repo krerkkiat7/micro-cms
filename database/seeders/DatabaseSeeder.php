@@ -45,9 +45,6 @@ class DatabaseSeeder extends Seeder
             ['article101', 'article', null, 'article.item.view', 'แสดงบทความ', 2],
             ['article102', 'article', 'article101', 'article.item.manage', 'เพิ่ม/แก้ไขบทความ', 1],
             ['article103', 'article', 'article102', 'article.item.delete', 'ลบบทความ', 1],
-            ['article201', 'article', null, 'article.tag.view', 'แสดงแท็ก', 3],
-            ['article202', 'article', 'article201', 'article.tag.manage', 'เพิ่ม/แก้ไขแท็ก', 1],
-            ['article203', 'article', 'article202', 'article.tag.delete', 'ลบแท็ก', 1],
             ['article901', 'article', null, 'article.setting.manage', 'ตั้งค่า', 99],
 
             // module : banner
@@ -128,6 +125,10 @@ class DatabaseSeeder extends Seeder
         );
 
         $adminGroup->actions()->sync($actionIds);
+
+        // เอาสิทธิ์ article.tag.* ที่เคยแยกไว้ต่างหากออก — รวมเข้ากับ article.item.* แทน
+        // เพราะแท็กสร้างใหม่ได้จากในฟอร์มบทความอยู่แล้ว จึงต้องใช้สิทธิ์ชุดเดียวกัน (cascade ลบ pivot ที่ผูกไว้ด้วย)
+        SysAction::whereIn('id', ['article201', 'article202', 'article203'])->delete();
 
         // ผู้ใช้สำหรับเข้าสู่ระบบหลังบ้าน (admin@admin.com / password123)
         User::updateOrCreate(

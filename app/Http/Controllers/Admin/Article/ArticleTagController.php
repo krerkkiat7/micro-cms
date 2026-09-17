@@ -18,15 +18,15 @@ use Inertia\Response;
 
 /**
  * จัดการแท็กบทความ (article_tag_info + article_tag_detail) — หน้ารายการ/เพิ่ม/แก้ไข/ลบ เต็มรูปแบบ
- * ตรวจสิทธิ์ article.tag.view/manage/delete (เทียบเคียงชุดสิทธิ์ view/manage/delete ของ article.item)
- * log action ทั้งหมดใช้ module_code = "article.tag" (ดู docs/PRD-article.md §2.1)
+ * ตรวจสิทธิ์ article.item.view/manage/delete — ใช้ชุดเดียวกับบทความทั้งหมด ไม่แยกสิทธิ์ article.tag.*
+ * ต่างหาก เพราะแท็กสร้างใหม่ได้จากในฟอร์มบทความอยู่แล้ว (ดู quickStore() ด้านล่าง) จึงต้องสัมพันธ์กับสิทธิ์
+ * ของบทความเสมอ log action ทั้งหมดใช้ module_code = "article.tag" (ดู docs/PRD-article.md §2.1)
  *
  * ไม่มีฟิลด์ slug ในฟอร์ม — หน้าบ้านที่จะแสดงรายการตามแท็กใช้ชื่อแท็กตรง ๆ ไม่ผ่าน slug
  * (คอลัมน์ slug ยังอยู่ในตาราง แต่ปล่อยว่างจากทางนี้ — มีค่าเฉพาะแท็กที่สร้างผ่าน quickStore() ด้านล่าง)
  *
  * เมธอด search()/quickStore() แยกจาก CRUD หลัก — ใช้เฉพาะจาก TagPicker.vue ในฟอร์มเพิ่ม/แก้ไขบทความ
- * (พิมพ์ชื่อแท็กที่ยังไม่มีแล้วสร้างทันทีโดยไม่ออกจากฟอร์มบทความ) ตรวจสิทธิ์ article.item.manage เพราะเป็น
- * การกระทำที่เกิดขึ้นจากในฟอร์มบทความเท่านั้น ไม่เกี่ยวกับสิทธิ์ article.tag.*
+ * (พิมพ์ชื่อแท็กที่ยังไม่มีแล้วสร้างทันทีโดยไม่ออกจากฟอร์มบทความ)
  */
 class ArticleTagController extends Controller
 {
@@ -38,7 +38,7 @@ class ArticleTagController extends Controller
      */
     public function index(Request $request): Response|RedirectResponse
     {
-        if (! $request->user()->hasPermission('article.tag.view')) {
+        if (! $request->user()->hasPermission('article.item.view')) {
             return redirect()->route('admin.dashboard');
         }
 
@@ -94,7 +94,7 @@ class ArticleTagController extends Controller
             'direction' => $direction,
             'perPageOptions' => self::PER_PAGE_OPTIONS,
             'can' => [
-                'manage' => $request->user()->hasPermission('article.tag.manage'),
+                'manage' => $request->user()->hasPermission('article.item.manage'),
             ],
         ]);
     }
@@ -104,7 +104,7 @@ class ArticleTagController extends Controller
      */
     public function add(Request $request): Response|RedirectResponse
     {
-        if (! $request->user()->hasPermission('article.tag.manage')) {
+        if (! $request->user()->hasPermission('article.item.manage')) {
             return redirect()->route('admin.article.tag.index');
         }
 
@@ -120,7 +120,7 @@ class ArticleTagController extends Controller
      */
     public function store(StoreArticleTagRequest $request): RedirectResponse
     {
-        if (! $request->user()->hasPermission('article.tag.manage')) {
+        if (! $request->user()->hasPermission('article.item.manage')) {
             return redirect()->route('admin.article.tag.index');
         }
 
@@ -154,7 +154,7 @@ class ArticleTagController extends Controller
      */
     public function edit(Request $request, string $tag): Response|RedirectResponse
     {
-        if (! $request->user()->hasPermission('article.tag.view')) {
+        if (! $request->user()->hasPermission('article.item.view')) {
             return redirect()->route('admin.article.tag.index');
         }
 
@@ -185,8 +185,8 @@ class ArticleTagController extends Controller
             }),
             'languages' => $this->languageOptions(),
             'can' => [
-                'manage' => $request->user()->hasPermission('article.tag.manage'),
-                'delete' => $request->user()->hasPermission('article.tag.delete'),
+                'manage' => $request->user()->hasPermission('article.item.manage'),
+                'delete' => $request->user()->hasPermission('article.item.delete'),
             ],
         ]);
     }
@@ -196,7 +196,7 @@ class ArticleTagController extends Controller
      */
     public function update(UpdateArticleTagRequest $request, string $tag): RedirectResponse
     {
-        if (! $request->user()->hasPermission('article.tag.manage')) {
+        if (! $request->user()->hasPermission('article.item.manage')) {
             return redirect()->route('admin.article.tag.index');
         }
 
@@ -244,7 +244,7 @@ class ArticleTagController extends Controller
      */
     public function destroy(Request $request, string $tag): RedirectResponse
     {
-        if (! $request->user()->hasPermission('article.tag.delete')) {
+        if (! $request->user()->hasPermission('article.item.delete')) {
             return redirect()->route('admin.article.tag.index');
         }
 

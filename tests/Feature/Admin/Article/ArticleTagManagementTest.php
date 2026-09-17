@@ -27,15 +27,15 @@ function validTagPayload(array $overrides = []): array
 
 // ---------------------------------------------------------------- index
 
-test('index redirects to dashboard without article.tag.view', function () {
+test('index redirects to dashboard without article.item.view', function () {
     actingAsUserWithPermissions([]);
 
     $this->get(route('admin.article.tag.index'))
         ->assertRedirect(route('admin.dashboard'));
 });
 
-test('index renders for a user with article.tag.view', function () {
-    actingAsUserWithPermissions(['article.tag.view']);
+test('index renders for a user with article.item.view', function () {
+    actingAsUserWithPermissions(['article.item.view']);
 
     $this->get(route('admin.article.tag.index'))
         ->assertOk()
@@ -46,7 +46,7 @@ test('index renders for a user with article.tag.view', function () {
 });
 
 test('index shows the default-language name and filters by search term', function () {
-    actingAsUserWithPermissions(['article.tag.view', 'article.tag.manage']);
+    actingAsUserWithPermissions(['article.item.view', 'article.item.manage']);
 
     $this->post(route('admin.article.tag.store'), validTagPayload());
 
@@ -61,7 +61,7 @@ test('index shows the default-language name and filters by search term', functio
 });
 
 test('index defaults to sorting by name ascending', function () {
-    actingAsUserWithPermissions(['article.tag.view', 'article.tag.manage']);
+    actingAsUserWithPermissions(['article.item.view', 'article.item.manage']);
 
     $this->post(route('admin.article.tag.store'), validTagPayload([
         'detail' => ['th' => ['name' => 'ข ทดสอบเรียงลำดับ B'], 'en' => ['name' => 'Sort B']],
@@ -79,7 +79,7 @@ test('index defaults to sorting by name ascending', function () {
 });
 
 test('index filters by status', function () {
-    actingAsUserWithPermissions(['article.tag.view', 'article.tag.manage']);
+    actingAsUserWithPermissions(['article.item.view', 'article.item.manage']);
 
     $this->post(route('admin.article.tag.store'), validTagPayload([
         'status' => 'N',
@@ -94,7 +94,7 @@ test('index filters by status', function () {
 });
 
 test('index reports how many articles use each tag', function () {
-    actingAsUserWithPermissions(['article.tag.view', 'article.tag.manage']);
+    actingAsUserWithPermissions(['article.item.view', 'article.item.manage']);
 
     $this->post(route('admin.article.tag.store'), validTagPayload([
         'detail' => ['th' => ['name' => 'แท็กนับจำนวน'], 'en' => ['name' => 'Count Tag']],
@@ -109,15 +109,15 @@ test('index reports how many articles use each tag', function () {
 
 // ---------------------------------------------------------------- add / store
 
-test('add page redirects without article.tag.manage', function () {
-    actingAsUserWithPermissions(['article.tag.view']);
+test('add page redirects without article.item.manage', function () {
+    actingAsUserWithPermissions(['article.item.view']);
 
     $this->get(route('admin.article.tag.add'))
         ->assertRedirect(route('admin.article.tag.index'));
 });
 
 test('add page renders with the system languages', function () {
-    actingAsUserWithPermissions(['article.tag.manage']);
+    actingAsUserWithPermissions(['article.item.manage']);
 
     $this->get(route('admin.article.tag.add'))
         ->assertOk()
@@ -131,7 +131,7 @@ test('add page renders with the system languages', function () {
 });
 
 test('store requires the name only for the default language', function () {
-    actingAsUserWithPermissions(['article.tag.manage']);
+    actingAsUserWithPermissions(['article.item.manage']);
 
     $this->from(route('admin.article.tag.add'))
         ->post(route('admin.article.tag.store'), validTagPayload([
@@ -142,7 +142,7 @@ test('store requires the name only for the default language', function () {
 });
 
 test('store creates the tag with per-language details, no slug, and logs the action', function () {
-    $me = actingAsUserWithPermissions(['article.tag.manage']);
+    $me = actingAsUserWithPermissions(['article.item.manage']);
 
     $response = $this->post(route('admin.article.tag.store'), validTagPayload());
 
@@ -172,12 +172,12 @@ test('store creates the tag with per-language details, no slug, and logs the act
 // ---------------------------------------------------------------- edit / update
 
 test('edit redirects for a missing or soft-deleted tag', function () {
-    actingAsUserWithPermissions(['article.tag.view']);
+    actingAsUserWithPermissions(['article.item.view']);
 
     $this->get(route('admin.article.tag.edit', 999999))
         ->assertRedirect(route('admin.article.tag.index'));
 
-    actingAsUserWithPermissions(['article.tag.manage', 'article.tag.view', 'article.tag.delete']);
+    actingAsUserWithPermissions(['article.item.manage', 'article.item.view', 'article.item.delete']);
     $this->post(route('admin.article.tag.store'), validTagPayload());
     $tag = ArticleTagInfo::query()->latest('id')->first();
     $this->delete(route('admin.article.tag.destroy', $tag->id));
@@ -187,7 +187,7 @@ test('edit redirects for a missing or soft-deleted tag', function () {
 });
 
 test('edit renders tag details keyed by language and logs access + view action', function () {
-    actingAsUserWithPermissions(['article.tag.manage', 'article.tag.view']);
+    actingAsUserWithPermissions(['article.item.manage', 'article.item.view']);
     $this->post(route('admin.article.tag.store'), validTagPayload());
     $tag = ArticleTagInfo::query()->latest('id')->first();
 
@@ -209,7 +209,7 @@ test('edit renders tag details keyed by language and logs access + view action',
 });
 
 test('update saves changes to the info row and every language detail row', function () {
-    $me = actingAsUserWithPermissions(['article.tag.manage']);
+    $me = actingAsUserWithPermissions(['article.item.manage']);
     $this->post(route('admin.article.tag.store'), validTagPayload());
     $tag = ArticleTagInfo::query()->latest('id')->first();
 
@@ -235,12 +235,12 @@ test('update saves changes to the info row and every language detail row', funct
         ->exists())->toBeTrue();
 });
 
-test('update redirects without article.tag.manage', function () {
-    actingAsUserWithPermissions(['article.tag.manage']);
+test('update redirects without article.item.manage', function () {
+    actingAsUserWithPermissions(['article.item.manage']);
     $this->post(route('admin.article.tag.store'), validTagPayload());
     $tag = ArticleTagInfo::query()->latest('id')->first();
 
-    actingAsUserWithPermissions(['article.tag.view']);
+    actingAsUserWithPermissions(['article.item.view']);
 
     $this->put(route('admin.article.tag.update', $tag->id), validTagPayload())
         ->assertRedirect(route('admin.article.tag.index'));
@@ -248,12 +248,12 @@ test('update redirects without article.tag.manage', function () {
 
 // ---------------------------------------------------------------- destroy
 
-test('destroy redirects without article.tag.delete', function () {
-    actingAsUserWithPermissions(['article.tag.manage']);
+test('destroy redirects without article.item.delete', function () {
+    actingAsUserWithPermissions(['article.item.manage']);
     $this->post(route('admin.article.tag.store'), validTagPayload());
     $tag = ArticleTagInfo::query()->latest('id')->first();
 
-    actingAsUserWithPermissions(['article.tag.view']);
+    actingAsUserWithPermissions(['article.item.view']);
 
     $this->delete(route('admin.article.tag.destroy', $tag->id))
         ->assertRedirect(route('admin.article.tag.index'));
@@ -262,11 +262,11 @@ test('destroy redirects without article.tag.delete', function () {
 });
 
 test('destroy soft deletes the tag and logs the action', function () {
-    actingAsUserWithPermissions(['article.tag.manage']);
+    actingAsUserWithPermissions(['article.item.manage']);
     $this->post(route('admin.article.tag.store'), validTagPayload());
     $tag = ArticleTagInfo::query()->latest('id')->first();
 
-    $me = actingAsUserWithPermissions(['article.tag.delete']);
+    $me = actingAsUserWithPermissions(['article.item.delete']);
 
     $this->delete(route('admin.article.tag.destroy', $tag->id))
         ->assertRedirect(route('admin.article.tag.index'))

@@ -265,8 +265,9 @@ part ที่เกี่ยวกับรูปภาพ/เอกสาร/�
 **Model** — `App\Models\ArticleTagInfo` (`details()` hasMany, `items()` belongsToMany), `App\Models\ArticleTagDetail`
 (`$incrementing = false`, `tag()` belongsTo)
 
-**Permission code** (seed ไว้แล้ว) — `article.tag.view`, `article.tag.manage`, `article.tag.delete`
-(เทียบเคียงชุด view/manage/delete ของ `article.item.*`)
+**Permission code** — ใช้ชุดเดียวกับบทความ `article.item.view`/`article.item.manage`/`article.item.delete`
+ไม่แยกสิทธิ์ `article.tag.*` ต่างหาก เพราะแท็กสร้างใหม่ได้จากในฟอร์มบทความอยู่แล้ว (ดู quickStore() ด้านล่าง)
+จึงต้องสัมพันธ์กับสิทธิ์ของบทความเสมอ
 
 **Seeder** — สร้างแท็กตัวอย่าง 4 แท็ก (ประชาสัมพันธ์/กิจกรรม/ความรู้/อัปเดต) ใน `ArticleSeeder.php`
 
