@@ -9,6 +9,7 @@ import InputError from '@/Components/InputError.vue';
 import TextInput from '@/Components/TextInput.vue';
 import Textarea from '@/Components/Textarea.vue';
 import SelectInput from '@/Components/SelectInput.vue';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
@@ -89,6 +90,8 @@ const form = useForm({
     parts: partsFromServer(props.parts, props.languages) as PartData[],
 });
 
+const categoryOptions = computed(() => props.categories.map((cat) => ({ value: String(cat.id), label: cat.title ?? '(ไม่มีชื่อ)' })));
+
 const introImage = ref<FileItem[]>(props.item.intro_image ? [props.item.intro_image] : []);
 watch(introImage, (files) => {
     form.intro_image_id = files[0]?.id ?? null;
@@ -142,10 +145,7 @@ const breadcrumbs = computed(() => [
                 <div class="mt-5 grid gap-4 sm:grid-cols-6">
                     <div class="sm:col-span-3">
                         <InputLabel value="หมวดหมู่" required />
-                        <SelectInput v-model="form.article_category_info_id">
-                            <option value="" disabled>เลือกหมวดหมู่</option>
-                            <option v-for="cat in categories" :key="cat.id" :value="String(cat.id)">{{ cat.title }}</option>
-                        </SelectInput>
+                        <SearchableSelect v-model="form.article_category_info_id" :options="categoryOptions" placeholder="เลือกหมวดหมู่" />
                         <InputError :message="form.errors.article_category_info_id" />
                     </div>
                     <div class="sm:col-span-3">

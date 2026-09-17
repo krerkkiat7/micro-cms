@@ -9,12 +9,13 @@ import InputError from '@/Components/InputError.vue';
 import TextInput from '@/Components/TextInput.vue';
 import Textarea from '@/Components/Textarea.vue';
 import SelectInput from '@/Components/SelectInput.vue';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import FilePickerField from '@/Components/Admin/FileManager/FilePickerField.vue';
 import TagPicker from '@/Components/Admin/ArticleTag/TagPicker.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { Save } from 'lucide-vue-next';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { createPart, partsToPayload } from '@/utils/articleParts';
 import type { PartData } from '@/utils/articleParts';
 import type { FileItem, LanguageOption } from '@/types';
@@ -57,6 +58,8 @@ const initialDetail: Record<string, DetailFields> = {};
 props.languages.forEach((lang) => {
     initialDetail[lang.code] = emptyDetail();
 });
+
+const categoryOptions = computed(() => props.categories.map((cat) => ({ value: String(cat.id), label: cat.title ?? '(ไม่มีชื่อ)' })));
 
 function nowDateTime(): string {
     const d = new Date();
@@ -115,10 +118,7 @@ const breadcrumbs = [
                 <div class="mt-5 grid gap-4 sm:grid-cols-6">
                     <div class="sm:col-span-3">
                         <InputLabel value="หมวดหมู่" required />
-                        <SelectInput v-model="form.article_category_info_id">
-                            <option value="" disabled>เลือกหมวดหมู่</option>
-                            <option v-for="cat in categories" :key="cat.id" :value="String(cat.id)">{{ cat.title }}</option>
-                        </SelectInput>
+                        <SearchableSelect v-model="form.article_category_info_id" :options="categoryOptions" placeholder="เลือกหมวดหมู่" />
                         <InputError :message="form.errors.article_category_info_id" />
                     </div>
                     <div class="sm:col-span-3">

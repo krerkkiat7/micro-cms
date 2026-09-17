@@ -222,7 +222,9 @@ part ที่เกี่ยวกับรูปภาพ/เอกสาร/�
 **หน้าจอ** — เสร็จแล้ว (`Admin/Article/Item/{Index,Add,Edit}.vue`)
 - list บทความ (ค้นหาชื่อ+ข้อความเกริ่นนำ, กรองหมวดหมู่+สถานะ, เรียงลำดับได้ทุกคอลัมน์ default เรียงชื่อ, paging)
 - form เพิ่ม/แก้ไข ตามรูปแบบ "กลุ่มข้อมูลร่วม" + "กลุ่มข้อมูลแยกภาษา" (§0) ใช้ `FilePickerField.vue` เลือกรูป/เอกสาร/วิดีโอ
-  และ `TagPicker.vue` (§2.1) เลือก/สร้างแท็ก
+  และ `TagPicker.vue` (§2.1) เลือก/สร้างแท็ก — ฟิลด์ "หมวดหมู่" ใช้ `Components/SearchableSelect.vue` (พิมพ์ค้นหา
+  กรองตัวเลือกได้ แทน `<select>` ธรรมดา) เป็นจุดแรกที่ลองใช้ component นี้ในระบบ — ยังเป็น component กลาง ใช้ที่ไหน
+  ก็ได้ (v-model เป็น string เทียบเคียง `SelectInput.vue`) ยังไม่ได้เปลี่ยน dropdown อื่นในระบบทั้งหมด
 - part editor (`Components/Admin/ArticlePart/*`) — ลากสลับลำดับรูปภาพ/เอกสารภายในกลุ่มโดยตรง (`vuedraggable`,
   ghost placeholder แบบ SortableJS Simple List ให้เห็นขอบเขตตำแหน่งที่จะวางชัดเจน) แต่การสลับลำดับ **part**
   ทำผ่าน dialog แยก (`PartReorderDialog.vue`) แทนการลากตรง ๆ ในหน้าฟอร์ม — เพราะ part แต่ละอันสูงมาก ลากข้ามที่ไกล ๆ
