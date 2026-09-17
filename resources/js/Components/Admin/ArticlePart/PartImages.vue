@@ -2,13 +2,13 @@
 import draggable from 'vuedraggable';
 import LangFieldGroup from '@/Components/Admin/LangFieldGroup.vue';
 import TextInput from '@/Components/TextInput.vue';
-import SelectInput from '@/Components/SelectInput.vue';
 import Checkbox from '@/Components/Checkbox.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import FilePickerField from '@/Components/Admin/FileManager/FilePickerField.vue';
+import ImagesDisplayTypePicker from './ImagesDisplayTypePicker.vue';
 import { GripVertical, Plus, Trash2 } from 'lucide-vue-next';
-import { IMAGES_DISPLAY_TYPES, createFileRow, isCarouselDisplayType, isGridDisplayType } from '@/utils/articleParts';
+import { createFileRow, isCarouselDisplayType, isGridDisplayType } from '@/utils/articleParts';
 import type { LanguageOption } from '@/types';
 import type { PartData } from '@/utils/articleParts';
 
@@ -36,15 +36,12 @@ function removeImage(index: number) {
             </template>
         </LangFieldGroup>
 
+        <div>
+            <InputLabel value="รูปแบบการแสดงผล" />
+            <ImagesDisplayTypePicker v-model="part.images_display_type" class="mt-1" />
+        </div>
+
         <div class="grid gap-4 sm:grid-cols-3">
-            <div>
-                <InputLabel value="รูปแบบการแสดงผล" />
-                <SelectInput v-model="part.images_display_type">
-                    <option v-for="opt in IMAGES_DISPLAY_TYPES" :key="opt.value" :value="opt.value">
-                        {{ opt.label }}
-                    </option>
-                </SelectInput>
-            </div>
             <div v-if="isGridDisplayType(part.images_display_type)">
                 <InputLabel value="จำนวนคอลัมน์" />
                 <TextInput v-model="part.setting.columns" type="number" min="2" max="6" step="1" />

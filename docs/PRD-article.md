@@ -61,6 +61,11 @@ part ที่เกี่ยวกับรูปภาพ/เอกสาร/�
 | Justified Grid | `justified_grid` |
 | Stacked / Overlapping Cards | `stacked_cards` |
 
+ฟิลด์เลือกรูปแบบแสดงผลใน `PartImages.vue` ไม่ได้ใช้ dropdown ธรรมดา — ใช้ `ImagesDisplayTypePicker.vue` แสดงเป็น
+การ์ดเลือกได้ 7 ใบ แต่ละใบมีไดอะแกรม SVG อย่างง่าย (วาดเอง ไม่มีรูปตัวอย่างจริงในระบบ) สื่อโครงสร้างคร่าว ๆ ของ
+รูปแบบนั้น พร้อมคำอธิบายภาษาไทยสั้น ๆ ใต้ชื่อ (`IMAGES_DISPLAY_TYPES` ใน `utils/articleParts.ts` เพิ่มฟิลด์
+`description` ต่อรายการ)
+
 โครงสร้างตาราง (`article_item_part`, `article_item_part_file`, `article_item_part_detail`) อิง `file_info`
 (โมดูลจัดการไฟล์ที่มีอยู่แล้ว) เป็นที่เก็บไฟล์จริง ผ่าน `FilePickerField.vue`/`FilePickerDialog.vue` — ดูรายละเอียด
 เต็มที่ §2

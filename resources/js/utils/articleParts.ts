@@ -27,15 +27,18 @@ export const PART_TYPE_ICONS: Record<PartType, LucideIcon> = {
     documents: Files,
 };
 
-/** รูปแบบแสดงผลของ part ประเภทกลุ่มรูปภาพ — slug ต้องตรงกับที่ backend ยอมรับ (ดู migration) */
-export const IMAGES_DISPLAY_TYPES: { value: string; label: string }[] = [
-    { value: 'thumbnail_carousel', label: 'Thumbnail Carousel' },
-    { value: 'multi_carousel', label: 'Multi-item Carousel' },
-    { value: 'grid_lightbox', label: 'Grid Gallery with Lightbox' },
-    { value: 'full_width_slider', label: 'Full-width Slider' },
-    { value: 'masonry_grid', label: 'Masonry Grid' },
-    { value: 'justified_grid', label: 'Justified Grid' },
-    { value: 'stacked_cards', label: 'Stacked / Overlapping Cards' },
+/**
+ * รูปแบบแสดงผลของ part ประเภทกลุ่มรูปภาพ — slug ต้องตรงกับที่ backend ยอมรับ (ดู migration)
+ * description ใช้แสดงคำอธิบายประกอบใน ImagesDisplayTypePicker.vue (ตัวเลือกแบบเห็นภาพตัวอย่าง)
+ */
+export const IMAGES_DISPLAY_TYPES: { value: string; label: string; description: string }[] = [
+    { value: 'thumbnail_carousel', label: 'Thumbnail Carousel', description: 'แสดงรูปหลักรูปใหญ่ พร้อมรูปย่อยแถวล่างให้คลิกเปลี่ยนรูป' },
+    { value: 'multi_carousel', label: 'Multi-item Carousel', description: 'เลื่อนดูรูปได้ทีละหลายรูปในแนวนอน เหมาะกับรูปจำนวนมาก' },
+    { value: 'grid_lightbox', label: 'Grid Gallery with Lightbox', description: 'จัดเรียงเป็นตารางขนาดเท่ากัน คลิกรูปเพื่อดูขยายแบบ Lightbox' },
+    { value: 'full_width_slider', label: 'Full-width Slider', description: 'แสดงรูปเดียวเต็มความกว้าง เลื่อนสไลด์เปลี่ยนรูปพร้อมจุดบอกลำดับ' },
+    { value: 'masonry_grid', label: 'Masonry Grid', description: 'จัดวางแบบ Masonry ความสูงแต่ละรูปไม่เท่ากัน คล้าย Pinterest' },
+    { value: 'justified_grid', label: 'Justified Grid', description: 'จัดเรียงเป็นแถว ปรับขนาดรูปในแต่ละแถวให้เต็มความกว้างเสมอ' },
+    { value: 'stacked_cards', label: 'Stacked / Overlapping Cards', description: 'แสดงเป็นการ์ดซ้อนเหลื่อมมุมกันหลายใบ ดูมีมิติ' },
 ];
 
 /** display_type ที่เป็นสไลด์/carousel — มีตัวเลือก autoplay/interval ให้ตั้งค่า */
