@@ -186,6 +186,24 @@ test('store rejects a name that duplicates an existing tag in the same language,
         ->assertValid(['detail.en.name']);
 });
 
+test('store allows reusing a name after the tag that previously had it was deleted', function () {
+    actingAsUserWithPermissions(['article.item.manage', 'article.item.delete']);
+
+    $this->post(route('admin.article.tag.store'), validTagPayload([
+        'detail' => ['th' => ['name' => 'แท็กจะถูกลบ'], 'en' => ['name' => 'Will Be Deleted']],
+    ]));
+    $oldTag = ArticleTagInfo::query()->latest('id')->first();
+
+    $this->delete(route('admin.article.tag.destroy', $oldTag->id));
+
+    $this->post(route('admin.article.tag.store'), validTagPayload([
+        'detail' => ['th' => ['name' => 'แท็กจะถูกลบ'], 'en' => ['name' => 'Will Be Deleted']],
+    ]))->assertSessionHas('success');
+
+    $newTag = ArticleTagInfo::query()->latest('id')->first();
+    expect($newTag->id)->not->toBe($oldTag->id);
+});
+
 // ---------------------------------------------------------------- edit / update
 
 test('edit redirects for a missing or soft-deleted tag', function () {

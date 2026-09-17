@@ -39,7 +39,7 @@ class UpdateArticleTagRequest extends FormRequest
 
     /**
      * เหมือน StoreArticleTagRequest แต่ unique ไม่รวมแถวของแท็กนี้เอง (แก้ไขแล้วชื่อเดิมไม่ชนตัวเอง)
-     * ไม่มีฟิลด์ slug ในฟอร์ม จึงไม่ต้องกัน slug ชนตัวเอง
+     * ไม่มีฟิลด์ slug ในฟอร์ม จึงไม่ต้องกัน slug ชนตัวเอง — ไม่นับแท็กที่ถูกลบไปแล้วเช่นเดียวกับตอนสร้างใหม่
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -53,7 +53,9 @@ class UpdateArticleTagRequest extends FormRequest
             $rules["detail.{$lang}.name"] = [
                 $lang === $defaultLang ? 'required' : 'nullable', 'string', 'max:100',
                 Rule::unique('article_tag_detail', 'name')
-                    ->where(fn ($query) => $query->where('lang', $lang))
+                    ->where(fn ($query) => $query
+                        ->where('lang', $lang)
+                        ->whereIn('id', fn ($sub) => $sub->select('id')->from('article_tag_info')->whereNull('deleted_at')))
                     ->ignore($tagId, 'id'),
             ];
         }

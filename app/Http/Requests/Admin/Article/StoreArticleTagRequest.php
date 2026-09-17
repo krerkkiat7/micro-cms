@@ -39,7 +39,9 @@ class StoreArticleTagRequest extends FormRequest
 
     /**
      * ชื่อแท็กแยกตามภาษา — required เฉพาะภาษาหลัก ไม่มีฟิลด์ slug ในฟอร์ม (หน้าบ้านใช้ชื่อ tag ตรง ๆ)
-     * ชื่อห้ามซ้ำภายในภาษาเดียวกัน ไม่ว่าแท็กที่ชื่อซ้ำจะสถานะใช้งานหรือไม่ใช้งานก็ตาม
+     * ชื่อห้ามซ้ำภายในภาษาเดียวกัน ไม่ว่าแท็กที่ชื่อซ้ำจะสถานะใช้งานหรือไม่ใช้งานก็ตาม — แต่ไม่นับแท็กที่ถูกลบไปแล้ว
+     * (`article_tag_info.deleted_at` ไม่ใช่ null) เพื่อให้ลบแท็กแล้วสร้างชื่อเดิมใหม่ได้ (ตัว `article_tag_detail`
+     * เองไม่เคยถูก soft delete พร้อมพาเรนต์ จึงต้องเช็กผ่าน `article_tag_info` แทนที่จะเช็ก deleted_at ของตัวเอง)
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -51,7 +53,9 @@ class StoreArticleTagRequest extends FormRequest
         foreach (Setting::selectedLanguages() as $lang) {
             $rules["detail.{$lang}.name"] = [
                 $lang === $defaultLang ? 'required' : 'nullable', 'string', 'max:100',
-                Rule::unique('article_tag_detail', 'name')->where(fn ($query) => $query->where('lang', $lang)),
+                Rule::unique('article_tag_detail', 'name')->where(fn ($query) => $query
+                    ->where('lang', $lang)
+                    ->whereIn('id', fn ($sub) => $sub->select('id')->from('article_tag_info')->whereNull('deleted_at'))),
             ];
         }
 

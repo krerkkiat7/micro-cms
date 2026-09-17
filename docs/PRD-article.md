@@ -225,7 +225,8 @@ part ที่เกี่ยวกับรูปภาพ/เอกสาร/�
   ถึงจะเปลี่ยนลำดับจริง (ยกเลิกได้โดยไม่กระทบ) — แต่ละ part มีปุ่ม checkbox "แสดงหัวเรื่องที่หน้าบ้าน" (`show_title`)
   และไอคอนตา/ตาขีดทับสลับ แสดง/ซ่อน part (`status`) ก่อนไอคอนลบ ไอคอนของแต่ละประเภท part (`PART_TYPE_ICONS` ใน
   `utils/articleParts.ts`) ใช้ร่วมกัน 3 ที่: หัวการ์ด part (`PartCard.vue`), ปุ่ม "เพิ่ม part" แต่ละประเภท
-  (`PartList.vue`), และแถวในรายการของ dialog จัดลำดับ (`PartReorderDialog.vue`)
+  (`PartList.vue` — ไอคอนบวกนำหน้าไอคอนประเภท เพื่อสื่อว่าเป็นปุ่มเพิ่ม), และแถวในรายการของ dialog จัดลำดับ
+  (`PartReorderDialog.vue`)
 
 **Permission code** (seed ไว้แล้ว) — `article.item.view`, `article.item.manage`, `article.item.delete`
 
@@ -283,7 +284,11 @@ log action module_code = `article.tag`
 **ชื่อแท็กห้ามซ้ำ** — `Store`/`UpdateArticleTagRequest` ตรวจ `Rule::unique('article_tag_detail','name')->where('lang', $lang)`
 ต่อภาษา (update `ignore()` แถวของตัวเอง) ครอบคลุมทั้งแท็กที่ใช้งาน (`status='Y'`) และไม่ใช้งาน (`status='N'`)
 เพราะเงื่อนไขไม่ได้กรองด้วยคอลัมน์ `status` เลย — endpoint `quickStore()` (ด้านล่าง) ก็ใช้กฎเดียวกัน
-เพื่อกันแท็กชื่อซ้ำที่สร้างจากในฟอร์มบทความด้วย
+เพื่อกันแท็กชื่อซ้ำที่สร้างจากในฟอร์มบทความด้วย **แต่ไม่นับแท็กที่ถูกลบไปแล้ว** (`article_tag_info.deleted_at`
+ไม่เป็น null) — เงื่อนไข unique เพิ่ม `whereIn('id', ...)` กรองเฉพาะ id ที่ยังอยู่ใน `article_tag_info` (ไม่ถูกลบ)
+เพราะ `destroy()` soft delete แค่แถว `article_tag_info` เท่านั้น ไม่ได้ลบ `article_tag_detail` ตามไปด้วย (ต่างจาก
+`article_item_part` ที่ resync ทั้งชุดทุกครั้ง) จึงต้องเช็กผ่านสถานะของพาเรนต์แทนที่จะเช็ก `deleted_at` ของตัวเอง
+ผลคือ ลบแท็กแล้วสร้างชื่อเดิมใหม่ได้ตามที่ควรจะเป็น
 
 **เลือก/สร้างแท็กด่วนจากในฟอร์มบทความ** — แยกจาก CRUD หลักข้างต้น ใช้เฉพาะจาก
 `Components/Admin/ArticleTag/TagPicker.vue`: ไม่มีรายการมาให้ล่วงหน้า พิมพ์ค้นหาจากชื่อภาษาหลักแบบ autocomplete

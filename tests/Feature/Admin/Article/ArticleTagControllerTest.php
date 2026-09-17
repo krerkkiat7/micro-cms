@@ -99,3 +99,17 @@ test('quickStore rejects a name that already exists for that language, even if t
         'name' => ['th' => 'แท็กปิดใช้งานซ้ำด่วน', 'en' => 'Some New Name'],
     ])->assertInvalid(['name.th']);
 });
+
+test('quickStore allows reusing a name after the tag that previously had it was deleted', function () {
+    actingAsUserWithPermissions(['article.item.manage', 'article.item.delete']);
+
+    $tag = ArticleTagInfo::create(['status' => 'Y', 'created_by' => 1]);
+    ArticleTagDetail::create(['id' => $tag->id, 'lang' => 'th', 'name' => 'แท็กด่วนจะถูกลบ', 'status' => 'Y', 'created_by' => 1]);
+    ArticleTagDetail::create(['id' => $tag->id, 'lang' => 'en', 'name' => 'Quick Will Be Deleted', 'status' => 'Y', 'created_by' => 1]);
+
+    $this->delete(route('admin.article.tag.destroy', $tag->id));
+
+    $this->postJson(route('admin.article.tag.quickStore'), [
+        'name' => ['th' => 'แท็กด่วนจะถูกลบ', 'en' => 'Quick Will Be Deleted'],
+    ])->assertCreated();
+});

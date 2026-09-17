@@ -304,7 +304,8 @@ class ArticleTagController extends Controller
 
     /**
      * สร้างแท็กใหม่แบบด่วน (ใช้ตอนพิมพ์ชื่อแท็กที่ยังไม่มีในระบบจาก TagPicker.vue) — ต้องกรอกชื่อครบทุกภาษาที่ระบบเปิดใช้
-     * ชื่อห้ามซ้ำกับแท็กที่มีอยู่แล้วในภาษาเดียวกัน (ทั้งที่ใช้งานและไม่ใช้งาน) เหมือนหน้าจัดการแท็กโดยตรง
+     * ชื่อห้ามซ้ำกับแท็กที่มีอยู่แล้วในภาษาเดียวกัน (ทั้งที่ใช้งานและไม่ใช้งาน) เหมือนหน้าจัดการแท็กโดยตรง แต่ไม่นับ
+     * แท็กที่ถูกลบไปแล้ว (เช็กผ่าน article_tag_info.deleted_at เพราะ article_tag_detail ไม่ได้ถูกลบพร้อมพาเรนต์)
      */
     public function quickStore(Request $request): JsonResponse
     {
@@ -314,7 +315,9 @@ class ArticleTagController extends Controller
         foreach (Setting::selectedLanguages() as $lang) {
             $rules["name.{$lang}"] = [
                 'required', 'string', 'max:100',
-                Rule::unique('article_tag_detail', 'name')->where(fn ($query) => $query->where('lang', $lang)),
+                Rule::unique('article_tag_detail', 'name')->where(fn ($query) => $query
+                    ->where('lang', $lang)
+                    ->whereIn('id', fn ($sub) => $sub->select('id')->from('article_tag_info')->whereNull('deleted_at'))),
             ];
         }
         $rules['name'] = ['required', 'array'];
