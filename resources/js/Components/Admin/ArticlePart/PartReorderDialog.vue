@@ -4,7 +4,7 @@ import draggable from 'vuedraggable';
 import { GripVertical } from 'lucide-vue-next';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
-import { PART_TYPE_LABELS, partDisplayTitle } from '@/utils/articleParts';
+import { PART_TYPE_ICONS, PART_TYPE_LABELS, partDisplayTitle } from '@/utils/articleParts';
 import type { LanguageOption } from '@/types';
 import type { PartData, PartType } from '@/utils/articleParts';
 
@@ -82,6 +82,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
                                     <button type="button" class="reorder-drag-handle cursor-grab text-gray-400 hover:text-gray-600">
                                         <GripVertical class="size-4" />
                                     </button>
+                                    <component :is="PART_TYPE_ICONS[element.part_type as PartType]" class="size-4 shrink-0 text-gray-500" />
                                     <span class="shrink-0 font-medium text-gray-600">{{ PART_TYPE_LABELS[element.part_type as PartType] }}</span>
                                     <span class="shrink-0 text-gray-400">:</span>
                                     <span class="truncate text-gray-700">{{ partDisplayTitle(element, languages) }}</span>

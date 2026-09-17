@@ -223,7 +223,9 @@ part ที่เกี่ยวกับรูปภาพ/เอกสาร/�
   ทำผ่าน dialog แยก (`PartReorderDialog.vue`) แทนการลากตรง ๆ ในหน้าฟอร์ม — เพราะ part แต่ละอันสูงมาก ลากข้ามที่ไกล ๆ
   ยาก dialog แสดงแค่ `[ประเภท] : [หัวเรื่อง]` แถวเตี้ย ๆ เห็นภาพรวมทั้งหมด ลากสลับในนั้นแล้วกด "ยืนยันลำดับ"
   ถึงจะเปลี่ยนลำดับจริง (ยกเลิกได้โดยไม่กระทบ) — แต่ละ part มีปุ่ม checkbox "แสดงหัวเรื่องที่หน้าบ้าน" (`show_title`)
-  และไอคอนตา/ตาขีดทับสลับ แสดง/ซ่อน part (`status`) ก่อนไอคอนลบ
+  และไอคอนตา/ตาขีดทับสลับ แสดง/ซ่อน part (`status`) ก่อนไอคอนลบ ไอคอนของแต่ละประเภท part (`PART_TYPE_ICONS` ใน
+  `utils/articleParts.ts`) ใช้ร่วมกัน 3 ที่: หัวการ์ด part (`PartCard.vue`), ปุ่ม "เพิ่ม part" แต่ละประเภท
+  (`PartList.vue`), และแถวในรายการของ dialog จัดลำดับ (`PartReorderDialog.vue`)
 
 **Permission code** (seed ไว้แล้ว) — `article.item.view`, `article.item.manage`, `article.item.delete`
 
@@ -248,7 +250,7 @@ part ที่เกี่ยวกับรูปภาพ/เอกสาร/�
 |---------|------|----------|
 | `id` | `unsigned bigint` | = `article_tag_info.id` (FK, cascadeOnDelete) |
 | `lang` | `char(2)` | ส่วนหนึ่งของ PK |
-| `name` | `varchar(100)` null | ชื่อแท็ก |
+| `name` | `varchar(100)` null | ชื่อแท็ก — ห้ามซ้ำภายในภาษาเดียวกัน (validate ที่ FormRequest ไม่ใช่ DB unique index — ดูหมายเหตุด้านล่าง) ไม่ว่าแท็กที่ชื่อซ้ำจะสถานะใช้งานหรือไม่ก็ตาม |
 | `slug` | `varchar(100)` null | unique ต่อภาษา |
 | `status` | `char(1)` default `Y` | |
 | `created_by` / `updated_by` / `deleted_by`, `timestamps`, `deleted_at` | | |
@@ -278,6 +280,11 @@ list/add/edit ตามต้นแบบหมวดหมู่บทควา
 `withCount('items')`) ช่วยตัดสินใจก่อนลบ. `route` ใช้ชื่อมาตรฐาน `admin.article.tag.{index,add,store,edit,update,destroy}`
 log action module_code = `article.tag`
 
+**ชื่อแท็กห้ามซ้ำ** — `Store`/`UpdateArticleTagRequest` ตรวจ `Rule::unique('article_tag_detail','name')->where('lang', $lang)`
+ต่อภาษา (update `ignore()` แถวของตัวเอง) ครอบคลุมทั้งแท็กที่ใช้งาน (`status='Y'`) และไม่ใช้งาน (`status='N'`)
+เพราะเงื่อนไขไม่ได้กรองด้วยคอลัมน์ `status` เลย — endpoint `quickStore()` (ด้านล่าง) ก็ใช้กฎเดียวกัน
+เพื่อกันแท็กชื่อซ้ำที่สร้างจากในฟอร์มบทความด้วย
+
 **เลือก/สร้างแท็กด่วนจากในฟอร์มบทความ** — แยกจาก CRUD หลักข้างต้น ใช้เฉพาะจาก
 `Components/Admin/ArticleTag/TagPicker.vue`: ไม่มีรายการมาให้ล่วงหน้า พิมพ์ค้นหาจากชื่อภาษาหลักแบบ autocomplete
 (ajax `admin.article.tag.search`) เลือกจากผลลัพธ์ = ใช้แท็กเดิม แสดงเป็นกล่องข้อความ (chip) ลบออกได้; พิมพ์แล้วกด
@@ -285,7 +292,13 @@ log action module_code = `article.tag`
 `NewTagDialog.vue` ให้กรอกชื่อแท็กใหม่ครบทุกภาษาก่อนสร้างจริง (ajax `admin.article.tag.quickStore`,
 สร้างทันทีไม่รอบันทึกฟอร์มบทความ — สร้าง `slug` อัตโนมัติจากชื่อเพราะไม่มีฟอร์มให้กรอกเอง)
 — ทั้งสอง endpoint (`search`/`quickStore`) อยู่ใน `Admin\Article\ArticleTagController` เช่นกัน แต่ตรวจสิทธิ์
-`article.item.manage` แทน เพราะเป็นการกระทำที่เกิดขึ้นจากในฟอร์มบทความเท่านั้น ไม่เกี่ยวกับสิทธิ์ `article.tag.*`
+`article.item.manage` แทน เพราะเป็นการกระทำที่เกิดขึ้นจากในฟอร์มบทความเท่านั้น
+
+`search()` คืนทั้งแท็กที่ใช้งานและไม่ใช้งาน (ไม่กรอง `status` แล้ว) พร้อมส่งคอลัมน์ `status` ติดไปกับผลลัพธ์แต่ละ
+รายการ — `TagPicker.vue` ใช้ค่านี้แสดงทั้งตัวเลือกใน autocomplete และกล่องข้อความ (chip) ที่เลือกไว้แล้วเป็น
+โทนสีเทาพร้อมข้อความ "(ไม่ใช้งาน)" เมื่อแท็กนั้น `status = 'N'` — ยังเลือก/ผูกกับบทความได้ตามปกติ แค่ทำให้รู้ว่า
+แท็กนี้ไม่ใช้งานอยู่ (`attachedTagChips()` ใน `ArticleItemController` ก็ส่ง `status` ไปด้วยเพื่อให้หน้าแก้ไข
+บทความแสดงกล่องแท็กเดิมที่ไม่ใช้งานเป็นสีเทาเช่นกัน)
 
 ## 3. ตั้งค่าโมดูลบทความ (เสนอ — ยังไม่ออกแบบ)
 

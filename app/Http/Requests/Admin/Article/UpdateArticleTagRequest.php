@@ -31,23 +31,31 @@ class UpdateArticleTagRequest extends FormRequest
 
         foreach (Setting::selectedLanguages() as $lang) {
             $messages["detail.{$lang}.name.required"] = "กรุณากรอกชื่อ ({$lang})";
+            $messages["detail.{$lang}.name.unique"] = "มีแท็กชื่อนี้อยู่แล้ว ({$lang})";
         }
 
         return $messages;
     }
 
     /**
-     * เหมือน StoreArticleTagRequest — ไม่มีฟิลด์ slug ในฟอร์ม จึงไม่ต้องกัน slug ชนตัวเอง
+     * เหมือน StoreArticleTagRequest แต่ unique ไม่รวมแถวของแท็กนี้เอง (แก้ไขแล้วชื่อเดิมไม่ชนตัวเอง)
+     * ไม่มีฟิลด์ slug ในฟอร์ม จึงไม่ต้องกัน slug ชนตัวเอง
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     protected function languageDetailRules(): array
     {
         $defaultLang = Setting::defaultLanguage();
+        $tagId = $this->route('tag');
         $rules = [];
 
         foreach (Setting::selectedLanguages() as $lang) {
-            $rules["detail.{$lang}.name"] = [$lang === $defaultLang ? 'required' : 'nullable', 'string', 'max:100'];
+            $rules["detail.{$lang}.name"] = [
+                $lang === $defaultLang ? 'required' : 'nullable', 'string', 'max:100',
+                Rule::unique('article_tag_detail', 'name')
+                    ->where(fn ($query) => $query->where('lang', $lang))
+                    ->ignore($tagId, 'id'),
+            ];
         }
 
         return $rules;

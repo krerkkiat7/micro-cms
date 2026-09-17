@@ -169,6 +169,23 @@ test('store creates the tag with per-language details, no slug, and logs the act
         ->exists())->toBeTrue();
 });
 
+test('store rejects a name that duplicates an existing tag in the same language, whether it is active or not', function () {
+    actingAsUserWithPermissions(['article.item.manage']);
+
+    $this->post(route('admin.article.tag.store'), validTagPayload([
+        'status' => 'N',
+        'detail' => ['th' => ['name' => 'แท็กปิดใช้งานซ้ำ'], 'en' => ['name' => 'Inactive Duplicate']],
+    ]));
+
+    // ชื่อ th ชนกับแท็กที่ปิดใช้งานอยู่ — ยังต้องถือว่าซ้ำ, ชื่อ en เป็นชื่อใหม่จึงผ่าน
+    $this->from(route('admin.article.tag.add'))
+        ->post(route('admin.article.tag.store'), validTagPayload([
+            'detail' => ['th' => ['name' => 'แท็กปิดใช้งานซ้ำ'], 'en' => ['name' => 'Brand New Name']],
+        ]))
+        ->assertInvalid(['detail.th.name'])
+        ->assertValid(['detail.en.name']);
+});
+
 // ---------------------------------------------------------------- edit / update
 
 test('edit redirects for a missing or soft-deleted tag', function () {
@@ -233,6 +250,27 @@ test('update saves changes to the info row and every language detail row', funct
         ->where('action_type', 'update')
         ->where('ref_id', $tag->id)
         ->exists())->toBeTrue();
+});
+
+test('update allows keeping the tag\'s own unchanged name, but rejects reusing another tag\'s name', function () {
+    actingAsUserWithPermissions(['article.item.manage']);
+    $this->post(route('admin.article.tag.store'), validTagPayload());
+    $tag = ArticleTagInfo::query()->latest('id')->first();
+
+    $this->post(route('admin.article.tag.store'), validTagPayload([
+        'detail' => ['th' => ['name' => 'แท็กอื่น'], 'en' => ['name' => 'Other Tag']],
+    ]));
+
+    // ชื่อเดิมของตัวเอง (ไม่เปลี่ยน) ต้องผ่านได้ปกติ
+    $this->put(route('admin.article.tag.update', $tag->id), validTagPayload())
+        ->assertSessionHas('success');
+
+    // ชื่อของแท็กอื่นต้อง invalid
+    $this->from(route('admin.article.tag.edit', $tag->id))
+        ->put(route('admin.article.tag.update', $tag->id), validTagPayload([
+            'detail' => ['th' => ['name' => 'แท็กอื่น'], 'en' => ['name' => 'Test Tag']],
+        ]))
+        ->assertInvalid(['detail.th.name']);
 });
 
 test('update redirects without article.item.manage', function () {

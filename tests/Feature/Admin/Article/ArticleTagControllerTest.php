@@ -38,6 +38,17 @@ test('search returns nothing for an empty query', function () {
         ->assertJson(['data' => []]);
 });
 
+test('search includes inactive tags along with their status', function () {
+    actingAsUserWithPermissions(['article.item.manage']);
+
+    $tag = ArticleTagInfo::create(['status' => 'N', 'created_by' => 1]);
+    ArticleTagDetail::create(['id' => $tag->id, 'lang' => 'th', 'name' => 'แท็กปิดใช้งานค้นหา', 'status' => 'Y', 'created_by' => 1]);
+
+    $this->get(route('admin.article.tag.search', ['q' => 'แท็กปิดใช้งานค้นหา']))
+        ->assertOk()
+        ->assertJsonFragment(['name' => 'แท็กปิดใช้งานค้นหา', 'status' => 'N']);
+});
+
 // ---------------------------------------------------------------- quickStore (ajax, ใช้จาก TagPicker.vue)
 
 test('creating a tag requires article.item.manage', function () {
@@ -76,4 +87,15 @@ test('quickStore creates a tag with detail rows for every language and returns t
     expect($th->name)->toBe('แท็กทดสอบใหม่')
         ->and($en->name)->toBe('Brand New Tag')
         ->and($th->slug)->not->toBeNull();
+});
+
+test('quickStore rejects a name that already exists for that language, even if the existing tag is inactive', function () {
+    actingAsUserWithPermissions(['article.item.manage']);
+
+    $tag = ArticleTagInfo::create(['status' => 'N', 'created_by' => 1]);
+    ArticleTagDetail::create(['id' => $tag->id, 'lang' => 'th', 'name' => 'แท็กปิดใช้งานซ้ำด่วน', 'status' => 'Y', 'created_by' => 1]);
+
+    $this->postJson(route('admin.article.tag.quickStore'), [
+        'name' => ['th' => 'แท็กปิดใช้งานซ้ำด่วน', 'en' => 'Some New Name'],
+    ])->assertInvalid(['name.th']);
 });

@@ -13,6 +13,7 @@ use App\Support\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -272,7 +273,9 @@ class ArticleTagController extends Controller
     }
 
     /**
-     * ค้นหาแท็กที่เปิดใช้งานจากชื่อภาษาหลัก — คืนไม่เกิน 10 รายการ (ใช้จาก TagPicker.vue)
+     * ค้นหาแท็กจากชื่อภาษาหลัก — คืนไม่เกิน 10 รายการ (ใช้จาก TagPicker.vue)
+     * คืนทั้งแท็กที่ใช้งานและไม่ใช้งาน (สถานะติดไปกับผลลัพธ์) เพื่อให้เลือกแท็กที่ไม่ใช้งานได้แต่แสดงเป็นสีเทา
+     * ไม่คืนแท็กที่ถูกลบ (soft delete) เพราะ ArticleTagInfo::query() กรองให้อัตโนมัติอยู่แล้ว
      */
     public function search(Request $request): JsonResponse
     {
@@ -291,17 +294,17 @@ class ArticleTagController extends Controller
                 $join->on('d.id', '=', 'article_tag_info.id')->where('d.lang', $defaultLang);
             })
             ->whereNull('d.deleted_at')
-            ->where('article_tag_info.status', 'Y')
             ->where('d.name', 'like', "%{$term}%")
             ->orderBy('d.name')
             ->limit(10)
-            ->get(['article_tag_info.id', 'd.name as name']);
+            ->get(['article_tag_info.id', 'article_tag_info.status', 'd.name as name']);
 
         return response()->json(['data' => $tags]);
     }
 
     /**
      * สร้างแท็กใหม่แบบด่วน (ใช้ตอนพิมพ์ชื่อแท็กที่ยังไม่มีในระบบจาก TagPicker.vue) — ต้องกรอกชื่อครบทุกภาษาที่ระบบเปิดใช้
+     * ชื่อห้ามซ้ำกับแท็กที่มีอยู่แล้วในภาษาเดียวกัน (ทั้งที่ใช้งานและไม่ใช้งาน) เหมือนหน้าจัดการแท็กโดยตรง
      */
     public function quickStore(Request $request): JsonResponse
     {
@@ -309,7 +312,10 @@ class ArticleTagController extends Controller
 
         $rules = [];
         foreach (Setting::selectedLanguages() as $lang) {
-            $rules["name.{$lang}"] = ['required', 'string', 'max:100'];
+            $rules["name.{$lang}"] = [
+                'required', 'string', 'max:100',
+                Rule::unique('article_tag_detail', 'name')->where(fn ($query) => $query->where('lang', $lang)),
+            ];
         }
         $rules['name'] = ['required', 'array'];
 

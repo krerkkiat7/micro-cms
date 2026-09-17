@@ -31,6 +31,7 @@ class StoreArticleTagRequest extends FormRequest
 
         foreach (Setting::selectedLanguages() as $lang) {
             $messages["detail.{$lang}.name.required"] = "กรุณากรอกชื่อ ({$lang})";
+            $messages["detail.{$lang}.name.unique"] = "มีแท็กชื่อนี้อยู่แล้ว ({$lang})";
         }
 
         return $messages;
@@ -38,6 +39,7 @@ class StoreArticleTagRequest extends FormRequest
 
     /**
      * ชื่อแท็กแยกตามภาษา — required เฉพาะภาษาหลัก ไม่มีฟิลด์ slug ในฟอร์ม (หน้าบ้านใช้ชื่อ tag ตรง ๆ)
+     * ชื่อห้ามซ้ำภายในภาษาเดียวกัน ไม่ว่าแท็กที่ชื่อซ้ำจะสถานะใช้งานหรือไม่ใช้งานก็ตาม
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -47,7 +49,10 @@ class StoreArticleTagRequest extends FormRequest
         $rules = [];
 
         foreach (Setting::selectedLanguages() as $lang) {
-            $rules["detail.{$lang}.name"] = [$lang === $defaultLang ? 'required' : 'nullable', 'string', 'max:100'];
+            $rules["detail.{$lang}.name"] = [
+                $lang === $defaultLang ? 'required' : 'nullable', 'string', 'max:100',
+                Rule::unique('article_tag_detail', 'name')->where(fn ($query) => $query->where('lang', $lang)),
+            ];
         }
 
         return $rules;

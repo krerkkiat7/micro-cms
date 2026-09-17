@@ -10,6 +10,8 @@ import type { LanguageOption } from '@/types';
 interface TagChip {
     id: number;
     name: string;
+    /** 'N' = แท็กไม่ใช้งาน — ยังเลือกได้ตามปกติ แต่แสดงเป็นโทนสีเทาเพื่อให้รู้ว่าไม่ใช้งานอยู่ */
+    status: 'Y' | 'N';
 }
 
 /**
@@ -103,8 +105,9 @@ async function add() {
     showNewTagDialog.value = true;
 }
 
-function onCreated(tag: TagChip) {
-    pick(tag);
+function onCreated(tag: { id: number; name: string }) {
+    // แท็กที่เพิ่งสร้างใหม่เป็น 'Y' (ใช้งาน) เสมอ — endpoint สร้างแท็กไม่ได้ส่ง status กลับมา
+    pick({ ...tag, status: 'Y' });
     showNewTagDialog.value = false;
 }
 </script>
@@ -115,10 +118,16 @@ function onCreated(tag: TagChip) {
             <span
                 v-for="chip in chips"
                 :key="chip.id"
-                class="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1 text-sm text-brand-700"
+                class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm"
+                :class="chip.status === 'N' ? 'bg-gray-100 text-gray-500' : 'bg-brand-50 text-brand-700'"
             >
                 {{ chip.name }}
-                <button type="button" class="text-brand-400 hover:text-brand-700" @click="remove(chip.id)">
+                <span v-if="chip.status === 'N'" class="text-xs">(ไม่ใช้งาน)</span>
+                <button
+                    type="button"
+                    :class="chip.status === 'N' ? 'text-gray-400 hover:text-gray-600' : 'text-brand-400 hover:text-brand-700'"
+                    @click="remove(chip.id)"
+                >
                     <X class="size-3.5" />
                 </button>
             </span>
@@ -135,8 +144,14 @@ function onCreated(tag: TagChip) {
                 />
                 <ul v-if="showResults && results.length" class="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
                     <li v-for="r in results" :key="r.id">
-                        <button type="button" class="block w-full px-3 py-2 text-left text-sm hover:bg-gray-50" @click="pick(r)">
+                        <button
+                            type="button"
+                            class="block w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+                            :class="r.status === 'N' ? 'text-gray-400' : 'text-gray-700'"
+                            @click="pick(r)"
+                        >
                             {{ r.name }}
+                            <span v-if="r.status === 'N'" class="text-xs">(ไม่ใช้งาน)</span>
                         </button>
                     </li>
                 </ul>

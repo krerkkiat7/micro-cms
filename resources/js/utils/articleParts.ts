@@ -1,3 +1,4 @@
+import { File as FileIcon, FileText, Files, Image as ImageIcon, Images, type LucideIcon, Video } from 'lucide-vue-next';
 import type { FileItem, LanguageOption } from '@/types';
 
 /**
@@ -14,6 +15,16 @@ export const PART_TYPE_LABELS: Record<PartType, string> = {
     video: 'วิดีโอ',
     document: 'เอกสารเดี่ยว',
     documents: 'กลุ่มเอกสาร',
+};
+
+/** ไอคอนของแต่ละประเภท part — ใช้ร่วมกันใน PartCard.vue, PartList.vue (ปุ่มเพิ่ม part) และ PartReorderDialog.vue */
+export const PART_TYPE_ICONS: Record<PartType, LucideIcon> = {
+    text: FileText,
+    image: ImageIcon,
+    images: Images,
+    video: Video,
+    document: FileIcon,
+    documents: Files,
 };
 
 /** รูปแบบแสดงผลของ part ประเภทกลุ่มรูปภาพ — slug ต้องตรงกับที่ backend ยอมรับ (ดู migration) */

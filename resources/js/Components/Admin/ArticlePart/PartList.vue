@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { Plus } from 'lucide-vue-next';
 import PartCard from './PartCard.vue';
 import PartReorderDialog from './PartReorderDialog.vue';
-import { createPart } from '@/utils/articleParts';
+import { createPart, PART_TYPE_ICONS } from '@/utils/articleParts';
 import type { PartData, PartType } from '@/utils/articleParts';
 import type { LanguageOption } from '@/types';
 
@@ -66,7 +65,7 @@ function applyOrder(order: PartData[]) {
                 class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
                 @click="addPart(opt.type)"
             >
-                <Plus class="size-3.5" /> {{ opt.label }}
+                <component :is="PART_TYPE_ICONS[opt.type]" class="size-3.5" /> {{ opt.label }}
             </button>
         </div>
 

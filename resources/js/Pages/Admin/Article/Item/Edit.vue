@@ -49,6 +49,7 @@ interface CategoryOption {
 interface TagChip {
     id: number;
     name: string;
+    status: 'Y' | 'N';
 }
 
 interface ServerPart {

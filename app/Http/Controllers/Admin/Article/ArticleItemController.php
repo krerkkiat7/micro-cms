@@ -353,8 +353,9 @@ class ArticleItemController extends Controller
 
     /**
      * แท็กที่ผูกกับบทความนี้อยู่แล้ว (ชื่อเป็นของภาษาหลัก) — ใช้แสดงเป็นกล่องข้อความเริ่มต้นใน TagPicker.vue
+     * ส่ง status ไปด้วยเพื่อให้ TagPicker.vue แสดงกล่องแท็กที่ไม่ใช้งานเป็นโทนสีเทา
      *
-     * @return list<array{id: int, name: string|null}>
+     * @return list<array{id: int, name: string|null, status: string}>
      */
     private function attachedTagChips(ArticleItemInfo $model): array
     {
@@ -364,8 +365,8 @@ class ArticleItemController extends Controller
             ->join('article_tag_detail as d', function ($join) use ($defaultLang) {
                 $join->on('d.id', '=', 'article_tag_info.id')->where('d.lang', $defaultLang);
             })
-            ->get(['article_tag_info.id', 'd.name as name'])
-            ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
+            ->get(['article_tag_info.id', 'article_tag_info.status', 'd.name as name'])
+            ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name, 'status' => $row->status])
             ->values()
             ->all();
     }
