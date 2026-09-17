@@ -19,15 +19,17 @@ const tabs = computed(() => [
     { label: 'ล้างแคช', href: route('admin.system.setting.clearcache'), active: true },
 ]);
 
-// รายการปุ่มล้างแคชรายกลุ่ม — group ต้องตรงกับ App\Support\Setting::GROUPS ฝั่ง backend
-// (รวมกลุ่มของโมดูลอื่นที่มาลงทะเบียนร่วมทะเบียนเดียวกัน เช่น 'article' — ไม่ใช่แค่กลุ่มของตั้งค่าระบบเอง)
-const groups = [
-    { group: 'site', label: 'ล้างแคช - ตั้งค่าระบบ : ข้อมูลระบบ' },
-    { group: 'smtp', label: 'ล้างแคช - ตั้งค่าระบบ : SMTP' },
-    { group: 'turnstile', label: 'ล้างแคช - ตั้งค่าระบบ : Turnstile' },
-    { group: 'login_back', label: 'ล้างแคช - ตั้งค่าระบบ : การเข้าสู่ระบบหลังบ้าน' },
-    { group: 'article', label: 'ล้างแคช - โมดูลบทความ : ตั้งค่า' },
+// ปุ่มล้างแคชของกลุ่มตั้งค่าระบบเอง (self::OWN_GROUPS ฝั่ง backend) — แยกกล่องจากกลุ่มของโมดูลอื่น
+const systemGroups = [
+    { group: 'site', label: 'ล้างแคช - ข้อมูลระบบ' },
+    { group: 'smtp', label: 'ล้างแคช - SMTP' },
+    { group: 'turnstile', label: 'ล้างแคช - Turnstile' },
+    { group: 'login_back', label: 'ล้างแคช - การเข้าสู่ระบบหลังบ้าน' },
 ];
+
+// ปุ่มล้างแคชของกลุ่มโมดูลบทความ — group ต้องตรงกับ App\Support\Setting::GROUPS ฝั่ง backend เช่นกัน
+// (มาลงทะเบียนร่วมทะเบียนเดียวกันกับกลุ่มตั้งค่าระบบ แต่แยกกล่องแสดงผลเพราะเป็นของคนละโมดูล)
+const articleGroups = [{ group: 'article', label: 'ล้างแคช - ตั้งค่า' }];
 
 const groupForm = useForm({});
 
@@ -60,14 +62,33 @@ function clearFiles() {
             <TabNav :tabs="tabs" />
 
             <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8">
-                <h2 class="text-base font-semibold text-gray-800">ล้างแคชรายกลุ่ม</h2>
+                <h2 class="text-base font-semibold text-gray-800">ล้างแคชตั้งค่าระบบ</h2>
                 <p class="mt-1 text-sm text-gray-500">
                     ล้างแคชของค่าตั้งค่าระบบแต่ละกลุ่ม — ระบบจะอ่านค่าล่าสุดจากฐานข้อมูลใหม่ในครั้งถัดไป
                 </p>
 
                 <div class="mt-5 flex flex-wrap gap-3">
                     <PrimaryButton
-                        v-for="item in groups"
+                        v-for="item in systemGroups"
+                        :key="item.group"
+                        type="button"
+                        :disabled="groupForm.processing"
+                        @click="clearGroup(item.group)"
+                    >
+                        <Trash2 class="mr-1.5 size-4" /> {{ item.label }}
+                    </PrimaryButton>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8">
+                <h2 class="text-base font-semibold text-gray-800">ล้างแคชบทความ</h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    ล้างแคชของโมดูลบทความแต่ละรายการ — ระบบจะอ่านค่าล่าสุดจากฐานข้อมูลใหม่ในครั้งถัดไป
+                </p>
+
+                <div class="mt-5 flex flex-wrap gap-3">
+                    <PrimaryButton
+                        v-for="item in articleGroups"
                         :key="item.group"
                         type="button"
                         :disabled="groupForm.processing"
