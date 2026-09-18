@@ -4,6 +4,8 @@ import PageHeader from '@/Components/Admin/PageHeader.vue';
 import LangFieldGroup from '@/Components/Admin/LangFieldGroup.vue';
 import DateTimeInput from '@/Components/Admin/DateTimeInput.vue';
 import ColorPickerInput from '@/Components/Admin/ColorPickerInput.vue';
+import IntropageDisplayTypePicker from '@/Components/Admin/IntropageDisplayTypePicker.vue';
+import IntropageDisplaySizePicker from '@/Components/Admin/IntropageDisplaySizePicker.vue';
 import ButtonList from '@/Components/Admin/IntropageButton/ButtonList.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
@@ -22,8 +24,6 @@ import {
     BACKGROUND_POSITION_OPTIONS,
     BACKGROUND_REPEAT_OPTIONS,
     BACKGROUND_SIZE_OPTIONS,
-    INTROPAGE_DISPLAY_SIZE_OPTIONS,
-    INTROPAGE_DISPLAY_TYPE_OPTIONS,
     STATUS_OPTIONS,
 } from '@/utils/options';
 import { buttonsFromServer, buttonsToPayload } from '@/utils/intropageButtons';
@@ -158,66 +158,24 @@ const breadcrumbs = computed(() => [
             <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8">
                 <h2 class="text-base font-semibold text-gray-800">ข้อมูลทั่วไป</h2>
 
-                <div class="mt-5 grid gap-4 sm:grid-cols-6">
-                    <div class="sm:col-span-2">
-                        <InputLabel value="สีพื้นหลัง" />
-                        <ColorPickerInput v-model="form.background_color" />
-                        <InputError :message="form.errors.background_color" />
-                    </div>
-                    <div class="sm:col-span-4">
-                        <InputLabel value="รูปภาพพื้นหลัง" />
-                        <FilePickerField v-model="backgroundImage" :accept="['jpg', 'jpeg', 'png', 'gif', 'webp']" />
-                        <InputError :message="form.errors.background_image_id" />
-                    </div>
-
-                    <div class="sm:col-span-2">
-                        <InputLabel value="Background Repeat" />
-                        <SearchableSelect v-model="form.background_repeat" :options="backgroundRepeatOptions" />
-                        <InputError :message="form.errors.background_repeat" />
-                    </div>
-                    <div class="sm:col-span-2">
-                        <InputLabel value="Background Size" />
-                        <SearchableSelect v-model="form.background_size" :options="backgroundSizeOptions" />
-                        <InputError :message="form.errors.background_size" />
-                    </div>
-                    <div class="sm:col-span-2">
-                        <InputLabel value="Background Attachment" />
-                        <SearchableSelect v-model="form.background_attachment" :options="backgroundAttachmentOptions" />
-                        <InputError :message="form.errors.background_attachment" />
-                    </div>
-                    <div class="sm:col-span-2">
-                        <InputLabel value="Background Position" />
-                        <SearchableSelect v-model="form.background_position" :options="backgroundPositionOptions" />
-                        <InputError :message="form.errors.background_position" />
-                    </div>
-
-                    <div class="sm:col-span-2">
+                <div class="mt-5 space-y-5">
+                    <div>
                         <InputLabel value="ประเภทการแสดงผล" required />
-                        <SearchableSelect v-model="form.display_type" :options="INTROPAGE_DISPLAY_TYPE_OPTIONS" />
+                        <IntropageDisplayTypePicker v-model="form.display_type" />
                         <InputError :message="form.errors.display_type" />
                     </div>
-                    <div class="sm:col-span-2">
-                        <InputLabel value="ขนาดการแสดงผล" required />
-                        <SearchableSelect v-model="form.display_size" :options="INTROPAGE_DISPLAY_SIZE_OPTIONS" />
-                        <InputError :message="form.errors.display_size" />
-                    </div>
-                    <div class="sm:col-span-2">
-                        <InputLabel value="สถานะ" required />
-                        <SearchableSelect v-model="form.status" :options="STATUS_OPTIONS" />
-                        <InputError :message="form.errors.status" />
-                    </div>
 
-                    <div v-if="form.display_type === 'image'" class="sm:col-span-6">
+                    <div v-if="form.display_type === 'image'">
                         <InputLabel value="รูปภาพ" required />
                         <FilePickerField v-model="imageFile" :accept="['jpg', 'jpeg', 'png', 'gif', 'webp']" />
                         <InputError :message="form.errors.image_file_id" />
                     </div>
-                    <div v-else-if="form.display_type === 'vdo'" class="sm:col-span-6">
+                    <div v-else-if="form.display_type === 'vdo'">
                         <InputLabel value="ไฟล์วิดีโอ" required />
                         <FilePickerField v-model="vdoFile" :accept="['mp4']" />
                         <InputError :message="form.errors.vdo_file_id" />
                     </div>
-                    <div v-else class="sm:col-span-6">
+                    <div v-else>
                         <InputLabel :value="form.display_type === 'youtubeurl' ? 'YouTube URL' : 'URL วิดีโอ'" required />
                         <TextInput
                             v-model="form.vdo_url"
@@ -227,15 +185,66 @@ const breadcrumbs = computed(() => [
                         <InputError :message="form.errors.vdo_url" />
                     </div>
 
-                    <div class="sm:col-span-3">
-                        <InputLabel value="วันที่ประกาศ" required />
-                        <DateTimeInput v-model="form.publish_date" />
-                        <InputError :message="form.errors.publish_date" />
+                    <div>
+                        <InputLabel value="ขนาดการแสดงผล" required />
+                        <IntropageDisplaySizePicker v-model="form.display_size" />
+                        <InputError :message="form.errors.display_size" />
                     </div>
-                    <div class="sm:col-span-3">
-                        <InputLabel value="วันที่ปิดประกาศ" required />
-                        <DateTimeInput v-model="form.publish_down" />
-                        <InputError :message="form.errors.publish_down" />
+
+                    <div class="border-t border-gray-100 pt-5">
+                        <h3 class="text-sm font-medium text-gray-600">พื้นหลัง</h3>
+
+                        <div class="mt-3 grid gap-4 sm:grid-cols-6">
+                            <div class="sm:col-span-2">
+                                <InputLabel value="สีพื้นหลัง" />
+                                <ColorPickerInput v-model="form.background_color" />
+                                <InputError :message="form.errors.background_color" />
+                            </div>
+                            <div class="sm:col-span-4">
+                                <InputLabel value="รูปภาพพื้นหลัง" />
+                                <FilePickerField v-model="backgroundImage" :accept="['jpg', 'jpeg', 'png', 'gif', 'webp']" />
+                                <InputError :message="form.errors.background_image_id" />
+                            </div>
+
+                            <div class="sm:col-span-2">
+                                <InputLabel value="Background Repeat" />
+                                <SearchableSelect v-model="form.background_repeat" :options="backgroundRepeatOptions" />
+                                <InputError :message="form.errors.background_repeat" />
+                            </div>
+                            <div class="sm:col-span-2">
+                                <InputLabel value="Background Size" />
+                                <SearchableSelect v-model="form.background_size" :options="backgroundSizeOptions" />
+                                <InputError :message="form.errors.background_size" />
+                            </div>
+                            <div class="sm:col-span-2">
+                                <InputLabel value="Background Attachment" />
+                                <SearchableSelect v-model="form.background_attachment" :options="backgroundAttachmentOptions" />
+                                <InputError :message="form.errors.background_attachment" />
+                            </div>
+                            <div class="sm:col-span-6 lg:col-span-2">
+                                <InputLabel value="Background Position" />
+                                <SearchableSelect v-model="form.background_position" :options="backgroundPositionOptions" />
+                                <InputError :message="form.errors.background_position" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid gap-4 border-t border-gray-100 pt-5 sm:grid-cols-6">
+                        <div class="sm:col-span-2">
+                            <InputLabel value="สถานะ" required />
+                            <SearchableSelect v-model="form.status" :options="STATUS_OPTIONS" />
+                            <InputError :message="form.errors.status" />
+                        </div>
+                        <div class="sm:col-span-2">
+                            <InputLabel value="วันที่ประกาศ" required />
+                            <DateTimeInput v-model="form.publish_date" />
+                            <InputError :message="form.errors.publish_date" />
+                        </div>
+                        <div class="sm:col-span-2">
+                            <InputLabel value="วันที่ปิดประกาศ" required />
+                            <DateTimeInput v-model="form.publish_down" />
+                            <InputError :message="form.errors.publish_down" />
+                        </div>
                     </div>
                 </div>
             </div>

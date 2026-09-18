@@ -17,26 +17,6 @@ export const LINK_TARGET_OPTIONS = [
     { value: '_blank', label: 'เปิดในแท็บใหม่' },
 ];
 
-/** ประเภทการแสดงผลสื่อหลักของหน้า Intropage (intropage_item_info.display_type) */
-export const INTROPAGE_DISPLAY_TYPE_OPTIONS = [
-    { value: 'image', label: 'รูปภาพ' },
-    { value: 'vdo', label: 'ไฟล์วิดีโอ' },
-    { value: 'vdourl', label: 'URL วิดีโอ' },
-    { value: 'youtubeurl', label: 'YouTube URL' },
-];
-
-/** ขนาดการแสดงผลสื่อหลักของหน้า Intropage เทียบกับความกว้างจอ/container (intropage_item_info.display_size) */
-export const INTROPAGE_DISPLAY_SIZE_OPTIONS = [
-    { value: 'screen_100', label: 'เต็มความกว้างหน้าจอ' },
-    { value: 'screen_75', label: '75% ของหน้าจอ' },
-    { value: 'screen_50', label: '50% ของหน้าจอ' },
-    { value: 'screen_25', label: '25% ของหน้าจอ' },
-    { value: 'container_100', label: 'เต็มความกว้าง container' },
-    { value: 'container_75', label: '75% ของ container' },
-    { value: 'container_50', label: '50% ของ container' },
-    { value: 'container_25', label: '25% ของ container' },
-];
-
 /** background-repeat มาตรฐาน CSS (intropage_item_info.background_repeat) */
 export const BACKGROUND_REPEAT_OPTIONS = [
     { value: 'repeat', label: 'ซ้ำเต็มพื้นที่ (repeat)' },

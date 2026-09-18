@@ -99,9 +99,15 @@
 **หน้าจอ** — เสร็จแล้ว (`Admin/Intropage/Item/{Index,Add,Edit}.vue`)
 - list Intropage (ค้นหาชื่อ, กรองสถานะ, เรียงชื่อ/วันที่ประกาศ/วันที่ปิดประกาศ/สถานะ, paging) — คอลัมน์ ชื่อ,
   วันที่ประกาศ, วันที่ปิดประกาศ, สถานะ
-- form เพิ่ม/แก้ไข ตามรูปแบบ 3 การ์ด (§0) — พื้นหลังใช้ `ColorPickerInput.vue` (ใหม่ — preset สี + กำหนดเอง)
-  + `FilePickerField.vue`, ประเภทการแสดงผลสลับฟิลด์ conditional ตาม `display_type` (รูป/ไฟล์วิดีโอ/URL),
-  ช่วงเวลาประกาศผ่าน `DateTimeInput.vue` (ทั้งสองฟิลด์ required ไม่มี `clearable`)
+- form เพิ่ม/แก้ไข ตามรูปแบบ 3 การ์ด (§0) — ลำดับฟิลด์ในการ์ด "ข้อมูลทั่วไป" ตั้งใจให้ไล่ตามการตัดสินใจของ
+  ผู้ใช้: **ประเภทการแสดงผล → ฟิลด์สื่อ conditional ตามประเภท → ขนาดการแสดงผล** ก่อน แล้วค่อยเป็นกลุ่ม
+  "พื้นหลัง" (สี/รูป/repeat/size/attachment/position) แยกด้วยเส้นคั่น + หัวข้อย่อย แล้วปิดท้ายด้วย
+  สถานะ/ช่วงเวลาประกาศ — `display_type` และ `display_size` ใช้ตัวเลือกแบบเห็นภาพประกอบ (ไดอะแกรม SVG)
+  แทน dropdown ธรรมดา ผ่าน `Components/Admin/IntropageDisplayTypePicker.vue` /
+  `IntropageDisplaySizePicker.vue` (เทียบเคียง `ArticlePart/ImagesDisplayTypePicker.vue` ของบทความ —
+  ข้อมูล label/description อยู่ที่ `utils/intropageDisplay.ts`) พื้นหลังใช้ `ColorPickerInput.vue`
+  (ใหม่ — preset สี + กำหนดเอง) + `FilePickerField.vue`, ช่วงเวลาประกาศผ่าน `DateTimeInput.vue`
+  (ทั้งสองฟิลด์ required ไม่มี `clearable`)
 
 **Permission code** (seed ไว้แล้วใน `DatabaseSeeder.php`) — `intropage.item.view`, `intropage.item.manage`,
 `intropage.item.delete`
