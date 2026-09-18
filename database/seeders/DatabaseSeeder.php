@@ -167,5 +167,8 @@ class DatabaseSeeder extends Seeder
 
         // หมวดหมู่บทความตัวอย่าง (ข้อมูลตัวอย่าง — แยกไฟล์)
         $this->call(ArticleSeeder::class);
+
+        // หมวดหมู่ป้ายโฆษณาตัวอย่าง (ข้อมูลตัวอย่าง — แยกไฟล์)
+        $this->call(BannerSeeder::class);
     }
 }

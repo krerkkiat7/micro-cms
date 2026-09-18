@@ -4,6 +4,9 @@ use App\Http\Controllers\Admin\Article\ArticleCategoryController;
 use App\Http\Controllers\Admin\Article\ArticleItemController;
 use App\Http\Controllers\Admin\Article\ArticleSettingController;
 use App\Http\Controllers\Admin\Article\ArticleTagController;
+use App\Http\Controllers\Admin\Banner\BannerCategoryController;
+use App\Http\Controllers\Admin\Banner\BannerItemController;
+use App\Http\Controllers\Admin\Banner\BannerSettingController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\System\BackLogAccessController;
@@ -117,6 +120,31 @@ Route::prefix('admin')->group(function () {
             Route::get('/clearcache', [ArticleSettingController::class, 'clearcache'])->name('admin.article.setting.clearcache');
             Route::post('/clearcache/setting', [ArticleSettingController::class, 'clearCacheSetting'])->name('admin.article.setting.clearcache.setting');
             Route::post('/clearcache-all', [ArticleSettingController::class, 'clearCacheAll'])->name('admin.article.setting.clearcache.all');
+        });
+
+        // หมวดหมู่ป้ายโฆษณา — ตรวจสอบสิทธิ์ในแต่ละ method ของ BannerCategoryController
+        Route::prefix('banner/category')->group(function () {
+            Route::get('/', [BannerCategoryController::class, 'index'])->name('admin.banner.category.index');
+            Route::get('/add', [BannerCategoryController::class, 'add'])->name('admin.banner.category.add');
+            Route::post('/', [BannerCategoryController::class, 'store'])->name('admin.banner.category.store');
+            Route::get('/{category}/edit', [BannerCategoryController::class, 'edit'])->name('admin.banner.category.edit');
+            Route::put('/{category}', [BannerCategoryController::class, 'update'])->name('admin.banner.category.update');
+            Route::delete('/{category}', [BannerCategoryController::class, 'destroy'])->name('admin.banner.category.destroy');
+        });
+
+        // ป้ายโฆษณา — ตรวจสอบสิทธิ์ในแต่ละ method ของ BannerItemController
+        Route::prefix('banner/item')->group(function () {
+            Route::get('/', [BannerItemController::class, 'index'])->name('admin.banner.item.index');
+            Route::get('/add', [BannerItemController::class, 'add'])->name('admin.banner.item.add');
+            Route::post('/', [BannerItemController::class, 'store'])->name('admin.banner.item.store');
+            Route::get('/{item}/edit', [BannerItemController::class, 'edit'])->name('admin.banner.item.edit');
+            Route::put('/{item}', [BannerItemController::class, 'update'])->name('admin.banner.item.update');
+            Route::delete('/{item}', [BannerItemController::class, 'destroy'])->name('admin.banner.item.destroy');
+        });
+
+        // ตั้งค่าโมดูลป้ายโฆษณา — placeholder เฉพาะ index (ยังไม่มีฟิลด์ให้บันทึก/ล้างแคชจริง)
+        Route::prefix('banner/setting')->group(function () {
+            Route::get('/', [BannerSettingController::class, 'index'])->name('admin.banner.setting.index');
         });
 
         // จัดการผู้ใช้งานหลังบ้าน (user_type = back) — ตรวจสอบสิทธิ์ในแต่ละ method ของ UserController
