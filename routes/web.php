@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\Banner\BannerCategoryController;
 use App\Http\Controllers\Admin\Banner\BannerItemController;
 use App\Http\Controllers\Admin\Banner\BannerSettingController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\Intropage\IntropageItemController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\System\BackLogAccessController;
 use App\Http\Controllers\Admin\System\BackLogActionController;
@@ -145,6 +146,18 @@ Route::prefix('admin')->group(function () {
         // ตั้งค่าโมดูลป้ายโฆษณา — placeholder เฉพาะ index (ยังไม่มีฟิลด์ให้บันทึก/ล้างแคชจริง)
         Route::prefix('banner/setting')->group(function () {
             Route::get('/', [BannerSettingController::class, 'index'])->name('admin.banner.setting.index');
+        });
+
+        // Intropage (หน้าคั่นก่อนเข้าเว็บ) — ตรวจสอบสิทธิ์ในแต่ละ method ของ IntropageItemController
+        // การจัดการปุ่มด้านล่าง (intropage_item_button) ส่งมาพร้อมกับ store/update ไม่มี route แยก
+        // (เหมือน article_item_part ที่จัดการอยู่ในฟอร์มบทความ ไม่มี PartController)
+        Route::prefix('intropage/item')->group(function () {
+            Route::get('/', [IntropageItemController::class, 'index'])->name('admin.intropage.item.index');
+            Route::get('/add', [IntropageItemController::class, 'add'])->name('admin.intropage.item.add');
+            Route::post('/', [IntropageItemController::class, 'store'])->name('admin.intropage.item.store');
+            Route::get('/{item}/edit', [IntropageItemController::class, 'edit'])->name('admin.intropage.item.edit');
+            Route::put('/{item}', [IntropageItemController::class, 'update'])->name('admin.intropage.item.update');
+            Route::delete('/{item}', [IntropageItemController::class, 'destroy'])->name('admin.intropage.item.destroy');
         });
 
         // จัดการผู้ใช้งานหลังบ้าน (user_type = back) — ตรวจสอบสิทธิ์ในแต่ละ method ของ UserController

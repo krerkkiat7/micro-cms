@@ -42,7 +42,9 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 > สถานะปัจจุบัน: **บทความ (article) เสร็จครบ** — หมวดหมู่ ตัวบทความ (`article_item_*` + content part
 > แบบลากสลับลำดับ + แท็ก) และหน้าตั้งค่าโมดูล (+ ล้างแคช) เสร็จครบ schema+CRUD+UI แล้ว รายละเอียดเต็มดู
 > [PRD-article.md](PRD-article.md) **banner เสร็จหมวดหมู่+ป้ายโฆษณาแล้ว** (หน้าตั้งค่ายังเป็น placeholder)
-> รายละเอียดเต็มดู [PRD-banner.md](PRD-banner.md) ที่เหลือ (popup/intropage/page/contact us) ยังไม่ได้เริ่ม
+> รายละเอียดเต็มดู [PRD-banner.md](PRD-banner.md) **intropage เสร็จ schema+CRUD+UI แล้ว** (บันทึกเก็บได้หลาย
+> รายการ พร้อมปุ่มด้านล่างแบบเรียงลำดับ/เพิ่ม/ลบได้ — กติกาว่าจะ "แสดงจริง" รายการไหนยังไม่ทำที่หน้าบ้าน)
+> รายละเอียดเต็มดู [PRD-intropage.md](PRD-intropage.md) ที่เหลือ (popup/page/contact us) ยังไม่ได้เริ่ม
 > มีแค่ไฟล์ว่าง `app/Http/Controllers/Admin/PostController.php` ตารางด้านล่างเป็นเป้าหมายที่จะทยอยทำ
 > (ยังไม่ได้ออกแบบ schema ละเอียด)
 
@@ -51,7 +53,7 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 | **บทความ (article)** — [PRD-article.md](PRD-article.md) | ข่าว/บทความ มีหมวดหมู่ 1 ระดับ (1 บทความ 1 หมวดหมู่), รองรับ SEO/AEO/GEO และหลายภาษาตาม `sys_setting` | หมวดหมู่: รูปปก+ลำดับ+สถานะ (ร่วม) + หัวข้อ/slug/SEO (แยกภาษา) · บทความ: หมวดหมู่+รูปปก+วันเผยแพร่ (ร่วม) + หัวข้อ/slug/SEO (แยกภาษา) + เนื้อหาแบบแบ่ง part (ข้อความ/รูปภาพ/วิดีโอ/เอกสาร) + แท็ก | หมวดหมู่: list, form (เสร็จ) · บทความ: list, add, edit + part editor (เสร็จ) · แท็ก: list, add, edit (เสร็จ) · ตั้งค่า: index + ล้างแคช (เสร็จ) | `article.category.view/manage/delete` `article.item.view/manage/delete` (ใช้ร่วมกับหน้าจัดการแท็กด้วย) `article.setting.manage` (seed แล้ว) |
 | **banner** — [PRD-banner.md](PRD-banner.md) | แบนเนอร์รูปภาพตามตำแหน่งแสดงผล (หมวดหมู่ = ตำแหน่ง เช่น ไฮไลท์/หน่วยงานที่เกี่ยวข้อง), 1 ระดับ (1 ป้ายโฆษณา 1 หมวดหมู่), ไม่มี SEO/หลายภาษาต่อรูป | หมวดหมู่: สถานะ (ร่วม) + ชื่อ/ข้อความเกริ่นนำ (แยกภาษา) · ป้ายโฆษณา: หมวดหมู่+รูปภาพ (ร่วม ใช้รูปเดียวกันทุกภาษา)+ลิงก์+เป้าหมายลิงก์+ช่วงเวลาแสดง+ลำดับ+สถานะ (ร่วม) + ชื่อ/ข้อความเกริ่นนำ (แยกภาษา) + จำนวนคลิก (เก็บไว้ใช้อนาคต ยังไม่มี UI) | หมวดหมู่: list, form (เสร็จ) · ป้ายโฆษณา: list, add, edit (เสร็จ) · ตั้งค่า: placeholder เท่านั้น | `banner.category.view/manage/delete` `banner.item.view/manage/delete` `banner.setting.manage` (seed แล้ว) |
 | **popup** | ป๊อปอัปประกาศเมื่อเข้าเว็บ | รูป/เนื้อหา, ลิงก์, ช่วงเวลาแสดง, เงื่อนไขแสดง (หน้าไหน/ความถี่), สถานะ | list, form | `popup.view` `popup.create` `popup.delete` |
-| **intropage** | หน้าคั่นก่อนเข้าเว็บ (splash/โปรโมชัน) | รูป/วิดีโอพื้นหลัง, ปุ่ม, ช่วงเวลาแสดง, เปิด/ปิด | form เดี่ยว + preview | `intropage.view` `intropage.create` |
+| **intropage** | หน้าคั่นก่อนเข้าเว็บ (splash/โปรโมชัน) | สี/รูป/วิดีโอพื้นหลัง, ข้อความต้อนรับต่อภาษา, ปุ่ม (home + เพิ่มเอง), ช่วงเวลาประกาศ, สถานะ | list, form (บันทึกได้หลายรายการ แสดงจริงได้ทีละ 1 — คำนวณที่หน้าบ้าน) | `intropage.item.view` `intropage.item.manage` `intropage.item.delete` |
 | **page (หน้าเดี่ยว)** | หน้าเนื้อหาคงที่ เช่น เกี่ยวกับเรา/นโยบาย | หัวข้อ, slug, เนื้อหา (rich text) ต่อภาษา, template ที่ใช้, สถานะ | list, form, ผูกกับเมนู | `page.view` `page.create` `page.delete` |
 | **contact us** | ฟอร์มติดต่อหน้าบ้าน + กล่องข้อความที่ส่งเข้ามา | ตั้งค่าฟอร์ม/อีเมลรับแจ้ง + ตารางข้อความที่ส่งเข้ามา (ชื่อ, อีเมล, เรื่อง, ข้อความ, อ่าน/ยังไม่อ่าน) | ตั้งค่า, list ข้อความ, อ่าน/ลบ | `contact.view` `contact.setting` `contact.delete` |
 
@@ -190,7 +192,7 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 | จัดการกลุ่มผู้ใช้งาน (CRUD `sys_usergroup` + กำหนดสิทธิ์) | ✅ list + add + edit + **หน้ากำหนดสิทธิ์** (tree `sys_action_group`/`sys_action`, checkbox parent→ลูก, เลือก/ไม่เลือกทั้งหมดต่อกลุ่ม, บันทึกแบบ detach+attach); `can_edit`/`can_delete`, guard ชื่อซ้ำ/มีสมาชิก | — |
 | profile | ✅ มี (แก้ชื่อ/ช่องทางติดต่อ/อีเมล) | เพิ่มอัปโหลดรูปโปรไฟล์ (อนาคต) |
 | dashboard | 🟡 placeholder (การ์ดสถิติ "—") | ต่อสถิติจริงเมื่อมีโมดูล |
-| โมดูลเนื้อหาทั้ง 6 | 🟡 บทความ (article) เสร็จครบ — หมวดหมู่ ตัวบทความ (list/add/edit + part editor + แท็ก) และหน้าตั้งค่าโมดูล เสร็จครบ; banner เสร็จหมวดหมู่+ป้ายโฆษณา (ตั้งค่ายังเป็น placeholder); popup/intropage/page/contact us ยังไม่มี | ทยอยทำ |
+| โมดูลเนื้อหาทั้ง 6 | 🟡 บทความ (article) เสร็จครบ — หมวดหมู่ ตัวบทความ (list/add/edit + part editor + แท็ก) และหน้าตั้งค่าโมดูล เสร็จครบ; banner เสร็จหมวดหมู่+ป้ายโฆษณา (ตั้งค่ายังเป็น placeholder); intropage เสร็จ list/add/edit + ปุ่มแบบเรียงลำดับ; popup/page/contact us ยังไม่มี | ทยอยทำ |
 | จัดการเมนูหลังบ้าน (`sys_menu_group`/`sys_menu`) | 🟢 ตาราง + seed + `AppSidebar` อ่านจาก DB (กรองตามสิทธิ์) | หน้า CRUD จัดเมนู |
 | จัดการเมนูหน้าบ้าน / template / ประวัติ / file management | ❌ ยังไม่มี | ทยอยทำ (ดู PRD-system.md) |
 | ตั้งค่าระบบ (`sys_setting`) | 🟡 มีตาราง + seed ตัวอย่างแล้ว | หน้า UI จัดการ + helper อ่านค่า |
@@ -223,5 +225,5 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 | 1 — จัดการผู้ใช้ & สิทธิ์ | ~~CRUD `sys_user`~~ ✅ · ~~CRUD `sys_usergroup` + หน้ากำหนดสิทธิ์แบบ tree~~ ✅; เหลือ middleware บังคับสิทธิ์, ล็อกบัญชีเมื่อ login ผิดเกินเกณฑ์ (`sys_setting`), self-guard เปลี่ยนกลุ่มบัญชีตัวเอง |
 | 2 — ตั้งค่าระบบ & template & เมนู | หน้า `sys_setting`, `sys_template`; หน้า CRUD เมนูหลังบ้าน (`AppSidebar` อ่านจาก DB แล้ว); `sys_front_menu` (tree) สำหรับหน้าบ้าน |
 | 3 — โมดูลเนื้อหาแรก | บทความ (article) + page (หน้าเดี่ยว) + file management (`sys_file`) |
-| **4 — โมดูลที่เหลือ** *(banner เสร็จหมวดหมู่+ป้ายโฆษณาแล้ว)* | ~~banner~~ ✅ (ตั้งค่ายังเป็น placeholder); เหลือ popup, intropage, contact us |
+| **4 — โมดูลที่เหลือ** *(banner เสร็จหมวดหมู่+ป้ายโฆษณาแล้ว, intropage เสร็จแล้ว)* | ~~banner~~ ✅ (ตั้งค่ายังเป็น placeholder); ~~intropage~~ ✅; เหลือ popup, contact us |
 | 5 — ประวัติ & dashboard จริง | `sys_log_login` / `sys_log_visit` / `sys_log_action` + สถิติ dashboard |
