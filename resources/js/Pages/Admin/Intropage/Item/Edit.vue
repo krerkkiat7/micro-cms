@@ -225,20 +225,20 @@ const breadcrumbs = computed(() => [
                     </div>
 
                     <div class="grid gap-4 border-t border-gray-100 pt-5 sm:grid-cols-6">
-                        <div class="sm:col-span-2">
-                            <InputLabel value="สถานะ" required />
-                            <SearchableSelect v-model="form.status" :options="STATUS_OPTIONS" />
-                            <InputError :message="form.errors.status" />
-                        </div>
-                        <div class="sm:col-span-2">
+                        <div class="sm:col-span-3">
                             <InputLabel value="วันที่ประกาศ" required />
                             <DateTimeInput v-model="form.publish_date" />
                             <InputError :message="form.errors.publish_date" />
                         </div>
-                        <div class="sm:col-span-2">
+                        <div class="sm:col-span-3">
                             <InputLabel value="วันที่ปิดประกาศ" required />
                             <DateTimeInput v-model="form.publish_down" />
                             <InputError :message="form.errors.publish_down" />
+                        </div>
+                        <div class="sm:col-span-2">
+                            <InputLabel value="สถานะ" required />
+                            <SearchableSelect v-model="form.status" :options="STATUS_OPTIONS" />
+                            <InputError :message="form.errors.status" />
                         </div>
                     </div>
                 </div>
