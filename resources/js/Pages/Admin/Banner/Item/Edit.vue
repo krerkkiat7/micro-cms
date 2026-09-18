@@ -127,7 +127,7 @@ const breadcrumbs = computed(() => [
                         <FilePickerField v-model="introImage" :accept="['jpg', 'jpeg', 'png', 'gif', 'webp']" />
                         <InputError :message="form.errors.intro_image_id" />
                     </div>
-                    <div class="sm:col-span-4">
+                    <div class="sm:col-span-3">
                         <InputLabel value="ลิงก์" />
                         <TextInput v-model="form.url" type="text" placeholder="https://..." />
                         <InputError :message="form.errors.url" />
@@ -137,20 +137,20 @@ const breadcrumbs = computed(() => [
                         <SearchableSelect v-model="form.link_target" :options="LINK_TARGET_OPTIONS" />
                         <InputError :message="form.errors.link_target" />
                     </div>
-                    <div class="sm:col-span-2">
+                    <div class="sm:col-span-1">
+                        <InputLabel value="ลำดับ" />
+                        <TextInput v-model="form.sort_order" type="number" min="0" step="1" />
+                        <InputError :message="form.errors.sort_order" />
+                    </div>
+                    <div class="sm:col-span-3">
                         <InputLabel value="วันที่เผยแพร่" required />
                         <DateTimeInput v-model="form.publish_date" />
                         <InputError :message="form.errors.publish_date" />
                     </div>
-                    <div class="sm:col-span-2">
+                    <div class="sm:col-span-3">
                         <InputLabel value="วันที่ปิดการเผยแพร่" />
                         <DateTimeInput v-model="form.publish_down" clearable />
                         <InputError :message="form.errors.publish_down" />
-                    </div>
-                    <div class="sm:col-span-2">
-                        <InputLabel value="ลำดับ" />
-                        <TextInput v-model="form.sort_order" type="number" min="0" step="1" />
-                        <InputError :message="form.errors.sort_order" />
                     </div>
                 </div>
             </div>
