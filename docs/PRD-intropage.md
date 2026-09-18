@@ -106,7 +106,12 @@
   แทน dropdown ธรรมดา ผ่าน `Components/Admin/IntropageDisplayTypePicker.vue` /
   `IntropageDisplaySizePicker.vue` (เทียบเคียง `ArticlePart/ImagesDisplayTypePicker.vue` ของบทความ —
   ข้อมูล label/description อยู่ที่ `utils/intropageDisplay.ts`) พื้นหลังใช้ `ColorPickerInput.vue`
-  (ใหม่ — preset สี + กำหนดเอง) + `FilePickerField.vue`, ช่วงเวลาประกาศผ่าน `DateTimeInput.vue`
+  (ใหม่ — preset สี + กำหนดเอง) + `FilePickerField.vue` สำหรับสี/รูป ส่วน repeat/size/attachment/position
+  (CSS background 4 ฟิลด์) ก็เป็นตัวเลือกแบบเห็นภาพประกอบเช่นกัน ผ่าน
+  `Components/Admin/IntropageBackground/{RepeatPicker,SizePicker,AttachmentPicker,PositionPicker}.vue`
+  (ข้อมูลอยู่ที่ `utils/intropageBackground.ts`) — ทั้ง 4 ฟิลด์นี้ nullable ที่ DB จึงมีการ์ด "ไม่ระบุ"
+  เพิ่มมาด้วยเสมอ (position เรียงการ์ดจริง 9 ตำแหน่งเป็น 3x3 ให้ตรงกับไดอะแกรมก่อน แล้วค่อยต่อท้ายด้วย
+  การ์ด "ไม่ระบุ" แยกแถว ไม่ปนกับ 3x3 เพื่อไม่ให้ตำแหน่งเยื้อง), ช่วงเวลาประกาศผ่าน `DateTimeInput.vue`
   (ทั้งสองฟิลด์ required ไม่มี `clearable`)
 
 **Permission code** (seed ไว้แล้วใน `DatabaseSeeder.php`) — `intropage.item.view`, `intropage.item.manage`,

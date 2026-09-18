@@ -6,6 +6,10 @@ import DateTimeInput from '@/Components/Admin/DateTimeInput.vue';
 import ColorPickerInput from '@/Components/Admin/ColorPickerInput.vue';
 import IntropageDisplayTypePicker from '@/Components/Admin/IntropageDisplayTypePicker.vue';
 import IntropageDisplaySizePicker from '@/Components/Admin/IntropageDisplaySizePicker.vue';
+import BackgroundRepeatPicker from '@/Components/Admin/IntropageBackground/RepeatPicker.vue';
+import BackgroundSizePicker from '@/Components/Admin/IntropageBackground/SizePicker.vue';
+import BackgroundAttachmentPicker from '@/Components/Admin/IntropageBackground/AttachmentPicker.vue';
+import BackgroundPositionPicker from '@/Components/Admin/IntropageBackground/PositionPicker.vue';
 import ButtonList from '@/Components/Admin/IntropageButton/ButtonList.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
@@ -19,13 +23,7 @@ import FilePickerField from '@/Components/Admin/FileManager/FilePickerField.vue'
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { Save, Trash2 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
-import {
-    BACKGROUND_ATTACHMENT_OPTIONS,
-    BACKGROUND_POSITION_OPTIONS,
-    BACKGROUND_REPEAT_OPTIONS,
-    BACKGROUND_SIZE_OPTIONS,
-    STATUS_OPTIONS,
-} from '@/utils/options';
+import { STATUS_OPTIONS } from '@/utils/options';
 import { buttonsFromServer, buttonsToPayload } from '@/utils/intropageButtons';
 import type { ButtonData, ButtonType, ButtonDisplayType } from '@/utils/intropageButtons';
 import type { FileItem, LanguageOption } from '@/types';
@@ -72,12 +70,6 @@ const props = defineProps<{
     languages: LanguageOption[];
     can: { manage: boolean; delete: boolean };
 }>();
-
-const optionalOption = { value: '', label: 'ไม่ระบุ' };
-const backgroundRepeatOptions = computed(() => [optionalOption, ...BACKGROUND_REPEAT_OPTIONS]);
-const backgroundSizeOptions = computed(() => [optionalOption, ...BACKGROUND_SIZE_OPTIONS]);
-const backgroundAttachmentOptions = computed(() => [optionalOption, ...BACKGROUND_ATTACHMENT_OPTIONS]);
-const backgroundPositionOptions = computed(() => [optionalOption, ...BACKGROUND_POSITION_OPTIONS]);
 
 const form = useForm({
     background_color: props.item.background_color ?? '',
@@ -191,10 +183,10 @@ const breadcrumbs = computed(() => [
                         <InputError :message="form.errors.display_size" />
                     </div>
 
-                    <div class="border-t border-gray-100 pt-5">
+                    <div class="space-y-5 border-t border-gray-100 pt-5">
                         <h3 class="text-sm font-medium text-gray-600">พื้นหลัง</h3>
 
-                        <div class="mt-3 grid gap-4 sm:grid-cols-6">
+                        <div class="grid gap-4 sm:grid-cols-6">
                             <div class="sm:col-span-2">
                                 <InputLabel value="สีพื้นหลัง" />
                                 <ColorPickerInput v-model="form.background_color" />
@@ -205,27 +197,30 @@ const breadcrumbs = computed(() => [
                                 <FilePickerField v-model="backgroundImage" :accept="['jpg', 'jpeg', 'png', 'gif', 'webp']" />
                                 <InputError :message="form.errors.background_image_id" />
                             </div>
+                        </div>
 
-                            <div class="sm:col-span-2">
-                                <InputLabel value="Background Repeat" />
-                                <SearchableSelect v-model="form.background_repeat" :options="backgroundRepeatOptions" />
-                                <InputError :message="form.errors.background_repeat" />
-                            </div>
-                            <div class="sm:col-span-2">
-                                <InputLabel value="Background Size" />
-                                <SearchableSelect v-model="form.background_size" :options="backgroundSizeOptions" />
-                                <InputError :message="form.errors.background_size" />
-                            </div>
-                            <div class="sm:col-span-2">
-                                <InputLabel value="Background Attachment" />
-                                <SearchableSelect v-model="form.background_attachment" :options="backgroundAttachmentOptions" />
-                                <InputError :message="form.errors.background_attachment" />
-                            </div>
-                            <div class="sm:col-span-6 lg:col-span-2">
-                                <InputLabel value="Background Position" />
-                                <SearchableSelect v-model="form.background_position" :options="backgroundPositionOptions" />
-                                <InputError :message="form.errors.background_position" />
-                            </div>
+                        <div>
+                            <InputLabel value="การเรียงซ้ำ (Background Repeat)" />
+                            <BackgroundRepeatPicker v-model="form.background_repeat" />
+                            <InputError :message="form.errors.background_repeat" />
+                        </div>
+
+                        <div>
+                            <InputLabel value="ขนาด (Background Size)" />
+                            <BackgroundSizePicker v-model="form.background_size" />
+                            <InputError :message="form.errors.background_size" />
+                        </div>
+
+                        <div>
+                            <InputLabel value="การเลื่อน (Background Attachment)" />
+                            <BackgroundAttachmentPicker v-model="form.background_attachment" />
+                            <InputError :message="form.errors.background_attachment" />
+                        </div>
+
+                        <div>
+                            <InputLabel value="ตำแหน่ง (Background Position)" />
+                            <BackgroundPositionPicker v-model="form.background_position" />
+                            <InputError :message="form.errors.background_position" />
                         </div>
                     </div>
 
