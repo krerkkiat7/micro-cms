@@ -68,8 +68,9 @@ class BannerItemController extends Controller
             ->leftJoin('banner_category_detail as cd', function ($join) use ($defaultLang) {
                 $join->on('cd.id', '=', 'banner_item_info.banner_category_info_id')->where('cd.lang', $defaultLang);
             })
+            ->leftJoin('file_info as img', 'img.id', '=', 'banner_item_info.intro_image_id')
             ->whereNull('d.deleted_at') // join ตรง ไม่ผ่าน scope ของ model ต้องกันเองไม่ให้ดึงแถวที่ถูกลบ
-            ->select('banner_item_info.*', 'd.title as title', 'd.intro_text as intro_text', 'cd.title as category_title')
+            ->select('banner_item_info.*', 'd.title as title', 'd.intro_text as intro_text', 'cd.title as category_title', 'img.hash_name as intro_image_hash_name')
             ->when($filters['q'] !== null, function ($query) use ($filters) {
                 $term = $filters['q'];
                 $query->where(fn ($inner) => $inner
@@ -86,6 +87,7 @@ class BannerItemController extends Controller
                 'id' => $item->id,
                 'title' => $item->title,
                 'category_title' => $item->category_title,
+                'intro_image_hash_name' => $item->intro_image_hash_name,
                 'sort_order' => $item->sort_order,
                 'publish_date' => optional($item->publish_date)->format('Y-m-d H:i:s'),
                 'status' => $item->status,

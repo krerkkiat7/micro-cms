@@ -17,6 +17,7 @@ interface Row {
     id: number;
     title: string | null;
     category_title: string | null;
+    intro_image_hash_name: string | null;
     sort_order: number;
     publish_date: string | null;
     status: string;
@@ -151,9 +152,10 @@ const breadcrumbs = [
             <!-- ตาราง -->
             <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs">
                 <div class="overflow-x-auto">
-                    <table class="w-full min-w-[760px] text-left text-sm">
+                    <table class="w-full min-w-[900px] text-left text-sm">
                         <thead class="border-b border-gray-200 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                             <tr>
+                                <th class="w-40 px-4 py-3 font-medium">รูปภาพ</th>
                                 <th class="px-4 py-3 font-medium">
                                     <button type="button" class="inline-flex items-center gap-1 transition-colors hover:text-gray-700" @click="sortBy('title')">
                                         ชื่อ
@@ -193,6 +195,15 @@ const breadcrumbs = [
                                 class="cursor-pointer transition-colors hover:bg-gray-50"
                                 @click="goToEdit(row.id)"
                             >
+                                <td class="w-40 px-4 py-3">
+                                    <img
+                                        v-if="row.intro_image_hash_name"
+                                        :src="route('admin.system.file.get.thumbnail.size', { size: 320, hashname: row.intro_image_hash_name })"
+                                        :alt="row.title ?? ''"
+                                        class="h-auto w-32 rounded-lg border border-gray-200 object-contain"
+                                    />
+                                    <span v-else class="text-gray-400">-</span>
+                                </td>
                                 <td class="px-4 py-3">
                                     <Link :href="route('admin.banner.item.edit', row.id)" class="font-medium text-brand-600 hover:text-brand-700" @click.stop>
                                         {{ row.title ?? '(ไม่มีชื่อ)' }}
@@ -206,7 +217,7 @@ const breadcrumbs = [
                                 </td>
                             </tr>
                             <tr v-if="items.data.length === 0">
-                                <td colspan="5" class="px-4 py-10 text-center text-gray-500">ไม่พบป้ายโฆษณาตามเงื่อนไข</td>
+                                <td colspan="6" class="px-4 py-10 text-center text-gray-500">ไม่พบป้ายโฆษณาตามเงื่อนไข</td>
                             </tr>
                         </tbody>
                     </table>

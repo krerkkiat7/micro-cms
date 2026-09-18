@@ -45,12 +45,19 @@ props.languages.forEach((lang) => {
 
 const categoryOptions = computed(() => props.categories.map((cat) => ({ value: String(cat.id), label: cat.title ?? '(ไม่มีชื่อ)' })));
 
+function nowDateTime(): string {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+}
+
 const form = useForm({
     banner_category_info_id: '' as string,
     intro_image_id: null as number | null,
     url: '',
     link_target: '_self',
-    publish_date: null as string | null,
+    publish_date: nowDateTime() as string | null,
     publish_down: null as string | null,
     sort_order: '0',
     status: 'Y',
@@ -104,7 +111,7 @@ const breadcrumbs = [
                         <InputError :message="form.errors.status" />
                     </div>
                     <div class="sm:col-span-6">
-                        <InputLabel value="รูปภาพ" />
+                        <InputLabel value="รูปภาพ" required />
                         <FilePickerField v-model="introImage" :accept="['jpg', 'jpeg', 'png', 'gif', 'webp']" />
                         <InputError :message="form.errors.intro_image_id" />
                     </div>
@@ -119,8 +126,8 @@ const breadcrumbs = [
                         <InputError :message="form.errors.link_target" />
                     </div>
                     <div class="sm:col-span-2">
-                        <InputLabel value="วันที่เผยแพร่" />
-                        <DateTimeInput v-model="form.publish_date" clearable />
+                        <InputLabel value="วันที่เผยแพร่" required />
+                        <DateTimeInput v-model="form.publish_date" />
                         <InputError :message="form.errors.publish_date" />
                     </div>
                     <div class="sm:col-span-2">

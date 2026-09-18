@@ -26,6 +26,8 @@ class UpdateBannerItemRequest extends FormRequest
     {
         $messages = [
             'banner_category_info_id.required' => 'กรุณาเลือกหมวดหมู่',
+            'intro_image_id.required' => 'กรุณาเลือกรูปภาพ',
+            'publish_date.required' => 'กรุณากรอกวันที่เผยแพร่',
             'publish_down.after' => 'วันที่ปิดการเผยแพร่ต้องมากกว่าวันที่เผยแพร่',
         ];
 

@@ -27,14 +27,14 @@ trait BannerItemValidationRules
                     ->whereNull('deleted_at')),
             ],
             'intro_image_id' => [
-                'nullable', 'integer',
+                'required', 'integer',
                 Rule::exists('file_info', 'id')->where(fn ($query) => $query
                     ->where('status', 'Y')
                     ->whereNull('deleted_at')),
             ],
             'url' => ['nullable', 'string', 'max:500'],
             'link_target' => ['nullable', Rule::in(['_self', '_blank'])],
-            'publish_date' => ['nullable', 'date'],
+            'publish_date' => ['required', 'date'],
             'publish_down' => ['nullable', 'date', 'after:publish_date'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'status' => ['required', Rule::in(['Y', 'N'])],
