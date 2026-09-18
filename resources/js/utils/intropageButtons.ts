@@ -45,14 +45,15 @@ function emptyTexts(languages: LanguageOption[]): Record<string, string> {
     return texts;
 }
 
-/** สร้างปุ่ม "เข้าหน้าแรก" เริ่มต้น — เรียกครั้งเดียวตอนสร้างฟอร์มเพิ่ม Intropage ใหม่ (ลบไม่ได้จาก UI) */
+/** สร้างปุ่ม "เข้าหน้าแรก" เริ่มต้น — เรียกครั้งเดียวตอนสร้างฟอร์มเพิ่ม Intropage ใหม่ (ลบไม่ได้จาก UI)
+ *  ตั้งสีพื้นหลัง/ตัวอักษรเริ่มต้นเป็นดำ/ขาวไว้ก่อน (ปุ่มทั่วไปมักเป็นชุดสีนี้) แก้เองได้ในฟอร์ม */
 export function createHomeButton(languages: LanguageOption[]): ButtonData {
     return {
         _key: nextKey(),
         button_type: 'home',
         button_display_type: 'text',
-        background_color: '',
-        text_color: '',
+        background_color: '#000000',
+        text_color: '#ffffff',
         button_image: [],
         url: '',
         link_target: '_self',
@@ -60,14 +61,14 @@ export function createHomeButton(languages: LanguageOption[]): ButtonData {
     };
 }
 
-/** สร้างปุ่มเพิ่มเติม (button_type = other) ว่าง ๆ */
+/** สร้างปุ่มเพิ่มเติม (button_type = other) — ตั้งสีพื้นหลัง/ตัวอักษรเริ่มต้นเป็นดำ/ขาวไว้ก่อนเหมือนปุ่ม home */
 export function createOtherButton(languages: LanguageOption[]): ButtonData {
     return {
         _key: nextKey(),
         button_type: 'other',
         button_display_type: 'text',
-        background_color: '',
-        text_color: '',
+        background_color: '#000000',
+        text_color: '#ffffff',
         button_image: [],
         url: '',
         link_target: '_self',

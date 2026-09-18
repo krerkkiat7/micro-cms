@@ -52,7 +52,7 @@ function nowDateTime(): string {
 }
 
 const form = useForm({
-    background_color: '',
+    background_color: '#ffffff',
     background_image_id: null as number | null,
     background_repeat: '',
     background_size: '',
