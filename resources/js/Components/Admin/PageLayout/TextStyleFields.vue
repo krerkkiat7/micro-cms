@@ -10,10 +10,11 @@ import type { TextAlign, TextStyle } from '@/utils/pageLayout';
 /**
  * ชุดตั้งค่าการจัดรูปแบบตัวอักษรของข้อความ 1 ส่วน (หัวเรื่อง / หัวเรื่องรอง / ข้อความเกริ่นนำ) ของแถว/คอลัมน์/widget —
  * ขนาดตัวอักษร, ฟอนต์ (รายการฟอนต์ไทยจาก backend), การจัดตำแหน่ง (ชิดซ้าย/กึ่งกลาง/ชิดขวา) และสี (ไม่มีตัวเลือกโปร่งใส)
- * `style` = object ที่เก็บค่า (แก้ property ภายในตรง ๆ)
+ * `textStyle` = object ที่เก็บค่า (แก้ property ภายในตรง ๆ) — ห้ามตั้งชื่อ prop นี้ว่า `style` เพราะ Vue ถือเป็น attribute พิเศษ
+ * และคัดลอก object ให้ก่อนส่งเข้า component ทำให้ค่าที่แก้ไม่ถึง object เดิม
  */
 const props = defineProps<{
-    style: TextStyle;
+    textStyle: TextStyle;
     fonts: string[];
 }>();
 
@@ -23,15 +24,15 @@ const fontOptions = computed(() => props.fonts.map((font) => ({ value: font, lab
 
 // ค่าขนาดที่ไม่อยู่ในรายการสำเร็จรูป (เช่น ข้อมูลเดิม) ยังต้องแสดงและเลือกอยู่ได้
 const sizeOptions = computed(() => {
-    const current = String(props.style.font_size);
+    const current = String(props.textStyle.font_size);
 
     return FONT_SIZE_OPTIONS.some((o) => o.value === current) ? FONT_SIZE_OPTIONS : [...FONT_SIZE_OPTIONS, { value: current, label: `${current} px` }];
 });
 
 const size = computed({
-    get: () => String(props.style.font_size),
+    get: () => String(props.textStyle.font_size),
     set: (value: string) => {
-        props.style.font_size = Number(value);
+        props.textStyle.font_size = Number(value);
     },
 });
 </script>
@@ -44,7 +45,7 @@ const size = computed({
         </div>
         <div>
             <InputLabel value="ฟอนต์" />
-            <SearchableSelect v-model="style.font_family" :options="fontOptions" />
+            <SearchableSelect v-model="textStyle.font_family" :options="fontOptions" />
         </div>
         <div>
             <InputLabel value="จัดตำแหน่ง" />
@@ -56,11 +57,11 @@ const size = computed({
                     :title="option.label"
                     class="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border text-sm transition-colors"
                     :class="
-                        style.align === option.value
+                        textStyle.align === option.value
                             ? 'border-brand-500 bg-brand-50 text-brand-700 ring-1 ring-brand-500'
                             : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
                     "
-                    @click="style.align = option.value"
+                    @click="textStyle.align = option.value"
                 >
                     <component :is="ALIGN_ICONS[option.value]" class="size-4" />
                 </button>
@@ -68,7 +69,7 @@ const size = computed({
         </div>
         <div class="sm:col-span-3">
             <InputLabel value="สีตัวอักษร" />
-            <ColorPickerInput v-model="style.color" />
+            <ColorPickerInput v-model="textStyle.color" />
         </div>
     </div>
 </template>

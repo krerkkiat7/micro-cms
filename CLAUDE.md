@@ -280,6 +280,8 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   `2026_09_20_000002_*`, ศูนย์กลางที่ `App\Support\PageTextStyle` + trait `HasPageTextStyle`), widget มีพื้นหลังเหมือนแถว/คอลัมน์;
   หัวเรื่องที่แสดงใช้ `<h2>`/`<h3>`/`<h4>` (แถว/คอลัมน์/widget) ส่วนหัวเรื่องรองและเกริ่นนำเป็น `<div>`; แถบจัดการมีไอคอนถังขยะ (confirm ก่อนลบ);
   หน้าโครงสร้างโหลดฟอนต์ไทยจาก Bunny Fonts (`fontsUrl`)
+  **ข้อควรระวัง:** ห้ามตั้งชื่อ prop ของ Vue component ว่า `style`/`class` แล้วส่งค่า object เข้ามา — Vue ถือเป็น attribute พิเศษและ
+  คัดลอก object ให้ก่อนส่ง (ค่าที่ component แก้ไม่ถึง object เดิม; เคยทำให้ตัวตั้งค่าตัวอักษรใน dialog แถว/คอลัมน์/widget ไม่ทำงาน แก้เป็น `textStyle`)
 
 ## ทดสอบ
 

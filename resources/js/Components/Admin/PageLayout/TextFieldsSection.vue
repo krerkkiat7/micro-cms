@@ -32,7 +32,7 @@ defineProps<{
 
         <div class="rounded-xl bg-gray-50 p-4">
             <p class="mb-3 text-xs font-medium text-gray-500">การจัดรูปแบบตัวอักษร — {{ label }}</p>
-            <TextStyleFields :style="textStyle" :fonts="fonts" />
+            <TextStyleFields :text-style="textStyle" :fonts="fonts" />
         </div>
     </div>
 </template>
