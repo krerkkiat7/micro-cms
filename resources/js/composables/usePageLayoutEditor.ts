@@ -16,6 +16,10 @@ export interface PageLayoutEditor {
     addWidget: (column: ColumnData) => void;
     /** สลับแสดง/ซ่อน (status Y/N) ของแถว/คอลัมน์/widget */
     toggleStatus: (item: { status: 'Y' | 'N' }) => void;
+    /** ขอลบ (มี dialog ยืนยันก่อน) — การลบมีผลกับฐานข้อมูลเมื่อกด "บันทึกโครงสร้าง" */
+    removeRow: (row: RowData) => void;
+    removeColumn: (row: RowData, column: ColumnData) => void;
+    removeWidget: (column: ColumnData, widget: WidgetData) => void;
     editRow: (row: RowData) => void;
     editColumn: (row: RowData, column: ColumnData) => void;
     editWidget: (column: ColumnData, widget: WidgetData) => void;

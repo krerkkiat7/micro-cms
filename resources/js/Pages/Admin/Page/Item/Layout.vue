@@ -9,7 +9,8 @@ import RowSettingsDialog from '@/Components/Admin/PageLayout/RowSettingsDialog.v
 import ColumnSettingsDialog from '@/Components/Admin/PageLayout/ColumnSettingsDialog.vue';
 import WidgetSettingsDialog from '@/Components/Admin/PageLayout/WidgetSettingsDialog.vue';
 import RowReorderDialog from '@/Components/Admin/PageLayout/RowReorderDialog.vue';
-import { Head, router } from '@inertiajs/vue3';
+import ConfirmDialog from '@/Components/ConfirmDialog.vue';
+import { Head, Link, router } from '@inertiajs/vue3';
 import type { RequestPayload } from '@inertiajs/core';
 import { Plus, Save } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue';
@@ -39,6 +40,9 @@ const props = defineProps<{
     };
     rows: ServerRow[];
     languages: LanguageOption[];
+    /** รายการชื่อฟอนต์ไทยให้เลือกใน dialog ตั้งค่า + URL สไตล์ชีตที่โหลดฟอนต์เหล่านั้น (ให้เห็นฟอนต์จริงในตัวอย่าง) */
+    fonts: string[];
+    fontsUrl: string;
     can: { manage: boolean };
 }>();
 
@@ -90,7 +94,23 @@ function onBeforeUnload(e: BeforeUnloadEvent) {
 
 let removeInertiaGuard: (() => void) | null = null;
 
+// โหลดสไตล์ชีตฟอนต์ไทยทั้งหมดครั้งเดียว (ไม่ผูกกับหน้า — เบราว์เซอร์ดาวน์โหลดไฟล์ฟอนต์เฉพาะตัวที่ถูกใช้จริง)
+function loadFonts() {
+    const id = 'page-layout-fonts';
+
+    if (document.getElementById(id)) {
+        return;
+    }
+
+    const link = document.createElement('link');
+    link.id = id;
+    link.rel = 'stylesheet';
+    link.href = props.fontsUrl;
+    document.head.appendChild(link);
+}
+
 onMounted(() => {
+    loadFonts();
     window.addEventListener('beforeunload', onBeforeUnload);
     removeInertiaGuard = router.on('before', (event) => {
         if (dirty.value && !saving.value && !window.confirm('มีการเปลี่ยนแปลงโครงสร้างที่ยังไม่ได้บันทึก ต้องการออกจากหน้านี้หรือไม่?')) {
@@ -119,9 +139,21 @@ function saveRow(settings: RowSettings) {
     rowDialog.value = null;
 }
 
+function deleteRow(row: RowData | null) {
+    rows.value = rows.value.filter((r) => r !== row);
+}
+
+function deleteColumn(row: RowData, column: ColumnData) {
+    row.columns = row.columns.filter((c) => c !== column);
+}
+
+function deleteWidget(column: ColumnData, widget: WidgetData) {
+    column.widgets = column.widgets.filter((w) => w !== widget);
+}
+
+// ลบจาก dialog ตั้งค่า (dialog ถามยืนยันของตัวเองแล้ว)
 function removeRow() {
-    const target = rowDialog.value;
-    rows.value = rows.value.filter((r) => r !== target);
+    deleteRow(rowDialog.value);
     rowDialog.value = null;
 }
 
@@ -132,8 +164,7 @@ function saveColumn(settings: ColumnSettings) {
 
 function removeColumn() {
     if (columnDialog.value) {
-        const { row, column } = columnDialog.value;
-        row.columns = row.columns.filter((c) => c !== column);
+        deleteColumn(columnDialog.value.row, columnDialog.value.column);
     }
     columnDialog.value = null;
 }
@@ -145,10 +176,33 @@ function saveWidget(settings: WidgetSettings) {
 
 function removeWidget() {
     if (widgetDialog.value) {
-        const { column, widget } = widgetDialog.value;
-        column.widgets = column.widgets.filter((w) => w !== widget);
+        deleteWidget(widgetDialog.value.column, widgetDialog.value.widget);
     }
     widgetDialog.value = null;
+}
+
+// ลบจากไอคอนถังขยะบนแถบจัดการ — ถามยืนยันด้วย dialog เดียวกับที่อยู่ใน dialog ตั้งค่า แล้วค่อยลบ
+type PendingDelete =
+    | { kind: 'row'; row: RowData }
+    | { kind: 'column'; row: RowData; column: ColumnData }
+    | { kind: 'widget'; column: ColumnData; widget: WidgetData };
+
+const pendingDelete = ref<PendingDelete | null>(null);
+
+const DELETE_TEXTS = {
+    row: { title: 'ยืนยันการลบแถว', confirm: 'ลบแถว', message: 'ต้องการลบแถวนี้พร้อมคอลัมน์และ Widget ทั้งหมดภายในใช่หรือไม่?' },
+    column: { title: 'ยืนยันการลบคอลัมน์', confirm: 'ลบคอลัมน์', message: 'ต้องการลบคอลัมน์นี้พร้อม Widget ทั้งหมดภายในใช่หรือไม่?' },
+    widget: { title: 'ยืนยันการลบ Widget', confirm: 'ลบ Widget', message: 'ต้องการลบ Widget นี้ใช่หรือไม่?' },
+} as const;
+
+function confirmDelete() {
+    const target = pendingDelete.value;
+
+    if (target?.kind === 'row') deleteRow(target.row);
+    if (target?.kind === 'column') deleteColumn(target.row, target.column);
+    if (target?.kind === 'widget') deleteWidget(target.column, target.widget);
+
+    pendingDelete.value = null;
 }
 
 function applyRowOrder(order: RowData[]) {
@@ -164,6 +218,9 @@ provide(PAGE_LAYOUT_EDITOR, {
     toggleStatus: (target) => {
         target.status = target.status === 'Y' ? 'N' : 'Y';
     },
+    removeRow: (row) => (pendingDelete.value = { kind: 'row', row }),
+    removeColumn: (row, column) => (pendingDelete.value = { kind: 'column', row, column }),
+    removeWidget: (column, widget) => (pendingDelete.value = { kind: 'widget', column, widget }),
     editRow: (row) => (rowDialog.value = row),
     editColumn: (row, column) => (columnDialog.value = { row, column }),
     editWidget: (column, widget) => (widgetDialog.value = { column, widget }),
@@ -216,9 +273,6 @@ function formatDate(value: string | null): string {
 
             <div class="flex flex-wrap items-center gap-3">
                 <template v-if="can.manage">
-                    <SecondaryButton type="button" @click="addRow">
-                        <Plus class="mr-1.5 size-4" /> เพิ่มแถว
-                    </SecondaryButton>
                     <PrimaryButton type="button" :disabled="saving" @click="save">
                         <Save class="mr-1.5 size-4" /> บันทึกโครงสร้าง
                     </PrimaryButton>
@@ -235,6 +289,12 @@ function formatDate(value: string | null): string {
             </div>
 
             <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4 shadow-xs" :style="canvasStyle">
+                <div v-if="can.manage" class="mb-4">
+                    <SecondaryButton type="button" @click="addRow">
+                        <Plus class="mr-1.5 size-4" /> เพิ่มแถว
+                    </SecondaryButton>
+                </div>
+
                 <div class="space-y-4">
                     <RowBlock v-for="(row, index) in rows" :key="row._key" :row="row" :index="index" />
                 </div>
@@ -250,19 +310,33 @@ function formatDate(value: string | null): string {
                 </div>
             </div>
 
-            <div v-if="can.manage && rows.length > 0" class="flex items-center gap-3">
-                <PrimaryButton type="button" :disabled="saving" @click="save">
-                    <Save class="mr-1.5 size-4" /> บันทึกโครงสร้าง
-                </PrimaryButton>
-                <span v-if="dirty" class="text-sm font-medium text-amber-600">มีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก</span>
+            <div class="flex flex-wrap items-center gap-3">
+                <template v-if="can.manage">
+                    <PrimaryButton type="button" :disabled="saving" @click="save">
+                        <Save class="mr-1.5 size-4" /> บันทึกโครงสร้าง
+                    </PrimaryButton>
+                    <span v-if="dirty" class="text-sm font-medium text-amber-600">มีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก</span>
+                </template>
+                <Link :href="route('admin.page.item.index')" class="text-sm font-medium text-gray-500 hover:text-gray-700">
+                    กลับไปหน้ารายการ
+                </Link>
             </div>
         </div>
 
-        <RowSettingsDialog :show="rowDialog !== null" :row="rowDialog" :languages="languages" @close="rowDialog = null" @save="saveRow" @remove="removeRow" />
+        <RowSettingsDialog
+            :show="rowDialog !== null"
+            :row="rowDialog"
+            :languages="languages"
+            :fonts="fonts"
+            @close="rowDialog = null"
+            @save="saveRow"
+            @remove="removeRow"
+        />
         <ColumnSettingsDialog
             :show="columnDialog !== null"
             :column="columnDialog?.column ?? null"
             :languages="languages"
+            :fonts="fonts"
             @close="columnDialog = null"
             @save="saveColumn"
             @remove="removeColumn"
@@ -271,10 +345,21 @@ function formatDate(value: string | null): string {
             :show="widgetDialog !== null"
             :widget="widgetDialog?.widget ?? null"
             :languages="languages"
+            :fonts="fonts"
             @close="widgetDialog = null"
             @save="saveWidget"
             @remove="removeWidget"
         />
+        <ConfirmDialog
+            :show="pendingDelete !== null"
+            :title="pendingDelete ? DELETE_TEXTS[pendingDelete.kind].title : ''"
+            :confirm-text="pendingDelete ? DELETE_TEXTS[pendingDelete.kind].confirm : 'ลบ'"
+            @confirm="confirmDelete"
+            @cancel="pendingDelete = null"
+        >
+            {{ pendingDelete ? DELETE_TEXTS[pendingDelete.kind].message : '' }}
+            (การลบจะมีผลเมื่อกด "บันทึกโครงสร้าง")
+        </ConfirmDialog>
         <RowReorderDialog :show="showReorder" :rows="rows" :languages="languages" @close="showReorder = false" @confirm="applyRowOrder" />
     </AdminLayout>
 </template>

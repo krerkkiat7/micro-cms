@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import draggable from 'vuedraggable';
 import LayoutToolbar from './LayoutToolbar.vue';
+import LayoutTexts from './LayoutTexts.vue';
 import WidgetBlock from './WidgetBlock.vue';
 import { usePageLayoutEditor } from '@/composables/usePageLayoutEditor';
 import { backgroundStyle, displayTitle } from '@/utils/pageLayout';
@@ -9,7 +10,7 @@ import type { ColumnData, RowData } from '@/utils/pageLayout';
 
 /**
  * คอลัมน์ในแถว — กรอบเส้นปะ + พื้นหลังตามการตั้งค่า; widget ข้างในลากสลับลำดับได้ตรงนี้เลย และลากย้ายข้ามคอลัมน์ได้
- * (ทุกคอลัมน์ใช้ group เดียวกัน "page-widgets") ความกว้างของคอลัมน์กำหนดโดย RowBlock ผ่าน grid 12
+ * (ทุกคอลัมน์ใช้ group เดียวกัน "page-widgets"); เมื่อเปิด "แสดงหัวเรื่อง" จะแสดงหัวเรื่อง (h3) / หัวเรื่องรอง / ข้อความเกริ่นนำเหนือ widget ความกว้างของคอลัมน์กำหนดโดย RowBlock ผ่าน grid 12
  */
 const props = defineProps<{
     column: ColumnData;
@@ -36,12 +37,22 @@ const title = computed(() => displayTitle(props.column.detail, editor.languages,
             :readonly="editor.readonly"
             @settings="editor.editColumn(row, column)"
             @toggle="editor.toggleStatus(column)"
+            @remove="editor.removeColumn(row, column)"
             @add="editor.addWidget(column)"
         />
 
         <span class="absolute right-2 top-2 rounded bg-emerald-600/90 px-1.5 py-0.5 text-[10px] font-semibold text-white">
             {{ column.column_size }}/12
         </span>
+
+        <LayoutTexts
+            level="column"
+            :show="column.show_title === 'Y'"
+            :detail="column.detail"
+            :styles="column"
+            :languages="editor.languages"
+            class="px-3 pb-2 pt-1"
+        />
 
         <draggable
             v-model="column.widgets"

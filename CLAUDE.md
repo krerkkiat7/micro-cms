@@ -275,6 +275,11 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   ประเภทเดียว (แก้ `PageItemWidget::TYPES` + `WIDGET_TYPES` ใน `utils/pageLayout.ts` คู่กัน) — slug ของ `page_item_detail`
   ถูกเคลียร์เป็น null ตอนลบหน้า เพราะ unique(lang, slug) ระดับ DB ยังนับแถว detail ที่ไม่ถูก soft delete; `PageSeeder` สร้างหน้าตัวอย่าง
   (`is_temp='Y'`) รายละเอียดเต็มดู `docs/PRD-page.md`
+  รอบปรับปรุง: แถว/คอลัมน์/widget มี **หัวเรื่องรอง** (`*_detail.subtitle`) และการจัดรูปแบบตัวอักษรของหัวเรื่อง/หัวเรื่องรอง/ข้อความเกริ่นนำ
+  (ขนาด/ฟอนต์ไทย default Sarabun/จัดตำแหน่ง default กึ่งกลาง/สี default ดำ ไม่มี transparent — 12 คอลัมน์แบบแบนต่อตาราง, migration
+  `2026_09_20_000002_*`, ศูนย์กลางที่ `App\Support\PageTextStyle` + trait `HasPageTextStyle`), widget มีพื้นหลังเหมือนแถว/คอลัมน์;
+  หัวเรื่องที่แสดงใช้ `<h2>`/`<h3>`/`<h4>` (แถว/คอลัมน์/widget) ส่วนหัวเรื่องรองและเกริ่นนำเป็น `<div>`; แถบจัดการมีไอคอนถังขยะ (confirm ก่อนลบ);
+  หน้าโครงสร้างโหลดฟอนต์ไทยจาก Bunny Fonts (`fontsUrl`)
 
 ## ทดสอบ
 

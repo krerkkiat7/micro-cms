@@ -66,6 +66,7 @@ class UpdatePageItemLayoutRequest extends FormRequest
         return [
             'rows.*.background_color.regex' => 'รูปแบบสีพื้นหลังของแถวไม่ถูกต้อง',
             'rows.*.columns.*.background_color.regex' => 'รูปแบบสีพื้นหลังของคอลัมน์ไม่ถูกต้อง',
+            'rows.*.columns.*.widgets.*.background_color.regex' => 'รูปแบบสีพื้นหลังของ widget ไม่ถูกต้อง',
             'rows.*.columns.*.column_size.between' => 'ความกว้างคอลัมน์ต้องอยู่ระหว่าง 1 - 12',
             'rows.*.columns.*.widgets.*.widget_type.in' => 'ประเภท Widget ไม่ถูกต้อง',
         ];

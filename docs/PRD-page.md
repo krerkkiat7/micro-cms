@@ -105,11 +105,12 @@ hasMany; `rows()` hasMany เรียง `sort_order`), `App\Models\PageItemDet
 (`view` ตอนเปิดหน้าโครงสร้าง, `update` ตอนบันทึกโครงสร้าง) + `LogBackAccess::record()` ตาม pattern ของโมดูลอื่น
 (หน้ารายการเรียกเฉพาะตอนไม่มี query string)
 
-**Migration** — `database/migrations/2026_09_20_000001_create_page_item_tables.php` (สร้างทั้ง 8 ตารางของโมดูลในไฟล์เดียว)
+**Migration** — `database/migrations/2026_09_20_000001_create_page_item_tables.php` (สร้างทั้ง 8 ตารางของโมดูล) และ
+`2026_09_20_000002_add_text_style_to_page_item_layout_tables.php` (เพิ่มหัวเรื่องรอง + การจัดรูปแบบตัวอักษร + พื้นหลังของ widget — §2)
 
 **Seeder** — `database/seeders/PageSeeder.php` (เรียกจาก `DatabaseSeeder`) สร้างหน้าเพจตัวอย่าง 1 หน้า (`is_temp='Y'`,
 slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero (คอลัมน์ 12, เต็มความกว้าง + สีพื้นหลัง), เนื้อหา (คอลัมน์ 8 + 4 ใน container),
-ส่วนท้ายมีสีพื้นหลัง (คอลัมน์ 4 + 4 + 4) — ทุกคอลัมน์มี widget `placeholder` 1 ตัว; `updateOrCreate` resolve หน้าเดิมจากชื่อ
+ส่วนท้ายมีสีพื้นหลัง (คอลัมน์ 4 + 4 + 4) — สองแถวแรกเปิด "แสดงหัวเรื่อง" พร้อมหัวเรื่องรอง/ข้อความเกริ่นนำ, ทุกคอลัมน์มี widget `placeholder` 1 ตัว; `updateOrCreate` resolve หน้าเดิมจากชื่อ
 ของภาษาหลัก และสร้างโครงสร้างเฉพาะเมื่อหน้านั้นยังไม่มีแถว จึงรันซ้ำได้ (`php artisan db:seed --class=PageSeeder`)
 
 ---
@@ -121,12 +122,39 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 
 | ตาราง | คอลัมน์หลัก |
 |-------|-------------|
-| `page_item_row` | `page_item_info_id` FK, `sort_order`, `show_title` (`Y`/`N`), `use_container` (`Y` = อยู่ใน container, `N` = เต็มความกว้าง), `background_color`, `background_image_id` + `background_repeat/size/attachment/position` (ชุดเดียวกับหน้า), `status` |
-| `page_item_row_detail` | `id`, `lang`, `title` `varchar(250)`, `intro_text` `varchar(2000)` |
-| `page_item_column` | `page_item_row_id` FK, `sort_order`, `show_title`, `column_size` (1 - 12), `background_*` (ชุดเดียวกับแถว), `status` |
-| `page_item_column_detail` | `id`, `lang`, `title`, `intro_text` |
-| `page_item_widget` | `page_item_column_id` FK, `sort_order`, `show_title`, `widget_type` `varchar(20)`, `setting` json, `status` |
-| `page_item_widget_detail` | `id`, `lang`, `title`, `intro_text` |
+| `page_item_row` | `page_item_info_id` FK, `sort_order`, `show_title` (`Y`/`N`), `use_container` (`Y` = อยู่ใน container, `N` = เต็มความกว้าง), `background_color`, `background_image_id` + `background_repeat/size/attachment/position` (ชุดเดียวกับหน้า), การจัดรูปแบบตัวอักษร 12 คอลัมน์ (ด้านล่าง), `status` |
+| `page_item_row_detail` | `id`, `lang`, `title` `varchar(250)`, `subtitle` `varchar(250)` (หัวเรื่องรอง), `intro_text` `varchar(2000)` |
+| `page_item_column` | `page_item_row_id` FK, `sort_order`, `show_title`, `column_size` (1 - 12), `background_*` (ชุดเดียวกับแถว), การจัดรูปแบบตัวอักษร 12 คอลัมน์, `status` |
+| `page_item_column_detail` | `id`, `lang`, `title`, `subtitle`, `intro_text` |
+| `page_item_widget` | `page_item_column_id` FK, `sort_order`, `show_title`, `widget_type` `varchar(20)`, `setting` json, `background_*` (ชุดเดียวกับแถว/คอลัมน์), การจัดรูปแบบตัวอักษร 12 คอลัมน์, `status` |
+| `page_item_widget_detail` | `id`, `lang`, `title`, `subtitle`, `intro_text` |
+
+### การจัดรูปแบบตัวอักษร (หัวเรื่อง / หัวเรื่องรอง / ข้อความเกริ่นนำ)
+
+แถว/คอลัมน์/widget มีข้อความ 3 ส่วนที่จัดรูปแบบได้เหมือนกัน — **หัวเรื่อง** (`title`), **หัวเรื่องรอง** (`subtitle`) และ
+**ข้อความเกริ่นนำ** (`intro_text`) — แต่ละส่วนมีค่าตั้งได้ 4 ค่า เก็บเป็นคอลัมน์จริง (ไม่ใช้ JSON) ชื่อ `<ส่วน>_<ค่า>`
+รวม 12 คอลัมน์ต่อตาราง (`title_font_size`, `title_font_family`, `title_align`, `title_color`, `subtitle_*`, `intro_text_*`):
+
+| ค่า | ชนิด | ค่าเริ่มต้น / เงื่อนไข |
+|-----|------|------------------------|
+| `*_font_size` | `unsigned smallint` (px) | หัวเรื่อง/หัวเรื่องรอง/เกริ่นนำ — แถว 32/20/16, คอลัมน์ 24/18/16, widget 20/16/14; รับ 8 - 120 (dropdown มีขนาดสำเร็จรูป 12 - 96) |
+| `*_font_family` | `varchar(50)` | **Sarabun**; ต้องอยู่ในรายการฟอนต์ไทย (ด้านล่าง) |
+| `*_align` | `varchar(10)` | **`center`** (กึ่งกลาง); `left` ชิดซ้าย / `center` กึ่งกลาง / `right` ชิดขวา |
+| `*_color` | `varchar(20)` | **`#000000`** (ดำ); รหัส hex เท่านั้น — **ไม่มี transparent** (ต่างจากสีพื้นหลัง) |
+
+- `App\Support\PageTextStyle` เป็นแหล่งเดียวของรายการคอลัมน์/ค่าที่อนุญาต/ฟอนต์ (model ใช้ trait `HasPageTextStyle` เติม `$fillable`,
+  validation ใช้ `textStyleRules()`, `PageLayoutSync` ใช้ `PageTextStyle::fromInput()`); หน้าจอสร้างค่าเริ่มต้นใน
+  `utils/pageLayout.ts` (`defaultTextStyles()` — ขนาดต้องตรงกับ default ใน migration)
+- **ฟอนต์ไทยที่นิยมใช้ทำหัวเรื่อง 29 ตัว** (ฟอนต์ฟรีจาก Google Fonts ที่รองรับภาษาไทย): Sarabun (ค่าเริ่มต้น), Prompt, Kanit,
+  Noto Sans Thai, Noto Serif Thai, IBM Plex Sans Thai, Mitr, Athiti, Bai Jamjuree, K2D, Krub, Niramit, Chakra Petch, Anuphan,
+  Pridi, Taviraj, Trirong, Maitree, Mali, Kodchasan, KoHo, Thasadith, Fahkwang, Srisakdi, Charmonman, Pattaya, Itim, Sriracha,
+  Chonburi — หน้าโครงสร้างโหลดสไตล์ชีตของทุกตัวจาก Bunny Fonts (มิเรอร์ Google Fonts ที่ `app.blade.php` ใช้โหลด Sarabun อยู่แล้ว —
+  `PageTextStyle::fontsStylesheetUrl()`) เบราว์เซอร์ดาวน์โหลดไฟล์ฟอนต์เฉพาะตัวที่ถูกใช้จริง; เพิ่มฟอนต์ใหม่ที่ `PageTextStyle::FONTS`
+  (ต้องเช็กว่ามีน้ำหนักตัวอักษรที่ระบุจริง ไม่งั้นสไตล์ชีตทั้งชุดโหลดไม่ขึ้น)
+- **การแสดงผล**: เมื่อ `show_title = Y` แสดงหัวเรื่อง + หัวเรื่องรอง + ข้อความเกริ่นนำ (เฉพาะส่วนที่กรอกแล้ว) ตามที่ตั้งค่า —
+  หัวเรื่องใช้แท็ก **`<h2>` (แถว) / `<h3>` (คอลัมน์) / `<h4>` (widget)** ส่วนหัวเรื่องรองและข้อความเกริ่นนำเป็น `<div>` ธรรมดาเสมอ
+  (ตัวอย่างในหน้าโครงสร้างคือ `LayoutTexts.vue`; หน้าบ้านต้อง render ให้ตรงกัน)
+- แถว/คอลัมน์/widget ที่ **เพิ่มใหม่** ตั้ง `background_color = transparent` เป็นค่าเริ่มต้น
 
 **Model** — `PageItemRow`/`PageItemColumn`/`PageItemWidget` (+ `*Detail`) ตาม pattern ข้างบน: `rows()`/`columns()`/`widgets()`
 เรียง `sort_order` (แล้ว `id`), `PageItemWidget::TYPES` = รายการ `widget_type` ที่รองรับ (validation ใช้ค่านี้)
@@ -138,20 +166,26 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 
 | ชั้น | แถบจัดการ |
 |------|-----------|
-| **แถว** | ไอคอนเรียงลำดับ (กดแล้วเปิด dialog เรียงแถว — `RowReorderDialog`) · เฟือง (dialog ตั้งค่า) · ลูกตา (แสดง/ซ่อน) · ไอคอนบวก + "เพิ่มคอลัมน์" · ชื่อหัวเรื่องของแถว |
-| **คอลัมน์** | ไอคอนเรียงลำดับ (**ลากในหน้าจอเลย** ที่จับ grip — สลับลำดับในแถวเดียวกัน คล้ายกลุ่มรูปภาพในบทความ) · เฟือง · ลูกตา · ไอคอนบวก + "เพิ่ม Widget" · ชื่อหัวเรื่องของคอลัมน์ |
-| **widget** | ไอคอนเรียงลำดับ (**ลากในหน้าจอ** — สลับในคอลัมน์เดียวกัน และ**ย้ายข้ามคอลัมน์ได้**) · เฟือง · ลูกตา · ชื่อหัวเรื่อง |
+| **แถว** | ไอคอนเรียงลำดับ (กดแล้วเปิด dialog เรียงแถว — `RowReorderDialog`) · เฟือง (dialog ตั้งค่า) · ลูกตา (แสดง/ซ่อน) · **ถังขยะ (ลบ)** · ไอคอนบวก + "เพิ่มคอลัมน์" · ชื่อหัวเรื่องของแถว |
+| **คอลัมน์** | ไอคอนเรียงลำดับ (**ลากในหน้าจอเลย** ที่จับ grip — สลับลำดับในแถวเดียวกัน คล้ายกลุ่มรูปภาพในบทความ) · เฟือง · ลูกตา · **ถังขยะ (ลบ)** · ไอคอนบวก + "เพิ่ม Widget" · ชื่อหัวเรื่องของคอลัมน์ |
+| **widget** | ไอคอนเรียงลำดับ (**ลากในหน้าจอ** — สลับในคอลัมน์เดียวกัน และ**ย้ายข้ามคอลัมน์ได้**) · เฟือง · ลูกตา · **ถังขยะ (ลบ)** · ชื่อหัวเรื่อง |
 
 - ชื่อบนแถบ = ชื่อของภาษาหลัก ถ้ายังไม่ได้กรอกใช้ "แถวที่ N"/"คอลัมน์ที่ N"/"(ไม่มีชื่อ)"; รายการที่ซ่อน (`status = N`) แสดงจางลง
-- ปุ่ม "เพิ่มแถว" สร้างแถวต่อท้ายแถวอื่นทั้งหมด พร้อมคอลัมน์ขนาด 12 อยู่ข้างใน 1 คอลัมน์ (ค่าเริ่มต้นของ "เพิ่มคอลัมน์" =
+- ปุ่ม "เพิ่มแถว" อยู่ในกรอบ canvas ทั้งด้านบน (ก่อนแถวแรก) และด้านล่าง (หลังแถวสุดท้าย) สร้างแถวต่อท้ายแถวอื่นทั้งหมด
+  พร้อมคอลัมน์ขนาด 12 อยู่ข้างใน 1 คอลัมน์; ด้านล่างสุดมี "บันทึกโครงสร้าง" และลิงก์ **"กลับไปหน้ารายการ"** เหมือนหน้าข้อมูลทั่วไป (ค่าเริ่มต้นของ "เพิ่มคอลัมน์" =
   ช่องที่เหลือในแถว `12 - ผลรวม` ถ้าเต็มแล้วใช้ 12 = ตกบรรทัดใหม่)
 - กรอบของแถว/คอลัมน์เป็นเส้นปะให้เห็นขอบเขต และแสดง**พื้นหลังตามการตั้งค่า**จริง (สี/รูป + repeat/size/attachment/position);
   พื้นหลังของทั้งหน้า (จากแท็บข้อมูลทั่วไป) แสดงเป็นพื้นของ canvas; คอลัมน์แสดงความกว้างตาม `column_size` ด้วย CSS grid 12
   (ผลรวมความกว้างในแถวเกิน 12 ไม่ถูกบังคับ — คอลัมน์ที่เกินขึ้นบรรทัดใหม่ และแถวจะขึ้นข้อความเตือน); `use_container = Y`
   จำกัดความกว้างเนื้อหาไว้ตรงกลางเหมือนที่หน้าบ้านจะแสดง
-- **dialog ตั้งค่า** (แก้บนสำเนา กด "ตกลง" จึงมีผล, "ยกเลิก" = ไม่เปลี่ยน): แถว = ชื่อ/ข้อความเกริ่นนำแยกภาษา + แสดงหัวเรื่อง +
-  การแสดงเนื้อหา (container/เต็มจอ) + พื้นหลัง; คอลัมน์ = ความกว้าง 1 - 12 (ปุ่มตัวเลข + แถบแสดงสัดส่วน) + ชื่อ/เกริ่นนำ +
-  แสดงหัวเรื่อง + พื้นหลัง; widget = ประเภท + ชื่อ/เกริ่นนำ + แสดงหัวเรื่อง **ปุ่ม "ลบ" อยู่ใน dialog** (มี confirm) ไม่เพิ่มไอคอนบนแถบเกินสเปก
+- **dialog ตั้งค่า** (แก้บนสำเนา กด "ตกลง" จึงมีผล, "ยกเลิก" = ไม่เปลี่ยน): ทุกชั้นมี แสดงหัวเรื่อง + ข้อความ 3 ส่วน
+  (หัวเรื่อง / หัวเรื่องรอง / ข้อความเกริ่นนำ — กรอกแยกภาษา แล้วตามด้วยการจัดรูปแบบตัวอักษร: ขนาด, ฟอนต์, จัดตำแหน่ง, สี
+  ผ่าน `TextFieldsSection.vue`/`TextStyleFields.vue`) + พื้นหลัง; แถวเพิ่ม การแสดงเนื้อหา (container/เต็มจอ); คอลัมน์เพิ่ม
+  ความกว้าง 1 - 12 (ปุ่มตัวเลข + แถบแสดงสัดส่วน); widget เพิ่ม ประเภท
+- **การลบ**: ไอคอนถังขยะบนแถบจัดการเปิด `ConfirmDialog` ยืนยันก่อนลบ (ข้อความเดียวกับปุ่ม "ลบ" ที่อยู่ใน dialog ตั้งค่า ซึ่งยังมีอยู่) —
+  ลบแล้วหายจากหน้าจอทันที แต่มีผลกับฐานข้อมูลเมื่อกด "บันทึกโครงสร้าง"
+- เมื่อเปิด "แสดงหัวเรื่อง" ตัวอย่างในหน้าจอจะแสดงหัวเรื่อง/หัวเรื่องรอง/ข้อความเกริ่นนำในพื้นที่ของแถว (เหนือคอลัมน์) /
+  คอลัมน์ (เหนือ widget) / widget ตามที่ตั้งค่าไว้ (`LayoutTexts.vue`)
 - **การเลือกสี** ใช้ `Components/Admin/ColorPickerInput.vue` (ชุดสีสำเร็จรูป + "กำหนดเอง") เพิ่ม prop `transparent` = ตัวเลือก
   "โปร่งใส" (เก็บค่า `transparent`) — พื้นหลัง 4 ค่า CSS ใช้ picker เห็นภาพชุดเดียวกับ Intropage
   (`Components/Admin/IntropageBackground/*`) และจะแสดงต่อเมื่อเลือกรูปพื้นหลังแล้ว; รวมเป็น
@@ -164,8 +198,9 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 
 ### การบันทึกโครงสร้าง (`PUT admin.page.item.layout.update`)
 
-- ส่ง `rows[]` ซ้อน `columns[]` ซ้อน `widgets[]` ทั้งชุด — ลำดับใน array = `sort_order`; ตรวจสอบที่
-  `UpdatePageItemLayoutRequest`: `column_size` 1 - 12, `widget_type` ต้องอยู่ใน `PageItemWidget::TYPES`, สีต้องเป็น hex หรือ
+- ส่ง `rows[]` ซ้อน `columns[]` ซ้อน `widgets[]` ทั้งชุด (แต่ละชั้นมีค่าจัดรูปแบบตัวอักษรแบบแบน 12 ค่า + พื้นหลัง + `detail.<lang>.{title,subtitle,intro_text}`)
+  — ลำดับใน array = `sort_order`; ตรวจสอบที่
+  `UpdatePageItemLayoutRequest`: `column_size` 1 - 12, ค่าจัดรูปแบบตัวอักษรครบ 12 ค่า (`PageTextStyle`), `widget_type` ต้องอยู่ใน `PageItemWidget::TYPES`, สีต้องเป็น hex หรือ
   `transparent`, ไฟล์ต้องมีอยู่จริงใน `file_info`, และ **id ของแถว/คอลัมน์/widget ที่ส่งมาต้องเป็นของหน้านี้จริง** (กัน id ปลอมแก้ข้ามหน้า)
 - `App\Support\PageLayoutSync` ทำงานใน transaction เดียว และ **คง id เดิมไว้** (ต่างจากปุ่มของ Intropage ที่ลบสร้างใหม่ทั้งชุด —
   เพราะ widget จะอ้างไฟล์/ข้อมูลอื่นในอนาคต): รายการที่มี `id` ของหน้านี้ = update, ไม่มี `id` = สร้างใหม่, id เดิมที่ไม่อยู่ในข้อมูล

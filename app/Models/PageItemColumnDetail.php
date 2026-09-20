@@ -21,6 +21,7 @@ class PageItemColumnDetail extends Model
         'id',
         'lang',
         'title',
+        'subtitle',
         'intro_text',
         'status',
         'created_by',

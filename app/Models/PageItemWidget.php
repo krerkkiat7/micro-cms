@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasPageTextStyle;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * widget ภายในคอลัมน์ — widget_type + setting (json) รอกำหนดประเภท/รายละเอียดในรอบถัดไป
+ * widget ภายในคอลัมน์ — widget_type + setting (json) รอกำหนดประเภท/รายละเอียดในรอบถัดไป + พื้นหลัง (สี/รูป/CSS 4 ค่า) เหมือนแถว/คอลัมน์
  */
 class PageItemWidget extends Model
 {
+    use HasPageTextStyle;
     use SoftDeletes;
 
     protected $table = 'page_item_widget';
@@ -23,6 +25,12 @@ class PageItemWidget extends Model
         'show_title',
         'widget_type',
         'setting',
+        'background_color',
+        'background_image_id',
+        'background_repeat',
+        'background_size',
+        'background_attachment',
+        'background_position',
         'status',
         'created_by',
         'updated_by',
@@ -36,6 +44,11 @@ class PageItemWidget extends Model
     public function column()
     {
         return $this->belongsTo(PageItemColumn::class, 'page_item_column_id');
+    }
+
+    public function backgroundImage()
+    {
+        return $this->belongsTo(FileInfo::class, 'background_image_id');
     }
 
     public function details()

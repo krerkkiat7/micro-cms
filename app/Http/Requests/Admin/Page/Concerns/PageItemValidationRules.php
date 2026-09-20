@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin\Page\Concerns;
 
 use App\Models\PageItemWidget;
+use App\Support\PageTextStyle;
 use App\Support\Setting;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
@@ -15,6 +16,9 @@ trait PageItemValidationRules
 {
     /** สีพื้นหลัง: รหัส hex หรือคำว่า transparent (ตัวเลือกใน ColorPickerInput) */
     private const COLOR_REGEX = '/^(transparent|#[0-9a-fA-F]{3,8})$/';
+
+    /** สีตัวอักษร: รหัส hex เท่านั้น (ไม่มีตัวเลือกโปร่งใส) */
+    private const TEXT_COLOR_REGEX = '/^#[0-9a-fA-F]{3,8}$/';
 
     /**
      * กฎของ "ไฟล์" ที่ต้องมีอยู่จริงใน file_info (ไม่ผูกกับเจ้าของไฟล์ — เลือกไฟล์ของคนอื่นมาใช้ได้ตามที่ตั้งใจ)
@@ -46,6 +50,26 @@ trait PageItemValidationRules
             "{$prefix}background_attachment" => ['nullable', Rule::in(['scroll', 'fixed'])],
             "{$prefix}background_position" => ['nullable', 'string', 'max:50'],
         ];
+    }
+
+    /**
+     * กฎของการจัดรูปแบบตัวอักษรของหัวเรื่อง/หัวเรื่องรอง/ข้อความเกริ่นนำ (ขนาด/ฟอนต์/การจัดตำแหน่ง/สี — 12 ฟิลด์ ดู
+     * App\Support\PageTextStyle) — $prefix ใช้ซ้อนใน rows.*. / columns.*. / widgets.*. สีตัวอักษรเป็น hex เท่านั้น (ไม่มี transparent)
+     *
+     * @return array<string, ValidationRule|array<mixed>|string>
+     */
+    protected function textStyleRules(string $prefix): array
+    {
+        $rules = [];
+
+        foreach (PageTextStyle::PARTS as $part) {
+            $rules["{$prefix}{$part}_font_size"] = ['required', 'integer', 'between:'.PageTextStyle::FONT_SIZE_MIN.','.PageTextStyle::FONT_SIZE_MAX];
+            $rules["{$prefix}{$part}_font_family"] = ['required', Rule::in(PageTextStyle::fontNames())];
+            $rules["{$prefix}{$part}_align"] = ['required', Rule::in(PageTextStyle::ALIGNS)];
+            $rules["{$prefix}{$part}_color"] = ['required', 'string', 'max:20', 'regex:'.self::TEXT_COLOR_REGEX];
+        }
+
+        return $rules;
     }
 
     /**
@@ -95,7 +119,7 @@ trait PageItemValidationRules
     }
 
     /**
-     * กฎของโครงสร้างทั้งหน้า (rows.*.columns.*.widgets.*) — ฟิลด์แยกภาษาของทุกชั้นมีแค่ title/intro_text
+     * กฎของโครงสร้างทั้งหน้า (rows.*.columns.*.widgets.*) — ฟิลด์แยกภาษาของทุกชั้นมีแค่ title/subtitle/intro_text
      * และเป็น nullable ทั้งหมด (ต่างจากตัวหน้าที่ภาษาหลักต้องมีชื่อ) ส่วน id ที่ส่งมาต้องเป็นของหน้านี้จริง
      * ตรวจใน UpdatePageItemLayoutRequest::withValidator()
      *
@@ -127,11 +151,16 @@ trait PageItemValidationRules
             'rows.*.columns.*.widgets.*.detail' => ['nullable', 'array'],
         ]
             + $this->backgroundRules('rows.*.')
-            + $this->backgroundRules('rows.*.columns.*.');
+            + $this->backgroundRules('rows.*.columns.*.')
+            + $this->backgroundRules('rows.*.columns.*.widgets.*.')
+            + $this->textStyleRules('rows.*.')
+            + $this->textStyleRules('rows.*.columns.*.')
+            + $this->textStyleRules('rows.*.columns.*.widgets.*.');
 
         foreach (Setting::selectedLanguages() as $lang) {
             foreach (['rows.*.', 'rows.*.columns.*.', 'rows.*.columns.*.widgets.*.'] as $prefix) {
                 $rules["{$prefix}detail.{$lang}.title"] = ['nullable', 'string', 'max:250'];
+                $rules["{$prefix}detail.{$lang}.subtitle"] = ['nullable', 'string', 'max:250'];
                 $rules["{$prefix}detail.{$lang}.intro_text"] = ['nullable', 'string', 'max:2000'];
             }
         }

@@ -3,25 +3,26 @@ import { ref, watch } from 'vue';
 import { Trash2 } from 'lucide-vue-next';
 import LayoutDialog from './LayoutDialog.vue';
 import BackgroundFields from './BackgroundFields.vue';
-import LangFieldGroup from '@/Components/Admin/LangFieldGroup.vue';
+import TextFieldsSection from './TextFieldsSection.vue';
 import InputLabel from '@/Components/InputLabel.vue';
-import TextInput from '@/Components/TextInput.vue';
-import Textarea from '@/Components/Textarea.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
-import { SHOW_OPTIONS, cloneDeep } from '@/utils/pageLayout';
+import { SHOW_OPTIONS, cloneDeep, pickBackground, pickTextStyles } from '@/utils/pageLayout';
 import type { ColumnData, ColumnSettings } from '@/utils/pageLayout';
 import type { LanguageOption } from '@/types';
 
 /**
- * dialog ตั้งค่าของ "คอลัมน์" — แก้ไขบนสำเนา (draft) แล้วส่ง `save` กลับเมื่อกด "ตกลง" (ไม่แตะ widget ข้างใน)
+ * dialog ตั้งค่าของ "คอลัมน์" — ความกว้าง หัวเรื่อง/หัวเรื่องรอง/ข้อความเกริ่นนำ (แยกภาษา + จัดรูปแบบตัวอักษร) และพื้นหลัง
+ * แก้ไขบนสำเนา (draft) แล้วส่ง `save` กลับเมื่อกด "ตกลง" (ไม่แตะ widget ข้างใน)
  * ความกว้าง 1 - 12 เลือกจากปุ่มตัวเลขพร้อมแถบแสดงสัดส่วนเทียบทั้งแถว (grid 12)
  */
 const props = defineProps<{
     show: boolean;
     column: ColumnData | null;
     languages: LanguageOption[];
+    /** รายการชื่อฟอนต์ให้เลือก (จาก backend) */
+    fonts: string[];
 }>();
 
 const emit = defineEmits<{
@@ -39,8 +40,8 @@ watch(
     () => props.show,
     (show) => {
         if (show && props.column) {
-            const { detail, show_title, column_size, background_color, background_image, background_repeat, background_size, background_attachment, background_position } = props.column;
-            draft.value = cloneDeep({ detail, show_title, column_size, background_color, background_image, background_repeat, background_size, background_attachment, background_position });
+            const { detail, show_title, column_size } = props.column;
+            draft.value = cloneDeep({ detail, show_title, column_size, ...pickBackground(props.column), ...pickTextStyles(props.column) });
         }
     },
     { immediate: true },
@@ -89,24 +90,25 @@ function remove() {
                 </div>
             </div>
 
-            <LangFieldGroup label="ชื่อหัวเรื่อง" :languages="languages">
-                <template #default="{ lang }">
-                    <TextInput v-model="draft.detail[lang.code].title" type="text" maxlength="250" />
-                </template>
-            </LangFieldGroup>
-
-            <LangFieldGroup label="ข้อความเกริ่นนำ" :languages="languages">
-                <template #default="{ lang }">
-                    <Textarea v-model="draft.detail[lang.code].intro_text" rows="2" maxlength="2000" />
-                </template>
-            </LangFieldGroup>
-
             <div class="grid gap-4 sm:grid-cols-2">
                 <div>
-                    <InputLabel value="แสดงหัวเรื่องของคอลัมน์" />
+                    <InputLabel value="แสดงหัวเรื่อง" />
                     <SearchableSelect v-model="draft.show_title" :options="SHOW_OPTIONS" />
+                    <p class="mt-1 text-xs text-gray-500">เปิดแล้วจะแสดงหัวเรื่อง หัวเรื่องรอง และข้อความเกริ่นนำของคอลัมน์นี้ (หัวเรื่องใช้แท็ก H3)</p>
                 </div>
             </div>
+
+            <TextFieldsSection label="หัวเรื่อง" part="title" :languages="languages" :detail="draft.detail" :text-style="draft.title_style" :fonts="fonts" />
+            <TextFieldsSection label="หัวเรื่องรอง" part="subtitle" :languages="languages" :detail="draft.detail" :text-style="draft.subtitle_style" :fonts="fonts" />
+            <TextFieldsSection
+                label="ข้อความเกริ่นนำ"
+                part="intro_text"
+                multiline
+                :languages="languages"
+                :detail="draft.detail"
+                :text-style="draft.intro_text_style"
+                :fonts="fonts"
+            />
 
             <div class="space-y-4 border-t border-gray-100 pt-5">
                 <h3 class="text-sm font-medium text-gray-600">พื้นหลัง</h3>

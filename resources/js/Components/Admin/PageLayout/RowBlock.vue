@@ -3,13 +3,14 @@ import { computed } from 'vue';
 import draggable from 'vuedraggable';
 import LayoutToolbar from './LayoutToolbar.vue';
 import ColumnBlock from './ColumnBlock.vue';
+import LayoutTexts from './LayoutTexts.vue';
 import { usePageLayoutEditor } from '@/composables/usePageLayoutEditor';
 import { backgroundStyle, displayTitle } from '@/utils/pageLayout';
 import type { RowData } from '@/utils/pageLayout';
 
 /**
  * แถวในหน้าเพจ — กรอบเส้นปะให้เห็นขอบเขต + พื้นหลังตามการตั้งค่า; คอลัมน์ข้างในเรียงเป็น grid 12 ตามความกว้างของแต่ละคอลัมน์
- * และลากสลับลำดับได้ในแถวนี้เลย (เมื่อ "ใช้ container" จะจำกัดความกว้างเนื้อหาไว้ตรงกลางเหมือนที่หน้าบ้านจะแสดง)
+ * และลากสลับลำดับได้ในแถวนี้เลย; เมื่อเปิด "แสดงหัวเรื่อง" จะแสดงหัวเรื่อง (h2) / หัวเรื่องรอง / ข้อความเกริ่นนำเหนือคอลัมน์ตามที่ตั้งค่าไว้ (เมื่อ "ใช้ container" จะจำกัดความกว้างเนื้อหาไว้ตรงกลางเหมือนที่หน้าบ้านจะแสดง)
  */
 const props = defineProps<{
     row: RowData;
@@ -41,6 +42,7 @@ function span(size: number): { gridColumn: string } {
             @reorder="editor.reorderRows()"
             @settings="editor.editRow(row)"
             @toggle="editor.toggleStatus(row)"
+            @remove="editor.removeRow(row)"
             @add="editor.addColumn(row)"
         />
 
@@ -54,6 +56,15 @@ function span(size: number): { gridColumn: string } {
 
         <div class="px-2 pb-2">
             <div :class="row.use_container === 'Y' ? 'mx-auto max-w-5xl' : ''">
+                <LayoutTexts
+                    level="row"
+                    :show="row.show_title === 'Y'"
+                    :detail="row.detail"
+                    :styles="row"
+                    :languages="editor.languages"
+                    class="px-2 pb-3 pt-1"
+                />
+
                 <draggable
                     v-model="row.columns"
                     item-key="_key"

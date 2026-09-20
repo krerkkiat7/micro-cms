@@ -9,12 +9,13 @@ import type { FileItem, LanguageOption } from '@/types';
 
 export interface LayoutDetail {
     title: string;
+    subtitle: string;
     intro_text: string;
 }
 
 export type LayoutDetailMap = Record<string, LayoutDetail>;
 
-/** ฟิลด์พื้นหลังที่แถว/คอลัมน์/หน้ามีเหมือนกัน — สตริงว่าง '' = ไม่ระบุ (ส่งไป backend เป็น null) */
+/** ฟิลด์พื้นหลังที่แถว/คอลัมน์/widget/หน้ามีเหมือนกัน — สตริงว่าง '' = ไม่ระบุ (ส่งไป backend เป็น null) */
 export interface BackgroundFields {
     background_color: string;
     /** FilePickerField ทำงานกับ array เสมอ (เลือกได้ไฟล์เดียว) */
@@ -25,7 +26,30 @@ export interface BackgroundFields {
     background_position: string;
 }
 
-export interface WidgetData {
+export type TextAlign = 'left' | 'center' | 'right';
+
+/** การจัดรูปแบบตัวอักษรของข้อความ 1 ส่วน (หัวเรื่อง / หัวเรื่องรอง / ข้อความเกริ่นนำ) */
+export interface TextStyle {
+    /** ขนาดตัวอักษร (px) */
+    font_size: number;
+    font_family: string;
+    align: TextAlign;
+    /** รหัสสี hex เท่านั้น (ไม่มี transparent) */
+    color: string;
+}
+
+/** ส่วนของข้อความที่จัดรูปแบบได้ — ตรงกับ App\Support\PageTextStyle::PARTS (คอลัมน์ `<part>_font_size` ฯลฯ ฝั่ง backend) */
+export const TEXT_PARTS = ['title', 'subtitle', 'intro_text'] as const;
+export type TextPart = (typeof TEXT_PARTS)[number];
+
+/** การจัดรูปแบบของข้อความทั้ง 3 ส่วนของแถว/คอลัมน์/widget */
+export interface TextStyles {
+    title_style: TextStyle;
+    subtitle_style: TextStyle;
+    intro_text_style: TextStyle;
+}
+
+export interface WidgetData extends BackgroundFields, TextStyles {
     _key: string;
     id: number | null;
     status: 'Y' | 'N';
@@ -35,7 +59,7 @@ export interface WidgetData {
     detail: LayoutDetailMap;
 }
 
-export interface ColumnData extends BackgroundFields {
+export interface ColumnData extends BackgroundFields, TextStyles {
     _key: string;
     id: number | null;
     status: 'Y' | 'N';
@@ -46,7 +70,7 @@ export interface ColumnData extends BackgroundFields {
     widgets: WidgetData[];
 }
 
-export interface RowData extends BackgroundFields {
+export interface RowData extends BackgroundFields, TextStyles {
     _key: string;
     id: number | null;
     status: 'Y' | 'N';
@@ -58,11 +82,13 @@ export interface RowData extends BackgroundFields {
 }
 
 /** ค่าที่ dialog ตั้งค่าของแต่ละชั้นแก้ไขได้ (ไม่รวมลูก) — dialog แก้บนสำเนาแล้วส่งกลับเมื่อกด "ตกลง" */
-export type RowSettings = Pick<RowData, 'detail' | 'show_title' | 'use_container'> & BackgroundFields;
-export type ColumnSettings = Pick<ColumnData, 'detail' | 'show_title' | 'column_size'> & BackgroundFields;
-export type WidgetSettings = Pick<WidgetData, 'detail' | 'show_title' | 'widget_type'>;
+export type RowSettings = Pick<RowData, 'detail' | 'show_title' | 'use_container'> & BackgroundFields & TextStyles;
+export type ColumnSettings = Pick<ColumnData, 'detail' | 'show_title' | 'column_size'> & BackgroundFields & TextStyles;
+export type WidgetSettings = Pick<WidgetData, 'detail' | 'show_title' | 'widget_type'> & BackgroundFields & TextStyles;
 
-/** รูปแบบข้อมูลที่ backend ส่งมา (PageItemController::rowToArray) */
+/** รูปแบบข้อมูลที่ backend ส่งมา (PageItemController::rowToArray) — การจัดรูปแบบมาเป็นคอลัมน์แบน `<part>_<ค่า>` */
+type ServerTextStyle = Record<`${TextPart}_${'font_size' | 'font_family' | 'align' | 'color'}`, string | number>;
+
 interface ServerBackground {
     background_color: string | null;
     background_image: FileItem | null;
@@ -72,7 +98,7 @@ interface ServerBackground {
     background_position: string | null;
 }
 
-interface ServerWidget {
+interface ServerWidget extends ServerBackground, ServerTextStyle {
     id: number;
     status: 'Y' | 'N';
     show_title: 'Y' | 'N';
@@ -81,7 +107,7 @@ interface ServerWidget {
     detail: LayoutDetailMap;
 }
 
-interface ServerColumn extends ServerBackground {
+interface ServerColumn extends ServerBackground, ServerTextStyle {
     id: number;
     status: 'Y' | 'N';
     show_title: 'Y' | 'N';
@@ -90,7 +116,7 @@ interface ServerColumn extends ServerBackground {
     widgets: ServerWidget[];
 }
 
-export interface ServerRow extends ServerBackground {
+export interface ServerRow extends ServerBackground, ServerTextStyle {
     id: number;
     status: 'Y' | 'N';
     show_title: 'Y' | 'N';
@@ -118,6 +144,86 @@ export const CONTAINER_OPTIONS = [
     { value: 'N', label: 'เต็มความกว้าง' },
 ];
 
+// ---- การจัดรูปแบบตัวอักษร ----
+
+export const DEFAULT_FONT_FAMILY = 'Sarabun';
+export const DEFAULT_TEXT_ALIGN: TextAlign = 'center';
+export const DEFAULT_TEXT_COLOR = '#000000';
+
+/** ขนาดตัวอักษร (px) ที่เลือกได้ (backend รับ 8 - 120) */
+export const FONT_SIZE_OPTIONS = [12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36, 40, 44, 48, 56, 64, 72, 80, 96].map((size) => ({
+    value: String(size),
+    label: `${size} px`,
+}));
+
+export const TEXT_ALIGN_OPTIONS: { value: TextAlign; label: string }[] = [
+    { value: 'left', label: 'ชิดซ้าย' },
+    { value: 'center', label: 'กึ่งกลาง' },
+    { value: 'right', label: 'ชิดขวา' },
+];
+
+/** ขนาดตัวอักษรเริ่มต้นของ [หัวเรื่อง, หัวเรื่องรอง, ข้อความเกริ่นนำ] แต่ละชั้น — ต้องตรงกับค่า default ใน migration
+ *  2026_09_20_000002 (แถว = หัวเรื่อง h2, คอลัมน์ = h3, widget = h4) */
+const DEFAULT_TEXT_SIZES = {
+    row: [32, 20, 16],
+    column: [24, 18, 16],
+    widget: [20, 16, 14],
+} as const;
+
+export type LayoutLevel = keyof typeof DEFAULT_TEXT_SIZES;
+
+/** ชนิดแท็กของหัวเรื่องแต่ละชั้น (หัวเรื่องรองและข้อความเกริ่นนำเป็น div ธรรมดาเสมอ) */
+export const HEADING_TAGS = { row: 'h2', column: 'h3', widget: 'h4' } as const;
+
+function defaultTextStyle(fontSize: number): TextStyle {
+    return { font_size: fontSize, font_family: DEFAULT_FONT_FAMILY, align: DEFAULT_TEXT_ALIGN, color: DEFAULT_TEXT_COLOR };
+}
+
+export function defaultTextStyles(level: LayoutLevel): TextStyles {
+    const [title, subtitle, intro] = DEFAULT_TEXT_SIZES[level];
+
+    return {
+        title_style: defaultTextStyle(title),
+        subtitle_style: defaultTextStyle(subtitle),
+        intro_text_style: defaultTextStyle(intro),
+    };
+}
+
+/** สไตล์ CSS ของข้อความ 1 ส่วนตามที่ตั้งค่า — ฟอนต์ตามด้วย sans-serif เป็น fallback */
+export function textStyleCss(style: TextStyle): CSSProperties {
+    return {
+        fontSize: `${style.font_size}px`,
+        fontFamily: `'${style.font_family}', sans-serif`,
+        textAlign: style.align,
+        color: style.color,
+    };
+}
+
+function textStylesFromServer(server: ServerTextStyle): TextStyles {
+    const one = (part: TextPart): TextStyle => ({
+        font_size: Number(server[`${part}_font_size`]),
+        font_family: String(server[`${part}_font_family`]),
+        align: server[`${part}_align`] as TextAlign,
+        color: String(server[`${part}_color`]),
+    });
+
+    return { title_style: one('title'), subtitle_style: one('subtitle'), intro_text_style: one('intro_text') };
+}
+
+function textStylesToPayload(styles: TextStyles): Record<string, string | number> {
+    const payload: Record<string, string | number> = {};
+
+    TEXT_PARTS.forEach((part) => {
+        const style = styles[`${part}_style`];
+        payload[`${part}_font_size`] = style.font_size;
+        payload[`${part}_font_family`] = style.font_family;
+        payload[`${part}_align`] = style.align;
+        payload[`${part}_color`] = style.color;
+    });
+
+    return payload;
+}
+
 let keySeed = 0;
 
 function nextKey(prefix: string): string {
@@ -129,7 +235,7 @@ function nextKey(prefix: string): string {
 export function emptyDetailMap(languages: LanguageOption[]): LayoutDetailMap {
     const detail: LayoutDetailMap = {};
     languages.forEach((lang) => {
-        detail[lang.code] = { title: '', intro_text: '' };
+        detail[lang.code] = { title: '', subtitle: '', intro_text: '' };
     });
 
     return detail;
@@ -140,9 +246,10 @@ export function cloneDeep<T>(value: T): T {
     return JSON.parse(JSON.stringify(value)) as T;
 }
 
-function emptyBackground(): BackgroundFields {
+/** พื้นหลังเริ่มต้นของแถว/คอลัมน์/widget ที่เพิ่มใหม่ = โปร่งใส */
+function newBackground(): BackgroundFields {
     return {
-        background_color: '',
+        background_color: 'transparent',
         background_image: [],
         background_repeat: '',
         background_size: '',
@@ -160,6 +267,8 @@ export function createWidget(languages: LanguageOption[]): WidgetData {
         widget_type: DEFAULT_WIDGET_TYPE,
         setting: {},
         detail: emptyDetailMap(languages),
+        ...newBackground(),
+        ...defaultTextStyles('widget'),
     };
 }
 
@@ -176,7 +285,8 @@ export function createColumn(languages: LanguageOption[], existing: ColumnData[]
         column_size: remaining > 0 ? remaining : 12,
         detail: emptyDetailMap(languages),
         widgets: [],
-        ...emptyBackground(),
+        ...newBackground(),
+        ...defaultTextStyles('column'),
     };
 }
 
@@ -190,7 +300,8 @@ export function createRow(languages: LanguageOption[]): RowData {
         use_container: 'Y',
         detail: emptyDetailMap(languages),
         columns: [createColumn(languages)],
-        ...emptyBackground(),
+        ...newBackground(),
+        ...defaultTextStyles('row'),
     };
 }
 
@@ -214,6 +325,7 @@ export function layoutFromServer(rows: ServerRow[]): RowData[] {
         use_container: row.use_container,
         detail: cloneDeep(row.detail),
         ...backgroundFromServer(row),
+        ...textStylesFromServer(row),
         columns: row.columns.map((column) => ({
             _key: nextKey('column'),
             id: column.id,
@@ -222,6 +334,7 @@ export function layoutFromServer(rows: ServerRow[]): RowData[] {
             column_size: column.column_size,
             detail: cloneDeep(column.detail),
             ...backgroundFromServer(column),
+            ...textStylesFromServer(column),
             widgets: column.widgets.map((widget) => ({
                 _key: nextKey('widget'),
                 id: widget.id,
@@ -231,6 +344,8 @@ export function layoutFromServer(rows: ServerRow[]): RowData[] {
                 // PHP ส่ง array ว่างมาเป็น [] — ฝั่งหน้าจอใช้เป็น object เสมอ
                 setting: Array.isArray(widget.setting) ? {} : (widget.setting ?? {}),
                 detail: cloneDeep(widget.detail),
+                ...backgroundFromServer(widget),
+                ...textStylesFromServer(widget),
             })),
         })),
     }));
@@ -256,6 +371,7 @@ export function layoutToPayload(rows: RowData[]) {
         use_container: row.use_container,
         detail: row.detail,
         ...backgroundToPayload(row),
+        ...textStylesToPayload(row),
         columns: row.columns.map((column) => ({
             id: column.id,
             status: column.status,
@@ -263,6 +379,7 @@ export function layoutToPayload(rows: RowData[]) {
             column_size: column.column_size,
             detail: column.detail,
             ...backgroundToPayload(column),
+            ...textStylesToPayload(column),
             widgets: column.widgets.map((widget) => ({
                 id: widget.id,
                 status: widget.status,
@@ -270,9 +387,32 @@ export function layoutToPayload(rows: RowData[]) {
                 widget_type: widget.widget_type,
                 setting: widget.setting,
                 detail: widget.detail,
+                ...backgroundToPayload(widget),
+                ...textStylesToPayload(widget),
             })),
         })),
     }));
+}
+
+/** สำเนาเฉพาะฟิลด์พื้นหลังของแถว/คอลัมน์/widget — ใช้สร้าง draft ใน dialog ตั้งค่า */
+export function pickBackground(source: BackgroundFields): BackgroundFields {
+    return cloneDeep({
+        background_color: source.background_color,
+        background_image: source.background_image,
+        background_repeat: source.background_repeat,
+        background_size: source.background_size,
+        background_attachment: source.background_attachment,
+        background_position: source.background_position,
+    });
+}
+
+/** สำเนาเฉพาะการจัดรูปแบบตัวอักษรทั้ง 3 ส่วน — ใช้สร้าง draft ใน dialog ตั้งค่า */
+export function pickTextStyles(source: TextStyles): TextStyles {
+    return cloneDeep({
+        title_style: source.title_style,
+        subtitle_style: source.subtitle_style,
+        intro_text_style: source.intro_text_style,
+    });
 }
 
 /** ชื่อที่แสดงบนแถบจัดการ — ชื่อของภาษาหลัก ถ้าว่างใช้ $fallback (เช่น "แถวที่ 1") */
@@ -283,14 +423,14 @@ export function displayTitle(detail: LayoutDetailMap, languages: LanguageOption[
     return title && title.trim() !== '' ? title : fallback;
 }
 
-/** ข้อความเกริ่นนำของภาษาหลัก (ใช้แสดงย่อในการ์ด widget) */
-export function displayIntro(detail: LayoutDetailMap, languages: LanguageOption[]): string {
+/** ข้อความ 1 ส่วน (title/subtitle/intro_text) ของภาษาหลัก — ใช้แสดงในตัวอย่างหน้าจอ */
+export function defaultLangText(detail: LayoutDetailMap, languages: LanguageOption[], part: TextPart): string {
     const defaultLang = languages.find((l) => l.is_default)?.code;
 
-    return (defaultLang ? detail[defaultLang]?.intro_text : '') ?? '';
+    return (defaultLang ? detail[defaultLang]?.[part] : '')?.trim() ?? '';
 }
 
-/** สไตล์พื้นหลัง (สี/รูป + CSS 4 ค่า) ของแถว/คอลัมน์/หน้า สำหรับแสดงในหน้าโครงสร้าง */
+/** สไตล์พื้นหลัง (สี/รูป + CSS 4 ค่า) ของแถว/คอลัมน์/widget/หน้า สำหรับแสดงในหน้าโครงสร้าง */
 export function backgroundStyle(bg: BackgroundFields): CSSProperties {
     const style: CSSProperties = {};
 

@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { ArrowUpDown, Eye, EyeOff, GripVertical, Plus, Settings } from 'lucide-vue-next';
+import { ArrowUpDown, Eye, EyeOff, GripVertical, Plus, Settings, Trash2 } from 'lucide-vue-next';
 
 /**
  * แถบจัดการที่มุมซ้ายบนของแถว / คอลัมน์ / widget ในหน้า "โครงสร้าง" (ดู docs/PRD-page.md) — แต่ละชนิดมีสีต่างกัน
  * ให้แยกออกว่าแถบนี้เป็นของชั้นไหน: ไอคอนเรียงลำดับ (แถว = ปุ่มเปิด dialog, คอลัมน์/widget = ที่จับสำหรับลากในหน้าจอ
  * โดย vuedraggable ของพาเรนต์อ้างที่จับผ่านคลาส `layout-drag-handle-<kind>`), เฟือง (ตั้งค่า), ลูกตา (แสดง/ซ่อน),
- * ปุ่มเพิ่มลูก (เฉพาะแถว/คอลัมน์) และชื่อหัวเรื่อง — `readonly` = ผู้ใช้ไม่มีสิทธิ์แก้ไข แสดงแค่ชื่อ
+ * ถังขยะ (ลบ — ขอยืนยันก่อนที่หน้าโครงสร้าง), ปุ่มเพิ่มลูก (เฉพาะแถว/คอลัมน์) และชื่อหัวเรื่อง — `readonly` = ผู้ใช้ไม่มีสิทธิ์แก้ไข แสดงแค่ชื่อ
  */
 const props = defineProps<{
     kind: 'row' | 'column' | 'widget';
@@ -21,6 +21,7 @@ const emit = defineEmits<{
     reorder: [];
     settings: [];
     toggle: [];
+    remove: [];
     add: [];
 }>();
 
@@ -59,6 +60,10 @@ const buttonClass = 'rounded p-1 transition-colors hover:bg-white/25 focus:outli
 
             <button type="button" :class="buttonClass" :title="hidden ? `แสดง${style.label}` : `ซ่อน${style.label}`" @click="emit('toggle')">
                 <component :is="hidden ? EyeOff : Eye" class="size-3.5" />
+            </button>
+
+            <button type="button" :class="[buttonClass, 'hover:!bg-red-600/80']" :title="`ลบ${style.label}`" @click="emit('remove')">
+                <Trash2 class="size-3.5" />
             </button>
 
             <button v-if="addLabel" type="button" :class="[buttonClass, 'flex items-center gap-0.5 pr-1.5']" @click="emit('add')">

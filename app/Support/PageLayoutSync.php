@@ -58,7 +58,7 @@ class PageLayoutSync
                     'show_title' => $rowData['show_title'],
                     'use_container' => $rowData['use_container'],
                     'status' => $rowData['status'],
-                ] + $this->background($rowData));
+                ] + $this->background($rowData) + PageTextStyle::fromInput($rowData));
                 $this->keptRowIds[] = $row->id;
                 $this->syncDetails(PageItemRowDetail::class, $row->id, $rowData['detail'] ?? []);
 
@@ -69,7 +69,7 @@ class PageLayoutSync
                         'show_title' => $columnData['show_title'],
                         'column_size' => $columnData['column_size'],
                         'status' => $columnData['status'],
-                    ] + $this->background($columnData));
+                    ] + $this->background($columnData) + PageTextStyle::fromInput($columnData));
                     $this->keptColumnIds[] = $column->id;
                     $this->syncDetails(PageItemColumnDetail::class, $column->id, $columnData['detail'] ?? []);
 
@@ -81,7 +81,7 @@ class PageLayoutSync
                             'widget_type' => $widgetData['widget_type'],
                             'setting' => $widgetData['setting'] ?? null,
                             'status' => $widgetData['status'],
-                        ]);
+                        ] + $this->background($widgetData) + PageTextStyle::fromInput($widgetData));
                         $this->keptWidgetIds[] = $widget->id;
                         $this->syncDetails(PageItemWidgetDetail::class, $widget->id, $widgetData['detail'] ?? []);
                     }
@@ -151,6 +151,7 @@ class PageLayoutSync
         foreach ($details as $lang => $detail) {
             $values = [
                 'title' => $detail['title'] ?? null,
+                'subtitle' => $detail['subtitle'] ?? null,
                 'intro_text' => $detail['intro_text'] ?? null,
             ];
             $query = $model::where('id', $id)->where('lang', $lang);

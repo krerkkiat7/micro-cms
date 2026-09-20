@@ -23,6 +23,25 @@ beforeEach(function () {
 });
 
 /**
+ * ค่าการจัดรูปแบบตัวอักษรครบ 12 ค่า (หัวเรื่อง/หัวเรื่องรอง/ข้อความเกริ่นนำ) ที่หน้าจอส่งมาเสมอ
+ *
+ * @return array<string, mixed>
+ */
+function layoutTextStyle(int $titleSize = 32, array $overrides = []): array
+{
+    $style = [];
+
+    foreach (['title' => $titleSize, 'subtitle' => 20, 'intro_text' => 16] as $part => $size) {
+        $style["{$part}_font_size"] = $size;
+        $style["{$part}_font_family"] = 'Sarabun';
+        $style["{$part}_align"] = 'center';
+        $style["{$part}_color"] = '#000000';
+    }
+
+    return array_replace($style, $overrides);
+}
+
+/**
  * @return array<string, mixed>
  */
 function layoutWidget(array $overrides = []): array
@@ -32,8 +51,9 @@ function layoutWidget(array $overrides = []): array
         'show_title' => 'Y',
         'widget_type' => 'placeholder',
         'setting' => [],
-        'detail' => ['th' => ['title' => 'วิดเจ็ต', 'intro_text' => ''], 'en' => ['title' => 'Widget', 'intro_text' => '']],
-    ], $overrides);
+        'background_color' => 'transparent',
+        'detail' => ['th' => ['title' => 'วิดเจ็ต', 'subtitle' => '', 'intro_text' => ''], 'en' => ['title' => 'Widget', 'subtitle' => '', 'intro_text' => '']],
+    ] + layoutTextStyle(20), $overrides);
 }
 
 /**
@@ -46,10 +66,10 @@ function layoutColumn(array $widgets = [], array $overrides = []): array
         'status' => 'Y',
         'show_title' => 'N',
         'column_size' => 12,
-        'background_color' => null,
-        'detail' => ['th' => ['title' => 'คอลัมน์', 'intro_text' => ''], 'en' => ['title' => 'Column', 'intro_text' => '']],
+        'background_color' => 'transparent',
+        'detail' => ['th' => ['title' => 'คอลัมน์', 'subtitle' => '', 'intro_text' => ''], 'en' => ['title' => 'Column', 'subtitle' => '', 'intro_text' => '']],
         'widgets' => $widgets,
-    ], $overrides);
+    ] + layoutTextStyle(24), $overrides);
 }
 
 /**
@@ -63,9 +83,9 @@ function layoutRow(array $columns = [], array $overrides = []): array
         'show_title' => 'N',
         'use_container' => 'Y',
         'background_color' => 'transparent',
-        'detail' => ['th' => ['title' => 'แถว', 'intro_text' => ''], 'en' => ['title' => 'Row', 'intro_text' => '']],
+        'detail' => ['th' => ['title' => 'แถว', 'subtitle' => '', 'intro_text' => ''], 'en' => ['title' => 'Row', 'subtitle' => '', 'intro_text' => '']],
         'columns' => $columns,
-    ], $overrides);
+    ] + layoutTextStyle(32), $overrides);
 }
 
 // ---------------------------------------------------------------- show
@@ -93,7 +113,11 @@ test('layout page renders the row/column/widget tree and logs a layout view', fu
             ->where('rows.2.columns', fn ($columns) => count($columns) === 3)
             ->where('rows.0.columns.0.widgets.0.widget_type', 'placeholder')
             ->where('rows.0.detail.th.title', 'ส่วนบนสุด (Hero)')
+            ->where('rows.0.detail.th.subtitle', 'ยินดีต้อนรับ')
+            ->where('rows.0.show_title', 'Y')
             ->where('can.manage', false)
+            ->where('fonts', fn ($fonts) => in_array('Sarabun', $fonts->all(), true) && count($fonts) > 20)
+            ->where('fontsUrl', fn ($url) => str_starts_with($url, 'https://fonts.bunny.net/css?family='))
         );
 
     expect(LogBackAction::where('module_code', 'page.item.layout')->where('action_type', 'view')->where('ref_id', $this->sample->id)->exists())->toBeTrue();
@@ -282,4 +306,94 @@ test('layout update saving twice with unchanged values does not fail on the deta
 
     expect(PageItemRowDetail::where('id', $row->id)->count())->toBe(2)
         ->and(PageItemWidgetDetail::where('id', $widget->id)->count())->toBe(2);
+});
+
+// ---------------------------------------------------------------- text style / subtitle / widget background
+
+test('layout page serves the text style defaults set by the migration (Sarabun, centered, black)', function () {
+    actingAsUserWithPermissions(['page.item.view']);
+
+    $this->get(route('admin.page.item.layout', $this->sample->id))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('rows.0.title_font_family', 'Sarabun')
+            ->where('rows.0.title_align', 'center')
+            ->where('rows.0.title_color', '#000000')
+            ->where('rows.0.title_font_size', 32)
+            ->where('rows.0.subtitle_font_size', 20)
+            ->where('rows.0.intro_text_font_size', 16)
+            ->where('rows.0.columns.0.title_font_size', 24)
+            ->where('rows.0.columns.0.widgets.0.title_font_size', 20)
+            ->where('rows.0.columns.0.widgets.0.background_color', 'transparent')
+        );
+});
+
+test('layout update saves subtitle, text style and widget background on every level', function () {
+    actingAsUserWithPermissions(['page.item.manage']);
+
+    $this->put(route('admin.page.item.layout.update', $this->page->id), ['rows' => [
+        layoutRow([
+            layoutColumn([
+                layoutWidget([
+                    'background_color' => '#ff0000',
+                    'detail' => ['th' => ['subtitle' => 'รองของวิดเจ็ต']],
+                ] + layoutTextStyle(18, ['subtitle_align' => 'left'])),
+            ], ['detail' => ['th' => ['subtitle' => 'รองของคอลัมน์']]] + layoutTextStyle(28, ['title_font_family' => 'Prompt'])),
+        ], ['detail' => ['th' => ['subtitle' => 'รองของแถว']]] + layoutTextStyle(40, ['intro_text_align' => 'right', 'title_color' => '#123abc'])),
+    ]])->assertSessionHasNoErrors();
+
+    $row = PageItemRow::where('page_item_info_id', $this->page->id)->firstOrFail();
+    $column = PageItemColumn::where('page_item_row_id', $row->id)->firstOrFail();
+    $widget = PageItemWidget::where('page_item_column_id', $column->id)->firstOrFail();
+
+    expect($row->title_font_size)->toBe(40)
+        ->and($row->intro_text_align)->toBe('right')
+        ->and($row->title_color)->toBe('#123abc')
+        ->and($column->title_font_family)->toBe('Prompt')
+        ->and($column->title_font_size)->toBe(28)
+        ->and($widget->title_font_size)->toBe(18)
+        ->and($widget->subtitle_align)->toBe('left')
+        ->and($widget->background_color)->toBe('#ff0000')
+        ->and(PageItemRowDetail::where('id', $row->id)->where('lang', 'th')->value('subtitle'))->toBe('รองของแถว')
+        ->and(PageItemColumnDetail::where('id', $column->id)->where('lang', 'th')->value('subtitle'))->toBe('รองของคอลัมน์')
+        ->and(PageItemWidgetDetail::where('id', $widget->id)->where('lang', 'th')->value('subtitle'))->toBe('รองของวิดเจ็ต');
+});
+
+test('layout update validates text style values', function () {
+    actingAsUserWithPermissions(['page.item.manage']);
+    $url = route('admin.page.item.layout.update', $this->page->id);
+    $back = route('admin.page.item.layout', $this->page->id);
+
+    $this->from($back)->put($url, ['rows' => [layoutRow([], layoutTextStyle(32, ['title_font_family' => 'Comic Sans']))]])
+        ->assertInvalid(['rows.0.title_font_family']);
+
+    $this->from($back)->put($url, ['rows' => [layoutRow([], layoutTextStyle(32, ['subtitle_align' => 'justify']))]])
+        ->assertInvalid(['rows.0.subtitle_align']);
+
+    $this->from($back)->put($url, ['rows' => [layoutRow([], layoutTextStyle(7))]])
+        ->assertInvalid(['rows.0.title_font_size']);
+
+    $this->from($back)->put($url, ['rows' => [layoutRow([], layoutTextStyle(121))]])
+        ->assertInvalid(['rows.0.title_font_size']);
+
+    // สีตัวอักษรไม่มีตัวเลือก transparent
+    $this->from($back)->put($url, ['rows' => [layoutRow([], layoutTextStyle(32, ['intro_text_color' => 'transparent']))]])
+        ->assertInvalid(['rows.0.intro_text_color']);
+
+    $this->from($back)->put($url, ['rows' => [layoutRow([layoutColumn([], layoutTextStyle(24, ['title_color' => 'red']))])]])
+        ->assertInvalid(['rows.0.columns.0.title_color']);
+
+    $this->from($back)->put($url, ['rows' => [layoutRow([layoutColumn([layoutWidget(layoutTextStyle(20, ['title_font_family' => 'x']))])])]])
+        ->assertInvalid(['rows.0.columns.0.widgets.0.title_font_family']);
+
+    expect(PageItemRow::where('page_item_info_id', $this->page->id)->count())->toBe(0);
+});
+
+test('layout update rejects a malformed widget background colour', function () {
+    actingAsUserWithPermissions(['page.item.manage']);
+
+    $this->from(route('admin.page.item.layout', $this->page->id))
+        ->put(route('admin.page.item.layout.update', $this->page->id), ['rows' => [
+            layoutRow([layoutColumn([layoutWidget(['background_color' => 'nope'])])]),
+        ]])
+        ->assertInvalid(['rows.0.columns.0.widgets.0.background_color']);
 });

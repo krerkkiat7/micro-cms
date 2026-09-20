@@ -15,6 +15,7 @@ use App\Models\PageItemInfo;
 use App\Models\PageItemRow;
 use App\Models\PageItemWidget;
 use App\Support\PageLayoutSync;
+use App\Support\PageTextStyle;
 use App\Support\Setting;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -335,6 +336,8 @@ class PageItemController extends Controller
             ],
             'rows' => $rows->map(fn (PageItemRow $row) => $this->rowToArray($row, $languages))->values(),
             'languages' => $languages,
+            'fonts' => PageTextStyle::fontNames(),
+            'fontsUrl' => PageTextStyle::fontsStylesheetUrl(),
             'can' => [
                 'manage' => $request->user()->hasPermission('page.item.manage'),
             ],
@@ -468,11 +471,11 @@ class PageItemController extends Controller
     }
 
     /**
-     * ฟิลด์พื้นหลัง (สี/รูป/CSS 4 ค่า) ของแถวหรือคอลัมน์ ในรูปแบบที่หน้าโครงสร้างใช้
+     * ฟิลด์พื้นหลัง (สี/รูป/CSS 4 ค่า) ของแถว/คอลัมน์/widget ในรูปแบบที่หน้าโครงสร้างใช้
      *
      * @return array<string, mixed>
      */
-    private function backgroundToArray(PageItemRow|PageItemColumn $model): array
+    private function backgroundToArray(PageItemRow|PageItemColumn|PageItemWidget $model): array
     {
         $image = $model->backgroundImage;
 
@@ -487,11 +490,21 @@ class PageItemController extends Controller
     }
 
     /**
-     * ข้อมูลแยกภาษาของแถว/คอลัมน์/widget เป็น {lang: {title, intro_text}} ครบทุกภาษาที่เปิดใช้ (ภาษาที่ยังไม่มีข้อมูล = '')
+     * ค่าการจัดรูปแบบตัวอักษร 12 ค่า (ขนาด/ฟอนต์/การจัดตำแหน่ง/สี ของหัวเรื่อง/หัวเรื่องรอง/ข้อความเกริ่นนำ) ของแถว/คอลัมน์/widget
+     *
+     * @return array<string, mixed>
+     */
+    private function textStyleToArray(PageItemRow|PageItemColumn|PageItemWidget $model): array
+    {
+        return $model->only(PageTextStyle::columns());
+    }
+
+    /**
+     * ข้อมูลแยกภาษาของแถว/คอลัมน์/widget เป็น {lang: {title, subtitle, intro_text}} ครบทุกภาษาที่เปิดใช้ (ภาษาที่ยังไม่มีข้อมูล = '')
      *
      * @param  Collection<int, Model>  $details
      * @param  list<array{code: string, is_default: bool}>  $languages
-     * @return array<string, array{title: string, intro_text: string}>
+     * @return array<string, array{title: string, subtitle: string, intro_text: string}>
      */
     private function layoutDetailToArray(Collection $details, array $languages): array
     {
@@ -502,6 +515,7 @@ class PageItemController extends Controller
             $detail = $byLang->get($lang['code']);
             $result[$lang['code']] = [
                 'title' => $detail?->title ?? '',
+                'subtitle' => $detail?->subtitle ?? '',
                 'intro_text' => $detail?->intro_text ?? '',
             ];
         }
@@ -521,6 +535,7 @@ class PageItemController extends Controller
             'show_title' => $row->show_title,
             'use_container' => $row->use_container,
             ...$this->backgroundToArray($row),
+            ...$this->textStyleToArray($row),
             'detail' => $this->layoutDetailToArray($row->details, $languages),
             'columns' => $row->columns->map(fn (PageItemColumn $column) => [
                 'id' => $column->id,
@@ -528,6 +543,7 @@ class PageItemController extends Controller
                 'show_title' => $column->show_title,
                 'column_size' => $column->column_size,
                 ...$this->backgroundToArray($column),
+                ...$this->textStyleToArray($column),
                 'detail' => $this->layoutDetailToArray($column->details, $languages),
                 'widgets' => $column->widgets->map(fn (PageItemWidget $widget) => [
                     'id' => $widget->id,
@@ -535,6 +551,8 @@ class PageItemController extends Controller
                     'show_title' => $widget->show_title,
                     'widget_type' => $widget->widget_type,
                     'setting' => $widget->setting ?? [],
+                    ...$this->backgroundToArray($widget),
+                    ...$this->textStyleToArray($widget),
                     'detail' => $this->layoutDetailToArray($widget->details, $languages),
                 ])->values(),
             ])->values(),
