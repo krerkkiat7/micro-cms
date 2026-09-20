@@ -88,11 +88,17 @@ class PageTextStyle
     }
 
     /**
+     * ชื่อฟอนต์ทั้งหมด เรียงตามตัวอักษรภาษาอังกฤษ (A-Z ไม่สนตัวพิมพ์เล็ก/ใหญ่) — ใช้เป็นลำดับใน dropdown เลือกฟอนต์
+     * และเป็นรายการที่ validation ยอมรับ (ลำดับใน FONTS ไม่มีผลต่อรายการนี้)
+     *
      * @return list<string>
      */
     public static function fontNames(): array
     {
-        return array_keys(self::FONTS);
+        $names = array_keys(self::FONTS);
+        sort($names, SORT_STRING | SORT_FLAG_CASE);
+
+        return $names;
     }
 
     /**

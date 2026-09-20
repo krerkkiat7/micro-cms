@@ -145,10 +145,10 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 - `App\Support\PageTextStyle` เป็นแหล่งเดียวของรายการคอลัมน์/ค่าที่อนุญาต/ฟอนต์ (model ใช้ trait `HasPageTextStyle` เติม `$fillable`,
   validation ใช้ `textStyleRules()`, `PageLayoutSync` ใช้ `PageTextStyle::fromInput()`); หน้าจอสร้างค่าเริ่มต้นใน
   `utils/pageLayout.ts` (`defaultTextStyles()` — ขนาดต้องตรงกับ default ใน migration)
-- **ฟอนต์ไทยที่นิยมใช้ทำหัวเรื่อง 29 ตัว** (ฟอนต์ฟรีจาก Google Fonts ที่รองรับภาษาไทย): Sarabun (ค่าเริ่มต้น), Prompt, Kanit,
-  Noto Sans Thai, Noto Serif Thai, IBM Plex Sans Thai, Mitr, Athiti, Bai Jamjuree, K2D, Krub, Niramit, Chakra Petch, Anuphan,
-  Pridi, Taviraj, Trirong, Maitree, Mali, Kodchasan, KoHo, Thasadith, Fahkwang, Srisakdi, Charmonman, Pattaya, Itim, Sriracha,
-  Chonburi — หน้าโครงสร้างโหลดสไตล์ชีตของทุกตัวจาก Bunny Fonts (มิเรอร์ Google Fonts ที่ `app.blade.php` ใช้โหลด Sarabun อยู่แล้ว —
+- **ฟอนต์ไทยที่นิยมใช้ทำหัวเรื่อง 29 ตัว** (ฟอนต์ฟรีจาก Google Fonts ที่รองรับภาษาไทย — dropdown เรียงตามตัวอักษรภาษาอังกฤษ
+  A-Z ผ่าน `PageTextStyle::fontNames()`, ค่าเริ่มต้นคือ Sarabun): Anuphan, Athiti, Bai Jamjuree, Chakra Petch, Charmonman, Chonburi,
+  Fahkwang, IBM Plex Sans Thai, Itim, K2D, Kanit, Kodchasan, KoHo, Krub, Maitree, Mali, Mitr, Niramit, Noto Sans Thai,
+  Noto Serif Thai, Pattaya, Pridi, Prompt, Sarabun, Sriracha, Srisakdi, Taviraj, Thasadith, Trirong — หน้าโครงสร้างโหลดสไตล์ชีตของทุกตัวจาก Bunny Fonts (มิเรอร์ Google Fonts ที่ `app.blade.php` ใช้โหลด Sarabun อยู่แล้ว —
   `PageTextStyle::fontsStylesheetUrl()`) เบราว์เซอร์ดาวน์โหลดไฟล์ฟอนต์เฉพาะตัวที่ถูกใช้จริง; เพิ่มฟอนต์ใหม่ที่ `PageTextStyle::FONTS`
   (ต้องเช็กว่ามีน้ำหนักตัวอักษรที่ระบุจริง ไม่งั้นสไตล์ชีตทั้งชุดโหลดไม่ขึ้น)
 - **การแสดงผล**: เมื่อ `show_title = Y` แสดงหัวเรื่อง + หัวเรื่องรอง + ข้อความเกริ่นนำ (เฉพาะส่วนที่กรอกแล้ว) ตามที่ตั้งค่า —

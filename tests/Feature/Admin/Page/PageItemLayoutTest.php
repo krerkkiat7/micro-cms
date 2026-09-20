@@ -117,6 +117,7 @@ test('layout page renders the row/column/widget tree and logs a layout view', fu
             ->where('rows.0.show_title', 'Y')
             ->where('can.manage', false)
             ->where('fonts', fn ($fonts) => in_array('Sarabun', $fonts->all(), true) && count($fonts) > 20)
+            ->where('fonts', fn ($fonts) => $fonts->all() === collect($fonts->all())->sortBy(fn ($name) => strtolower($name), SORT_STRING)->values()->all())
             ->where('fontsUrl', fn ($url) => str_starts_with($url, 'https://fonts.bunny.net/css?family='))
         );
 
