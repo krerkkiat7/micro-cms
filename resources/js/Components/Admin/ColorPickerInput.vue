@@ -5,7 +5,10 @@ import { Check, Palette } from 'lucide-vue-next';
 /**
  * ตัวเลือกสี — แสดงชุดสีสำเร็จรูปให้คลิกเลือก หรือกด "กำหนดเอง" เพื่อเปิด color picker/กรอกรหัสสีเอง
  * v-model เป็น string เสมอ (รหัสสี hex เช่น '#465fff') — ค่าว่าง '' = ยังไม่ได้เลือก
+ * เปิด prop `transparent` เพื่อเพิ่มตัวเลือก "โปร่งใส" (ค่า 'transparent') ต่อจากชุดสีสำเร็จรูป
  */
+const TRANSPARENT = 'transparent';
+
 const PRESET_COLORS: { value: string; label: string }[] = [
     { value: '#ffffff', label: 'ขาว' },
     { value: '#000000', label: 'ดำ' },
@@ -20,19 +23,27 @@ const PRESET_COLORS: { value: string; label: string }[] = [
     { value: '#ee46bc', label: 'ชมพู' },
 ];
 
+withDefaults(defineProps<{ transparent?: boolean }>(), { transparent: false });
+
 const model = defineModel<string>({ default: '' });
 
 const isPreset = computed(() => PRESET_COLORS.some((c) => c.value.toLowerCase() === model.value.toLowerCase()));
-const showCustom = ref(!isPreset.value && model.value !== '');
+const isTransparent = computed(() => model.value === TRANSPARENT);
+const showCustom = ref(!isPreset.value && !isTransparent.value && model.value !== '');
 
 function selectPreset(value: string) {
     showCustom.value = false;
     model.value = value;
 }
 
+function selectTransparent() {
+    showCustom.value = false;
+    model.value = TRANSPARENT;
+}
+
 function openCustom() {
     showCustom.value = true;
-    if (model.value === '') {
+    if (model.value === '' || isTransparent.value) {
         model.value = '#000000';
     }
 }
@@ -55,6 +66,20 @@ function openCustom() {
                     class="size-4"
                     :class="['#ffffff', '#fdb022', '#f79009'].includes(color.value) ? 'text-gray-700' : 'text-white'"
                 />
+            </button>
+
+            <button
+                v-if="transparent"
+                type="button"
+                class="flex size-7 items-center justify-center rounded-full border border-gray-300 shadow-xs transition-transform hover:scale-110"
+                :style="{
+                    backgroundImage: 'repeating-conic-gradient(#d0d5dd 0% 25%, #ffffff 0% 50%)',
+                    backgroundSize: '10px 10px',
+                }"
+                title="โปร่งใส"
+                @click="selectTransparent"
+            >
+                <Check v-if="isTransparent" class="size-4 rounded-full bg-white/80 text-gray-700" />
             </button>
 
             <button

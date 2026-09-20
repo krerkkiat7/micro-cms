@@ -173,5 +173,8 @@ class DatabaseSeeder extends Seeder
 
         // Intropage ตัวอย่าง (ข้อมูลตัวอย่าง — แยกไฟล์)
         $this->call(IntropageSeeder::class);
+
+        // หน้าเพจตัวอย่าง พร้อมโครงสร้างแถว/คอลัมน์/widget (ข้อมูลตัวอย่าง — แยกไฟล์)
+        $this->call(PageSeeder::class);
     }
 }

@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\Banner\BannerItemController;
 use App\Http\Controllers\Admin\Banner\BannerSettingController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Intropage\IntropageItemController;
+use App\Http\Controllers\Admin\Page\PageItemController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\System\BackLogAccessController;
 use App\Http\Controllers\Admin\System\BackLogActionController;
@@ -158,6 +159,19 @@ Route::prefix('admin')->group(function () {
             Route::get('/{item}/edit', [IntropageItemController::class, 'edit'])->name('admin.intropage.item.edit');
             Route::put('/{item}', [IntropageItemController::class, 'update'])->name('admin.intropage.item.update');
             Route::delete('/{item}', [IntropageItemController::class, 'destroy'])->name('admin.intropage.item.destroy');
+        });
+
+        // หน้าเพจ (page_item_*) — ตรวจสอบสิทธิ์ในแต่ละ method ของ PageItemController
+        // ข้อมูลทั่วไป (edit/update) กับโครงสร้าง แถว → คอลัมน์ → widget (layout/layout.update) เป็นคนละ tab บันทึกแยกกัน
+        Route::prefix('page/item')->group(function () {
+            Route::get('/', [PageItemController::class, 'index'])->name('admin.page.item.index');
+            Route::get('/add', [PageItemController::class, 'add'])->name('admin.page.item.add');
+            Route::post('/', [PageItemController::class, 'store'])->name('admin.page.item.store');
+            Route::get('/{item}/edit', [PageItemController::class, 'edit'])->name('admin.page.item.edit');
+            Route::put('/{item}', [PageItemController::class, 'update'])->name('admin.page.item.update');
+            Route::delete('/{item}', [PageItemController::class, 'destroy'])->name('admin.page.item.destroy');
+            Route::get('/{item}/layout', [PageItemController::class, 'layout'])->name('admin.page.item.layout');
+            Route::put('/{item}/layout', [PageItemController::class, 'layoutUpdate'])->name('admin.page.item.layout.update');
         });
 
         // จัดการผู้ใช้งานหลังบ้าน (user_type = back) — ตรวจสอบสิทธิ์ในแต่ละ method ของ UserController

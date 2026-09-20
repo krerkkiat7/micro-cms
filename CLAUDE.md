@@ -266,6 +266,15 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   และ `status='Y'` ผ่าน `StoreUserRequest`/`UpdateUserRequest`/`ProfileUpdateRequest` — **ไม่จำกัดว่าต้องเป็น
   ไฟล์ของใคร** (เลือกไฟล์ที่คนอื่นอัพโหลดไว้ในระบบมาใช้ได้ ตามที่ตั้งใจ — เดิมเคยจำกัดด้วย `user_id` ของผู้กระทำ
   แล้วพบว่าเช็กไม่ได้ผลตามต้องการ จึงเปลี่ยนมาเช็กแค่ว่าไฟล์มีอยู่จริงแทน)
+- โมดูล page (หน้าเพจเดี่ยว) เสร็จ list/add/edit + **แท็บโครงสร้าง** — migration `2026_09_20_000001_create_page_item_tables.php`
+  (`page_item_info`/`_detail` + `page_item_row`/`column`/`widget` + `*_detail`, คอลัมน์ข้อความเกริ่นนำชื่อ `intro_text`),
+  `PageItemController` (`admin.page.item.*` + `.layout`/`.layout.update`, log module `page.item` / `page.item.layout`),
+  `App\Support\PageLayoutSync` บันทึก tree ทั้งชุดโดย **คง id เดิม** (id หายจากที่ส่งมา = soft delete, widget ย้ายข้ามคอลัมน์ได้),
+  ฝั่งหน้าจอ state/dialog อยู่ที่ `Pages/Admin/Page/Item/Layout.vue` แล้วส่งให้ `Components/Admin/PageLayout/*` ผ่าน
+  provide/inject (`composables/usePageLayoutEditor.ts`); `ColorPickerInput` มี prop `transparent`; ประเภท widget ยังมี `placeholder`
+  ประเภทเดียว (แก้ `PageItemWidget::TYPES` + `WIDGET_TYPES` ใน `utils/pageLayout.ts` คู่กัน) — slug ของ `page_item_detail`
+  ถูกเคลียร์เป็น null ตอนลบหน้า เพราะ unique(lang, slug) ระดับ DB ยังนับแถว detail ที่ไม่ถูก soft delete; `PageSeeder` สร้างหน้าตัวอย่าง
+  (`is_temp='Y'`) รายละเอียดเต็มดู `docs/PRD-page.md`
 
 ## ทดสอบ
 
