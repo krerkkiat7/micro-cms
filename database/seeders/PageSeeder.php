@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\BannerCategoryDetail;
 use App\Models\PageItemColumn;
 use App\Models\PageItemColumnDetail;
 use App\Models\PageItemDetail;
@@ -10,6 +11,8 @@ use App\Models\PageItemRow;
 use App\Models\PageItemRowDetail;
 use App\Models\PageItemWidget;
 use App\Models\PageItemWidgetDetail;
+use App\Support\PageWidget\PageWidgetRegistry;
+use App\Support\PageWidget\SlideshowBannerWidget;
 use App\Support\Setting;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Eloquent\Model;
@@ -18,7 +21,7 @@ use Illuminate\Database\Seeder;
 /**
  * ข้อมูลตัวอย่างโมดูล Page — ทำเครื่องหมาย is_temp = 'Y' เพื่อให้ลบออกได้ภายหลัง (หรือจะใช้ต่อไปก็ได้)
  * สร้างหน้าเพจตัวอย่าง 1 หน้า พร้อมโครงสร้าง 3 แถว: แถว hero (1 คอลัมน์เต็ม 12), แถวเนื้อหา (2 คอลัมน์ 8+4 ใน container),
- * แถวมีสีพื้นหลัง (3 คอลัมน์ 4+4+4) — สองแถวแรกเปิดแสดงหัวเรื่อง/หัวเรื่องรอง/ข้อความเกริ่นนำ, ทุกคอลัมน์มี widget ประเภท placeholder (ประเภท widget จริงรอกำหนด)
+ * แถวมีสีพื้นหลัง (3 คอลัมน์ 4+4+4) — สองแถวแรกเปิดแสดงหัวเรื่อง/หัวเรื่องรอง/ข้อความเกริ่นนำ, ทุกคอลัมน์มี widget ประเภท slideshowbanner (หมวดหมู่ banner ตัวอย่างจาก BannerSeeder — ไม่มี banner ตัวอย่างจึงเห็นสถานะว่างในตัวอย่าง)
  * ไม่ผูกไฟล์ใน file_info (เหมือน IntropageSeeder/BannerSeeder) รันซ้ำได้: หน้าเดิม update, โครงสร้างสร้างเฉพาะเมื่อยังไม่มีแถว
  *
  * รันเดี่ยว: php artisan db:seed --class=PageSeeder
@@ -114,6 +117,9 @@ class PageSeeder extends Seeder
             ],
         ];
 
+        $categoryIds = $this->bannerCategoryIds();
+        $widgetCount = 0;
+
         foreach ($rows as $rowIndex => $rowData) {
             $row = PageItemRow::create([
                 'page_item_info_id' => $info->id,
@@ -140,14 +146,36 @@ class PageSeeder extends Seeder
                     'page_item_column_id' => $column->id,
                     'sort_order' => 0,
                     'show_title' => 'Y',
-                    'widget_type' => 'placeholder',
-                    'setting' => [],
+                    'widget_type' => SlideshowBannerWidget::TYPE,
                     'background_color' => 'transparent',
                     'status' => 'Y',
                 ]);
                 $this->details(PageItemWidgetDetail::class, $widget->id, $widgetTitle);
+
+                // widget แรก (hero) ใช้หมวด "ไฮไลท์" ส่วนที่เหลือหมุนเวียนหมวดอื่น
+                $widgetCount++;
+                PageWidgetRegistry::find(SlideshowBannerWidget::TYPE)->save($widget->id, [
+                    'banner_category_info_id' => $categoryIds[$widgetCount === 1 ? 0 : ($widgetCount % 2 === 0 ? 1 : 2)] ?? null,
+                ], null);
             }
         }
+    }
+
+    /**
+     * id หมวดหมู่ banner ตัวอย่าง (ไฮไลท์, หน่วยงานที่เกี่ยวข้อง, อื่น ๆ ตามลำดับ) จากชื่อของภาษาหลักที่ BannerSeeder สร้างไว้
+     * — ไม่พบ (ยังไม่ได้ seed หรือถูกเปลี่ยนชื่อ) = null ให้ผู้ใช้เลือกหมวดหมู่เองในหน้าโครงสร้าง
+     *
+     * @return list<int|null>
+     */
+    private function bannerCategoryIds(): array
+    {
+        $defaultLang = Setting::defaultLanguage();
+        $names = ['th' => ['ไฮไลท์', 'หน่วยงานที่เกี่ยวข้อง', 'อื่น ๆ'], 'en' => ['Highlight', 'Related Agencies', 'Others']];
+
+        return array_map(
+            fn (string $name) => BannerCategoryDetail::where('lang', $defaultLang)->where('title', $name)->value('id'),
+            $names[$defaultLang] ?? $names['th'],
+        );
     }
 
     /**

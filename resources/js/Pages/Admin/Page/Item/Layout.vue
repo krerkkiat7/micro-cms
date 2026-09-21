@@ -8,6 +8,7 @@ import RowBlock from '@/Components/Admin/PageLayout/RowBlock.vue';
 import RowSettingsDialog from '@/Components/Admin/PageLayout/RowSettingsDialog.vue';
 import ColumnSettingsDialog from '@/Components/Admin/PageLayout/ColumnSettingsDialog.vue';
 import WidgetSettingsDialog from '@/Components/Admin/PageLayout/WidgetSettingsDialog.vue';
+import WidgetTypePickerDialog from '@/Components/Admin/PageLayout/WidgetTypePickerDialog.vue';
 import RowReorderDialog from '@/Components/Admin/PageLayout/RowReorderDialog.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
@@ -15,6 +16,7 @@ import type { RequestPayload } from '@inertiajs/core';
 import { Plus, Save } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue';
 import { PAGE_LAYOUT_EDITOR } from '@/composables/usePageLayoutEditor';
+import { clearWidgetPreviewCache } from '@/composables/useWidgetPreview';
 import {
     backgroundStyle,
     createColumn,
@@ -43,6 +45,8 @@ const props = defineProps<{
     /** รายการชื่อฟอนต์ไทยให้เลือกใน dialog ตั้งค่า + URL สไตล์ชีตที่โหลดฟอนต์เหล่านั้น (ให้เห็นฟอนต์จริงในตัวอย่าง) */
     fonts: string[];
     fontsUrl: string;
+    /** ข้อมูลประกอบฟอร์มตั้งค่า widget เฉพาะประเภท (จาก PageWidgetRegistry::options()) */
+    widgetOptions: { banner_categories: { id: number; title: string | null }[] };
     can: { manage: boolean };
 }>();
 
@@ -110,6 +114,7 @@ function loadFonts() {
 }
 
 onMounted(() => {
+    clearWidgetPreviewCache(); // เข้าหน้าโครงสร้างใหม่ทุกครั้ง ดึงข้อมูลตัวอย่าง (banner ฯลฯ) ล่าสุดเสมอ
     loadFonts();
     window.addEventListener('beforeunload', onBeforeUnload);
     removeInertiaGuard = router.on('before', (event) => {
@@ -132,6 +137,9 @@ function addRow() {
 const rowDialog = ref<RowData | null>(null);
 const columnDialog = ref<{ row: RowData; column: ColumnData } | null>(null);
 const widgetDialog = ref<{ column: ColumnData; widget: WidgetData } | null>(null);
+// เพิ่ม widget: ขั้น 1 เลือกประเภท (widgetPicker) → ขั้น 2 ตั้งค่า (widgetAdd) — widget ใหม่ยังไม่ถูกใส่ลงคอลัมน์จนกว่าจะกดยืนยันขั้น 2
+const widgetPicker = ref<ColumnData | null>(null);
+const widgetAdd = ref<{ column: ColumnData; widget: WidgetData } | null>(null);
 const showReorder = ref(false);
 
 function saveRow(settings: RowSettings) {
@@ -174,6 +182,26 @@ function saveWidget(settings: WidgetSettings) {
     widgetDialog.value = null;
 }
 
+function chooseWidgetType(widgetType: string) {
+    if (widgetPicker.value) {
+        widgetAdd.value = { column: widgetPicker.value, widget: createWidget(props.languages, widgetType) };
+    }
+    widgetPicker.value = null;
+}
+
+function backToWidgetPicker() {
+    widgetPicker.value = widgetAdd.value?.column ?? null;
+    widgetAdd.value = null;
+}
+
+function addWidget(settings: WidgetSettings) {
+    if (widgetAdd.value) {
+        Object.assign(widgetAdd.value.widget, settings);
+        widgetAdd.value.column.widgets.push(widgetAdd.value.widget);
+    }
+    widgetAdd.value = null;
+}
+
 function removeWidget() {
     if (widgetDialog.value) {
         deleteWidget(widgetDialog.value.column, widgetDialog.value.widget);
@@ -214,7 +242,7 @@ provide(PAGE_LAYOUT_EDITOR, {
     languages: props.languages,
     readonly: !props.can.manage,
     addColumn: (row) => row.columns.push(createColumn(props.languages, row.columns)),
-    addWidget: (column) => column.widgets.push(createWidget(props.languages)),
+    addWidget: (column) => (widgetPicker.value = column),
     toggleStatus: (target) => {
         target.status = target.status === 'Y' ? 'N' : 'Y';
     },
@@ -341,11 +369,25 @@ function formatDate(value: string | null): string {
             @save="saveColumn"
             @remove="removeColumn"
         />
+        <WidgetTypePickerDialog :show="widgetPicker !== null" @close="widgetPicker = null" @next="chooseWidgetType" />
+        <WidgetSettingsDialog
+            :show="widgetAdd !== null"
+            mode="add"
+            :widget="widgetAdd?.widget ?? null"
+            :languages="languages"
+            :fonts="fonts"
+            :banner-categories="widgetOptions.banner_categories"
+            @close="widgetAdd = null"
+            @back="backToWidgetPicker"
+            @save="addWidget"
+        />
         <WidgetSettingsDialog
             :show="widgetDialog !== null"
+            mode="edit"
             :widget="widgetDialog?.widget ?? null"
             :languages="languages"
             :fonts="fonts"
+            :banner-categories="widgetOptions.banner_categories"
             @close="widgetDialog = null"
             @save="saveWidget"
             @remove="removeWidget"

@@ -10,7 +10,7 @@
 |---|--------|-----------|-------|
 | 1 | หน้าเพจ (ข้อมูลทั่วไป) | `page_item_info`, `page_item_detail` | 🟢 schema + controller/route/UI (list, add, edit) เสร็จครบ |
 | 2 | โครงสร้าง แถว → คอลัมน์ → widget | `page_item_row/column/widget` + `*_detail` | 🟢 schema + หน้าจัดโครงสร้างแบบเห็นผลจริง + บันทึกเสร็จ |
-| 3 | ประเภท widget และการตั้งค่าเฉพาะประเภท | `page_item_widget.widget_type`/`setting` | 🔴 ยังไม่ได้กำหนด — ตอนนี้มี `placeholder` ประเภทเดียว (§3) |
+| 3 | ประเภท widget และการตั้งค่าเฉพาะประเภท | `page_item_widget.widget_type` + `page_item_widget_<ประเภท>` | 🟡 โครงระบบเสร็จ + ประเภท `slideshowbanner` เสร็จ; อีก 6 ประเภทรอทำ (§3) |
 | 4 | การแสดงผลหน้าบ้านตาม slug/โครงสร้าง | (front-office) | 🔴 ยังไม่ได้ทำ |
 
 ---
@@ -110,7 +110,7 @@ hasMany; `rows()` hasMany เรียง `sort_order`), `App\Models\PageItemDet
 
 **Seeder** — `database/seeders/PageSeeder.php` (เรียกจาก `DatabaseSeeder`) สร้างหน้าเพจตัวอย่าง 1 หน้า (`is_temp='Y'`,
 slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero (คอลัมน์ 12, เต็มความกว้าง + สีพื้นหลัง), เนื้อหา (คอลัมน์ 8 + 4 ใน container),
-ส่วนท้ายมีสีพื้นหลัง (คอลัมน์ 4 + 4 + 4) — สองแถวแรกเปิด "แสดงหัวเรื่อง" พร้อมหัวเรื่องรอง/ข้อความเกริ่นนำ, ทุกคอลัมน์มี widget `placeholder` 1 ตัว; `updateOrCreate` resolve หน้าเดิมจากชื่อ
+ส่วนท้ายมีสีพื้นหลัง (คอลัมน์ 4 + 4 + 4) — สองแถวแรกเปิด "แสดงหัวเรื่อง" พร้อมหัวเรื่องรอง/ข้อความเกริ่นนำ, ทุกคอลัมน์มี widget `slideshowbanner` 1 ตัว (หมวดหมู่ banner ตัวอย่างจาก `BannerSeeder` — ไม่มี banner ตัวอย่าง จึงเห็นสถานะว่างในตัวอย่าง); `updateOrCreate` resolve หน้าเดิมจากชื่อ
 ของภาษาหลัก และสร้างโครงสร้างเฉพาะเมื่อหน้านั้นยังไม่มีแถว จึงรันซ้ำได้ (`php artisan db:seed --class=PageSeeder`)
 
 ---
@@ -126,7 +126,7 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 | `page_item_row_detail` | `id`, `lang`, `title` `varchar(250)`, `subtitle` `varchar(250)` (หัวเรื่องรอง), `intro_text` `varchar(2000)` |
 | `page_item_column` | `page_item_row_id` FK, `sort_order`, `show_title`, `column_size` (1 - 12), `background_*` (ชุดเดียวกับแถว), การจัดรูปแบบตัวอักษร 12 คอลัมน์, `status` |
 | `page_item_column_detail` | `id`, `lang`, `title`, `subtitle`, `intro_text` |
-| `page_item_widget` | `page_item_column_id` FK, `sort_order`, `show_title`, `widget_type` `varchar(20)`, `setting` json, `background_*` (ชุดเดียวกับแถว/คอลัมน์), การจัดรูปแบบตัวอักษร 12 คอลัมน์, `status` |
+| `page_item_widget` | `page_item_column_id` FK, `sort_order`, `show_title`, `widget_type` `varchar(20)` (ตั้งค่าเฉพาะประเภทอยู่ในตาราง `page_item_widget_<ประเภท>` — §3), `background_*` (ชุดเดียวกับแถว/คอลัมน์), การจัดรูปแบบตัวอักษร 12 คอลัมน์, `status` |
 | `page_item_widget_detail` | `id`, `lang`, `title`, `subtitle`, `intro_text` |
 
 ### การจัดรูปแบบตัวอักษร (หัวเรื่อง / หัวเรื่องรอง / ข้อความเกริ่นนำ)
@@ -157,7 +157,7 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 - แถว/คอลัมน์/widget ที่ **เพิ่มใหม่** ตั้ง `background_color = transparent` เป็นค่าเริ่มต้น
 
 **Model** — `PageItemRow`/`PageItemColumn`/`PageItemWidget` (+ `*Detail`) ตาม pattern ข้างบน: `rows()`/`columns()`/`widgets()`
-เรียง `sort_order` (แล้ว `id`), `PageItemWidget::TYPES` = รายการ `widget_type` ที่รองรับ (validation ใช้ค่านี้)
+เรียง `sort_order` (แล้ว `id`), `PageItemWidget::allowedTypes()` = รายการ `widget_type` ที่บันทึกได้ (ประเภทในทะเบียน + `placeholder` ประเภทเดิม — validation ใช้ค่านี้)
 
 ### หน้าโครงสร้าง (`Admin/Page/Item/Layout.vue`)
 
@@ -181,7 +181,7 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 - **dialog ตั้งค่า** (แก้บนสำเนา กด "ตกลง" จึงมีผล, "ยกเลิก" = ไม่เปลี่ยน): ทุกชั้นมี แสดงหัวเรื่อง + ข้อความ 3 ส่วน
   (หัวเรื่อง / หัวเรื่องรอง / ข้อความเกริ่นนำ — กรอกแยกภาษา แล้วตามด้วยการจัดรูปแบบตัวอักษร: ขนาด, ฟอนต์, จัดตำแหน่ง, สี
   ผ่าน `TextFieldsSection.vue`/`TextStyleFields.vue`) + พื้นหลัง; แถวเพิ่ม การแสดงเนื้อหา (container/เต็มจอ); คอลัมน์เพิ่ม
-  ความกว้าง 1 - 12 (ปุ่มตัวเลข + แถบแสดงสัดส่วน); widget เพิ่ม ประเภท
+  ความกว้าง 1 - 12 (ปุ่มตัวเลข + แถบแสดงสัดส่วน); widget เพิ่มกล่องตั้งค่าเฉพาะประเภทไว้บนสุด (§3)
 - **การลบ**: ไอคอนถังขยะบนแถบจัดการเปิด `ConfirmDialog` ยืนยันก่อนลบ (ข้อความเดียวกับปุ่ม "ลบ" ที่อยู่ใน dialog ตั้งค่า ซึ่งยังมีอยู่) —
   ลบแล้วหายจากหน้าจอทันที แต่มีผลกับฐานข้อมูลเมื่อกด "บันทึกโครงสร้าง"
 - เมื่อเปิด "แสดงหัวเรื่อง" ตัวอย่างในหน้าจอจะแสดงหัวเรื่อง/หัวเรื่องรอง/ข้อความเกริ่นนำในพื้นที่ของแถว (เหนือคอลัมน์) /
@@ -200,27 +200,82 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 
 - ส่ง `rows[]` ซ้อน `columns[]` ซ้อน `widgets[]` ทั้งชุด (แต่ละชั้นมีค่าจัดรูปแบบตัวอักษรแบบแบน 12 ค่า + พื้นหลัง + `detail.<lang>.{title,subtitle,intro_text}`)
   — ลำดับใน array = `sort_order`; ตรวจสอบที่
-  `UpdatePageItemLayoutRequest`: `column_size` 1 - 12, ค่าจัดรูปแบบตัวอักษรครบ 12 ค่า (`PageTextStyle`), `widget_type` ต้องอยู่ใน `PageItemWidget::TYPES`, สีต้องเป็น hex หรือ
+  `UpdatePageItemLayoutRequest`: `column_size` 1 - 12, ค่าจัดรูปแบบตัวอักษรครบ 12 ค่า (`PageTextStyle`), `widget_type` ต้องอยู่ใน `PageItemWidget::allowedTypes()` (widget เดิมเปลี่ยนประเภทไม่ได้) และ `setting` ต้องผ่านกฎของประเภทนั้น (§3), สีต้องเป็น hex หรือ
   `transparent`, ไฟล์ต้องมีอยู่จริงใน `file_info`, และ **id ของแถว/คอลัมน์/widget ที่ส่งมาต้องเป็นของหน้านี้จริง** (กัน id ปลอมแก้ข้ามหน้า)
 - `App\Support\PageLayoutSync` ทำงานใน transaction เดียว และ **คง id เดิมไว้** (ต่างจากปุ่มของ Intropage ที่ลบสร้างใหม่ทั้งชุด —
   เพราะ widget จะอ้างไฟล์/ข้อมูลอื่นในอนาคต): รายการที่มี `id` ของหน้านี้ = update, ไม่มี `id` = สร้างใหม่, id เดิมที่ไม่อยู่ในข้อมูล
   ที่ส่งมาแล้ว = **soft delete พร้อมบันทึก `deleted_by`** (เทียบทั้งหน้าในแต่ละชั้น ไม่ผูกกับพาเรนต์เดิม จึงรองรับ widget ที่ย้ายข้ามคอลัมน์
   โดยไม่เสีย id และลูกของแถว/คอลัมน์ที่ถูกลบถูกลบตามไปเอง); ข้อมูลแยกภาษาไม่ถูก soft delete ตามพาเรนต์ (ตาม convention เดิม)
-- จบด้วยการตั้ง `page_item_info.layout_updated_at` = ตอนนี้ และ `layout_updated_by` = ผู้บันทึก แล้ว log
+- widget แต่ละตัวบันทึกค่า `setting` ลงตารางของประเภทนั้น (PK = id ของ widget) ต่อจากบันทึกตัว widget เอง และ widget ที่ถูก soft delete ก็ soft delete แถวตั้งค่าของมันด้วย; จบด้วยการตั้ง `page_item_info.layout_updated_at` = ตอนนี้ และ `layout_updated_by` = ผู้บันทึก แล้ว log
   `LogBackAction` `page.item.layout` / `update`
 - ส่ง `rows` ว่าง = ล้างโครงสร้างทั้งหน้า (soft delete ทุกแถว)
 
 ---
 
-## 3. ประเภท widget (ยังรอกำหนด)
+## 3. ประเภท widget
 
-ผู้ใช้ให้เตรียมโครงสร้างไว้ก่อน แล้วค่อยกำหนดว่ามี widget ประเภทไหนบ้างและจัดการแต่ละประเภทอย่างไรในรอบถัดไป — ตอนนี้จึงมี
-`widget_type = placeholder` ("Widget (รอกำหนดประเภท)") ประเภทเดียว ให้ทดสอบโครงสร้าง/ลาก/บันทึกได้ครบ; `setting` (json) มีในตารางแล้ว
-ตอนนี้ส่งผ่านตามที่ได้รับ (default `[]`) ยังไม่มี UI ให้แก้
+**หลักการ** — แต่ละประเภทมี**ตารางตั้งค่าของตัวเอง** `page_item_widget_<ประเภท>` โดย PK `id` = `page_item_widget.id` (1 widget = 1 แถว) แทน JSON
+`setting` ก้อนเดียว (เลิกใช้คอลัมน์ `page_item_widget.setting` แล้ว — ประเภทอย่าง Custom Text ที่กรอกอะไรก็ได้ไม่ควรรวมเป็น JSON ก้อนเดียว)
+`page_item_widget.widget_type` เก็บชื่อประเภท เช่น `slideshowbanner` ไว้ชี้ว่าต้องอ่านตารางไหน; ส่วน "หัวเรื่อง/หัวเรื่องรอง/ข้อความเกริ่นนำ + พื้นหลัง"
+ของ widget (§2) ยังอยู่ที่ตัว widget เหมือนเดิมและใช้ร่วมทุกประเภท (ฟิลด์ `setting` ที่หน้าจอ/ payload ใช้คือค่าจากตารางประเภทนั้น)
 
-เมื่อเพิ่มประเภทใหม่ต้องแก้ 2 จุดให้ตรงกัน: `PageItemWidget::TYPES` (validation ฝั่ง backend) และ `WIDGET_TYPES` ใน
-`resources/js/utils/pageLayout.ts` (ตัวเลือกใน dialog + ป้ายที่แสดงบนการ์ด) แล้วเพิ่มฟอร์มตั้งค่าเฉพาะประเภทใน
-`WidgetSettingsDialog.vue`
+| ประเภท (`widget_type`) | การแสดงผล / แหล่งข้อมูล | สถานะ |
+|------------------------|--------------------------|-------|
+| `slideshowbanner` | Slideshow — ภาพเต็มภาพเดียวสไลด์ได้ จาก banner | 🟢 เสร็จ |
+| `slideshowarticle` | Slideshow จาก article | 🔴 เร็ว ๆ นี้ |
+| `slidesetbanner` / `slidesetarticle` | Slideset — การ์ดที่เลื่อนได้ จาก banner / article | 🔴 เร็ว ๆ นี้ |
+| `gridbanner` / `gridarticle` | Grid — กล่องเรียงต่อเนื่อง จาก banner / article | 🔴 เร็ว ๆ นี้ |
+| `customtext` | Custom Text — กรอกเนื้อหาเอง คล้าย part ของบทความ (ตารางแยก + ข้อมูลแยกภาษา) | 🔴 เร็ว ๆ นี้ |
+| `placeholder` | ประเภทเดิมก่อนมีประเภทจริง (**legacy**) — ไม่มีตารางตั้งค่า โหลด/บันทึกได้แต่เลือกสร้างใหม่ไม่ได้ | — |
+
+### ขั้นตอนเพิ่ม/แก้ widget ในหน้าโครงสร้าง
+
+1. กด "+ เพิ่ม Widget" บนแถบคอลัมน์ → `WidgetTypePickerDialog.vue` แสดงการ์ด SVG ครบทุกประเภท (ตาม pattern `ArticlePart/ImagesDisplayTypePicker.vue`);
+   ประเภทที่ยังไม่พร้อมติดป้าย "เร็ว ๆ นี้" เลือกไม่ได้; เลือกแล้วกด "ต่อไป"
+2. `WidgetSettingsDialog.vue` (`mode = add`) — **กล่องตั้งค่าเฉพาะประเภทอยู่บนสุด** (กรอบ + ชื่อประเภทที่เลือก) แล้วคั่นด้วยเส้นก่อนส่วนการแสดงผลทั่วไปของ widget
+   (แสดงหัวเรื่อง, ข้อความ 3 ส่วน, พื้นหลัง); ปุ่ม "ย้อนกลับ" กลับไปเลือกประเภท, "ยกเลิก" ไม่เพิ่มอะไร, ค่าที่ต้องกรอกไม่ครบ (เช่น ไม่เลือกหมวดหมู่)
+   → แจ้ง error ที่ช่องและไม่ปิด dialog
+3. **widget ถูกเพิ่มลงคอลัมน์เมื่อกด "เพิ่ม Widget" ใน dialog ขั้น 2 เท่านั้น** (ก่อนหน้านั้นเป็นแค่ draft ที่ยังไม่อยู่ในโครงสร้าง) และยังต้องกด "บันทึกโครงสร้าง"
+   จึงลงฐานข้อมูล
+4. กดเฟืองของ widget = dialog เดียวกัน (`mode = edit`) แต่**เปลี่ยนประเภทไม่ได้** (แสดงชื่อประเภทอย่างเดียว; backend ก็ปฏิเสธถ้า widget เดิมส่งประเภทต่างจากที่บันทึกไว้)
+5. widget แสดง**ตัวอย่างการแสดงผล**ใต้หัวเรื่องบนการ์ดเสมอ (ข้อมูลจริง ตามค่าตั้งค่าที่กำลังแก้แม้ยังไม่บันทึก) — ลิงก์เป็นแค่ป้ายบอกว่ามีลิงก์ กดไม่ได้และไม่มี URL
+   (endpoint ตัวอย่างไม่ส่ง URL มาเลย); ดึงผ่าน `GET admin.page.item.widget.preview` (สิทธิ์ `page.item.view`, ไม่บันทึก log) โดย `composables/useWidgetPreview.ts`
+   (cache ตามค่าตั้งค่า, ล้างเมื่อเข้าหน้าโครงสร้างใหม่)
+
+### `slideshowbanner` — Slideshow จาก banner
+
+ตาราง `page_item_widget_slideshowbanner` (migration `2026_09_21_000001_*`; มี audit + timestamps + softDeletes ไม่มี `status` เพราะอยู่ที่ตัว widget):
+
+| คอลัมน์ | ค่า / ความหมาย |
+|---------|----------------|
+| `banner_category_info_id` | FK → `banner_category_info` (nullOnDelete) — **จำเป็นต้องเลือก** (ต้องมีอยู่จริง เปิดใช้งาน ไม่ถูกลบ ตรวจตอนบันทึก) |
+| `sort_by` | `publish_desc` วันที่เผยแพร่ล่าสุด (default) · `publish_asc` เก่าสุด · `order_asc` ลำดับน้อยไปมาก · `order_desc` มากไปน้อย (วันที่ใช้ `COALESCE(publish_date, created_at)`) |
+| `show_arrows` / `show_dots` / `autoplay` | `Y`/`N` — ลูกศรกดเลื่อน · จุดด้านล่าง (อยู่ในกรอบภาพ) · เลื่อนอัตโนมัติ (default `Y`/`Y`/`Y`) |
+| `autoplay_interval` | ระยะค้างต่อภาพ (วินาที 1 - 60, default 5) — ใช้เมื่อเปิด autoplay |
+| `transition_speed` | ความเร็วเปลี่ยนภาพ (มิลลิวินาที 100 - 3000, default 500) |
+| `transition_effect` | `slide` (default) / `fade` / `zoom` |
+| `aspect_ratio` | `16:9` (default) / `21:9` / `4:3` / `1:1` — ภาพครอปแบบ cover ให้เต็มกรอบ (คอลัมน์นี้เพิ่มนอกเหนือจากที่ผู้ใช้ระบุ เพื่อให้กรอบไม่กระโดดเวลาเลื่อน) |
+| `is_clickable` / `link_target` | กดลิงก์ของ banner ได้ (banner ที่ไม่มีลิงก์กดไม่ได้) · `_self` / `_blank` |
+| `show_title` / `show_intro_text` | แสดงหัวเรื่อง/ข้อความเกริ่นนำของ **banner แต่ละใบ**ซ้อนบนภาพ (`<div>` ไม่ใช้ h1/h2, ตัวอักษรขาวบนเฉดดำด้านล่าง) — คนละอย่างกับ "แสดงหัวเรื่อง" ของ widget เอง (H4 เหนือ widget) |
+| `text_align` / `text_width` | `left`/`center`/`right` · `full` เต็มความกว้าง / `container` จำกัดตาม container (`max-w-5xl` เหมือนแถวที่ใช้ container) |
+
+- **ข้อมูลที่แสดง** (`SlideshowBannerWidget::preview()`, ตัวกรองเดียวกับที่หน้าบ้านจะใช้): banner ของหมวดหมู่นั้นที่ `status = Y`, ไม่ถูกลบ, มีรูป (ไฟล์ใช้งานได้),
+  อยู่ในช่วงเผยแพร่ (`publish_date` ว่างหรือ ≤ ตอนนี้ และ `publish_down` ว่างหรือ > ตอนนี้), ชื่อ/เกริ่นนำเป็นของภาษาหลัก — ตัวอย่างในหน้าโครงสร้างแสดงสูงสุด 10 ใบ
+- ตัวอย่าง (`widgets/SlideshowBannerPreview.vue`): กรอบตามสัดส่วนภาพ, ลูกศร/จุดกดเลื่อนดูได้, effect ด้วย CSS transition, เลื่อนอัตโนมัติตามระยะค้าง,
+  สถานะ "ยังไม่ได้เลือกหมวดหมู่" / "ไม่มี banner ที่เผยแพร่อยู่ในหมวดหมู่นี้" / กำลังโหลด; ฟอร์มตั้งค่าอยู่ที่ `widgets/SlideshowBannerFields.vue`
+- ตัวเลือก/ช่วงค่า/ค่าเริ่มต้นต้องตรงกันระหว่าง `App\Support\PageWidget\SlideshowBannerWidget` และ `resources/js/utils/pageWidget.ts`
+
+### โครงระบบประเภท widget (เพิ่มประเภทใหม่)
+
+ทุกอย่างของแต่ละประเภทรวมอยู่ในคลาสเดียว `App\Support\PageWidget\<ชื่อ>Widget implements PageWidgetType` (กฎ validation, ค่าเริ่มต้น, บันทึก/ลบ, แปลงเป็นข้อมูลส่งหน้าจอ,
+ตัวเลือกประกอบฟอร์ม เช่น รายการหมวดหมู่, ข้อมูลตัวอย่าง) ลงทะเบียนใน `PageWidgetRegistry` — `PageLayoutSync`, `UpdatePageItemLayoutRequest`, `PageItemController` เรียกผ่านทะเบียนนี้
+ไม่รู้จักประเภทใดโดยเฉพาะ. เพิ่มประเภทใหม่:
+
+1. migration ตาราง `page_item_widget_<ประเภท>` (PK = `page_item_widget.id`, FK cascade) + model + relation บน `PageItemWidget`
+2. คลาส `<ชื่อ>Widget` + ลงทะเบียนใน `PageWidgetRegistry::all()`
+3. `resources/js/utils/pageWidget.ts`: เปลี่ยน `available: true` ใน `WIDGET_TYPE_DEFS`, เพิ่ม interface/ค่าเริ่มต้น (`defaultSetting`)/ตัวตรวจ (`validateSetting`)
+4. component ฟอร์มตั้งค่า + ตัวอย่างใน `Components/Admin/PageLayout/widgets/` แล้วผูกใน `WidgetSettingsDialog.vue` / `WidgetBlock.vue`
+5. เทสต์ (ดู `tests/Feature/Admin/Page/PageItemWidgetTest.php`) + อัปเดตตารางด้านบน
 
 ---
 
@@ -230,5 +285,6 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 |-----|--------|-------|
 | 0 — schema | `page_item_info/detail` + `page_item_row/column/widget` + `*_detail` + `PageSeeder` ตัวอย่าง | ✅ เสร็จ |
 | 1 — CRUD หน้าเพจ + จัดโครงสร้าง | list/add/edit (ข้อมูลทั่วไป + SEO) + แท็บโครงสร้าง (แถว/คอลัมน์/widget, ลากเรียง, ตั้งค่า, พื้นหลัง, บันทึก) | ✅ เสร็จ |
-| **2 — ประเภท widget** *(รอบถัดไป)* | กำหนดประเภท widget + การตั้งค่าเฉพาะประเภท (`setting`) | 🔴 ยังไม่เริ่ม |
+| **2 — ประเภท widget** | โครงระบบประเภท widget (ตารางแยกต่อประเภท + registry + dialog เลือกประเภท/ตั้งค่า + ตัวอย่าง) + `slideshowbanner` | ✅ เสร็จ (ประเภทแรก) |
+| 2.1 — ประเภท widget ที่เหลือ | `slideshowarticle`, `slidesetbanner/article`, `gridbanner/article`, `customtext` | 🔴 ยังไม่เริ่ม |
 | 3 — หน้าบ้าน | แสดงหน้าเพจตาม slug + โครงสร้าง (grid 12) ที่ `front.*` | 🔴 ยังไม่เริ่ม |

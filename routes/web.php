@@ -166,6 +166,7 @@ Route::prefix('admin')->group(function () {
         Route::prefix('page/item')->group(function () {
             Route::get('/', [PageItemController::class, 'index'])->name('admin.page.item.index');
             Route::get('/add', [PageItemController::class, 'add'])->name('admin.page.item.add');
+            Route::get('/widget/preview', [PageItemController::class, 'widgetPreview'])->name('admin.page.item.widget.preview');
             Route::post('/', [PageItemController::class, 'store'])->name('admin.page.item.store');
             Route::get('/{item}/edit', [PageItemController::class, 'edit'])->name('admin.page.item.edit');
             Route::put('/{item}', [PageItemController::class, 'update'])->name('admin.page.item.update');

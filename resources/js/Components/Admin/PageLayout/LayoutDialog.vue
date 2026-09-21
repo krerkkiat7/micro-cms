@@ -16,8 +16,10 @@ const props = withDefaults(
         /** ความกว้างสูงสุด: md = max-w-lg, lg = max-w-3xl */
         size?: 'md' | 'lg';
         confirmText?: string;
+        /** true = ปุ่มยืนยันกดไม่ได้ (เช่น ยังไม่ได้เลือกตัวเลือก) */
+        confirmDisabled?: boolean;
     }>(),
-    { size: 'lg', confirmText: 'ตกลง', description: undefined },
+    { size: 'lg', confirmText: 'ตกลง', description: undefined, confirmDisabled: false },
 );
 
 const emit = defineEmits<{
@@ -65,7 +67,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
                         <slot name="footer-left" />
                         <div class="ml-auto flex gap-3">
                             <SecondaryButton type="button" @click="emit('close')">ยกเลิก</SecondaryButton>
-                            <PrimaryButton type="button" @click="emit('confirm')">{{ confirmText }}</PrimaryButton>
+                            <PrimaryButton type="button" :disabled="confirmDisabled" @click="emit('confirm')">{{ confirmText }}</PrimaryButton>
                         </div>
                     </div>
                 </div>

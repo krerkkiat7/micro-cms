@@ -120,8 +120,8 @@ trait PageItemValidationRules
 
     /**
      * กฎของโครงสร้างทั้งหน้า (rows.*.columns.*.widgets.*) — ฟิลด์แยกภาษาของทุกชั้นมีแค่ title/subtitle/intro_text
-     * และเป็น nullable ทั้งหมด (ต่างจากตัวหน้าที่ภาษาหลักต้องมีชื่อ) ส่วน id ที่ส่งมาต้องเป็นของหน้านี้จริง
-     * ตรวจใน UpdatePageItemLayoutRequest::withValidator()
+     * และเป็น nullable ทั้งหมด (ต่างจากตัวหน้าที่ภาษาหลักต้องมีชื่อ) ส่วน id ที่ส่งมาต้องเป็นของหน้านี้จริง และ `setting` ของ widget
+     * (กฎขึ้นกับประเภท) ตรวจใน UpdatePageItemLayoutRequest::withValidator()
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -146,7 +146,7 @@ trait PageItemValidationRules
             'rows.*.columns.*.widgets.*.id' => ['nullable', 'integer'],
             'rows.*.columns.*.widgets.*.status' => ['required', Rule::in(['Y', 'N'])],
             'rows.*.columns.*.widgets.*.show_title' => ['required', Rule::in(['Y', 'N'])],
-            'rows.*.columns.*.widgets.*.widget_type' => ['required', Rule::in(PageItemWidget::TYPES)],
+            'rows.*.columns.*.widgets.*.widget_type' => ['required', Rule::in(PageItemWidget::allowedTypes())],
             'rows.*.columns.*.widgets.*.setting' => ['nullable', 'array'],
             'rows.*.columns.*.widgets.*.detail' => ['nullable', 'array'],
         ]

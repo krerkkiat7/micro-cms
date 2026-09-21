@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasPageTextStyle;
+use App\Support\PageWidget\PageWidgetRegistry;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * widget ภายในคอลัมน์ — widget_type + setting (json) รอกำหนดประเภท/รายละเอียดในรอบถัดไป + พื้นหลัง (สี/รูป/CSS 4 ค่า) เหมือนแถว/คอลัมน์
+ * widget ภายในคอลัมน์ — widget_type บอกประเภท และการตั้งค่าเฉพาะประเภทอยู่ในตาราง `page_item_widget_<ประเภท>` ของตัวเอง (PK = id ของ widget นี้;
+ * ดู App\Support\PageWidget) + พื้นหลัง (สี/รูป/CSS 4 ค่า) เหมือนแถว/คอลัมน์
  */
 class PageItemWidget extends Model
 {
@@ -16,15 +18,24 @@ class PageItemWidget extends Model
 
     protected $table = 'page_item_widget';
 
-    /** ประเภท widget ที่รองรับตอนนี้ — ยังรอกำหนดรายละเอียด มี placeholder ประเภทเดียว (ให้ตรงกับ utils/pageLayout.ts) */
-    public const TYPES = ['placeholder'];
+    /** ประเภทเดิมก่อนมีประเภทจริง — ไม่มีตารางตั้งค่า ยังโหลด/บันทึกได้เพื่อไม่ให้ข้อมูลเก่าพัง แต่เลือกสร้างใหม่ไม่ได้ */
+    public const LEGACY_TYPE = 'placeholder';
+
+    /**
+     * ประเภท widget ที่บันทึกได้ (ประเภทจริงในทะเบียน + ประเภทเดิม) — ประเภทที่สร้างใหม่ได้ดู utils/pageWidget.ts
+     *
+     * @return list<string>
+     */
+    public static function allowedTypes(): array
+    {
+        return [...PageWidgetRegistry::types(), self::LEGACY_TYPE];
+    }
 
     protected $fillable = [
         'page_item_column_id',
         'sort_order',
         'show_title',
         'widget_type',
-        'setting',
         'background_color',
         'background_image_id',
         'background_repeat',
@@ -35,10 +46,6 @@ class PageItemWidget extends Model
         'created_by',
         'updated_by',
         'deleted_by',
-    ];
-
-    protected $casts = [
-        'setting' => 'array',
     ];
 
     public function column()
@@ -54,5 +61,11 @@ class PageItemWidget extends Model
     public function details()
     {
         return $this->hasMany(PageItemWidgetDetail::class, 'id');
+    }
+
+    /** การตั้งค่าเฉพาะของประเภท slideshowbanner (relation ของแต่ละประเภทลงทะเบียนใน PageWidgetRegistry) */
+    public function slideshowBanner()
+    {
+        return $this->hasOne(PageItemWidgetSlideshowBanner::class, 'id');
     }
 }

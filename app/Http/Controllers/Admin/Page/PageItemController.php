@@ -16,12 +16,15 @@ use App\Models\PageItemRow;
 use App\Models\PageItemWidget;
 use App\Support\PageLayoutSync;
 use App\Support\PageTextStyle;
+use App\Support\PageWidget\PageWidgetRegistry;
 use App\Support\Setting;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -319,6 +322,7 @@ class PageItemController extends Controller
                 'backgroundImage', 'details',
                 'columns.backgroundImage', 'columns.details',
                 'columns.widgets.details',
+                ...PageWidgetRegistry::relations('columns.widgets.'),
             ])
             ->get();
 
@@ -338,10 +342,37 @@ class PageItemController extends Controller
             'languages' => $languages,
             'fonts' => PageTextStyle::fontNames(),
             'fontsUrl' => PageTextStyle::fontsStylesheetUrl(),
+            'widgetOptions' => PageWidgetRegistry::options(),
             'can' => [
                 'manage' => $request->user()->hasPermission('page.item.manage'),
             ],
         ]);
+    }
+
+    /**
+     * ข้อมูลตัวอย่างของ widget ตามค่าตั้งค่าที่กำลังแก้ (ยังไม่บันทึก) — ใช้แสดงตัวอย่างในหน้าโครงสร้าง
+     * ไม่ใช่หน้าจอจึงไม่บันทึก log; ไม่ส่ง URL ปลายทางของลิงก์ (ตัวอย่างกดไม่ได้)
+     */
+    public function widgetPreview(Request $request): JsonResponse
+    {
+        if (! $request->user()->hasPermission('page.item.view')) {
+            return response()->json(['message' => 'ไม่มีสิทธิ์เข้าถึง'], 403);
+        }
+
+        $type = PageWidgetRegistry::find($request->query('widget_type'));
+
+        if ($type === null) {
+            return response()->json(['message' => 'ประเภท Widget ไม่ถูกต้อง'], 422);
+        }
+
+        $setting = (array) $request->query('setting', []);
+        $validator = Validator::make($setting, $type->previewRules(), $type->messages());
+
+        if ($validator->fails()) {
+            return response()->json(['message' => $validator->errors()->first(), 'items' => []], 422);
+        }
+
+        return response()->json(['items' => $type->preview($setting)]);
     }
 
     /**
@@ -524,6 +555,18 @@ class PageItemController extends Controller
     }
 
     /**
+     * ค่าตั้งค่าเฉพาะประเภทของ widget (จากตารางของประเภทนั้น) — ประเภทเดิมที่ไม่มีตารางตั้งค่า = object ว่าง
+     *
+     * @return array<string, mixed>|object
+     */
+    private function widgetSettingToArray(PageItemWidget $widget): array|object
+    {
+        $type = PageWidgetRegistry::find($widget->widget_type);
+
+        return $type ? $type->toArray($widget->getRelation($type->relation())) : (object) [];
+    }
+
+    /**
      * @param  list<array{code: string, is_default: bool}>  $languages
      * @return array<string, mixed>
      */
@@ -550,7 +593,7 @@ class PageItemController extends Controller
                     'status' => $widget->status,
                     'show_title' => $widget->show_title,
                     'widget_type' => $widget->widget_type,
-                    'setting' => $widget->setting ?? [],
+                    'setting' => $this->widgetSettingToArray($widget),
                     ...$this->backgroundToArray($widget),
                     ...$this->textStyleToArray($widget),
                     'detail' => $this->layoutDetailToArray($widget->details, $languages),

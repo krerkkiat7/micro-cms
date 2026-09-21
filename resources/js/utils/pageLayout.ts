@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'vue';
 import type { FileItem, LanguageOption } from '@/types';
+import { defaultSetting, settingFromServer } from '@/utils/pageWidget';
 
 /**
  * โครงสร้างหน้าเพจ แถว (row) → คอลัมน์ (column) → widget (ดู docs/PRD-page.md) — ชนิดข้อมูลตรงกับ
@@ -84,7 +85,7 @@ export interface RowData extends BackgroundFields, TextStyles {
 /** ค่าที่ dialog ตั้งค่าของแต่ละชั้นแก้ไขได้ (ไม่รวมลูก) — dialog แก้บนสำเนาแล้วส่งกลับเมื่อกด "ตกลง" */
 export type RowSettings = Pick<RowData, 'detail' | 'show_title' | 'use_container'> & BackgroundFields & TextStyles;
 export type ColumnSettings = Pick<ColumnData, 'detail' | 'show_title' | 'column_size'> & BackgroundFields & TextStyles;
-export type WidgetSettings = Pick<WidgetData, 'detail' | 'show_title' | 'widget_type'> & BackgroundFields & TextStyles;
+export type WidgetSettings = Pick<WidgetData, 'detail' | 'show_title' | 'widget_type' | 'setting'> & BackgroundFields & TextStyles;
 
 /** รูปแบบข้อมูลที่ backend ส่งมา (PageItemController::rowToArray) — การจัดรูปแบบมาเป็นคอลัมน์แบน `<part>_<ค่า>` */
 type ServerTextStyle = Record<`${TextPart}_${'font_size' | 'font_family' | 'align' | 'color'}`, string | number>;
@@ -123,15 +124,6 @@ export interface ServerRow extends ServerBackground, ServerTextStyle {
     use_container: 'Y' | 'N';
     detail: LayoutDetailMap;
     columns: ServerColumn[];
-}
-
-/** ประเภท widget ที่เลือกได้ — ยังรอกำหนดรายละเอียด มี placeholder ประเภทเดียว (ให้ตรงกับ PageItemWidget::TYPES) */
-export const WIDGET_TYPES = [{ value: 'placeholder', label: 'Widget (รอกำหนดประเภท)' }];
-
-export const DEFAULT_WIDGET_TYPE = WIDGET_TYPES[0].value;
-
-export function widgetTypeLabel(type: string): string {
-    return WIDGET_TYPES.find((t) => t.value === type)?.label ?? type;
 }
 
 export const SHOW_OPTIONS = [
@@ -258,14 +250,15 @@ function newBackground(): BackgroundFields {
     };
 }
 
-export function createWidget(languages: LanguageOption[]): WidgetData {
+/** สร้าง widget ใหม่ของประเภทที่เลือก (ค่าตั้งค่าเริ่มต้นตามประเภท) — ยังไม่ถูกใส่ลงหน้า จนกว่าผู้ใช้กด "ตกลง" ใน dialog ตั้งค่า */
+export function createWidget(languages: LanguageOption[], widgetType: string): WidgetData {
     return {
         _key: nextKey('widget'),
         id: null,
         status: 'Y',
         show_title: 'Y',
-        widget_type: DEFAULT_WIDGET_TYPE,
-        setting: {},
+        widget_type: widgetType,
+        setting: defaultSetting(widgetType),
         detail: emptyDetailMap(languages),
         ...newBackground(),
         ...defaultTextStyles('widget'),
@@ -341,8 +334,8 @@ export function layoutFromServer(rows: ServerRow[]): RowData[] {
                 status: widget.status,
                 show_title: widget.show_title,
                 widget_type: widget.widget_type,
-                // PHP ส่ง array ว่างมาเป็น [] — ฝั่งหน้าจอใช้เป็น object เสมอ
-                setting: Array.isArray(widget.setting) ? {} : (widget.setting ?? {}),
+                // PHP ส่ง array ว่างมาเป็น [] — ฝั่งหน้าจอใช้เป็น object เสมอ และผสานกับค่าเริ่มต้นของประเภทกันคีย์ขาด
+                setting: settingFromServer(widget.widget_type, widget.setting),
                 detail: cloneDeep(widget.detail),
                 ...backgroundFromServer(widget),
                 ...textStylesFromServer(widget),

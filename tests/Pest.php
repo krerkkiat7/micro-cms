@@ -51,6 +51,8 @@ expect()->extend('toBeOne', function () {
 |
 */
 
+require_once __DIR__.'/Helpers/PageLayout.php';
+
 function something()
 {
     // ..

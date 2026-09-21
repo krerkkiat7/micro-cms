@@ -9,6 +9,7 @@ use App\Models\PageItemRow;
 use App\Models\PageItemRowDetail;
 use App\Models\PageItemWidget;
 use App\Models\PageItemWidgetDetail;
+use App\Support\PageWidget\PageWidgetRegistry;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -79,16 +80,20 @@ class PageLayoutSync
                             'sort_order' => $widgetIndex,
                             'show_title' => $widgetData['show_title'],
                             'widget_type' => $widgetData['widget_type'],
-                            'setting' => $widgetData['setting'] ?? null,
                             'status' => $widgetData['status'],
                         ] + $this->background($widgetData) + PageTextStyle::fromInput($widgetData));
                         $this->keptWidgetIds[] = $widget->id;
                         $this->syncDetails(PageItemWidgetDetail::class, $widget->id, $widgetData['detail'] ?? []);
+                        // ค่าตั้งค่าเฉพาะประเภท (ตารางของประเภทนั้น PK = id ของ widget) — ประเภท legacy ไม่มีตาราง
+                        PageWidgetRegistry::find($widget->widget_type)?->save($widget->id, $widgetData['setting'] ?? [], $this->actorId);
                     }
                 }
             }
 
-            $this->softDeleteMissing(PageItemWidget::class, $existingWidgetIds, $this->keptWidgetIds);
+            $removedWidgetIds = $this->softDeleteMissing(PageItemWidget::class, $existingWidgetIds, $this->keptWidgetIds);
+            foreach (PageWidgetRegistry::all() as $widgetType) {
+                $widgetType->softDelete($removedWidgetIds, $this->actorId);
+            }
             $this->softDeleteMissing(PageItemColumn::class, $existingColumnIds, $this->keptColumnIds);
             $this->softDeleteMissing(PageItemRow::class, $existingRowIds, $this->keptRowIds);
 
@@ -170,13 +175,16 @@ class PageLayoutSync
      * @param  class-string<Model>  $model
      * @param  list<int>  $existingIds
      * @param  list<int>  $keptIds
+     * @return list<int> id ที่ถูก soft delete
      */
-    private function softDeleteMissing(string $model, array $existingIds, array $keptIds): void
+    private function softDeleteMissing(string $model, array $existingIds, array $keptIds): array
     {
         $missing = array_values(array_diff($existingIds, $keptIds));
 
         if ($missing !== []) {
             $model::whereIn('id', $missing)->update(['deleted_by' => $this->actorId, 'deleted_at' => now()]);
         }
+
+        return $missing;
     }
 }
