@@ -52,12 +52,12 @@ function remove(file: FileItem) {
                 :key="file.hash_name"
                 class="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2"
             >
-                <div class="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded bg-gray-50">
+                <div class="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded bg-gray-100 ring-1 ring-inset ring-gray-200">
                     <img
                         v-if="file.is_image"
                         :src="route('admin.system.file.get.thumbnail.size', { size: 80, hashname: file.hash_name })"
                         :alt="file.name"
-                        class="size-full object-cover"
+                        class="size-full object-contain"
                     />
                     <component :is="fileTypeIcon(file.extension)" v-else class="size-5 text-gray-400" />
                 </div>

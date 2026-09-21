@@ -221,12 +221,12 @@ defineExpose({ reload: load });
                 :class="cardStateClasses(file)"
                 @click="selectable && !isDisabled(file) && emit('toggle', file)"
             >
-                <div class="flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-gray-50">
+                <div class="flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-gray-100 ring-1 ring-inset ring-gray-200">
                     <img
                         v-if="file.is_image"
                         :src="thumbnailUrl(file, 200)"
                         :alt="file.name"
-                        class="size-full object-cover"
+                        class="size-full object-contain"
                         loading="lazy"
                     />
                     <component :is="fileTypeIcon(file.extension)" v-else class="size-10 text-gray-400" />
@@ -267,12 +267,12 @@ defineExpose({ reload: load });
                 :class="rowStateClasses(file)"
                 @click="selectable && !isDisabled(file) && emit('toggle', file)"
             >
-                <div class="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-50">
+                <div class="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100 ring-1 ring-inset ring-gray-200">
                     <img
                         v-if="file.is_image"
                         :src="thumbnailUrl(file, 100)"
                         :alt="file.name"
-                        class="size-full object-cover"
+                        class="size-full object-contain"
                         loading="lazy"
                     />
                     <component :is="fileTypeIcon(file.extension)" v-else class="size-6 text-gray-400" />

@@ -502,6 +502,10 @@ primary key = `(group, name)` — Eloquent ไม่รองรับ composite
 เพราะ `sys_user`/บทความยังไม่มีฟิลด์รูปภาพ — component พร้อมใช้ทันทีที่มีฟิลด์จริง ดู
 `Components/Admin/FileManager/FilePickerField.vue`)
 
+**การแสดงรูปตัวอย่าง** — รูปในรายการไฟล์ (มุมมองการ์ด/แถวใน `FileBrowser.vue`) และรายการไฟล์ที่เลือกแล้วใน `FilePickerField.vue`
+แสดงแบบ `object-fit: contain` (เห็นรูปทั้งภาพ ไม่ครอป จะได้รู้อัตราส่วนจริงก่อนเลือก) บนพื้นเทาอ่อน `bg-gray-100` + เส้นขอบใน `ring-gray-200`
+ให้เห็นว่าส่วนที่เหลือคือพื้นที่ว่างของกรอบ (thumbnail ที่เสิร์ฟมาย่อตามความกว้างโดยคงสัดส่วนอยู่แล้ว)
+
 **ไม่มี permission gate** — ต่างจากโมดูล `system.*` อื่น ๆ เมนู "จัดการไฟล์" (sidebar ต่อจากโปรไฟล์ +
 header user-dropdown) และ `Admin\System\FileController`/`FileServeController` ไม่เช็ก `hasPermission()`
 เหมือน Dashboard/Profile เพราะเป็นพื้นที่ส่วนตัว ทุก query กรองด้วย `user_id` แทน permission action
