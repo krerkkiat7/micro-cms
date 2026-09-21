@@ -84,7 +84,9 @@ test('the defaults follow the requested spec', function () {
         ->and([$d['per_row_pc'], $d['per_row_notebook'], $d['per_row_tablet'], $d['per_row_mobile']])->toBe([4, 3, 2, 1])
         ->and($d['image_background'])->toBe('#F3F4F6')
         ->and($d['show_read_all'])->toBe('N')
-        ->and($d['read_all_text'])->toBe(['th' => '', 'en' => '']);
+        ->and($d['read_all_text'])->toBe(['th' => '', 'en' => ''])
+        ->and([$d['show_border'], $d['rounded_corners']])->toBe(['Y', 'Y'])
+        ->and([$d['read_all_font_size'], $d['read_all_font_family'], $d['read_all_color'], $d['read_all_background']])->toBe([14, 'Sarabun', '#FFFFFF', '#1F2937']);
 });
 
 test('every setting field has a column in the table and a fillable entry on the model (no drift)', function () {
@@ -222,8 +224,30 @@ test('slidesetarticle rejects invalid values', function (string $field, mixed $v
     'read all icon position' => ['read_all_icon_position', 'above'],
     'read all style' => ['read_all_style', 'rounded'],
     'read all target' => ['read_all_link_target', '_top'],
+    'read all font' => ['read_all_font_family', 'Comic Sans'],
+    'read all size low' => ['read_all_font_size', 7],
+    'read all size high' => ['read_all_font_size', 121],
+    'read all color name' => ['read_all_color', 'white'],
+    'read all color transparent' => ['read_all_color', 'transparent'],
+    'read all background name' => ['read_all_background', 'black'],
+    'border flag' => ['show_border', 'yes'],
+    'rounded flag' => ['rounded_corners', 'no'],
     'read all url without scheme' => ['read_all_url', 'example.com/news'],
 ]);
+
+test('the card box border / rounded corners and the read-all button text style are saved', function () {
+    actingAsUserWithPermissions(['page.item.manage']);
+
+    $this->put(route('admin.page.item.layout.update', $this->page->id), slidesetPayload($this->category->id, [
+        'show_border' => 'N', 'rounded_corners' => 'N', 'show_read_all' => 'Y', 'read_all_url' => '/th/news', 'read_all_style' => 'pill',
+        'read_all_font_size' => 18, 'read_all_font_family' => 'Kanit', 'read_all_color' => '#ffeecc', 'read_all_background' => '#123456',
+    ]))->assertSessionHasNoErrors();
+
+    $row = PageItemWidgetSlidesetArticle::findOrFail(newestSlideset()->id);
+
+    expect([$row->show_border, $row->rounded_corners])->toBe(['N', 'N'])
+        ->and([$row->read_all_font_size, $row->read_all_font_family, $row->read_all_color, $row->read_all_background])->toBe([18, 'Kanit', '#ffeecc', '#123456']);
+});
 
 test('the read-all text is limited to 100 characters per language', function () {
     actingAsUserWithPermissions(['page.item.manage']);

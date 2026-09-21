@@ -1,7 +1,7 @@
 import { reactive } from 'vue';
 import { LINK_TARGET_OPTIONS } from '@/utils/options';
 import type { TextStyle } from '@/utils/pageLayout';
-import { READ_ALL_URL_PATTERN } from '@/utils/readAllButton';
+import { READ_ALL_DEFAULT_BACKGROUND, READ_ALL_DEFAULT_COLORS, READ_ALL_URL_PATTERN } from '@/utils/readAllButton';
 import type { ReadAllIcon, ReadAllIconPosition, ReadAllPosition, ReadAllStyle } from '@/utils/readAllButton';
 
 /**
@@ -228,6 +228,9 @@ export interface SlidesetSetting {
     image_background: string;
     image_clickable: YesNo;
     link_target: '_self' | '_blank';
+    /** กล่องของการ์ด: แสดงเส้นขอบ / มุมมน */
+    show_border: YesNo;
+    rounded_corners: YesNo;
     show_title: YesNo;
     title_font_size: number;
     title_bold: YesNo;
@@ -262,6 +265,11 @@ export interface SlidesetSetting {
     read_all_icon?: ReadAllIcon;
     read_all_icon_position?: ReadAllIconPosition;
     read_all_style?: ReadAllStyle;
+    /** ตัวอักษรของปุ่ม (ทุกรูปแบบ) + สีพื้นหลัง (ใช้เมื่อเป็นแบบปุ่ม/ปุ่มมนใหญ่) */
+    read_all_font_size?: number;
+    read_all_font_family?: string;
+    read_all_color?: string;
+    read_all_background?: string;
     read_all_url?: string;
     read_all_link_target?: '_self' | '_blank';
 }
@@ -417,6 +425,8 @@ export function defaultSlidesetSetting(type: string, languages: string[] = []): 
         image_background: SLIDESET_DEFAULT_IMAGE_BACKGROUND,
         image_clickable: 'Y',
         link_target: '_self',
+        show_border: 'Y',
+        rounded_corners: 'Y',
         show_title: 'Y',
         title_font_size: 18,
         title_bold: 'Y',
@@ -459,6 +469,10 @@ export function defaultSlidesetSetting(type: string, languages: string[] = []): 
         read_all_icon: 'arrow_right',
         read_all_icon_position: 'after',
         read_all_style: 'button',
+        read_all_font_size: 14,
+        read_all_font_family: 'Sarabun',
+        read_all_color: READ_ALL_DEFAULT_COLORS.button,
+        read_all_background: READ_ALL_DEFAULT_BACKGROUND,
         read_all_url: '',
         read_all_link_target: '_self',
     };

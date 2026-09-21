@@ -37,6 +37,8 @@ class PageItemWidgetSlidesetBanner extends Model
         'image_background',
         'image_clickable',
         'link_target',
+        'show_border',
+        'rounded_corners',
         'show_title',
         'title_font_size',
         'title_bold',

@@ -265,7 +265,7 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 
 - **ข้อมูลที่แสดง** (`SlideshowBannerWidget::preview()`, ตัวกรองเดียวกับที่หน้าบ้านจะใช้): banner ของหมวดหมู่นั้นที่ `status = Y`, ไม่ถูกลบ, มีรูป (ไฟล์ใช้งานได้),
   อยู่ในช่วงเผยแพร่ (`publish_date` ว่างหรือ ≤ ตอนนี้ และ `publish_down` ว่างหรือ > ตอนนี้), ชื่อ/เกริ่นนำเป็นของภาษาหลัก — ตัวอย่างในหน้าโครงสร้างแสดงสูงสุด 10 ใบ (`max_items` ที่น้อยกว่า 10 ถูกใช้ตามนั้น; ถ้าตั้งไว้ 0 หรือมากกว่า 10 และมีครบ 10 ใบ ตัวอย่างจะมีข้อความเล็ก ๆ บอกว่าแสดง 10 รายการแรก)
-- ตัวอย่าง (`widgets/SlideshowPreview.vue` ใช้ร่วมกับ `slideshowarticle`): กรอบตามสัดส่วนภาพ, ลูกศร/จุดกดเลื่อนดูได้, effect ด้วย CSS transition, เลื่อนอัตโนมัติตามระยะค้าง, ข้อความเกริ่นนำ**คงการขึ้นบรรทัดใหม่**ตามที่พิมพ์ (`whitespace-pre-line`) และใช้ขนาด/ฟอนต์/สีที่ตั้งไว้,
+- ตัวอย่าง (`widgets/SlideshowPreview.vue` ใช้ร่วมกับ `slideshowarticle`): กรอบตามสัดส่วนภาพ **มุมเหลี่ยม**, ลูกศร/จุดกดเลื่อนดูได้, effect ด้วย CSS transition, เลื่อนอัตโนมัติตามระยะค้าง, ข้อความเกริ่นนำ**คงการขึ้นบรรทัดใหม่**ตามที่พิมพ์ (`whitespace-pre-line`) และใช้ขนาด/ฟอนต์/สีที่ตั้งไว้,
   สถานะ "ยังไม่ได้เลือกหมวดหมู่" / "ไม่มี banner ที่เผยแพร่อยู่ในหมวดหมู่นี้" / กำลังโหลด; ฟอร์มตั้งค่าอยู่ที่ `widgets/SlideshowFields.vue` (ใช้ร่วมกับ `slideshowarticle`)
 - ตัวเลือก/ช่วงค่า/ค่าเริ่มต้นต้องตรงกันระหว่าง `App\Support\PageWidget\SlideshowWidget` (คลาสแม่ที่ `SlideshowBannerWidget`/`SlideshowArticleWidget` สืบทอด) และ `resources/js/utils/pageWidget.ts`
   (`SLIDESHOW_TYPES` = คีย์หมวดหมู่/ตัวเลือกการเรียงลำดับ/ข้อความของแต่ละแหล่งข้อมูล)
@@ -287,6 +287,7 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 class `SlidesetArticleWidget extends CategoryListWidget` (ใช้ trait `ReadsArticles` ร่วมกับ `slideshowarticle`: หมวดหมู่ article, เรียงได้เฉพาะวันที่เผยแพร่, query บทความที่เผยแพร่อยู่)
 
 **หน้าตั้งค่า** (`widgets/SlidesetFields.vue`) มีฟิลด์มาก จึงแบ่งเป็นการ์ด (`SettingSection.vue`): ข้อมูลที่แสดง · จำนวนที่แสดงต่อแถว (ตามขนาดหน้าจอ) · การเลื่อน ·
+กล่องของการ์ด (เส้นขอบ/มุมมน) ·
 ส่วนของการ์ดที่ **ติ๊กแสดง/ซ่อนได้ทีละส่วน** (ซ่อนแล้วพับรายละเอียดทิ้ง): รูปภาพ · หัวเรื่อง · ข้อความเกริ่นนำ · วันที่เผยแพร่ · จำนวนเข้าชม · การเปิดลิงก์
 
 | กลุ่ม | คอลัมน์ (ค่าเริ่มต้น) |
@@ -294,6 +295,7 @@ class `SlidesetArticleWidget extends CategoryListWidget` (ใช้ trait `Reads
 | ข้อมูล | `article_category_info_id` (**จำเป็นต้องเลือก**), `sort_by` (`publish_desc`/`publish_asc`), `max_items` (0 - 1000, **ว่างหรือ 0 = แสดงทั้งหมด**) |
 | จำนวนต่อแถว | `per_row_pc` (4) / `per_row_notebook` (3) / `per_row_tablet` (2) / `per_row_mobile` (1) — 1 - 6; breakpoint: PC ≥ 1280 px, Notebook 1024 - 1279, Tablet 768 - 1023, Mobile < 768 (`SLIDESET_DEVICES`) |
 | การเลื่อน | `show_arrows` (Y), `show_dots` (Y — จุดอยู่ใต้การ์ด เป็นพื้นที่ด้านล่าง ไม่ซ้อนบนการ์ด), `autoplay` (N), `autoplay_interval` (5 วินาที, 1 - 60), `transition_speed` (500 ms, 100 - 3000) |
+| กล่องของการ์ด | `show_border` (**Y** — เส้นขอบบาง ๆ รอบการ์ด), `rounded_corners` (**Y** — มุมมน; ปิด = มุมเหลี่ยมทั้งการ์ดและรูป) — migration `2026_09_25_000001_*` (ใช้ร่วม article/banner) |
 | รูปภาพ | `show_image` (Y), `aspect_ratio` (16:9 / 21:9 / 4:3 / 1:1), `image_fit` (`cover`/`contain`), `image_background` (`#F3F4F6` — ใช้เมื่อ contain, เลือก transparent ได้), `image_clickable` (Y) |
 | หัวเรื่อง | `show_title` (Y), `title_font_size` (18), `title_bold` (Y), `title_font_family` (Sarabun), `title_color` (**`#000000`**), `title_align` (left), `title_clickable` (Y), `title_lines` (**1**, ช่วง 1 - 3 เกินตัดด้วย ...) |
 | ข้อความเกริ่นนำ | `show_intro_text` (Y), `intro_text_font_size` (14), `intro_text_bold` (N), `intro_text_font_family`, `intro_text_color` (**`#000000`**), `intro_text_align` (left), `intro_text_clickable` (N), `intro_text_lines` (**2**, 1 - 3) |
@@ -309,12 +311,17 @@ class `SlidesetArticleWidget extends CategoryListWidget` (ใช้ trait `Reads
 | `read_all_position` | `top_left` / `top_center` / `top_right` / `bottom_left` / `bottom_center` (default) / `bottom_right` — บนอยู่เหนือแถวการ์ด, ล่างอยู่ใต้จุด/การ์ด, จัดชิดซ้าย/กึ่งกลาง/ขวา (ฟอร์มเลือกด้วยการ์ดภาพจำลองตำแหน่ง) |
 | `read_all_icon` | `none` (ไม่เลือก) / `plus` / `plus_circle` / `arrow_right` (default) / `arrow_right_circle` / `chevron_right` / `chevron_right_circle` / `arrow_up_right` — ฟอร์มเลือกด้วย**การ์ดที่แสดงไอคอนคู่กับชื่อ** (`utils/readAllButton.ts`) |
 | `read_all_icon_position` | `before` / `after` (default) หน้า/หลังข้อความ — ซ่อนตัวเลือกเมื่อไอคอน = `none` |
-| `read_all_style` | `button` (default, ปุ่มสี่เหลี่ยมมุมมน) / `link` (ลิงก์ข้อความขีดเส้นใต้) / `pill` (ปุ่มมนใหญ่ คล้ายวงรี) — ฟอร์มเลือกด้วยการ์ดตัวอย่างปุ่มจริง; สีคงที่ (ปุ่มเทาเข้มตัวขาว / ลิงก์น้ำเงิน) ยังไม่มีตัวเลือกสี |
+| `read_all_style` | `button` (default, ปุ่มสี่เหลี่ยมมุมมน) / `link` (ลิงก์ข้อความขีดเส้นใต้) / `pill` (ปุ่มมนใหญ่ คล้ายวงรี) — ฟอร์มเลือกด้วยการ์ดตัวอย่างปุ่มจริง (การ์ดแสดงหน้าตาพื้นฐานของแต่ละแบบ ไม่ตามสีที่ตั้ง) |
+| `read_all_font_size` / `read_all_font_family` / `read_all_color` | ตัวอักษรของปุ่ม (ทุกรูปแบบ): ขนาด (14 px) / ฟอนต์ (Sarabun) / สี (`#FFFFFF`) — ใช้ `TextStyleFields` ชุดเดียวกับข้อความส่วนอื่น (ไม่มีจัดตำแหน่ง) |
+| `read_all_background` | สีพื้นหลังปุ่ม `#1F2937` (เทาเข้ม) — **ใช้เฉพาะรูปแบบปุ่ม / ปุ่มมนใหญ่** (ฟอร์มซ่อนช่องนี้เมื่อเลือกลิงก์ข้อความ); ไม่มีตัวเลือกโปร่งใส |
+| _สีตัวอักษรตามรูปแบบ_ | ค่าเริ่มต้นของสีตัวอักษรต่างกันตามรูปแบบ (ปุ่ม = ขาว, ลิงก์ = น้ำเงิน `#2563EB` — `READ_ALL_DEFAULT_COLORS`) เปลี่ยนรูปแบบในฟอร์มแล้วถ้าสียังเป็นค่าเริ่มต้นของแบบเดิมจะสลับให้ตามแบบใหม่ (สีที่ผู้ใช้ตั้งเองไม่ถูกแตะ); migration ปรับแถวเดิมที่เป็นลิงก์ข้อความให้เป็นสีน้ำเงิน |
 | `read_all_url` | ลิงก์ปลายทาง `varchar(500)` — **จำเป็นต้องกรอกเมื่อแสดงปุ่ม** รับ `http(s)://…`, `/path`, `#anchor`, `mailto:`, `tel:` (ภายหลังอาจเลือกจากเมนูหน้าบ้านแทนการกรอก URL) |
 | `read_all_link_target` | `_self` / `_blank` (แยกจาก `link_target` ของรูป/หัวเรื่อง/เกริ่นนำ) |
 | **ข้อความแทน** | **แยกภาษา** เก็บในตาราง `page_item_widget_slidesetarticle_detail` (PK = `id` + `lang`, คอลัมน์ `read_all_text` ≤ 100 ตัวอักษร) — ว่าง = ใช้ข้อความมาตรฐาน "อ่านทั้งหมด"; ใน setting เป็น map `read_all_text: {th, en}` |
 
 ฟิลด์แยกภาษาประกาศใน `detailFields()` + `detailModel()` ของ `SettingsWidget` (บันทึกด้วย where(id, lang) → update/create ตาม pattern ตาราง detail ทั่วไป) และ eager load ผ่าน `eagerRelations()`
+
+**ตัวอย่างของ Slideset** — ส่วนล่างของการ์ด (หัวเรื่อง/เกริ่นนำ/วันที่/เข้าชม) จะ**ไม่ถูกวาดเลย**เมื่อทุกส่วนถูกซ่อนหรือไม่มีข้อมูล (ไม่เหลือแถบว่างสีขาวใต้รูป — `hasBody()` ใน `SlidesetPreview.vue`)
 
 **สีพื้นหลังของรูป** — `image_background` (default `#F3F4F6` เทาอ่อน = ที่เห็นในกรอบรูปตอนนี้; เลือกสีอื่นหรือ `transparent` ได้) แสดงเมื่อ `image_fit = contain`
 

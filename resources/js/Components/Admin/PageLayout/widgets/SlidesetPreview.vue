@@ -132,6 +132,22 @@ function formatDate(value: string | null): string {
 // ตัวอย่างแสดงไม่เกิน PREVIEW_LIMIT ใบ — บอกผู้ใช้เมื่อจำนวนจริงที่จะแสดง (ตามจำนวนสูงสุดที่ตั้งไว้) อาจมากกว่านี้
 const previewTruncated = computed(() => count.value >= PREVIEW_LIMIT && (props.setting.max_items === 0 || props.setting.max_items > PREVIEW_LIMIT));
 
+// ---- กล่องของการ์ด: เส้นขอบ / มุมมน ----
+const cardClass = computed(() => [
+    props.setting.show_border === 'Y' ? 'border border-gray-200' : '',
+    props.setting.rounded_corners === 'Y' ? 'rounded-lg' : '',
+]);
+
+// ส่วนล่างของการ์ด (ข้อความ/วันที่/เข้าชม) — ถ้าทุกส่วนถูกซ่อนหรือไม่มีข้อมูลให้ไม่แสดงเลย (ไม่เหลือพื้นที่ว่าง)
+function hasBody(item: { title: string; intro_text: string; date?: string | null }): boolean {
+    return (
+        (props.setting.show_title === 'Y' && !!item.title) ||
+        (props.setting.show_intro_text === 'Y' && !!item.intro_text) ||
+        (props.setting.show_date === 'Y' && !!item.date) ||
+        props.setting.show_views === 'Y'
+    );
+}
+
 const linkIcon = 'ml-1 inline size-3 shrink-0 align-baseline opacity-60';
 </script>
 
@@ -169,14 +185,23 @@ const linkIcon = 'ml-1 inline size-3 shrink-0 align-baseline opacity-60';
 
         <div v-else>
             <div v-if="showReadAll && readAllOnTop" class="mb-2 flex" :class="readAllAlign">
-                <ReadAllButton :text="readAllText" :icon="setting.read_all_icon ?? 'none'" :icon-position="setting.read_all_icon_position ?? 'after'" :style-type="setting.read_all_style ?? 'button'" />
+                <ReadAllButton
+                    :text="readAllText"
+                    :icon="setting.read_all_icon ?? 'none'"
+                    :icon-position="setting.read_all_icon_position ?? 'after'"
+                    :style-type="setting.read_all_style ?? 'button'"
+                    :font-size="setting.read_all_font_size"
+                    :font-family="setting.read_all_font_family"
+                    :color="setting.read_all_color"
+                    :background="setting.read_all_background"
+                />
             </div>
 
             <div class="relative">
                 <div class="select-none overflow-hidden">
                     <div class="flex" :style="trackStyle">
                         <div v-for="item in items" :key="item.id" class="px-1.5" :style="slotStyle">
-                            <article class="flex h-full flex-col overflow-hidden rounded-lg border border-gray-200 bg-white">
+                            <article class="flex h-full flex-col overflow-hidden bg-white" :class="cardClass">
                                 <div v-if="setting.show_image === 'Y'" class="relative flex items-center justify-center" :style="frameStyle">
                                     <img
                                         v-if="item.image"
@@ -196,7 +221,7 @@ const linkIcon = 'ml-1 inline size-3 shrink-0 align-baseline opacity-60';
                                     </span>
                                 </div>
 
-                                <div class="flex flex-1 flex-col gap-1 p-3">
+                                <div v-if="hasBody(item)" class="flex flex-1 flex-col gap-1 p-3">
                                     <div v-if="setting.show_title === 'Y' && item.title" :class="LINE_CLAMP[setting.title_lines]" class="leading-snug" :style="textCss('title')">
                                         {{ item.title }}<Link2 v-if="setting.title_clickable === 'Y' && item.has_link !== false" :class="linkIcon" />
                                     </div>
@@ -258,7 +283,16 @@ const linkIcon = 'ml-1 inline size-3 shrink-0 align-baseline opacity-60';
             </div>
 
             <div v-if="showReadAll && !readAllOnTop" class="mt-3 flex" :class="readAllAlign">
-                <ReadAllButton :text="readAllText" :icon="setting.read_all_icon ?? 'none'" :icon-position="setting.read_all_icon_position ?? 'after'" :style-type="setting.read_all_style ?? 'button'" />
+                <ReadAllButton
+                    :text="readAllText"
+                    :icon="setting.read_all_icon ?? 'none'"
+                    :icon-position="setting.read_all_icon_position ?? 'after'"
+                    :style-type="setting.read_all_style ?? 'button'"
+                    :font-size="setting.read_all_font_size"
+                    :font-family="setting.read_all_font_family"
+                    :color="setting.read_all_color"
+                    :background="setting.read_all_background"
+                />
             </div>
 
             <p v-if="previewTruncated" class="mt-1 text-[11px] text-gray-400">ตัวอย่างแสดง {{ PREVIEW_LIMIT }} รายการแรก</p>

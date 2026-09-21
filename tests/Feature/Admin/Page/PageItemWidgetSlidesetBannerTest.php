@@ -74,8 +74,9 @@ test('the defaults differ from the article slideset: intro hidden, no date / vie
         ->and($d['title_lines'])->toBe(1)
         ->and($d['intro_text_lines'])->toBe(2)
         ->and($d['image_background'])->toBe('#F3F4F6')
+        ->and([$d['show_border'], $d['rounded_corners']])->toBe(['Y', 'Y'])
         ->and($d['banner_category_info_id'])->toBeNull()
-        ->and($d)->not->toHaveKeys(['show_date', 'date_color', 'show_views', 'views_color', 'show_read_all', 'read_all_text', 'article_category_info_id']);
+        ->and($d)->not->toHaveKeys(['show_date', 'date_color', 'show_views', 'views_color', 'show_read_all', 'read_all_text', 'read_all_color', 'read_all_background', 'article_category_info_id']);
 });
 
 test('every setting field has a column in the table and a fillable entry on the model (no drift)', function () {
@@ -179,7 +180,20 @@ test('slidesetbanner rejects invalid values', function (string $field, mixed $va
     'title color' => ['title_color', 'black'],
     'link target' => ['link_target', '_top'],
     'flag' => ['show_arrows', 'yes'],
+    'border flag' => ['show_border', 'yes'],
+    'rounded flag' => ['rounded_corners', 'no'],
 ]);
+
+test('the card box border / rounded corners are saved', function () {
+    actingAsUserWithPermissions(['page.item.manage']);
+
+    $this->put(route('admin.page.item.layout.update', $this->page->id), slidesetBannerPayload($this->category->id, ['show_border' => 'N', 'rounded_corners' => 'N']))
+        ->assertSessionHasNoErrors();
+
+    $row = PageItemWidgetSlidesetBanner::findOrFail(newestSlidesetBanner()->id);
+
+    expect([$row->show_border, $row->rounded_corners])->toBe(['N', 'N']);
+});
 
 test('the article-only settings are not part of the banner slideset', function () {
     actingAsUserWithPermissions(['page.item.manage']);

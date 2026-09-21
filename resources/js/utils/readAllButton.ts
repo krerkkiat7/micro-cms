@@ -53,5 +53,11 @@ export const READ_ALL_STYLES: { value: ReadAllStyle; label: string; description:
     { value: 'pill', label: 'ปุ่มมนใหญ่', description: 'ปุ่มโค้งมน คล้ายวงรี' },
 ];
 
+/** สีเริ่มต้นของตัวอักษร: ปุ่ม/ปุ่มมนใหญ่ = ขาวบนพื้นเทาเข้ม, ลิงก์ข้อความ = น้ำเงิน — ตรงกับ SlidesetArticleWidget ฝั่ง backend (ค่า default ของปุ่ม) */
+export const READ_ALL_DEFAULT_COLORS: Record<ReadAllStyle, string> = { button: '#FFFFFF', pill: '#FFFFFF', link: '#2563EB' };
+
+/** สีพื้นหลังเริ่มต้นของปุ่ม (ใช้เฉพาะแบบปุ่ม/ปุ่มมนใหญ่) */
+export const READ_ALL_DEFAULT_BACKGROUND = '#1F2937';
+
 /** ลิงก์ปลายทางที่รับ: URL เต็ม, path ภายในเว็บ (ขึ้นต้น /), anchor (#), mailto:, tel: — ตรงกับ READ_ALL_URL_REGEX ฝั่ง backend */
 export const READ_ALL_URL_PATTERN = /^(https?:\/\/|\/|#|mailto:|tel:)\S*$/i;

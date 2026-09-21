@@ -4,7 +4,7 @@ namespace App\Support\PageWidget;
 
 /**
  * ส่วนที่ใช้ร่วมกันของ widget กลุ่ม Slideset (การ์ดหลายใบที่เลื่อนดูได้) — จำนวนการ์ดต่อแถวตามขนาดหน้าจอ (PC / Notebook / Tablet / Mobile),
- * รูปภาพ (อัตราส่วน, cover/contain + สีพื้นหลังเมื่อ contain, กดลิงก์ได้), หัวเรื่อง และข้อความเกริ่นนำ (แสดง/ขนาด/ตัวหนา/ฟอนต์/สี/จัดตำแหน่ง/กดลิงก์ได้/
+ * กล่องการ์ด (เส้นขอบ, มุมมน), รูปภาพ (อัตราส่วน, cover/contain + สีพื้นหลังเมื่อ contain, กดลิงก์ได้), หัวเรื่อง และข้อความเกริ่นนำ (แสดง/ขนาด/ตัวหนา/ฟอนต์/สี/จัดตำแหน่ง/กดลิงก์ได้/
  * จำนวนบรรทัดที่ตัดด้วย ...) และเป้าหมายการเปิดลิงก์ที่ใช้ร่วมกัน คลาสลูกกำหนดแหล่งข้อมูล (article / banner) ค่าเริ่มต้นของ "แสดงข้อความเกริ่นนำ"
  * และฟิลด์เพิ่มเติมของตัวเอง (`extraFields()` เช่น วันที่/จำนวนเข้าชม/ปุ่มอ่านทั้งหมดของ article) เลื่อนทีละ "หน้า" (ครั้งละเท่าจำนวนต่อแถว)
  * ตัวเลือก/ค่าเริ่มต้นต้องตรงกับ utils/pageWidget.ts
@@ -58,6 +58,10 @@ abstract class SlidesetWidget extends CategoryListWidget
                 'image_clickable' => self::flag('การกดลิงก์ที่รูปภาพ', 'Y'),
 
                 'link_target' => self::choice('เป้าหมายการเปิดลิงก์', '_self', self::LINK_TARGETS),
+
+                // กล่องของการ์ด: เส้นขอบ / มุมมน (default มีเส้นขอบและมุมมน)
+                'show_border' => self::flag('การแสดงเส้นขอบของกล่อง', 'Y'),
+                'rounded_corners' => self::flag('การทำมุมมนของกล่อง', 'Y'),
             ]
             + $this->textFields('title', 'หัวเรื่อง', size: 18, bold: 'Y', color: '#000000', lines: 1, showDefault: 'Y', clickable: 'Y')
             + $this->textFields('intro_text', 'ข้อความเกริ่นนำ', size: 14, bold: 'N', color: '#000000', lines: 2, showDefault: $this->introShownByDefault(), clickable: 'N')

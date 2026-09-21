@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import { Laptop, Monitor, Smartphone, Tablet } from 'lucide-vue-next';
 import FlagField from './FlagField.vue';
 import OptionCardPicker from './OptionCardPicker.vue';
 import ReadAllButton from './ReadAllButton.vue';
 import SettingSection from './SettingSection.vue';
 import SlidesetTextFields from './SlidesetTextFields.vue';
+import TextStyleFields from '../TextStyleFields.vue';
 import ColorPickerInput from '@/Components/Admin/ColorPickerInput.vue';
 import LangFieldGroup from '@/Components/Admin/LangFieldGroup.vue';
 import InputError from '@/Components/InputError.vue';
@@ -21,10 +22,12 @@ import {
     SLIDESHOW_INTERVAL_RANGE,
     SLIDESHOW_MAX_ITEMS_LIMIT,
     SLIDESHOW_SPEED_RANGE,
+    settingTextStyle,
     slidesetConfig,
 } from '@/utils/pageWidget';
 import type { SlidesetSetting } from '@/utils/pageWidget';
 import {
+    READ_ALL_DEFAULT_COLORS,
     READ_ALL_DEFAULT_TEXT,
     READ_ALL_ICONS,
     READ_ALL_ICON_POSITIONS,
@@ -113,6 +116,20 @@ const sampleText = computed(() => {
 // ไอคอนที่ใช้เป็นตัวอย่างในการ์ดเลือกตำแหน่งไอคอน/รูปแบบ (ถ้าเลือก "ไม่เลือก" ใช้ลูกศรขวาเป็นตัวอย่าง)
 const sampleIcon = computed(() => (props.setting.read_all_icon && props.setting.read_all_icon !== 'none' ? props.setting.read_all_icon : 'arrow_right'));
 
+// ตัวอักษรของปุ่ม (ขนาด/ฟอนต์/สี) ใช้ TextStyleFields เดียวกับข้อความส่วนอื่น — ชื่อฟิลด์ `read_all_font_size` ฯลฯ
+const readAllTextStyle = computed(() => settingTextStyle(props.setting, 'read_all'));
+
+// สีตัวอักษรเริ่มต้นต่างกันตามรูปแบบ (ปุ่ม = ขาว, ลิงก์ = น้ำเงิน) — เปลี่ยนรูปแบบแล้วถ้ายังใช้สีเริ่มต้นของแบบเดิมอยู่ ให้สลับตามแบบใหม่
+// (ถ้าผู้ใช้ตั้งสีเองแล้วจะไม่แตะต้อง)
+watch(
+    () => props.setting.read_all_style,
+    (style, oldStyle) => {
+        if (style && oldStyle && props.setting.read_all_color?.toUpperCase() === READ_ALL_DEFAULT_COLORS[oldStyle].toUpperCase()) {
+            props.setting.read_all_color = READ_ALL_DEFAULT_COLORS[style];
+        }
+    },
+);
+
 const DEVICE_ICONS = { pc: Monitor, notebook: Laptop, tablet: Tablet, mobile: Smartphone };
 const perRow = (key: (typeof SLIDESET_DEVICES)[number]['key']) =>
     computed({
@@ -179,6 +196,13 @@ const perRowModels = Object.fromEntries(SLIDESET_DEVICES.map((d) => [d.key, perR
                     <TextInput v-model="speed" type="number" :min="SLIDESHOW_SPEED_RANGE.min" :max="SLIDESHOW_SPEED_RANGE.max" step="100" />
                     <InputError :message="errors.transition_speed" />
                 </div>
+            </div>
+        </SettingSection>
+
+        <SettingSection title="กล่องของการ์ด" description="เส้นขอบและมุมของกล่องที่ครอบแต่ละรายการ">
+            <div class="grid gap-3 sm:grid-cols-2">
+                <FlagField v-model="setting.show_border" label="แสดงเส้นขอบ" hint="เส้นบาง ๆ รอบกล่อง" />
+                <FlagField v-model="setting.rounded_corners" label="มุมมน" hint="ปิดเพื่อให้เป็นมุมเหลี่ยม" />
             </div>
         </SettingSection>
 
@@ -269,6 +293,18 @@ const perRowModels = Object.fromEntries(SLIDESET_DEVICES.map((d) => [d.key, perR
                         />
                     </template>
                 </OptionCardPicker>
+            </div>
+
+            <div class="space-y-4 rounded-lg border border-gray-200 bg-white p-3">
+                <p class="text-sm font-medium text-gray-700">ตัวอักษรของปุ่ม</p>
+                <TextStyleFields :text-style="readAllTextStyle" :fonts="fonts" :show-align="false" />
+                <div v-if="article.read_all_style !== 'link'">
+                    <InputLabel value="สีพื้นหลัง" />
+                    <ColorPickerInput v-model="article.read_all_background" />
+                    <p class="mt-1 text-xs text-gray-500">ใช้กับรูปแบบปุ่มและปุ่มมนใหญ่ (ลิงก์ข้อความไม่มีพื้นหลัง)</p>
+                    <InputError :message="errors.read_all_background" />
+                </div>
+                <InputError :message="errors.read_all_font_size || errors.read_all_font_family || errors.read_all_color" />
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2">
