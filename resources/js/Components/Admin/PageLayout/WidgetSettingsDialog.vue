@@ -130,8 +130,8 @@ function remove() {
                 <p v-else class="text-sm text-gray-500">Widget ประเภทนี้ไม่มีการตั้งค่าเฉพาะ</p>
             </section>
 
-            <!-- การตั้งค่าการแสดงผลทั่วไปของ widget (หัวเรื่องเหนือ widget + พื้นหลัง) — กรอบเดียวกับกล่องตั้งค่าเฉพาะประเภทด้านบน -->
-            <section class="rounded-xl border border-brand-200 bg-brand-50/40 p-4">
+            <!-- การตั้งค่าการแสดงผลทั่วไปของ widget (หัวเรื่องเหนือ widget + พื้นหลัง) — ทรงกรอบเดียวกับกล่องตั้งค่าเฉพาะประเภทด้านบน แต่ใช้โทนสีส้มอ่อนให้แยกจากกันชัดเจน -->
+            <section class="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
                 <header class="mb-4">
                     <h3 class="text-sm font-semibold text-gray-800">การตั้งค่าการแสดงผล Widget</h3>
                     <p class="mt-0.5 text-xs text-gray-500">หัวเรื่อง หัวเรื่องรอง ข้อความเกริ่นนำ (แสดงเหนือตัว Widget) และพื้นหลัง — ใช้ร่วมกันทุกประเภท Widget</p>
