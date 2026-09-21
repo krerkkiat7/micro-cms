@@ -112,6 +112,7 @@ function remove() {
                     :widget-type="draft.widget_type"
                     :setting="draft.setting as unknown as SlideshowCommonSetting"
                     :categories="widgetOptions[slideshow.optionsKey]"
+                    :fonts="fonts"
                     :errors="errors"
                 />
                 <p v-else class="text-sm text-gray-500">Widget ประเภทนี้ไม่มีการตั้งค่าเฉพาะ</p>

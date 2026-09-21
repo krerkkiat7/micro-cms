@@ -17,6 +17,9 @@ export interface PreviewItem {
     has_link: boolean;
 }
 
+/** จำนวนรายการสูงสุดที่ backend ส่งมาเป็นตัวอย่าง (ตรงกับ SlideshowWidget::PREVIEW_LIMIT) */
+export const PREVIEW_LIMIT = 10;
+
 const cache = new Map<string, Promise<PreviewItem[]>>();
 
 export function clearWidgetPreviewCache(): void {

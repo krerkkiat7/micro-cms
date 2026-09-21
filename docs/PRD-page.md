@@ -244,12 +244,13 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 
 ### `slideshowbanner` — Slideshow จาก banner (และ `slideshowarticle` — ดูหัวข้อถัดไป)
 
-ตาราง `page_item_widget_slideshowbanner` (migration `2026_09_21_000001_*`; มี audit + timestamps + softDeletes ไม่มี `status` เพราะอยู่ที่ตัว widget):
+ตาราง `page_item_widget_slideshowbanner` (migration `2026_09_21_000001_*` + `2026_09_22_000001_*` เพิ่ม `max_items` และตัวอักษรบนภาพ; มี audit + timestamps + softDeletes ไม่มี `status` เพราะอยู่ที่ตัว widget):
 
 | คอลัมน์ | ค่า / ความหมาย |
 |---------|----------------|
 | `banner_category_info_id` | FK → `banner_category_info` (nullOnDelete) — **จำเป็นต้องเลือก** (ต้องมีอยู่จริง เปิดใช้งาน ไม่ถูกลบ ตรวจตอนบันทึก) |
 | `sort_by` | `publish_desc` วันที่เผยแพร่ล่าสุด (default) · `publish_asc` เก่าสุด · `order_asc` ลำดับน้อยไปมาก · `order_desc` มากไปน้อย (วันที่ใช้ `COALESCE(publish_date, created_at)`) |
+| `max_items` | จำนวนที่แสดงสูงสุด (จำนวนเต็ม 0 - 1000, default 0) — **ไม่กรอกหรือเป็น 0 = แสดงทั้งหมด** (หน้าจอส่งช่องว่างมาเป็น 0) |
 | `show_arrows` / `show_dots` / `autoplay` | `Y`/`N` — ลูกศรกดเลื่อน · จุดด้านล่าง (อยู่ในกรอบภาพ) · เลื่อนอัตโนมัติ (default `Y`/`Y`/`Y`) |
 | `autoplay_interval` | ระยะค้างต่อภาพ (วินาที 1 - 60, default 5) — ใช้เมื่อเปิด autoplay |
 | `transition_speed` | ความเร็วเปลี่ยนภาพ (มิลลิวินาที 100 - 3000, default 500) |
@@ -258,10 +259,12 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 | `is_clickable` / `link_target` | กดลิงก์ของ banner ได้ (banner ที่ไม่มีลิงก์กดไม่ได้) · `_self` / `_blank` |
 | `show_title` / `show_intro_text` | แสดงหัวเรื่อง/ข้อความเกริ่นนำของ **banner แต่ละใบ**ซ้อนบนภาพ (`<div>` ไม่ใช้ h1/h2, ตัวอักษรขาวบนเฉดดำด้านล่าง) — คนละอย่างกับ "แสดงหัวเรื่อง" ของ widget เอง (H4 เหนือ widget) |
 | `text_align` / `text_width` | `left`/`center`/`right` · `full` เต็มความกว้าง / `container` จำกัดตาม container (`max-w-5xl` เหมือนแถวที่ใช้ container) |
+| `title_font_size` / `title_font_family` / `title_color` | ตัวอักษรของหัวเรื่องบนภาพ: ขนาด px (8 - 120, default 20) · ฟอนต์ (ชุดเดียวกับหัวเรื่องของแถว/คอลัมน์ `PageTextStyle::fontNames()`, default Sarabun) · สี hex (**default ขาว `#FFFFFF`**, ไม่มี transparent) — ตั้งชื่อคอลัมน์ตาม `PageTextStyle` (`<part>_font_size` ฯลฯ) |
+| `intro_text_font_size` / `intro_text_font_family` / `intro_text_color` | เหมือนกันสำหรับข้อความเกริ่นนำบนภาพ (default 16 / Sarabun / ขาว) — ไม่มีการจัดตำแหน่งรายส่วน ใช้ `text_align` ร่วมกัน; ฟอร์มแสดงชุดตั้งค่าของแต่ละส่วนเมื่อเปิดแสดงส่วนนั้นเท่านั้น (`TextStyleFields.vue` ซ่อนตัวเลือกจัดตำแหน่งด้วย `show-align=false`) |
 
 - **ข้อมูลที่แสดง** (`SlideshowBannerWidget::preview()`, ตัวกรองเดียวกับที่หน้าบ้านจะใช้): banner ของหมวดหมู่นั้นที่ `status = Y`, ไม่ถูกลบ, มีรูป (ไฟล์ใช้งานได้),
-  อยู่ในช่วงเผยแพร่ (`publish_date` ว่างหรือ ≤ ตอนนี้ และ `publish_down` ว่างหรือ > ตอนนี้), ชื่อ/เกริ่นนำเป็นของภาษาหลัก — ตัวอย่างในหน้าโครงสร้างแสดงสูงสุด 10 ใบ
-- ตัวอย่าง (`widgets/SlideshowPreview.vue` ใช้ร่วมกับ `slideshowarticle`): กรอบตามสัดส่วนภาพ, ลูกศร/จุดกดเลื่อนดูได้, effect ด้วย CSS transition, เลื่อนอัตโนมัติตามระยะค้าง,
+  อยู่ในช่วงเผยแพร่ (`publish_date` ว่างหรือ ≤ ตอนนี้ และ `publish_down` ว่างหรือ > ตอนนี้), ชื่อ/เกริ่นนำเป็นของภาษาหลัก — ตัวอย่างในหน้าโครงสร้างแสดงสูงสุด 10 ใบ (`max_items` ที่น้อยกว่า 10 ถูกใช้ตามนั้น; ถ้าตั้งไว้ 0 หรือมากกว่า 10 และมีครบ 10 ใบ ตัวอย่างจะมีข้อความเล็ก ๆ บอกว่าแสดง 10 รายการแรก)
+- ตัวอย่าง (`widgets/SlideshowPreview.vue` ใช้ร่วมกับ `slideshowarticle`): กรอบตามสัดส่วนภาพ, ลูกศร/จุดกดเลื่อนดูได้, effect ด้วย CSS transition, เลื่อนอัตโนมัติตามระยะค้าง, ข้อความเกริ่นนำ**คงการขึ้นบรรทัดใหม่**ตามที่พิมพ์ (`whitespace-pre-line`) และใช้ขนาด/ฟอนต์/สีที่ตั้งไว้,
   สถานะ "ยังไม่ได้เลือกหมวดหมู่" / "ไม่มี banner ที่เผยแพร่อยู่ในหมวดหมู่นี้" / กำลังโหลด; ฟอร์มตั้งค่าอยู่ที่ `widgets/SlideshowFields.vue` (ใช้ร่วมกับ `slideshowarticle`)
 - ตัวเลือก/ช่วงค่า/ค่าเริ่มต้นต้องตรงกันระหว่าง `App\Support\PageWidget\SlideshowWidget` (คลาสแม่ที่ `SlideshowBannerWidget`/`SlideshowArticleWidget` สืบทอด) และ `resources/js/utils/pageWidget.ts`
   (`SLIDESHOW_TYPES` = คีย์หมวดหมู่/ตัวเลือกการเรียงลำดับ/ข้อความของแต่ละแหล่งข้อมูล)
@@ -275,7 +278,7 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 - **เรียงลำดับได้เฉพาะ `publish_desc` / `publish_asc`** — บทความไม่มีคอลัมน์ "ลำดับ" ต่อรายการ (มีแต่หมวดหมู่) จึงไม่มีตัวเลือก `order_asc`/`order_desc` (backend ปฏิเสธ); ถ้าต้องการเรียงตามลำดับ
   ต้องเพิ่ม `sort_order` ให้ `article_item_info` ก่อน
 - **ข้อมูลที่แสดง** (`SlideshowArticleWidget::preview()`): บทความของหมวดหมู่นั้นที่ `status = Y`, ไม่ถูกลบ, **มีรูปหน้าปก** (`intro_image_id` ที่ไฟล์ใช้งานได้ — บทความไม่มีรูปหน้าปกไม่ถูกแสดง),
-  อยู่ในช่วงเผยแพร่, ชื่อ/เกริ่นนำเป็นของภาษาหลัก; "กดลิงก์ได้" = ลิงก์ไปหน้าบทความ (`has_link` = บทความมี slug ของภาษานั้น — หน้าบ้านยังไม่ทำ ตัวอย่างจึงแสดงแค่ป้าย "ลิงก์")
+  อยู่ในช่วงเผยแพร่, ชื่อ/เกริ่นนำเป็นของภาษาหลัก; "กดลิงก์ได้" = ลิงก์ไปหน้าบทความ — **บทความทุกใบมีลิงก์ ไม่ขึ้นกับว่ามี slug หรือไม่** (`has_link` เป็น true เสมอ; หน้าบ้านยังไม่ทำ ตัวอย่างจึงแสดงแค่ป้าย "ลิงก์")
 
 ### โครงระบบประเภท widget (เพิ่มประเภทใหม่)
 

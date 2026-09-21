@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import FlagField from './FlagField.vue';
+import TextStyleFields from '../TextStyleFields.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
@@ -10,10 +11,12 @@ import {
     SLIDESHOW_ASPECT_OPTIONS,
     SLIDESHOW_EFFECT_OPTIONS,
     SLIDESHOW_INTERVAL_RANGE,
+    SLIDESHOW_MAX_ITEMS_LIMIT,
     SLIDESHOW_SPEED_RANGE,
     SLIDESHOW_TEXT_ALIGN_OPTIONS,
     SLIDESHOW_TEXT_WIDTH_OPTIONS,
     slideshowConfig,
+    slideshowTextStyle,
 } from '@/utils/pageWidget';
 import type { SlideshowCommonSetting } from '@/utils/pageWidget';
 
@@ -26,6 +29,8 @@ const props = defineProps<{
     widgetType: string;
     setting: SlideshowCommonSetting;
     categories: { id: number; title: string | null }[];
+    /** รายการชื่อฟอนต์ให้เลือก (จาก backend) ใช้กับตัวอักษรของหัวเรื่อง/ข้อความเกริ่นนำบนภาพ */
+    fonts: string[];
     errors: Record<string, string>;
 }>();
 
@@ -58,6 +63,19 @@ function numberModel(field: 'autoplay_interval' | 'transition_speed') {
     });
 }
 
+// จำนวนที่แสดงสูงสุด: ช่องว่างหรือ 0 = แสดงทั้งหมด (แสดงเป็นช่องว่างเมื่อเป็น 0)
+const maxItems = computed({
+    get: () => (props.setting.max_items > 0 ? String(props.setting.max_items) : ''),
+    set: (value: string) => {
+        const parsed = Number.parseInt(value, 10);
+        props.setting.max_items = Number.isNaN(parsed) ? 0 : parsed;
+    },
+});
+
+// ตัวอักษรของหัวเรื่อง/ข้อความเกริ่นนำบนภาพ มองเป็น TextStyle (ขนาด/ฟอนต์/สี) ให้ใช้กับ TextStyleFields
+const titleStyle = computed(() => slideshowTextStyle(props.setting, 'title'));
+const introStyle = computed(() => slideshowTextStyle(props.setting, 'intro_text'));
+
 const interval = numberModel('autoplay_interval');
 const speed = numberModel('transition_speed');
 
@@ -70,12 +88,18 @@ const hasText = computed(() => props.setting.show_title === 'Y' || props.setting
             <div class="sm:col-span-2">
                 <InputLabel :value="config.categoryLabel" required />
                 <SearchableSelect v-model="category" :options="categoryOptions" :placeholder="`เลือก${config.categoryLabel}`" />
-                <p v-if="categories.length === 0" class="mt-1 text-xs text-amber-600">ยังไม่มี{{ config.categoryLabel }}ที่เปิดใช้งาน — สร้างที่เมนูของโมดูลนั้นก่อน</p>
+                <p v-if="categories.length === 0" class="mt-1 text-xs text-amber-600">ยังไม่มี{{ config.categoryLabel }} ที่เปิดใช้งาน — สร้างที่เมนูของโมดูลนั้นก่อน</p>
                 <InputError :message="errors[config.categoryKey]" />
             </div>
             <div>
                 <InputLabel value="ลำดับการเรียงลำดับ" />
                 <SearchableSelect v-model="setting.sort_by" :options="config.sortOptions" />
+            </div>
+            <div>
+                <InputLabel value="จำนวนที่แสดงสูงสุด" />
+                <TextInput v-model="maxItems" type="number" min="0" :max="SLIDESHOW_MAX_ITEMS_LIMIT" placeholder="0" />
+                <p class="mt-1 text-xs text-gray-500">หากไม่กรอกหรือเป็น 0 จะแสดงทั้งหมด</p>
+                <InputError :message="errors.max_items" />
             </div>
             <div>
                 <InputLabel value="สัดส่วนภาพ" />
@@ -123,7 +147,7 @@ const hasText = computed(() => props.setting.show_title === 'Y' || props.setting
         <div class="space-y-3">
             <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-500">ข้อความบนภาพ</h4>
             <div class="grid gap-3 sm:grid-cols-2">
-                <FlagField v-model="setting.show_title" label="แสดงหัวเรื่องบนภาพ" :hint="`หัวเรื่องของ${config.itemLabel} (ไม่ใช้แท็ก h1, h2 …)`" />
+                <FlagField v-model="setting.show_title" label="แสดงหัวเรื่องบนภาพ" :hint="config.titleHint" />
                 <FlagField v-model="setting.show_intro_text" label="แสดงข้อความเกริ่นนำบนภาพ" />
             </div>
             <div v-if="hasText" class="grid gap-4 sm:grid-cols-2">
@@ -135,6 +159,14 @@ const hasText = computed(() => props.setting.show_title === 'Y' || props.setting
                     <InputLabel value="ขอบเขตของข้อความ" />
                     <SearchableSelect v-model="setting.text_width" :options="SLIDESHOW_TEXT_WIDTH_OPTIONS" />
                 </div>
+            </div>
+            <div v-if="setting.show_title === 'Y'" class="space-y-2 rounded-lg border border-gray-200 bg-white p-3">
+                <h5 class="text-xs font-medium text-gray-600">ตัวอักษรของหัวเรื่อง</h5>
+                <TextStyleFields :text-style="titleStyle" :fonts="fonts" :show-align="false" />
+            </div>
+            <div v-if="setting.show_intro_text === 'Y'" class="space-y-2 rounded-lg border border-gray-200 bg-white p-3">
+                <h5 class="text-xs font-medium text-gray-600">ตัวอักษรของข้อความเกริ่นนำ</h5>
+                <TextStyleFields :text-style="introStyle" :fonts="fonts" :show-align="false" />
             </div>
         </div>
     </div>

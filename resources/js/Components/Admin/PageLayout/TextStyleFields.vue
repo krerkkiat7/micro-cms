@@ -13,10 +13,15 @@ import type { TextAlign, TextStyle } from '@/utils/pageLayout';
  * `textStyle` = object ที่เก็บค่า (แก้ property ภายในตรง ๆ) — ห้ามตั้งชื่อ prop นี้ว่า `style` เพราะ Vue ถือเป็น attribute พิเศษ
  * และคัดลอก object ให้ก่อนส่งเข้า component ทำให้ค่าที่แก้ไม่ถึง object เดิม
  */
-const props = defineProps<{
-    textStyle: TextStyle;
-    fonts: string[];
-}>();
+const props = withDefaults(
+    defineProps<{
+        textStyle: TextStyle;
+        fonts: string[];
+        /** false = ซ่อนตัวเลือกจัดตำแหน่ง (กรณีที่ตำแหน่งกำหนดที่อื่นแล้ว เช่น ข้อความบนภาพของ Slideshow) */
+        showAlign?: boolean;
+    }>(),
+    { showAlign: true },
+);
 
 const ALIGN_ICONS: Record<TextAlign, typeof AlignLeft> = { left: AlignLeft, center: AlignCenter, right: AlignRight };
 
@@ -38,7 +43,7 @@ const size = computed({
 </script>
 
 <template>
-    <div class="grid gap-4 sm:grid-cols-3">
+    <div class="grid gap-4" :class="showAlign ? 'sm:grid-cols-3' : 'sm:grid-cols-2'">
         <div>
             <InputLabel value="ขนาดตัวอักษร" />
             <SearchableSelect v-model="size" :options="sizeOptions" />
@@ -47,7 +52,7 @@ const size = computed({
             <InputLabel value="ฟอนต์" />
             <SearchableSelect v-model="textStyle.font_family" :options="fontOptions" />
         </div>
-        <div>
+        <div v-if="showAlign">
             <InputLabel value="จัดตำแหน่ง" />
             <div class="flex gap-1.5">
                 <button
@@ -67,7 +72,7 @@ const size = computed({
                 </button>
             </div>
         </div>
-        <div class="sm:col-span-3">
+        <div :class="showAlign ? 'sm:col-span-3' : 'sm:col-span-2'">
             <InputLabel value="สีตัวอักษร" />
             <ColorPickerInput v-model="textStyle.color" />
         </div>

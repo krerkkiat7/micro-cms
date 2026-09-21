@@ -44,6 +44,13 @@ function articleSlideshowSetting(int $categoryId, array $overrides = []): array
         'show_intro_text' => 'N',
         'text_align' => 'center',
         'text_width' => 'container',
+        'max_items' => 0,
+        'title_font_size' => 20,
+        'title_font_family' => 'Sarabun',
+        'title_color' => '#FFFFFF',
+        'intro_text_font_size' => 16,
+        'intro_text_font_family' => 'Sarabun',
+        'intro_text_color' => '#FFFFFF',
     ], $overrides);
 }
 
@@ -165,7 +172,31 @@ test('slideshowarticle rejects sorts it cannot honour and out-of-range values', 
     'ratio' => ['aspect_ratio', '3:1'],
     'interval' => ['autoplay_interval', 61],
     'speed' => ['transition_speed', 50],
+    'max items negative' => ['max_items', -1],
+    'title font unknown' => ['title_font_family', 'Comic Sans'],
+    'intro color not hex' => ['intro_text_color', 'white'],
 ]);
+
+test('max_items and the overlay text style are saved; an empty max_items means show all (0)', function () {
+    actingAsUserWithPermissions(['page.item.manage']);
+    $url = route('admin.page.item.layout.update', $this->page->id);
+
+    $this->put($url, articleSlideshowPayload($this->category->id, [
+        'max_items' => 4, 'title_font_size' => 28, 'title_font_family' => 'Prompt', 'title_color' => '#123456',
+        'intro_text_font_size' => 12, 'intro_text_font_family' => 'Itim', 'intro_text_color' => '#ffffff',
+    ]))->assertSessionHasNoErrors();
+
+    $widget = newestArticleSlideshow();
+    $row = PageItemWidgetSlideshowArticle::findOrFail($widget->id);
+    expect($row->max_items)->toBe(4)
+        ->and($row->title_font_size)->toBe(28)
+        ->and($row->title_font_family)->toBe('Prompt')
+        ->and($row->title_color)->toBe('#123456')
+        ->and($row->intro_text_font_family)->toBe('Itim');
+
+    $this->put($url, articleSlideshowPayload($this->category->id, ['max_items' => null], ['id' => $widget->id]))->assertSessionHasNoErrors();
+    expect(PageItemWidgetSlideshowArticle::find($widget->id)->max_items)->toBe(0);
+});
 
 test('a banner category id is not accepted as the article category (settings are validated per type)', function () {
     actingAsUserWithPermissions(['page.item.manage']);
@@ -191,7 +222,7 @@ test('the type of a saved slideshowarticle widget cannot change to slideshowbann
 
 // ---------------------------------------------------------------- preview
 
-test('preview returns only published articles with a cover image and tells whether they have a link, without urls', function () {
+test('preview returns only published articles with a cover image; every article has a link (no slug needed), without urls', function () {
     actingAsUserWithPermissions(['page.item.view']);
     $cid = $this->category->id;
 
@@ -206,7 +237,7 @@ test('preview returns only published articles with a cover image and tells wheth
 
     $response = $this->getJson(articlePreviewUrl(['article_category_info_id' => $cid, 'sort_by' => 'publish_desc']))->assertOk();
 
-    expect(collect($response->json('items'))->pluck('has_link', 'title')->all())->toBe(['มีลิงก์' => true, 'ไม่มี slug' => false])
+    expect(collect($response->json('items'))->pluck('has_link', 'title')->all())->toBe(['มีลิงก์' => true, 'ไม่มี slug' => true])
         ->and($response->json('items.0.image'))->toBe('cover-hash.jpg')
         ->and($response->getContent())->not->toContain('has-slug');
 });
@@ -225,6 +256,18 @@ test('preview sorts by publish date in both directions and rejects an order sort
         ->and($titles('publish_asc'))->toBe(['เก่า', 'กลาง', 'ใหม่']);
 
     $this->getJson(articlePreviewUrl(['article_category_info_id' => $cid, 'sort_by' => 'order_asc']))->assertStatus(422);
+});
+
+test('preview honours max_items (0 or empty = all, capped at the preview limit of 10)', function () {
+    actingAsUserWithPermissions(['page.item.view']);
+    foreach (range(1, 12) as $i) {
+        articleItem($this->category->id, $this->image->id, [], "บทความ {$i}");
+    }
+    $count = fn (array $extra) => count($this->getJson(articlePreviewUrl(['article_category_info_id' => $this->category->id, 'sort_by' => 'publish_desc'] + $extra))->assertOk()->json('items'));
+
+    expect($count(['max_items' => 2]))->toBe(2)
+        ->and($count(['max_items' => 0]))->toBe(10)
+        ->and($count([]))->toBe(10);
 });
 
 test('preview returns at most 10 articles', function () {

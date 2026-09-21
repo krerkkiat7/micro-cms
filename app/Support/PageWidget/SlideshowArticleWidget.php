@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 /**
  * widget "Slideshow จาก article" — ภาพเต็มภาพเดียวที่สไลด์ได้ ข้อมูลมาจากบทความ (article_item_*) ของหมวดหมู่ที่เลือก ใช้รูปหน้าปกของบทความ
- * (บทความที่ไม่มีรูปหน้าปกไม่ถูกแสดง) ลิงก์ = หน้าบทความ (มีได้เมื่อบทความมี slug ของภาษานั้น) การตั้งค่าอื่นเหมือน Slideshow จาก banner ทุกอย่าง
+ * (บทความที่ไม่มีรูปหน้าปกไม่ถูกแสดง) ลิงก์ = หน้าบทความ (บทความทุกใบมีลิงก์ ไม่ขึ้นกับว่ามี slug หรือไม่) การตั้งค่าอื่นเหมือน Slideshow จาก banner ทุกอย่าง
  * (ดู SlideshowWidget) ต่างที่บทความไม่มีคอลัมน์ "ลำดับ" ต่อรายการ (มีแต่หมวดหมู่) จึงเรียงได้เฉพาะตามวันที่เผยแพร่
  * ตาราง `page_item_widget_slideshowarticle` (PK = `page_item_widget.id`)
  */
@@ -97,7 +97,7 @@ class SlideshowArticleWidget extends SlideshowWidget
             ->where('article_item_info.status', 'Y')
             ->where(fn ($q) => $q->whereNull('article_item_info.publish_date')->orWhere('article_item_info.publish_date', '<=', $now))
             ->where(fn ($q) => $q->whereNull('article_item_info.publish_down')->orWhere('article_item_info.publish_down', '>', $now))
-            ->selectRaw("article_item_info.id, img.hash_name as image, d.title, d.intro_text, (d.slug is not null and d.slug <> '') as has_link");
+            ->selectRaw('article_item_info.id, img.hash_name as image, d.title, d.intro_text, 1 as has_link');
     }
 
     protected function orderPreview(Builder $query, string $sortBy): void

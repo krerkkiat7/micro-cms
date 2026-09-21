@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import type { CSSProperties } from 'vue';
 import { ChevronLeft, ChevronRight, Link2 } from 'lucide-vue-next';
-import { useWidgetPreview } from '@/composables/useWidgetPreview';
+import { PREVIEW_LIMIT, useWidgetPreview } from '@/composables/useWidgetPreview';
 import { slideshowConfig } from '@/utils/pageWidget';
 import type { SlideshowCommonSetting } from '@/utils/pageWidget';
 
@@ -21,7 +21,7 @@ const config = slideshowConfig(props.widgetType)!;
 const categoryId = () => (props.setting as unknown as Record<string, number | null>)[config.categoryKey];
 
 const { items, loading, failed } = useWidgetPreview(props.widgetType, () =>
-    categoryId() ? { [config.categoryKey]: categoryId(), sort_by: props.setting.sort_by } : null,
+    categoryId() ? { [config.categoryKey]: categoryId(), sort_by: props.setting.sort_by, max_items: props.setting.max_items } : null,
 );
 
 const index = ref(0);
@@ -93,85 +93,105 @@ const textBoxClass = computed(() => [
     { left: 'text-left', center: 'text-center', right: 'text-right' }[props.setting.text_align],
 ]);
 
+// ตัวอักษรของหัวเรื่อง/ข้อความเกริ่นนำบนภาพ ตามที่ตั้งไว้ (default ขาว)
+const titleCss = computed<CSSProperties>(() => ({
+    fontSize: `${props.setting.title_font_size}px`,
+    fontFamily: `'${props.setting.title_font_family}', sans-serif`,
+    color: props.setting.title_color,
+}));
+const introCss = computed<CSSProperties>(() => ({
+    fontSize: `${props.setting.intro_text_font_size}px`,
+    fontFamily: `'${props.setting.intro_text_font_family}', sans-serif`,
+    color: props.setting.intro_text_color,
+}));
+
+// ตัวอย่างแสดงไม่เกิน PREVIEW_LIMIT ใบ — บอกผู้ใช้เมื่อจำนวนจริงที่จะแสดง (ตามจำนวนสูงสุดที่ตั้งไว้) อาจมากกว่านี้
+const previewTruncated = computed(() => count.value >= PREVIEW_LIMIT && (props.setting.max_items === 0 || props.setting.max_items > PREVIEW_LIMIT));
+
 const showText = (i: number) =>
     (props.setting.show_title === 'Y' && items.value[i].title !== '') || (props.setting.show_intro_text === 'Y' && items.value[i].intro_text !== '');
 </script>
 
 <template>
-    <div v-if="!categoryId()" class="rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 py-6 text-center text-xs text-gray-500">
-        ยังไม่ได้เลือก{{ config.categoryLabel }}
-    </div>
-    <div v-else-if="loading" class="flex items-center justify-center rounded-md bg-gray-100 text-xs text-gray-500" :style="frameStyle">กำลังโหลดตัวอย่าง…</div>
-    <div v-else-if="failed" class="rounded-md border border-dashed border-red-200 bg-red-50 px-3 py-6 text-center text-xs text-red-600">
-        โหลดตัวอย่างไม่สำเร็จ (ตรวจสอบหมวดหมู่ที่เลือก)
-    </div>
-    <div v-else-if="count === 0" class="flex items-center justify-center rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 text-center text-xs text-gray-500" :style="frameStyle">
-        ไม่มี{{ config.itemLabel }}ที่เผยแพร่อยู่ในหมวดหมู่นี้
-    </div>
-
-    <div v-else class="relative select-none overflow-hidden rounded-md bg-gray-200" :style="frameStyle">
-        <div v-for="(item, i) in items" :key="item.id" class="absolute inset-0" :style="slideStyle(i)" :aria-hidden="i !== index">
-            <img
-                :src="route('admin.system.file.get.thumbnail.size', { size: 960, hashname: item.image })"
-                :alt="item.title"
-                class="size-full object-cover"
-                draggable="false"
-            />
-
-            <!-- ข้อความของ banner ซ้อนบนภาพ (div ธรรมดา ไม่ใช้ h1/h2) -->
-            <div
-                v-if="showText(i)"
-                class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-4 pt-10 text-white"
-                :class="setting.show_dots === 'Y' ? 'pb-8' : 'pb-4'"
-            >
-                <div :class="textBoxClass">
-                    <div v-if="setting.show_title === 'Y' && item.title" class="text-base font-semibold leading-snug">{{ item.title }}</div>
-                    <div v-if="setting.show_intro_text === 'Y' && item.intro_text" class="mt-0.5 line-clamp-2 text-sm leading-snug text-white/90">
-                        {{ item.intro_text }}
-                    </div>
-                </div>
-            </div>
-
-            <!-- ตัวอย่างแค่บอกว่า banner นี้มีลิงก์ — กดไม่ได้ ไม่มี URL -->
-            <span
-                v-if="setting.is_clickable === 'Y' && item.has_link"
-                class="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-[11px] text-white"
-            >
-                <Link2 class="size-3" /> ลิงก์
-            </span>
+    <div>
+        <div v-if="!categoryId()" class="rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 py-6 text-center text-xs text-gray-500">
+            ยังไม่ได้เลือก{{ config.categoryLabel }}
+        </div>
+        <div v-else-if="loading" class="flex items-center justify-center rounded-md bg-gray-100 text-xs text-gray-500" :style="frameStyle">กำลังโหลดตัวอย่าง…</div>
+        <div v-else-if="failed" class="rounded-md border border-dashed border-red-200 bg-red-50 px-3 py-6 text-center text-xs text-red-600">
+            โหลดตัวอย่างไม่สำเร็จ (ตรวจสอบหมวดหมู่ที่เลือก)
+        </div>
+        <div v-else-if="count === 0" class="flex items-center justify-center rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 text-center text-xs text-gray-500" :style="frameStyle">
+            {{ config.emptyText }}
         </div>
 
-        <template v-if="count > 1">
-            <template v-if="setting.show_arrows === 'Y'">
-                <button
-                    type="button"
-                    class="absolute left-2 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60"
-                    aria-label="ก่อนหน้า"
-                    @click="go(index - 1)"
-                >
-                    <ChevronLeft class="size-5" />
-                </button>
-                <button
-                    type="button"
-                    class="absolute right-2 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60"
-                    aria-label="ถัดไป"
-                    @click="go(index + 1)"
-                >
-                    <ChevronRight class="size-5" />
-                </button>
-            </template>
-
-            <div v-if="setting.show_dots === 'Y'" class="absolute inset-x-0 bottom-2 flex justify-center gap-1.5">
-                <button
-                    v-for="(item, i) in items"
-                    :key="item.id"
-                    type="button"
-                    class="size-2 rounded-full transition-colors"
-                    :class="i === index ? 'bg-white' : 'bg-white/50 hover:bg-white/80'"
-                    :aria-label="`ภาพที่ ${i + 1}`"
-                    @click="go(i)"
+        <div v-else class="relative select-none overflow-hidden rounded-md bg-gray-200" :style="frameStyle">
+            <div v-for="(item, i) in items" :key="item.id" class="absolute inset-0" :style="slideStyle(i)" :aria-hidden="i !== index">
+                <img
+                    :src="route('admin.system.file.get.thumbnail.size', { size: 960, hashname: item.image })"
+                    :alt="item.title"
+                    class="size-full object-cover"
+                    draggable="false"
                 />
+
+                <!-- ข้อความของ banner ซ้อนบนภาพ (div ธรรมดา ไม่ใช้ h1/h2) -->
+                <div
+                    v-if="showText(i)"
+                    class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-4 pt-10 text-white"
+                    :class="setting.show_dots === 'Y' ? 'pb-8' : 'pb-4'"
+                >
+                    <div :class="textBoxClass">
+                        <div v-if="setting.show_title === 'Y' && item.title" class="font-semibold leading-snug" :style="titleCss">{{ item.title }}</div>
+                        <!-- whitespace-pre-line: ขึ้นบรรทัดใหม่ตามที่พิมพ์ในข้อความเกริ่นนำ -->
+                        <div v-if="setting.show_intro_text === 'Y' && item.intro_text" class="mt-0.5 whitespace-pre-line leading-snug" :style="introCss">
+                            {{ item.intro_text }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ตัวอย่างแค่บอกว่า banner นี้มีลิงก์ — กดไม่ได้ ไม่มี URL -->
+                <span
+                    v-if="setting.is_clickable === 'Y' && item.has_link"
+                    class="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-[11px] text-white"
+                >
+                    <Link2 class="size-3" /> ลิงก์
+                </span>
             </div>
-        </template>
+
+            <template v-if="count > 1">
+                <template v-if="setting.show_arrows === 'Y'">
+                    <button
+                        type="button"
+                        class="absolute left-2 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60"
+                        aria-label="ก่อนหน้า"
+                        @click="go(index - 1)"
+                    >
+                        <ChevronLeft class="size-5" />
+                    </button>
+                    <button
+                        type="button"
+                        class="absolute right-2 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60"
+                        aria-label="ถัดไป"
+                        @click="go(index + 1)"
+                    >
+                        <ChevronRight class="size-5" />
+                    </button>
+                </template>
+
+                <div v-if="setting.show_dots === 'Y'" class="absolute inset-x-0 bottom-2 flex justify-center gap-1.5">
+                    <button
+                        v-for="(item, i) in items"
+                        :key="item.id"
+                        type="button"
+                        class="size-2 rounded-full transition-colors"
+                        :class="i === index ? 'bg-white' : 'bg-white/50 hover:bg-white/80'"
+                        :aria-label="`ภาพที่ ${i + 1}`"
+                        @click="go(i)"
+                    />
+                </div>
+            </template>
+        </div>
+
+        <p v-if="!loading && previewTruncated" class="mt-1 text-[11px] text-gray-400">ตัวอย่างแสดง {{ PREVIEW_LIMIT }} รายการแรก</p>
     </div>
 </template>

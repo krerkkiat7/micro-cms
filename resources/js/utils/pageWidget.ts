@@ -1,4 +1,6 @@
+import { reactive } from 'vue';
 import { LINK_TARGET_OPTIONS } from '@/utils/options';
+import type { TextStyle } from '@/utils/pageLayout';
 
 /**
  * ประเภท widget ของโมดูล Page (ดู docs/PRD-page.md) — ทะเบียนฝั่งหน้าจอ ต้องตรงกับ App\Support\PageWidget\* ฝั่ง backend
@@ -103,6 +105,8 @@ export type YesNo = 'Y' | 'N';
 /** ค่าตั้งค่าที่ Slideshow ทุกแหล่งข้อมูลมีเหมือนกัน (ต่างกันแค่คีย์หมวดหมู่และตัวเลือกการเรียงลำดับ) */
 export interface SlideshowCommonSetting {
     sort_by: 'publish_desc' | 'publish_asc' | 'order_asc' | 'order_desc';
+    /** จำนวนที่แสดงสูงสุด (0 = แสดงทั้งหมด) */
+    max_items: number;
     show_arrows: YesNo;
     show_dots: YesNo;
     autoplay: YesNo;
@@ -118,6 +122,13 @@ export interface SlideshowCommonSetting {
     show_intro_text: YesNo;
     text_align: 'left' | 'center' | 'right';
     text_width: 'full' | 'container';
+    /** การจัดรูปแบบตัวอักษรของหัวเรื่อง/ข้อความเกริ่นนำที่ซ้อนบนภาพ (ชื่อฟิลด์ตามคอลัมน์ `<part>_font_size` ฯลฯ ของ backend) */
+    title_font_size: number;
+    title_font_family: string;
+    title_color: string;
+    intro_text_font_size: number;
+    intro_text_font_family: string;
+    intro_text_color: string;
 }
 
 export interface SlideshowBannerSetting extends SlideshowCommonSetting {
@@ -148,8 +159,10 @@ export interface SlideshowTypeConfig {
     categoryLabel: string;
     /** ตัวเลือกการเรียงลำดับที่ใช้ได้กับแหล่งข้อมูลนี้ (บทความไม่มีลำดับต่อรายการ จึงเรียงตามวันที่เผยแพร่ได้อย่างเดียว) */
     sortOptions: { value: string; label: string }[];
-    /** ชื่อเรียกรายการที่ดึงมาแสดง (ใช้ในป้ายของฟอร์ม เช่น "หัวเรื่องของ banner") */
-    itemLabel: string;
+    /** คำอธิบายใต้ "แสดงหัวเรื่องบนภาพ" */
+    titleHint: string;
+    /** ข้อความเมื่อหมวดหมู่ที่เลือกไม่มีรายการที่เผยแพร่อยู่ (ในตัวอย่าง) */
+    emptyText: string;
     /** คำอธิบายใต้ตัวเลือก "กดลิงก์ได้" */
     linkHint: string;
 }
@@ -161,7 +174,8 @@ export const SLIDESHOW_TYPES: Record<string, SlideshowTypeConfig> = {
         optionsKey: 'banner_categories',
         categoryLabel: 'หมวดหมู่ banner',
         sortOptions: SLIDESHOW_SORT_OPTIONS,
-        itemLabel: 'banner',
+        titleHint: 'หัวเรื่องของ banner',
+        emptyText: 'ไม่มี banner ที่เผยแพร่อยู่ในหมวดหมู่นี้',
         linkHint: 'ใช้ลิงก์ของ banner — banner ที่ไม่มีลิงก์จะกดไม่ได้',
     },
     slideshowarticle: {
@@ -169,8 +183,9 @@ export const SLIDESHOW_TYPES: Record<string, SlideshowTypeConfig> = {
         optionsKey: 'article_categories',
         categoryLabel: 'หมวดหมู่ article',
         sortOptions: SLIDESHOW_SORT_OPTIONS.filter((o) => o.value.startsWith('publish_')),
-        itemLabel: 'บทความ',
-        linkHint: 'ลิงก์ไปหน้าบทความ — บทความที่ยังไม่มี slug จะกดไม่ได้',
+        titleHint: 'หัวเรื่องของบทความ',
+        emptyText: 'ไม่มีบทความที่เผยแพร่อยู่ในหมวดหมู่นี้',
+        linkHint: 'ลิงก์ไปหน้าบทความ',
     },
 };
 
@@ -179,6 +194,7 @@ export function slideshowConfig(type: string): SlideshowTypeConfig | undefined {
 }
 
 export const SLIDESHOW_INTERVAL_RANGE = { min: 1, max: 60 } as const;
+export const SLIDESHOW_MAX_ITEMS_LIMIT = 1000;
 export const SLIDESHOW_SPEED_RANGE = { min: 100, max: 3000 } as const;
 
 export const SLIDESHOW_EFFECT_OPTIONS = [
@@ -211,6 +227,7 @@ export { LINK_TARGET_OPTIONS };
 export function defaultSlideshowSetting(type: string): SlideshowSetting {
     const common: SlideshowCommonSetting = {
         sort_by: 'publish_desc',
+        max_items: 0,
         show_arrows: 'Y',
         show_dots: 'Y',
         autoplay: 'Y',
@@ -224,6 +241,13 @@ export function defaultSlideshowSetting(type: string): SlideshowSetting {
         show_intro_text: 'N',
         text_align: 'center',
         text_width: 'container',
+        // ข้อความบนภาพ: ขนาด/ฟอนต์/สี (default ขาว เพราะซ้อนบนภาพ)
+        title_font_size: 20,
+        title_font_family: 'Sarabun',
+        title_color: '#FFFFFF',
+        intro_text_font_size: 16,
+        intro_text_font_family: 'Sarabun',
+        intro_text_color: '#FFFFFF',
     };
 
     return type === 'slideshowarticle' ? { ...common, article_category_info_id: null } : { ...common, banner_category_info_id: null };
@@ -255,6 +279,10 @@ export function validateSetting(type: string, setting: Record<string, unknown>):
             errors[config.categoryKey] = `กรุณาเลือก${config.categoryLabel}`;
         }
 
+        if (!Number.isInteger(s.max_items) || s.max_items < 0 || s.max_items > SLIDESHOW_MAX_ITEMS_LIMIT) {
+            errors.max_items = `จำนวนที่แสดงสูงสุดต้องอยู่ระหว่าง 0 - ${SLIDESHOW_MAX_ITEMS_LIMIT} (0 = แสดงทั้งหมด)`;
+        }
+
         if (!Number.isInteger(s.autoplay_interval) || s.autoplay_interval < SLIDESHOW_INTERVAL_RANGE.min || s.autoplay_interval > SLIDESHOW_INTERVAL_RANGE.max) {
             errors.autoplay_interval = `ระยะเวลาค้างต่อภาพต้องอยู่ระหว่าง ${SLIDESHOW_INTERVAL_RANGE.min} - ${SLIDESHOW_INTERVAL_RANGE.max} วินาที`;
         }
@@ -265,4 +293,37 @@ export function validateSetting(type: string, setting: Record<string, unknown>):
     }
 
     return errors;
+}
+
+/** ส่วนของข้อความบนภาพที่จัดรูปแบบตัวอักษรได้ */
+export type SlideshowTextPart = 'title' | 'intro_text';
+
+/**
+ * มองฟิลด์ตัวอักษรแบบแบน (`title_font_size` ฯลฯ) ของ setting เป็น `TextStyle` (ขนาด/ฟอนต์/สี — ไม่มีการจัดตำแหน่ง เพราะใช้ `text_align` ร่วมกันทั้งสองส่วน)
+ * ให้ใช้กับ TextStyleFields ได้ตรง ๆ — อ่าน/เขียนผ่าน object เดิมของ setting เสมอ
+ */
+export function slideshowTextStyle(setting: SlideshowCommonSetting, part: SlideshowTextPart): TextStyle {
+    const record = setting as unknown as Record<string, number | string>;
+
+    return reactive({
+        get font_size() {
+            return Number(record[`${part}_font_size`]);
+        },
+        set font_size(value: number) {
+            record[`${part}_font_size`] = value;
+        },
+        get font_family() {
+            return String(record[`${part}_font_family`]);
+        },
+        set font_family(value: string) {
+            record[`${part}_font_family`] = value;
+        },
+        get color() {
+            return String(record[`${part}_color`]);
+        },
+        set color(value: string) {
+            record[`${part}_color`] = value;
+        },
+        align: setting.text_align,
+    }) as TextStyle;
 }

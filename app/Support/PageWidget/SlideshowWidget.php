@@ -2,6 +2,7 @@
 
 namespace App\Support\PageWidget;
 
+use App\Support\PageTextStyle;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Rule;
@@ -34,12 +35,26 @@ abstract class SlideshowWidget implements PageWidgetType
 
     public const SPEED_MAX = 3000;
 
+    /** จำนวนที่แสดงสูงสุดที่กรอกได้ (0 = แสดงทั้งหมด) */
+    public const MAX_ITEMS_LIMIT = 1000;
+
+    /** สีตัวอักษรของหัวเรื่อง/ข้อความเกริ่นนำบนภาพ: รหัส hex เท่านั้น */
+    private const TEXT_COLOR_REGEX = '/^#[0-9a-fA-F]{3,8}$/';
+
     /** คอลัมน์ตั้งค่าที่ไม่ใช่หมวดหมู่ (ไม่รวม PK/audit) */
     private const COMMON_FIELDS = [
-        'sort_by', 'show_arrows', 'show_dots', 'autoplay', 'autoplay_interval',
+        'sort_by', 'max_items', 'show_arrows', 'show_dots', 'autoplay', 'autoplay_interval',
         'transition_speed', 'transition_effect', 'aspect_ratio', 'is_clickable', 'link_target',
         'show_title', 'show_intro_text', 'text_align', 'text_width',
+        'title_font_size', 'title_font_family', 'title_color',
+        'intro_text_font_size', 'intro_text_font_family', 'intro_text_color',
     ];
+
+    /** คอลัมน์ตัวเลข (แปลงเป็น int ตอนส่งหน้าจอ) */
+    private const INTEGER_FIELDS = ['max_items', 'autoplay_interval', 'transition_speed', 'title_font_size', 'intro_text_font_size'];
+
+    /** ส่วนของข้อความบนภาพที่จัดรูปแบบตัวอักษรได้ (ชื่อคอลัมน์ตาม PageTextStyle: `<part>_font_size` ฯลฯ) */
+    private const TEXT_PARTS = ['title', 'intro_text'];
 
     /** @return class-string<Model> model ของตารางตั้งค่าประเภทนี้ */
     abstract protected function model(): string;
@@ -69,7 +84,14 @@ abstract class SlideshowWidget implements PageWidgetType
     {
         $yesNo = ['required', Rule::in(['Y', 'N'])];
 
-        return $this->previewRules() + [
+        $textStyle = [];
+        foreach (self::TEXT_PARTS as $part) {
+            $textStyle["{$part}_font_size"] = ['required', 'integer', 'between:'.PageTextStyle::FONT_SIZE_MIN.','.PageTextStyle::FONT_SIZE_MAX];
+            $textStyle["{$part}_font_family"] = ['required', Rule::in(PageTextStyle::fontNames())];
+            $textStyle["{$part}_color"] = ['required', 'string', 'max:20', 'regex:'.self::TEXT_COLOR_REGEX];
+        }
+
+        return $this->previewRules() + $textStyle + [
             'show_arrows' => $yesNo,
             'show_dots' => $yesNo,
             'autoplay' => $yesNo,
@@ -92,8 +114,8 @@ abstract class SlideshowWidget implements PageWidgetType
 
         return [
             "{$category}.required" => "กรุณาเลือก{$this->categoryLabel()}",
-            "{$category}.exists" => "ไม่พบ{$this->categoryLabel()}ที่เลือก (อาจถูกปิดใช้งานหรือลบไปแล้ว)",
-            "{$category}.integer" => "{$this->categoryLabel()}ไม่ถูกต้อง",
+            "{$category}.exists" => "ไม่พบ{$this->categoryLabel()} ที่เลือก (อาจถูกปิดใช้งานหรือลบไปแล้ว)",
+            "{$category}.integer" => "{$this->categoryLabel()} ไม่ถูกต้อง",
             'sort_by.in' => 'ลำดับการเรียงลำดับไม่ถูกต้อง',
             'autoplay_interval.between' => 'ระยะเวลาค้างต่อภาพต้องอยู่ระหว่าง '.self::INTERVAL_MIN.' - '.self::INTERVAL_MAX.' วินาที',
             'autoplay_interval.integer' => 'ระยะเวลาค้างต่อภาพต้องเป็นจำนวนเต็ม',
@@ -103,6 +125,14 @@ abstract class SlideshowWidget implements PageWidgetType
             'transition_speed.required' => 'กรุณากรอกความเร็วในการเปลี่ยนภาพ',
             'transition_effect.in' => 'ประเภทการเลื่อนไม่ถูกต้อง',
             'aspect_ratio.in' => 'สัดส่วนภาพไม่ถูกต้อง',
+            'max_items.integer' => 'จำนวนที่แสดงสูงสุดต้องเป็นจำนวนเต็ม',
+            'max_items.between' => 'จำนวนที่แสดงสูงสุดต้องอยู่ระหว่าง 0 - '.self::MAX_ITEMS_LIMIT.' (0 = แสดงทั้งหมด)',
+            'title_font_size.between' => 'ขนาดตัวอักษรของหัวเรื่องต้องอยู่ระหว่าง '.PageTextStyle::FONT_SIZE_MIN.' - '.PageTextStyle::FONT_SIZE_MAX,
+            'intro_text_font_size.between' => 'ขนาดตัวอักษรของข้อความเกริ่นนำต้องอยู่ระหว่าง '.PageTextStyle::FONT_SIZE_MIN.' - '.PageTextStyle::FONT_SIZE_MAX,
+            'title_font_family.in' => 'ฟอนต์ของหัวเรื่องไม่ถูกต้อง',
+            'intro_text_font_family.in' => 'ฟอนต์ของข้อความเกริ่นนำไม่ถูกต้อง',
+            'title_color.regex' => 'รูปแบบสีตัวอักษรของหัวเรื่องไม่ถูกต้อง',
+            'intro_text_color.regex' => 'รูปแบบสีตัวอักษรของข้อความเกริ่นนำไม่ถูกต้อง',
             'link_target.in' => 'เป้าหมายการเปิดลิงก์ไม่ถูกต้อง',
             'text_align.in' => 'ตำแหน่งที่แสดงข้อความไม่ถูกต้อง',
             'text_width.in' => 'ขอบเขตของข้อความไม่ถูกต้อง',
@@ -122,6 +152,8 @@ abstract class SlideshowWidget implements PageWidgetType
                     ->whereNull('deleted_at')),
             ],
             'sort_by' => ['required', Rule::in($this->sorts())],
+            // ว่างหรือ 0 = แสดงทั้งหมด
+            'max_items' => ['nullable', 'integer', 'between:0,'.self::MAX_ITEMS_LIMIT],
         ];
     }
 
@@ -130,6 +162,7 @@ abstract class SlideshowWidget implements PageWidgetType
         return [
             $this->categoryField() => null,
             'sort_by' => $this->sorts()[0],
+            'max_items' => 0,
             'show_arrows' => 'Y',
             'show_dots' => 'Y',
             'autoplay' => 'Y',
@@ -143,6 +176,13 @@ abstract class SlideshowWidget implements PageWidgetType
             'show_intro_text' => 'N',
             'text_align' => 'center',
             'text_width' => 'container',
+            // ข้อความบนภาพ: ขนาด/ฟอนต์/สี (default ขาว เพราะซ้อนบนภาพ)
+            'title_font_size' => 20,
+            'title_font_family' => PageTextStyle::DEFAULT_FONT,
+            'title_color' => '#FFFFFF',
+            'intro_text_font_size' => 16,
+            'intro_text_font_family' => PageTextStyle::DEFAULT_FONT,
+            'intro_text_color' => '#FFFFFF',
         ];
     }
 
@@ -151,6 +191,7 @@ abstract class SlideshowWidget implements PageWidgetType
         $model = $this->model();
         $fields = array_flip([$this->categoryField(), ...self::COMMON_FIELDS]);
         $values = array_intersect_key($setting, $fields) + $this->defaults();
+        $values['max_items'] = (int) ($values['max_items'] ?? 0); // ว่าง = 0 = แสดงทั้งหมด
         $query = $model::where('id', $widgetId);
 
         if ($query->exists()) {
@@ -170,7 +211,7 @@ abstract class SlideshowWidget implements PageWidgetType
         $values = [$category => $row->{$category} !== null ? (int) $row->{$category} : null];
 
         foreach (self::COMMON_FIELDS as $field) {
-            $values[$field] = in_array($field, ['autoplay_interval', 'transition_speed'], true) ? (int) $row->{$field} : $row->{$field};
+            $values[$field] = in_array($field, self::INTEGER_FIELDS, true) ? (int) $row->{$field} : $row->{$field};
         }
 
         return $values;
@@ -188,8 +229,12 @@ abstract class SlideshowWidget implements PageWidgetType
         $query = $this->previewQuery((int) ($setting[$this->categoryField()] ?? 0));
         $this->orderPreview($query, $setting['sort_by'] ?? $this->sorts()[0]);
 
+        // จำนวนที่แสดงสูงสุดของ widget (0/ว่าง = ทั้งหมด) แต่ตัวอย่างในหน้าโครงสร้างแสดงไม่เกิน PREVIEW_LIMIT
+        $maxItems = (int) ($setting['max_items'] ?? 0);
+        $limit = $maxItems > 0 ? min($maxItems, self::PREVIEW_LIMIT) : self::PREVIEW_LIMIT;
+
         return $query
-            ->limit(self::PREVIEW_LIMIT)
+            ->limit($limit)
             ->get()
             ->map(fn ($row) => [
                 'id' => (int) $row->id,

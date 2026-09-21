@@ -46,6 +46,13 @@ function slideshowSetting(int $categoryId, array $overrides = []): array
         'show_intro_text' => 'N',
         'text_align' => 'center',
         'text_width' => 'container',
+        'max_items' => 0,
+        'title_font_size' => 20,
+        'title_font_family' => 'Sarabun',
+        'title_color' => '#FFFFFF',
+        'intro_text_font_size' => 16,
+        'intro_text_font_family' => 'Sarabun',
+        'intro_text_color' => '#FFFFFF',
     ], $overrides);
 }
 
@@ -190,7 +197,51 @@ test('slideshowbanner rejects out-of-range or unknown setting values', function 
     'interval high' => ['autoplay_interval', 61],
     'speed low' => ['transition_speed', 50],
     'speed high' => ['transition_speed', 3001],
+    'max items negative' => ['max_items', -1],
+    'max items too big' => ['max_items', 1001],
+    'max items not a number' => ['max_items', 'abc'],
+    'title size low' => ['title_font_size', 7],
+    'title size high' => ['title_font_size', 121],
+    'title font unknown' => ['title_font_family', 'Comic Sans'],
+    'title color not hex' => ['title_color', 'white'],
+    'intro size' => ['intro_text_font_size', 500],
+    'intro font unknown' => ['intro_text_font_family', 'Comic Sans'],
+    'intro color transparent' => ['intro_text_color', 'transparent'],
 ]);
+
+test('max_items and the overlay text style are saved; an empty max_items means show all (0)', function () {
+    actingAsUserWithPermissions(['page.item.manage']);
+    $url = route('admin.page.item.layout.update', $this->page->id);
+
+    $this->put($url, slideshowPayload([slideshowWidget($this->category->id, [
+        'max_items' => 5, 'title_font_size' => 32, 'title_font_family' => 'Kanit', 'title_color' => '#ff0000',
+        'intro_text_font_size' => 14, 'intro_text_font_family' => 'Mitr', 'intro_text_color' => '#000000',
+    ])]))->assertSessionHasNoErrors();
+
+    $widget = newestWidget('slideshowbanner');
+    $row = PageItemWidgetSlideshowBanner::findOrFail($widget->id);
+    expect($row->max_items)->toBe(5)
+        ->and($row->title_font_size)->toBe(32)
+        ->and($row->title_font_family)->toBe('Kanit')
+        ->and($row->title_color)->toBe('#ff0000')
+        ->and($row->intro_text_font_size)->toBe(14)
+        ->and($row->intro_text_font_family)->toBe('Mitr')
+        ->and($row->intro_text_color)->toBe('#000000');
+
+    // ไม่กรอก (null) = 0 = แสดงทั้งหมด
+    $this->put($url, slideshowPayload([slideshowWidget($this->category->id, ['max_items' => null], ['id' => $widget->id])]))->assertSessionHasNoErrors();
+    expect(PageItemWidgetSlideshowBanner::find($widget->id)->max_items)->toBe(0);
+});
+
+test('the overlay text style fields are required in the payload (the screen always sends them)', function () {
+    actingAsUserWithPermissions(['page.item.manage']);
+    $setting = slideshowSetting($this->category->id);
+    foreach (['max_items', 'title_font_size', 'title_font_family', 'title_color', 'intro_text_font_size', 'intro_text_font_family', 'intro_text_color'] as $key) {
+        unset($setting[$key]);
+    }
+    $this->put(route('admin.page.item.layout.update', $this->page->id), slideshowPayload([layoutWidget(['widget_type' => 'slideshowbanner', 'setting' => $setting])]))
+        ->assertSessionHasErrors('rows.0.columns.0.widgets.0.setting.title_color');
+});
 
 test('the type of a saved widget cannot be changed', function () {
     actingAsUserWithPermissions(['page.item.manage']);
@@ -305,6 +356,19 @@ test('preview sorts by publish date and by order in both directions', function (
         ->and($titles('publish_asc'))->toBe(['เก่า', 'กลาง', 'ใหม่'])
         ->and($titles('order_asc'))->toBe(['กลาง', 'เก่า', 'ใหม่'])
         ->and($titles('order_desc'))->toBe(['ใหม่', 'เก่า', 'กลาง']);
+});
+
+test('preview honours max_items (0 or empty = all, capped at the preview limit of 10)', function () {
+    actingAsUserWithPermissions(['page.item.view']);
+    foreach (range(1, 12) as $i) {
+        bannerItem($this->category->id, $this->image->id, [], "ป้าย {$i}");
+    }
+    $count = fn (array $extra) => count($this->getJson(previewUrl(['banner_category_info_id' => $this->category->id, 'sort_by' => 'publish_desc'] + $extra))->assertOk()->json('items'));
+
+    expect($count(['max_items' => 3]))->toBe(3)
+        ->and($count(['max_items' => 0]))->toBe(10)
+        ->and($count([]))->toBe(10)
+        ->and($count(['max_items' => 50]))->toBe(10);
 });
 
 test('preview returns at most 10 banners', function () {
