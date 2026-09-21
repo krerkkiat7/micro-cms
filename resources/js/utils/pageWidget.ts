@@ -1,6 +1,8 @@
 import { reactive } from 'vue';
 import { LINK_TARGET_OPTIONS } from '@/utils/options';
 import type { TextStyle } from '@/utils/pageLayout';
+import { READ_ALL_URL_PATTERN } from '@/utils/readAllButton';
+import type { ReadAllIcon, ReadAllIconPosition, ReadAllPosition, ReadAllStyle } from '@/utils/readAllButton';
 
 /**
  * ประเภท widget ของโมดูล Page (ดู docs/PRD-page.md) — ทะเบียนฝั่งหน้าจอ ต้องตรงกับ App\Support\PageWidget\* ฝั่ง backend
@@ -44,10 +46,10 @@ export const WIDGET_TYPE_DEFS: WidgetTypeDef[] = [
     {
         value: 'slidesetbanner',
         label: 'Slideset จาก banner',
-        description: 'การ์ดหลายใบที่เลื่อนดูได้ ข้อมูลจากป้ายโฆษณา (banner)',
+        description: 'การ์ดป้ายโฆษณาหลายใบที่เลื่อนดูได้ (รูป หัวเรื่อง ข้อความเกริ่นนำ) ข้อมูลจากป้ายโฆษณา (banner)',
         layout: 'slideset',
         source: 'banner',
-        available: false,
+        available: true,
     },
     {
         value: 'slidesetarticle',
@@ -199,10 +201,14 @@ export function slideshowConfig(type: string): SlideshowTypeConfig | undefined {
 
 // ---- Slideset (การ์ดหลายใบที่เลื่อนได้) ----
 
-/** ค่าตั้งค่าของ Slideset จาก article — ชื่อฟิลด์ตรงกับคอลัมน์ `page_item_widget_slidesetarticle` (ดู SlidesetArticleWidget) */
+/**
+ * ค่าตั้งค่าของ Slideset (จาก article / จาก banner) — ชื่อฟิลด์ตรงกับคอลัมน์ `page_item_widget_slideset<แหล่ง>` (ดู SlidesetWidget ฝั่ง backend)
+ * ฟิลด์เฉพาะ article (วันที่/จำนวนเข้าชม/ปุ่มอ่านทั้งหมด) และคีย์หมวดหมู่ (ต่างกันตามแหล่ง) เป็น optional — ใช้ตาม SlidesetTypeConfig
+ */
 export interface SlidesetSetting {
-    article_category_info_id: number | null;
-    sort_by: 'publish_desc' | 'publish_asc';
+    article_category_info_id?: number | null;
+    banner_category_info_id?: number | null;
+    sort_by: 'publish_desc' | 'publish_asc' | 'order_asc' | 'order_desc';
     /** จำนวนที่แสดงสูงสุด (0 = แสดงทั้งหมด) */
     max_items: number;
     show_arrows: YesNo;
@@ -218,6 +224,8 @@ export interface SlidesetSetting {
     show_image: YesNo;
     aspect_ratio: '16:9' | '21:9' | '4:3' | '1:1';
     image_fit: 'cover' | 'contain';
+    /** สีพื้นหลังกรอบรูป (hex หรือ transparent) — ใช้เมื่อ image_fit = contain */
+    image_background: string;
     image_clickable: YesNo;
     link_target: '_self' | '_blank';
     show_title: YesNo;
@@ -236,30 +244,58 @@ export interface SlidesetSetting {
     intro_text_align: 'left' | 'center' | 'right';
     intro_text_clickable: YesNo;
     intro_text_lines: number;
-    show_date: YesNo;
-    date_font_size: number;
-    date_bold: YesNo;
-    date_font_family: string;
-    date_color: string;
-    show_views: YesNo;
-    views_font_size: number;
-    views_bold: YesNo;
-    views_font_family: string;
-    views_color: string;
+    // ---- เฉพาะ article ----
+    show_date?: YesNo;
+    date_font_size?: number;
+    date_bold?: YesNo;
+    date_font_family?: string;
+    date_color?: string;
+    show_views?: YesNo;
+    views_font_size?: number;
+    views_bold?: YesNo;
+    views_font_family?: string;
+    views_color?: string;
+    show_read_all?: YesNo;
+    read_all_position?: ReadAllPosition;
+    /** ข้อความแทน "อ่านทั้งหมด" แยกภาษา (ภาษา → ข้อความ; ว่าง = ใช้ข้อความมาตรฐาน) */
+    read_all_text?: Record<string, string>;
+    read_all_icon?: ReadAllIcon;
+    read_all_icon_position?: ReadAllIconPosition;
+    read_all_style?: ReadAllStyle;
+    read_all_url?: string;
+    read_all_link_target?: '_self' | '_blank';
 }
 
-/** ประเภท widget ที่เป็น Slideset — ตรงกับ SlidesetArticleWidget ฝั่ง backend */
-export const SLIDESET_TYPES: Record<string, ListTypeConfig> = {
+export interface SlidesetTypeConfig extends ListTypeConfig {
+    /** มีส่วนวันที่เผยแพร่/จำนวนเข้าชมของการ์ด (article) */
+    hasMeta: boolean;
+    /** มีปุ่ม "อ่านทั้งหมด" (article) */
+    hasReadAll: boolean;
+}
+
+/** ประเภท widget ที่เป็น Slideset — ตรงกับ SlidesetArticleWidget / SlidesetBannerWidget ฝั่ง backend */
+export const SLIDESET_TYPES: Record<string, SlidesetTypeConfig> = {
     slidesetarticle: {
         categoryKey: 'article_category_info_id',
         optionsKey: 'article_categories',
         categoryLabel: 'หมวดหมู่ article',
         sortOptions: SLIDESHOW_SORT_OPTIONS.filter((o) => o.value.startsWith('publish_')),
         emptyText: 'ไม่มีบทความที่เผยแพร่อยู่ในหมวดหมู่นี้',
+        hasMeta: true,
+        hasReadAll: true,
+    },
+    slidesetbanner: {
+        categoryKey: 'banner_category_info_id',
+        optionsKey: 'banner_categories',
+        categoryLabel: 'หมวดหมู่ banner',
+        sortOptions: SLIDESHOW_SORT_OPTIONS,
+        emptyText: 'ไม่มี banner ที่เผยแพร่อยู่ในหมวดหมู่นี้',
+        hasMeta: false,
+        hasReadAll: false,
     },
 };
 
-export function slidesetConfig(type: string): ListTypeConfig | undefined {
+export function slidesetConfig(type: string): SlidesetTypeConfig | undefined {
     return SLIDESET_TYPES[type];
 }
 
@@ -288,6 +324,9 @@ export function currentDevice(width: number = typeof window === 'undefined' ? 12
 export const SLIDESET_LINES_OPTIONS = [1, 2, 3].map((n) => ({ value: String(n), label: `${n} บรรทัด` }));
 
 export const SLIDESET_PER_ROW_OPTIONS = [1, 2, 3, 4, 5, 6].map((n) => ({ value: String(n), label: `${n} รายการ` }));
+
+/** สีพื้นหลังเริ่มต้นของกรอบรูปเมื่อแสดงแบบ contain (เทาอ่อน = bg-gray-100 เหมือนกรอบรูปในหน้าจัดการไฟล์) */
+export const SLIDESET_DEFAULT_IMAGE_BACKGROUND = '#F3F4F6';
 
 export const SLIDESET_IMAGE_FIT_OPTIONS = [
     { value: 'cover', label: 'Cover — เต็มกรอบ (ครอปส่วนเกิน)' },
@@ -354,10 +393,13 @@ export function defaultSlideshowSetting(type: string): SlideshowSetting {
     return type === 'slideshowarticle' ? { ...common, article_category_info_id: null } : { ...common, banner_category_info_id: null };
 }
 
-/** ค่าตั้งค่าเริ่มต้นของ Slideset จาก article — ต้องตรงกับ `fields()` ของ SlidesetArticleWidget ฝั่ง backend */
-export function defaultSlidesetSetting(): SlidesetSetting {
-    return {
-        article_category_info_id: null,
+/**
+ * ค่าตั้งค่าเริ่มต้นของ Slideset — ต้องตรงกับ `fields()` ของ SlidesetArticleWidget / SlidesetBannerWidget ฝั่ง backend
+ * `languages` = รหัสภาษาที่เปิดใช้ (ไว้สร้างช่องข้อความแยกภาษาของปุ่มอ่านทั้งหมด)
+ */
+export function defaultSlidesetSetting(type: string, languages: string[] = []): SlidesetSetting {
+    const article = type === 'slidesetarticle';
+    const common: SlidesetSetting = {
         sort_by: 'publish_desc',
         max_items: 0,
         show_arrows: 'Y',
@@ -372,6 +414,7 @@ export function defaultSlidesetSetting(): SlidesetSetting {
         show_image: 'Y',
         aspect_ratio: '16:9',
         image_fit: 'cover',
+        image_background: SLIDESET_DEFAULT_IMAGE_BACKGROUND,
         image_clickable: 'Y',
         link_target: '_self',
         show_title: 'Y',
@@ -382,7 +425,8 @@ export function defaultSlidesetSetting(): SlidesetSetting {
         title_align: 'left',
         title_clickable: 'Y',
         title_lines: 1,
-        show_intro_text: 'Y',
+        // ข้อความเกริ่นนำ: article แสดงเป็นค่าเริ่มต้น, banner ซ่อน
+        show_intro_text: article ? 'Y' : 'N',
         intro_text_font_size: 14,
         intro_text_bold: 'N',
         intro_text_font_family: 'Sarabun',
@@ -390,6 +434,15 @@ export function defaultSlidesetSetting(): SlidesetSetting {
         intro_text_align: 'left',
         intro_text_clickable: 'N',
         intro_text_lines: 2,
+    };
+
+    if (!article) {
+        return { ...common, banner_category_info_id: null };
+    }
+
+    return {
+        ...common,
+        article_category_info_id: null,
         show_date: 'Y',
         date_font_size: 12,
         date_bold: 'N',
@@ -400,16 +453,24 @@ export function defaultSlidesetSetting(): SlidesetSetting {
         views_bold: 'N',
         views_font_family: 'Sarabun',
         views_color: '#667085',
+        show_read_all: 'N',
+        read_all_position: 'bottom_center',
+        read_all_text: Object.fromEntries(languages.map((code) => [code, ''])),
+        read_all_icon: 'arrow_right',
+        read_all_icon_position: 'after',
+        read_all_style: 'button',
+        read_all_url: '',
+        read_all_link_target: '_self',
     };
 }
 
 /** ค่าตั้งค่าเริ่มต้นของ widget ประเภทนั้น (ประเภทที่ไม่มีการตั้งค่า = object ว่าง) */
-export function defaultSetting(type: string): Record<string, unknown> {
+export function defaultSetting(type: string, languages: string[] = []): Record<string, unknown> {
     if (slideshowConfig(type)) {
         return { ...defaultSlideshowSetting(type) };
     }
 
-    return slidesetConfig(type) ? { ...defaultSlidesetSetting() } : {};
+    return slidesetConfig(type) ? { ...defaultSlidesetSetting(type, languages) } : {};
 }
 
 /** ผสานค่าที่ backend ส่งมากับค่าเริ่มต้น (กันคีย์ขาดหาย) — PHP ส่ง array ว่างมาเป็น [] จึงรับได้ทั้ง array/object/null */
@@ -445,7 +506,19 @@ export function validateSetting(type: string, setting: Record<string, unknown>):
             errors.transition_speed = `ความเร็วในการเปลี่ยนภาพต้องอยู่ระหว่าง ${SLIDESHOW_SPEED_RANGE.min} - ${SLIDESHOW_SPEED_RANGE.max} มิลลิวินาที`;
         }
 
-        if (slidesetConfig(type)) {
+        const slideset = slidesetConfig(type);
+
+        if (slideset?.hasReadAll && s.show_read_all === 'Y') {
+            const url = String(s.read_all_url ?? '').trim();
+
+            if (url === '') {
+                errors.read_all_url = 'กรุณากรอกลิงก์ปลายทางของปุ่มอ่านทั้งหมด (ต้องกรอกเมื่อเปิดแสดงปุ่ม)';
+            } else if (!READ_ALL_URL_PATTERN.test(url)) {
+                errors.read_all_url = 'ลิงก์ปลายทางต้องขึ้นต้นด้วย http://, https:// หรือ / (หรือ #, mailto:, tel:)';
+            }
+        }
+
+        if (slideset) {
             SLIDESET_DEVICES.forEach(({ key, label }) => {
                 const value = s[`per_row_${key}`] as number;
 

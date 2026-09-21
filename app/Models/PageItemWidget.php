@@ -75,6 +75,12 @@ class PageItemWidget extends Model
         return $this->hasOne(PageItemWidgetSlideshowArticle::class, 'id');
     }
 
+    /** การตั้งค่าเฉพาะของประเภท slidesetbanner */
+    public function slidesetBanner()
+    {
+        return $this->hasOne(PageItemWidgetSlidesetBanner::class, 'id');
+    }
+
     /** การตั้งค่าเฉพาะของประเภท slidesetarticle */
     public function slidesetArticle()
     {

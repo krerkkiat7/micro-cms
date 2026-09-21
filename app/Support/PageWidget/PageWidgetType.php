@@ -17,8 +17,15 @@ interface PageWidgetType
     /** ชื่อประเภทที่เก็บใน `page_item_widget.widget_type` (ไม่เกิน 20 ตัวอักษร) */
     public function type(): string;
 
-    /** ชื่อ relation บน PageItemWidget ที่ชี้ไปยังแถวตั้งค่าของประเภทนี้ (ไว้ eager load) */
+    /** ชื่อ relation บน PageItemWidget ที่ชี้ไปยังแถวตั้งค่าของประเภทนี้ */
     public function relation(): string;
+
+    /**
+     * relation ที่ต้อง eager load เพื่ออ่านค่าตั้งค่าครบ (relation() และ relation ย่อย เช่น ข้อมูลแยกภาษา) — ชื่อสัมพัทธ์กับ PageItemWidget
+     *
+     * @return list<string>
+     */
+    public function eagerRelations(): array;
 
     /**
      * กฎ validation ของ `setting` (คีย์สัมพัทธ์กับ setting เช่น `sort_by` ไม่มี prefix)

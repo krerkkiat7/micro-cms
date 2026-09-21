@@ -3,6 +3,7 @@
 namespace App\Support\PageWidget;
 
 use App\Support\PageTextStyle;
+use App\Support\Setting;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Rule;
 
@@ -11,9 +12,12 @@ use Illuminate\Validation\Rule;
  * คลาสลูกประกาศ "ฟิลด์ตั้งค่า" ครั้งเดียวใน `fields()` (ชื่อคอลัมน์ => ป้ายชื่อ, ค่าเริ่มต้น, กฎ validation) แล้วส่วนที่เหลือ
  * (rules/messages/defaults/บันทึก/แปลงเป็นข้อมูลส่งหน้าจอ/soft delete) ทำให้เอง จึงเพิ่มฟิลด์ = เพิ่มบรรทัดเดียว (+ คอลัมน์ใน migration/model)
  *
- * รูปแบบของแต่ละฟิลด์: ['label' => ชื่อเรียกใน error, 'default' => ค่าเริ่มต้น, 'rules' => [...], 'type' => 'string'|'int'|'nullint',
+ * รูปแบบของแต่ละฟิลด์: ['label' => ชื่อเรียกใน error, 'default' => ค่าเริ่มต้น, 'rules' => [...], 'type' => 'string'|'int'|'nullint'|'nullstring' (ค่า null ส่งหน้าจอเป็นข้อความว่าง),
  * 'range' => [min, max, หน่วย] (ไว้สร้างข้อความ between), 'messages' => [rule => ข้อความ] (แทนข้อความอัตโนมัติ)]
- * ตัวช่วยสร้างฟิลด์: flag / choice / number / fontSize / fontFamily / color
+ * ตัวช่วยสร้างฟิลด์: flag / choice / number / fontSize / fontFamily / color / backgroundColor
+ *
+ * ฟิลด์ที่ "แยกตามภาษา" (เช่น ข้อความของปุ่ม) ประกาศใน `detailFields()` + `detailModel()` (ตาราง `*_detail` PK = id + lang เหมือนโมดูลอื่น)
+ * ในข้อมูลตั้งค่าเป็น map ภาษา → ข้อความ (`{ th: '...', en: '...' }` ครบทุกภาษาที่เปิดใช้) และบันทึกลงตาราง detail ให้เอง
  */
 abstract class SettingsWidget implements PageWidgetType
 {
@@ -27,6 +31,27 @@ abstract class SettingsWidget implements PageWidgetType
      * @return array<string, array<string, mixed>>
      */
     abstract protected function fields(): array;
+
+    /**
+     * ฟิลด์ที่แยกตามภาษา: ชื่อฟิลด์ => ['label' => ป้ายชื่อใน error, 'max' => ความยาวสูงสุด]
+     *
+     * @return array<string, array{label: string, max: int}>
+     */
+    protected function detailFields(): array
+    {
+        return [];
+    }
+
+    /** @return class-string<Model>|null model ของตารางข้อมูลแยกภาษา (ต้องมี relation `details()` บน model ของตารางตั้งค่า) */
+    protected function detailModel(): ?string
+    {
+        return null;
+    }
+
+    public function eagerRelations(): array
+    {
+        return $this->detailModel() ? [$this->relation(), $this->relation().'.details'] : [$this->relation()];
+    }
 
     // ---------------------------------------------------------------- ตัวช่วยสร้างฟิลด์
 
@@ -82,11 +107,31 @@ abstract class SettingsWidget implements PageWidgetType
         return ['label' => $label, 'default' => $default, 'rules' => ['required', 'string', 'max:20', 'regex:'.self::TEXT_COLOR_REGEX]];
     }
 
+    /**
+     * สีพื้นหลัง: รหัส hex หรือคำว่า transparent (เหมือนตัวเลือกสีพื้นหลังของแถว/คอลัมน์)
+     *
+     * @return array<string, mixed>
+     */
+    protected static function backgroundColor(string $label, string $default): array
+    {
+        return ['label' => $label, 'default' => $default, 'rules' => ['required', 'string', 'max:20', 'regex:/^(transparent|#[0-9a-fA-F]{3,8})$/']];
+    }
+
     // ---------------------------------------------------------------- PageWidgetType
 
     public function rules(): array
     {
-        return array_map(fn (array $field) => $field['rules'], $this->fields());
+        $rules = array_map(fn (array $field) => $field['rules'], $this->fields());
+
+        foreach ($this->detailFields() as $name => $field) {
+            $rules[$name] = ['nullable', 'array'];
+
+            foreach (Setting::selectedLanguages() as $lang) {
+                $rules["{$name}.{$lang}"] = ['nullable', 'string', "max:{$field['max']}"];
+            }
+        }
+
+        return $rules;
     }
 
     public function messages(): array
@@ -110,12 +155,23 @@ abstract class SettingsWidget implements PageWidgetType
             }
         }
 
+        foreach ($this->detailFields() as $name => $field) {
+            $messages["{$name}.*.max"] = "{$field['label']}ต้องไม่เกิน {$field['max']} ตัวอักษร";
+            $messages["{$name}.*.string"] = "{$field['label']} ไม่ถูกต้อง";
+        }
+
         return $messages;
     }
 
     public function defaults(): array
     {
-        return array_map(fn (array $field) => $field['default'], $this->fields());
+        $defaults = array_map(fn (array $field) => $field['default'], $this->fields());
+
+        foreach (array_keys($this->detailFields()) as $name) {
+            $defaults[$name] = array_fill_keys(Setting::selectedLanguages(), '');
+        }
+
+        return $defaults;
     }
 
     /**
@@ -132,13 +188,49 @@ abstract class SettingsWidget implements PageWidgetType
     public function save(int $widgetId, array $setting, ?int $actorId): void
     {
         $model = $this->model();
-        $values = $this->normalize(array_intersect_key($setting, $this->fields()) + $this->defaults());
+        $fields = $this->fields();
+        // เฉพาะฟิลด์ที่เป็นคอลัมน์ของตารางตั้งค่า (ฟิลด์แยกภาษาไปอยู่ตาราง detail — ดู saveDetails)
+        $values = $this->normalize(array_intersect_key($setting, $fields) + array_intersect_key($this->defaults(), $fields));
         $query = $model::where('id', $widgetId);
 
         if ($query->exists()) {
             $query->update($values + ['updated_by' => $actorId]);
         } else {
             $model::create(['id' => $widgetId, 'created_by' => $actorId] + $values);
+        }
+
+        $this->saveDetails($widgetId, $setting, $actorId);
+    }
+
+    /**
+     * บันทึกฟิลด์แยกภาษาลงตาราง detail (ทีละภาษา — มีแถวอยู่แล้วให้ update ไม่มีให้ create; ค่าว่างเก็บเป็น null)
+     *
+     * @param  array<string, mixed>  $setting
+     */
+    private function saveDetails(int $widgetId, array $setting, ?int $actorId): void
+    {
+        $model = $this->detailModel();
+
+        if ($model === null || $this->detailFields() === []) {
+            return;
+        }
+
+        foreach (Setting::selectedLanguages() as $lang) {
+            $values = [];
+
+            foreach (array_keys($this->detailFields()) as $name) {
+                $text = $setting[$name][$lang] ?? null;
+                $values[$name] = is_string($text) && trim($text) !== '' ? trim($text) : null;
+            }
+
+            // composite key (id + lang) — ห้ามใช้ find()/save() ผ่าน model
+            $query = $model::where('id', $widgetId)->where('lang', $lang);
+
+            if ($query->exists()) {
+                $query->update($values + ['updated_by' => $actorId]);
+            } else {
+                $model::create(['id' => $widgetId, 'lang' => $lang, 'status' => 'Y', 'created_by' => $actorId] + $values);
+            }
         }
     }
 
@@ -155,8 +247,23 @@ abstract class SettingsWidget implements PageWidgetType
             $values[$name] = match ($field['type'] ?? 'string') {
                 'int' => (int) $value,
                 'nullint' => $value !== null ? (int) $value : null,
+                'nullstring' => $value ?? '',
                 default => $value,
             };
+        }
+
+        if ($this->detailModel() !== null) {
+            $details = $row->details->keyBy('lang');
+
+            foreach (array_keys($this->detailFields()) as $name) {
+                $map = [];
+
+                foreach (Setting::selectedLanguages() as $lang) {
+                    $map[$lang] = $details->get($lang)?->{$name} ?? '';
+                }
+
+                $values[$name] = $map;
+            }
         }
 
         return $values;

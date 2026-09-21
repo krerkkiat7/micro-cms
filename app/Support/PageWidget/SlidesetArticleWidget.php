@@ -3,31 +3,34 @@
 namespace App\Support\PageWidget;
 
 use App\Models\PageItemWidgetSlidesetArticle;
+use App\Models\PageItemWidgetSlidesetArticleDetail;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
  * widget "Slideset จาก article" — การ์ดบทความหลายใบที่เลื่อนดูได้ (รูป, หัวเรื่อง, ข้อความเกริ่นนำ, วันที่เผยแพร่, จำนวนเข้าชม — แต่ละส่วนเปิด/ปิดและ
- * จัดรูปแบบตัวอักษรเองได้) จำนวนการ์ดต่อแถวกำหนดตามขนาดหน้าจอ (PC / Notebook / Tablet / Mobile) เลื่อนทีละ "หน้า" (ครั้งละเท่าจำนวนต่อแถว)
+ * จัดรูปแบบตัวอักษรเองได้) + ปุ่ม "อ่านทั้งหมด" (ตำแหน่ง ข้อความแยกภาษา ไอคอน รูปแบบ ลิงก์ปลายทาง) ตั้งค่าส่วนร่วมอยู่ใน SlidesetWidget
  * ต่างจาก Slideshow ตรงที่บทความที่ไม่มีรูปหน้าปกก็ยังแสดง (ไม่มีรูป = กรอบว่าง) และแต่ละส่วนของการ์ดกดลิงก์ไปหน้าบทความได้แยกกัน
- * ตาราง `page_item_widget_slidesetarticle` (PK = `page_item_widget.id`) ตัวเลือก/ค่าเริ่มต้นต้องตรงกับ utils/pageWidget.ts
+ * ตาราง `page_item_widget_slidesetarticle` (+ `_detail` เก็บข้อความปุ่มแยกภาษา) PK = `page_item_widget.id`
  */
-class SlidesetArticleWidget extends CategoryListWidget
+class SlidesetArticleWidget extends SlidesetWidget
 {
     use ReadsArticles;
 
     public const TYPE = 'slidesetarticle';
 
-    public const IMAGE_FITS = ['cover', 'contain'];
+    /** ตำแหน่งปุ่ม "อ่านทั้งหมด" เทียบกับการ์ด (บน/ล่าง × ซ้าย/กึ่งกลาง/ขวา) */
+    public const READ_ALL_POSITIONS = ['top_left', 'top_center', 'top_right', 'bottom_left', 'bottom_center', 'bottom_right'];
 
-    /** จำนวนการ์ดต่อแถวที่เลือกได้ต่อขนาดหน้าจอ */
-    public const PER_ROW_MIN = 1;
+    /** ไอคอนที่แสดงร่วมกับข้อความปุ่ม (`none` = ไม่แสดง) — ตัวเลือกและชื่อที่หน้าจอต้องตรงกัน */
+    public const READ_ALL_ICONS = ['none', 'plus', 'plus_circle', 'arrow_right', 'arrow_right_circle', 'chevron_right', 'chevron_right_circle', 'arrow_up_right'];
 
-    public const PER_ROW_MAX = 6;
+    public const READ_ALL_ICON_POSITIONS = ['before', 'after'];
 
-    /** จำนวนบรรทัดที่แสดงของหัวเรื่อง/ข้อความเกริ่นนำ (เกินตัดด้วย ...) */
-    public const LINES_MIN = 1;
+    /** รูปแบบของปุ่ม: ปุ่ม / ลิงก์ข้อความ / ปุ่มมนใหญ่ (คล้ายวงรี) */
+    public const READ_ALL_STYLES = ['button', 'link', 'pill'];
 
-    public const LINES_MAX = 3;
+    /** ลิงก์ปลายทางที่รับ: URL เต็ม, path ภายในเว็บ (ขึ้นต้น /), anchor (#), mailto:, tel: */
+    private const READ_ALL_URL_REGEX = '/^(https?:\/\/|\/|#|mailto:|tel:)\S*$/i';
 
     public function type(): string
     {
@@ -44,65 +47,53 @@ class SlidesetArticleWidget extends CategoryListWidget
         return PageItemWidgetSlidesetArticle::class;
     }
 
-    protected function fields(): array
+    protected function detailModel(): ?string
     {
-        $perRow = fn (string $label, int $default) => self::number("จำนวนที่แสดงต่อแถว ({$label})", $default, self::PER_ROW_MIN, self::PER_ROW_MAX, ' รายการ');
+        return PageItemWidgetSlidesetArticleDetail::class;
+    }
 
-        return $this->listFields()
-            + $this->carouselFields(autoplayDefault: false)
+    protected function detailFields(): array
+    {
+        // ข้อความแทน "อ่านทั้งหมด" แยกภาษา (ว่าง = ใช้ข้อความมาตรฐานของหน้าบ้าน)
+        return ['read_all_text' => ['label' => 'ข้อความของปุ่มอ่านทั้งหมด', 'max' => 100]];
+    }
+
+    protected function introShownByDefault(): string
+    {
+        return 'Y';
+    }
+
+    protected function extraFields(): array
+    {
+        return $this->metaFields('date', 'วันที่เผยแพร่', showDefault: 'Y')
+            + $this->metaFields('views', 'จำนวนเข้าชม', showDefault: 'N')
             + [
-                'per_row_pc' => $perRow('PC', 4),
-                'per_row_notebook' => $perRow('Notebook', 3),
-                'per_row_tablet' => $perRow('Tablet', 2),
-                'per_row_mobile' => $perRow('Mobile', 1),
-
-                'show_image' => self::flag('การแสดงรูปภาพ', 'Y'),
-                'aspect_ratio' => self::choice('อัตราส่วนของรูปภาพ', '16:9', self::ASPECT_RATIOS),
-                'image_fit' => self::choice('ประเภทการแสดงรูปภาพ', 'cover', self::IMAGE_FITS),
-                'image_clickable' => self::flag('การกดลิงก์ที่รูปภาพ', 'Y'),
-
-                'link_target' => self::choice('เป้าหมายการเปิดลิงก์', '_self', self::LINK_TARGETS),
-            ]
-            + $this->textFields('title', 'หัวเรื่อง', size: 18, bold: 'Y', color: '#000000', lines: 1, showDefault: 'Y', clickable: 'Y')
-            + $this->textFields('intro_text', 'ข้อความเกริ่นนำ', size: 14, bold: 'N', color: '#000000', lines: 2, showDefault: 'Y', clickable: 'N')
-            + $this->metaFields('date', 'วันที่เผยแพร่', showDefault: 'Y')
-            + $this->metaFields('views', 'จำนวนเข้าชม', showDefault: 'N');
+                'show_read_all' => self::flag('การแสดงปุ่มอ่านทั้งหมด', 'N'),
+                'read_all_position' => self::choice('ตำแหน่งของปุ่มอ่านทั้งหมด', 'bottom_center', self::READ_ALL_POSITIONS),
+                'read_all_icon' => self::choice('ไอคอนของปุ่มอ่านทั้งหมด', 'arrow_right', self::READ_ALL_ICONS),
+                'read_all_icon_position' => self::choice('ตำแหน่งไอคอนของปุ่มอ่านทั้งหมด', 'after', self::READ_ALL_ICON_POSITIONS),
+                'read_all_style' => self::choice('รูปแบบของปุ่มอ่านทั้งหมด', 'button', self::READ_ALL_STYLES),
+                'read_all_url' => [
+                    'label' => 'ลิงก์ปลายทางของปุ่มอ่านทั้งหมด', 'default' => '', 'type' => 'nullstring',
+                    // จำเป็นต้องกรอกเมื่อแสดงปุ่ม (ภายหลังอาจเลือกจากเมนูหน้าบ้านแทนการกรอก URL)
+                    'rules' => ['nullable', 'string', 'max:500', 'regex:'.self::READ_ALL_URL_REGEX, 'required_if:show_read_all,Y'],
+                    'messages' => [
+                        'required_if' => 'กรุณากรอกลิงก์ปลายทางของปุ่มอ่านทั้งหมด (ต้องกรอกเมื่อเปิดแสดงปุ่ม)',
+                        'regex' => 'ลิงก์ปลายทางของปุ่มอ่านทั้งหมดต้องขึ้นต้นด้วย http://, https:// หรือ / (หรือ #, mailto:, tel:)',
+                        'max' => 'ลิงก์ปลายทางของปุ่มอ่านทั้งหมดต้องไม่เกิน 500 ตัวอักษร',
+                    ],
+                ],
+                'read_all_link_target' => self::choice('เป้าหมายการเปิดลิงก์ของปุ่มอ่านทั้งหมด', '_self', self::LINK_TARGETS),
+            ];
     }
 
-    /**
-     * ฟิลด์ของข้อความที่กดลิงก์ได้และกำหนดจำนวนบรรทัดได้ (หัวเรื่อง / ข้อความเกริ่นนำ): แสดง, ขนาด, ตัวหนา, ฟอนต์, สี, จัดตำแหน่ง, กดลิงก์ได้, จำนวนบรรทัด
-     * ชื่อคอลัมน์ตาม PageTextStyle (`<part>_font_size` ฯลฯ)
-     *
-     * @return array<string, array<string, mixed>>
-     */
-    private function textFields(string $part, string $label, int $size, string $bold, string $color, int $lines, string $showDefault, string $clickable): array
+    protected function normalize(array $values): array
     {
-        return [
-            $part === 'title' ? 'show_title' : 'show_intro_text' => self::flag("การแสดง{$label}", $showDefault),
-            "{$part}_font_size" => self::fontSize("ขนาดตัวอักษรของ{$label}", $size),
-            "{$part}_bold" => self::flag("ตัวหนาของ{$label}", $bold),
-            "{$part}_font_family" => self::fontFamily("ฟอนต์ของ{$label}"),
-            "{$part}_color" => self::color("สีตัวอักษรของ{$label}", $color),
-            "{$part}_align" => self::choice("การจัดตำแหน่งของ{$label}", 'left', self::TEXT_ALIGNS),
-            "{$part}_clickable" => self::flag("การกดลิงก์ที่{$label}", $clickable),
-            "{$part}_lines" => self::number("จำนวนบรรทัดที่แสดงของ{$label}", $lines, self::LINES_MIN, self::LINES_MAX, ' บรรทัด'),
-        ];
-    }
+        $values = parent::normalize($values);
+        $url = $values['read_all_url'] ?? null;
+        $values['read_all_url'] = is_string($url) && trim($url) !== '' ? trim($url) : null;
 
-    /**
-     * ฟิลด์ของข้อมูลเสริมของการ์ด (วันที่เผยแพร่ / จำนวนเข้าชม): แสดง, ขนาด, ตัวหนา, ฟอนต์, สี (default เทา)
-     *
-     * @return array<string, array<string, mixed>>
-     */
-    private function metaFields(string $part, string $label, string $showDefault): array
-    {
-        return [
-            "show_{$part}" => self::flag("การแสดง{$label}", $showDefault),
-            "{$part}_font_size" => self::fontSize("ขนาดตัวอักษรของ{$label}", 12),
-            "{$part}_bold" => self::flag("ตัวหนาของ{$label}", 'N'),
-            "{$part}_font_family" => self::fontFamily("ฟอนต์ของ{$label}"),
-            "{$part}_color" => self::color("สีตัวอักษรของ{$label}", '#667085'),
-        ];
+        return $values;
     }
 
     protected function previewQuery(int $categoryId): Builder

@@ -10,7 +10,7 @@
 |---|--------|-----------|-------|
 | 1 | หน้าเพจ (ข้อมูลทั่วไป) | `page_item_info`, `page_item_detail` | 🟢 schema + controller/route/UI (list, add, edit) เสร็จครบ |
 | 2 | โครงสร้าง แถว → คอลัมน์ → widget | `page_item_row/column/widget` + `*_detail` | 🟢 schema + หน้าจัดโครงสร้างแบบเห็นผลจริง + บันทึกเสร็จ |
-| 3 | ประเภท widget และการตั้งค่าเฉพาะประเภท | `page_item_widget.widget_type` + `page_item_widget_<ประเภท>` | 🟡 โครงระบบเสร็จ + ประเภท `slideshowbanner`, `slideshowarticle`, `slidesetarticle` เสร็จ; อีก 4 ประเภทรอทำ (§3) |
+| 3 | ประเภท widget และการตั้งค่าเฉพาะประเภท | `page_item_widget.widget_type` + `page_item_widget_<ประเภท>` | 🟡 โครงระบบเสร็จ + ประเภท `slideshowbanner`, `slideshowarticle`, `slidesetarticle`, `slidesetbanner` เสร็จ; อีก 3 ประเภทรอทำ (§3) |
 | 4 | การแสดงผลหน้าบ้านตาม slug/โครงสร้าง | (front-office) | 🔴 ยังไม่ได้ทำ |
 
 ---
@@ -224,7 +224,7 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 | `slideshowbanner` | Slideshow — ภาพเต็มภาพเดียวสไลด์ได้ จาก banner | 🟢 เสร็จ |
 | `slideshowarticle` | Slideshow — ภาพเต็มภาพเดียวสไลด์ได้ จาก article (ตั้งค่าเหมือน `slideshowbanner`) | 🟢 เสร็จ |
 | `slidesetarticle` | Slideset — การ์ดบทความที่เลื่อนได้ (รูป/หัวเรื่อง/เกริ่นนำ/วันที่/เข้าชม) จาก article | 🟢 เสร็จ |
-| `slidesetbanner` | Slideset จาก banner | 🔴 เร็ว ๆ นี้ |
+| `slidesetbanner` | Slideset — การ์ดป้ายโฆษณาที่เลื่อนได้ (รูป/หัวเรื่อง/เกริ่นนำ) จาก banner | 🟢 เสร็จ |
 | `gridbanner` / `gridarticle` | Grid — กล่องเรียงต่อเนื่อง จาก banner / article | 🔴 เร็ว ๆ นี้ |
 | `customtext` | Custom Text — กรอกเนื้อหาเอง คล้าย part ของบทความ (ตารางแยก + ข้อมูลแยกภาษา) | 🔴 เร็ว ๆ นี้ |
 | `placeholder` | ประเภทเดิมก่อนมีประเภทจริง (**legacy**) — ไม่มีตารางตั้งค่า โหลด/บันทึกได้แต่เลือกสร้างใหม่ไม่ได้ | — |
@@ -233,8 +233,8 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 
 1. กด "+ เพิ่ม Widget" บนแถบคอลัมน์ → `WidgetTypePickerDialog.vue` แสดงการ์ด SVG ครบทุกประเภท (ตาม pattern `ArticlePart/ImagesDisplayTypePicker.vue`);
    ประเภทที่ยังไม่พร้อมติดป้าย "เร็ว ๆ นี้" เลือกไม่ได้; เลือกแล้วกด "ต่อไป"
-2. `WidgetSettingsDialog.vue` (`mode = add`) — **กล่องตั้งค่าเฉพาะประเภทอยู่บนสุด** (กรอบ + ชื่อประเภทที่เลือก) แล้วคั่นด้วยเส้นก่อนส่วนการแสดงผลทั่วไปของ widget
-   (แสดงหัวเรื่อง, ข้อความ 3 ส่วน, พื้นหลัง); ปุ่ม "ย้อนกลับ" กลับไปเลือกประเภท, "ยกเลิก" ไม่เพิ่มอะไร, ค่าที่ต้องกรอกไม่ครบ (เช่น ไม่เลือกหมวดหมู่)
+2. `WidgetSettingsDialog.vue` (`mode = add`) — **กล่องตั้งค่าเฉพาะประเภทอยู่บนสุด** (กรอบ + ชื่อประเภทที่เลือก) ตามด้วย**กรอบ "การตั้งค่าการแสดงผล Widget"** หน้าตาเดียวกัน
+   (แสดงหัวเรื่อง, ข้อความ 3 ส่วน, พื้นหลัง — ใช้ร่วมทุกประเภท); ปุ่ม "ย้อนกลับ" กลับไปเลือกประเภท, "ยกเลิก" ไม่เพิ่มอะไร, ค่าที่ต้องกรอกไม่ครบ (เช่น ไม่เลือกหมวดหมู่)
    → แจ้ง error ที่ช่องและไม่ปิด dialog
 3. **widget ถูกเพิ่มลงคอลัมน์เมื่อกด "เพิ่ม Widget" ใน dialog ขั้น 2 เท่านั้น** (ก่อนหน้านั้นเป็นแค่ draft ที่ยังไม่อยู่ในโครงสร้าง) และยังต้องกด "บันทึกโครงสร้าง"
    จึงลงฐานข้อมูล
@@ -294,12 +294,29 @@ class `SlidesetArticleWidget extends CategoryListWidget` (ใช้ trait `Reads
 | ข้อมูล | `article_category_info_id` (**จำเป็นต้องเลือก**), `sort_by` (`publish_desc`/`publish_asc`), `max_items` (0 - 1000, **ว่างหรือ 0 = แสดงทั้งหมด**) |
 | จำนวนต่อแถว | `per_row_pc` (4) / `per_row_notebook` (3) / `per_row_tablet` (2) / `per_row_mobile` (1) — 1 - 6; breakpoint: PC ≥ 1280 px, Notebook 1024 - 1279, Tablet 768 - 1023, Mobile < 768 (`SLIDESET_DEVICES`) |
 | การเลื่อน | `show_arrows` (Y), `show_dots` (Y — จุดอยู่ใต้การ์ด เป็นพื้นที่ด้านล่าง ไม่ซ้อนบนการ์ด), `autoplay` (N), `autoplay_interval` (5 วินาที, 1 - 60), `transition_speed` (500 ms, 100 - 3000) |
-| รูปภาพ | `show_image` (Y), `aspect_ratio` (16:9 / 21:9 / 4:3 / 1:1), `image_fit` (`cover`/`contain`), `image_clickable` (Y) |
+| รูปภาพ | `show_image` (Y), `aspect_ratio` (16:9 / 21:9 / 4:3 / 1:1), `image_fit` (`cover`/`contain`), `image_background` (`#F3F4F6` — ใช้เมื่อ contain, เลือก transparent ได้), `image_clickable` (Y) |
 | หัวเรื่อง | `show_title` (Y), `title_font_size` (18), `title_bold` (Y), `title_font_family` (Sarabun), `title_color` (**`#000000`**), `title_align` (left), `title_clickable` (Y), `title_lines` (**1**, ช่วง 1 - 3 เกินตัดด้วย ...) |
 | ข้อความเกริ่นนำ | `show_intro_text` (Y), `intro_text_font_size` (14), `intro_text_bold` (N), `intro_text_font_family`, `intro_text_color` (**`#000000`**), `intro_text_align` (left), `intro_text_clickable` (N), `intro_text_lines` (**2**, 1 - 3) |
 | วันที่เผยแพร่ | `show_date` (Y), `date_font_size` (12), `date_bold` (N), `date_font_family`, `date_color` (**เทา `#667085`**) |
 | จำนวนเข้าชม | `show_views` (N), `views_font_size` (12), `views_bold` (N), `views_font_family`, `views_color` (**เทา `#667085`**) |
 | ลิงก์ | `link_target` (`_self`/`_blank`) — **ใช้ร่วมกัน**ทั้งรูป/หัวเรื่อง/ข้อความเกริ่นนำที่ตั้งให้กดลิงก์ได้ (ลิงก์ไปหน้าบทความ) |
+
+**ปุ่ม "อ่านทั้งหมด"** (เฉพาะ `slidesetarticle`; migration `2026_09_24_000001_*`) — การ์ดตั้งค่า "ปุ่มอ่านทั้งหมด" ติ๊กแสดง/ซ่อนได้ (default ซ่อน):
+
+| คอลัมน์ | ความหมาย |
+|---------|----------|
+| `show_read_all` | `Y`/`N` (default `N`) |
+| `read_all_position` | `top_left` / `top_center` / `top_right` / `bottom_left` / `bottom_center` (default) / `bottom_right` — บนอยู่เหนือแถวการ์ด, ล่างอยู่ใต้จุด/การ์ด, จัดชิดซ้าย/กึ่งกลาง/ขวา (ฟอร์มเลือกด้วยการ์ดภาพจำลองตำแหน่ง) |
+| `read_all_icon` | `none` (ไม่เลือก) / `plus` / `plus_circle` / `arrow_right` (default) / `arrow_right_circle` / `chevron_right` / `chevron_right_circle` / `arrow_up_right` — ฟอร์มเลือกด้วย**การ์ดที่แสดงไอคอนคู่กับชื่อ** (`utils/readAllButton.ts`) |
+| `read_all_icon_position` | `before` / `after` (default) หน้า/หลังข้อความ — ซ่อนตัวเลือกเมื่อไอคอน = `none` |
+| `read_all_style` | `button` (default, ปุ่มสี่เหลี่ยมมุมมน) / `link` (ลิงก์ข้อความขีดเส้นใต้) / `pill` (ปุ่มมนใหญ่ คล้ายวงรี) — ฟอร์มเลือกด้วยการ์ดตัวอย่างปุ่มจริง; สีคงที่ (ปุ่มเทาเข้มตัวขาว / ลิงก์น้ำเงิน) ยังไม่มีตัวเลือกสี |
+| `read_all_url` | ลิงก์ปลายทาง `varchar(500)` — **จำเป็นต้องกรอกเมื่อแสดงปุ่ม** รับ `http(s)://…`, `/path`, `#anchor`, `mailto:`, `tel:` (ภายหลังอาจเลือกจากเมนูหน้าบ้านแทนการกรอก URL) |
+| `read_all_link_target` | `_self` / `_blank` (แยกจาก `link_target` ของรูป/หัวเรื่อง/เกริ่นนำ) |
+| **ข้อความแทน** | **แยกภาษา** เก็บในตาราง `page_item_widget_slidesetarticle_detail` (PK = `id` + `lang`, คอลัมน์ `read_all_text` ≤ 100 ตัวอักษร) — ว่าง = ใช้ข้อความมาตรฐาน "อ่านทั้งหมด"; ใน setting เป็น map `read_all_text: {th, en}` |
+
+ฟิลด์แยกภาษาประกาศใน `detailFields()` + `detailModel()` ของ `SettingsWidget` (บันทึกด้วย where(id, lang) → update/create ตาม pattern ตาราง detail ทั่วไป) และ eager load ผ่าน `eagerRelations()`
+
+**สีพื้นหลังของรูป** — `image_background` (default `#F3F4F6` เทาอ่อน = ที่เห็นในกรอบรูปตอนนี้; เลือกสีอื่นหรือ `transparent` ได้) แสดงเมื่อ `image_fit = contain`
 
 - ชื่อคอลัมน์ตัวอักษรตาม `PageTextStyle` (`<part>_font_size` ฯลฯ) ฟอนต์ = ชุดเดียวกับหัวเรื่องของแถว/คอลัมน์ สีเป็น hex เท่านั้น; วันที่/จำนวนเข้าชมไม่มีจัดตำแหน่ง — แถววันที่/เข้าชมใช้ตำแหน่งเดียวกับ `title_align`
 - **ข้อมูลที่แสดง** (`SlidesetArticleWidget::preview()`): บทความที่เผยแพร่อยู่ของหมวดหมู่ (เหมือน slideshowarticle) แต่ **ไม่บังคับมีรูปหน้าปก** (ไม่มีรูปแสดงกรอบเทา + ไอคอน);
@@ -310,6 +327,17 @@ class `SlidesetArticleWidget extends CategoryListWidget` (ใช้ trait `Reads
 - โครงคลาสของ widget กลุ่มที่ดึงจากหมวดหมู่: `App\Support\PageWidget\SettingsWidget` (ประกาศฟิลด์ครั้งเดียวใน `fields()` → ได้ rules/messages/defaults/บันทึก/แปลงข้อมูลให้เอง
   ข้อความ error ใช้ป้ายชื่อของฟิลด์) → `CategoryListWidget` (หมวดหมู่ + เรียงลำดับ + จำนวนสูงสุด + carousel + preview) → `SlideshowWidget` / `SlidesetArticleWidget`;
   เทสต์ตรวจว่าฟิลด์ทุกตัวมีคอลัมน์และอยู่ใน `$fillable` (กันหลุดเมื่อเพิ่มฟิลด์)
+
+### `slidesetbanner` — Slideset จาก banner
+
+การ์ดป้ายโฆษณาหลายใบที่เลื่อนดูได้ — ตาราง `page_item_widget_slidesetbanner` (migration `2026_09_24_000002_*`; FK ตั้งชื่อเอง `pi_widget_slidesetbanner_category_foreign`)
+class `SlidesetBannerWidget extends SlidesetWidget` (ใช้ trait `ReadsBanners` ร่วมกับ `slideshowbanner`) ตั้งค่าเหมือน `slidesetarticle` ทุกอย่าง ยกเว้น:
+
+- **ไม่มี** ปุ่ม "อ่านทั้งหมด", วันที่เผยแพร่ และจำนวนเข้าชม (ทั้งคอลัมน์และส่วนตั้งค่าในฟอร์ม)
+- **"แสดงข้อความเกริ่นนำ" ซ่อนเป็นค่าเริ่มต้น** (`introShownByDefault()` = `N`)
+- **เรียงลำดับได้ 4 แบบ**: `publish_desc` / `publish_asc` / `order_asc` ลำดับน้อยไปมาก / `order_desc` ลำดับมากไปน้อย (`sort_order` ของ banner)
+- หมวดหมู่ = `banner_category_info_id`; ข้อมูลที่แสดง = banner ที่เผยแพร่อยู่ **และมีรูป** (เหมือน slideshowbanner); ลิงก์ของการ์ด = url ของ banner (banner ที่ไม่มี url กดไม่ได้ —
+  ตัวอย่างแสดงป้ายลิงก์เฉพาะใบที่มีลิงก์)
 
 ### โครงระบบประเภท widget (เพิ่มประเภทใหม่)
 
@@ -332,5 +360,5 @@ class `SlidesetArticleWidget extends CategoryListWidget` (ใช้ trait `Reads
 | 0 — schema | `page_item_info/detail` + `page_item_row/column/widget` + `*_detail` + `PageSeeder` ตัวอย่าง | ✅ เสร็จ |
 | 1 — CRUD หน้าเพจ + จัดโครงสร้าง | list/add/edit (ข้อมูลทั่วไป + SEO) + แท็บโครงสร้าง (แถว/คอลัมน์/widget, ลากเรียง, ตั้งค่า, พื้นหลัง, บันทึก) | ✅ เสร็จ |
 | **2 — ประเภท widget** | โครงระบบประเภท widget (ตารางแยกต่อประเภท + registry + dialog เลือกประเภท/ตั้งค่า + ตัวอย่าง) + `slideshowbanner` + `slideshowarticle` | ✅ เสร็จ |
-| 2.1 — ประเภท widget ที่เหลือ | `slidesetbanner`, `gridbanner/article`, `customtext` | 🔴 ยังไม่เริ่ม |
+| 2.1 — ประเภท widget ที่เหลือ | `gridbanner/article`, `customtext` | 🔴 ยังไม่เริ่ม |
 | 3 — หน้าบ้าน | แสดงหน้าเพจตาม slug + โครงสร้าง (grid 12) ที่ `front.*` | 🔴 ยังไม่เริ่ม |

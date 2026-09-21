@@ -2,28 +2,34 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import type { CSSProperties } from 'vue';
 import { CalendarDays, ChevronLeft, ChevronRight, Eye, Image as ImageIcon, Laptop, Link2, Monitor, Smartphone, Tablet } from 'lucide-vue-next';
+import ReadAllButton from './ReadAllButton.vue';
 import { PREVIEW_LIMIT, useWidgetPreview } from '@/composables/useWidgetPreview';
 import { SLIDESET_DEVICES, currentDevice, slidesetConfig } from '@/utils/pageWidget';
 import type { SlidesetDevice, SlidesetSetting } from '@/utils/pageWidget';
+import { READ_ALL_DEFAULT_TEXT } from '@/utils/readAllButton';
+import type { LanguageOption } from '@/types';
 
 /**
- * ตัวอย่างการแสดงผลของ widget "Slideset จาก article" ในหน้าโครงสร้าง — การ์ดบทความจริงของหมวดหมู่ที่เลือก (ตามลำดับ/จำนวนสูงสุดที่ตั้งไว้)
- * แสดงตามค่าตั้งค่าทั้งหมด: รูป (อัตราส่วน/cover-contain), หัวเรื่อง/ข้อความเกริ่นนำ (ฟอนต์ ขนาด สี ตัวหนา ตำแหน่ง ตัดที่จำนวนบรรทัดด้วย ...),
- * วันที่เผยแพร่, จำนวนเข้าชม, ลูกศร/จุด (ใต้การ์ด)/เลื่อนอัตโนมัติ — เลื่อนทีละ "หน้า" (ครั้งละเท่าจำนวนการ์ดต่อแถว)
+ * ตัวอย่างการแสดงผลของ widget Slideset (จาก article / จาก banner) ในหน้าโครงสร้าง — การ์ดจริงของหมวดหมู่ที่เลือก (ตามลำดับ/จำนวนสูงสุดที่ตั้งไว้)
+ * แสดงตามค่าตั้งค่าทั้งหมด: รูป (อัตราส่วน/cover-contain + สีพื้นหลังเมื่อ contain), หัวเรื่อง/ข้อความเกริ่นนำ (ฟอนต์ ขนาด สี ตัวหนา ตำแหน่ง
+ * ตัดที่จำนวนบรรทัดด้วย ...), วันที่เผยแพร่/จำนวนเข้าชม/ปุ่มอ่านทั้งหมด (เฉพาะ article), ลูกศร/จุด (ใต้การ์ด)/เลื่อนอัตโนมัติ — เลื่อนทีละ "หน้า" (ครั้งละเท่าจำนวนการ์ดต่อแถว)
  * ผู้ใช้เลือกดูตามขนาดหน้าจอ (PC/Notebook/Tablet/Mobile) เพื่อเห็นจำนวนการ์ดต่อแถวของแต่ละขนาด (ค่าเริ่มต้น = ขนาดของหน้าต่างที่เปิดอยู่)
  * ลิงก์เป็นแค่เครื่องหมาย (ไอคอนลิงก์) — กดไม่ได้และไม่มี URL
  */
 const props = defineProps<{
     widgetType: string;
     setting: SlidesetSetting;
+    /** ภาษาที่เปิดใช้ — ไว้หาข้อความของปุ่มอ่านทั้งหมดในภาษาหลัก */
+    languages: LanguageOption[];
 }>();
 
 const config = slidesetConfig(props.widgetType)!;
 
+// คีย์หมวดหมู่ใน setting ต่างกันตามแหล่งข้อมูล (article_category_info_id / banner_category_info_id)
+const categoryId = () => (props.setting as unknown as Record<string, number | null>)[config.categoryKey];
+
 const { items, loading, failed } = useWidgetPreview(props.widgetType, () =>
-    props.setting.article_category_info_id
-        ? { [config.categoryKey]: props.setting.article_category_info_id, sort_by: props.setting.sort_by, max_items: props.setting.max_items }
-        : null,
+    categoryId() ? { [config.categoryKey]: categoryId(), sort_by: props.setting.sort_by, max_items: props.setting.max_items } : null,
 );
 
 // ---- ขนาดหน้าจอที่ดูตัวอย่าง ----
@@ -101,7 +107,23 @@ function textCss(part: 'title' | 'intro_text' | 'date' | 'views'): CSSProperties
 const JUSTIFY = { left: 'justify-start', center: 'justify-center', right: 'justify-end' } as const;
 const metaJustify = computed(() => JUSTIFY[props.setting.title_align]);
 
-const frameStyle = computed<CSSProperties>(() => ({ aspectRatio: props.setting.aspect_ratio.replace(':', ' / ') }));
+const frameStyle = computed<CSSProperties>(() => ({
+    aspectRatio: props.setting.aspect_ratio.replace(':', ' / '),
+    // สีพื้นหลังกรอบรูป: เลือกได้เมื่อแสดงแบบ contain (รวมโปร่งใส) — แบบ cover ใช้เทาอ่อนเป็นพื้นของกรอบว่าง (บทความไม่มีรูป)
+    backgroundColor: props.setting.image_fit === 'contain' ? props.setting.image_background : '#F3F4F6',
+}));
+
+// ---- ปุ่ม "อ่านทั้งหมด" (เฉพาะ article) ----
+const showReadAll = computed(() => props.setting.show_read_all === 'Y');
+const readAllOnTop = computed(() => props.setting.read_all_position?.startsWith('top') ?? false);
+const READ_ALL_ALIGN = { left: 'justify-start', center: 'justify-center', right: 'justify-end' } as const;
+const readAllAlign = computed(() => READ_ALL_ALIGN[(props.setting.read_all_position?.split('_')[1] ?? 'center') as keyof typeof READ_ALL_ALIGN]);
+// ข้อความของภาษาหลักที่กรอก (ถ้าว่างใช้ข้อความมาตรฐาน)
+const readAllText = computed(() => {
+    const main = props.languages.find((l) => l.is_default)?.code;
+
+    return (main ? props.setting.read_all_text?.[main]?.trim() : '') || READ_ALL_DEFAULT_TEXT;
+});
 
 function formatDate(value: string | null): string {
     return value ? new Date(`${value}T00:00:00`).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
@@ -134,7 +156,7 @@ const linkIcon = 'ml-1 inline size-3 shrink-0 align-baseline opacity-60';
             <span class="text-[11px] text-gray-400">{{ perView }} รายการต่อแถว</span>
         </div>
 
-        <div v-if="!setting.article_category_info_id" class="rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 py-6 text-center text-xs text-gray-500">
+        <div v-if="!categoryId()" class="rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 py-6 text-center text-xs text-gray-500">
             ยังไม่ได้เลือก{{ config.categoryLabel }}
         </div>
         <div v-else-if="loading" class="rounded-md bg-gray-100 px-3 py-6 text-center text-xs text-gray-500">กำลังโหลดตัวอย่าง…</div>
@@ -146,12 +168,16 @@ const linkIcon = 'ml-1 inline size-3 shrink-0 align-baseline opacity-60';
         </div>
 
         <div v-else>
+            <div v-if="showReadAll && readAllOnTop" class="mb-2 flex" :class="readAllAlign">
+                <ReadAllButton :text="readAllText" :icon="setting.read_all_icon ?? 'none'" :icon-position="setting.read_all_icon_position ?? 'after'" :style-type="setting.read_all_style ?? 'button'" />
+            </div>
+
             <div class="relative">
                 <div class="select-none overflow-hidden">
                     <div class="flex" :style="trackStyle">
                         <div v-for="item in items" :key="item.id" class="px-1.5" :style="slotStyle">
                             <article class="flex h-full flex-col overflow-hidden rounded-lg border border-gray-200 bg-white">
-                                <div v-if="setting.show_image === 'Y'" class="relative flex items-center justify-center bg-gray-100" :style="frameStyle">
+                                <div v-if="setting.show_image === 'Y'" class="relative flex items-center justify-center" :style="frameStyle">
                                     <img
                                         v-if="item.image"
                                         :src="route('admin.system.file.get.thumbnail.size', { size: 480, hashname: item.image })"
@@ -163,7 +189,7 @@ const linkIcon = 'ml-1 inline size-3 shrink-0 align-baseline opacity-60';
                                     <ImageIcon v-else class="size-8 text-gray-300" />
 
                                     <span
-                                        v-if="setting.image_clickable === 'Y'"
+                                        v-if="setting.image_clickable === 'Y' && item.has_link !== false"
                                         class="absolute right-1.5 top-1.5 inline-flex items-center gap-1 rounded-full bg-black/55 px-1.5 py-0.5 text-[10px] text-white"
                                     >
                                         <Link2 class="size-3" /> ลิงก์
@@ -172,7 +198,7 @@ const linkIcon = 'ml-1 inline size-3 shrink-0 align-baseline opacity-60';
 
                                 <div class="flex flex-1 flex-col gap-1 p-3">
                                     <div v-if="setting.show_title === 'Y' && item.title" :class="LINE_CLAMP[setting.title_lines]" class="leading-snug" :style="textCss('title')">
-                                        {{ item.title }}<Link2 v-if="setting.title_clickable === 'Y'" :class="linkIcon" />
+                                        {{ item.title }}<Link2 v-if="setting.title_clickable === 'Y' && item.has_link !== false" :class="linkIcon" />
                                     </div>
                                     <!-- whitespace-pre-line: ขึ้นบรรทัดใหม่ตามที่พิมพ์ในข้อความเกริ่นนำ -->
                                     <div
@@ -181,7 +207,7 @@ const linkIcon = 'ml-1 inline size-3 shrink-0 align-baseline opacity-60';
                                         class="whitespace-pre-line leading-snug"
                                         :style="textCss('intro_text')"
                                     >
-                                        {{ item.intro_text }}<Link2 v-if="setting.intro_text_clickable === 'Y'" :class="linkIcon" />
+                                        {{ item.intro_text }}<Link2 v-if="setting.intro_text_clickable === 'Y' && item.has_link !== false" :class="linkIcon" />
                                     </div>
 
                                     <div v-if="(setting.show_date === 'Y' && item.date) || setting.show_views === 'Y'" class="mt-auto flex flex-wrap items-center gap-x-3 gap-y-0.5 pt-1" :class="metaJustify">
@@ -229,6 +255,10 @@ const linkIcon = 'ml-1 inline size-3 shrink-0 align-baseline opacity-60';
                     :aria-label="`หน้าที่ ${n}`"
                     @click="go(n - 1)"
                 />
+            </div>
+
+            <div v-if="showReadAll && !readAllOnTop" class="mt-3 flex" :class="readAllAlign">
+                <ReadAllButton :text="readAllText" :icon="setting.read_all_icon ?? 'none'" :icon-position="setting.read_all_icon_position ?? 'after'" :style-type="setting.read_all_style ?? 'button'" />
             </div>
 
             <p v-if="previewTruncated" class="mt-1 text-[11px] text-gray-400">ตัวอย่างแสดง {{ PREVIEW_LIMIT }} รายการแรก</p>

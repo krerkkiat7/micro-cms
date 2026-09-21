@@ -60,6 +60,12 @@ const slidesetSetting = computed(() => props.widget.setting as unknown as Slides
             :setting="slideshowSetting"
             class="mt-3"
         />
-        <SlidesetPreview v-else-if="slidesetConfig(widget.widget_type)" :widget-type="widget.widget_type" :setting="slidesetSetting" class="mt-3" />
+        <SlidesetPreview
+            v-else-if="slidesetConfig(widget.widget_type)"
+            :widget-type="widget.widget_type"
+            :setting="slidesetSetting"
+            :languages="editor.languages"
+            class="mt-3"
+        />
     </div>
 </template>

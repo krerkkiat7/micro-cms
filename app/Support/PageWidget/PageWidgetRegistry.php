@@ -18,7 +18,7 @@ class PageWidgetRegistry
         if (self::$types === null) {
             self::$types = [];
 
-            foreach ([new SlideshowBannerWidget, new SlideshowArticleWidget, new SlidesetArticleWidget] as $type) {
+            foreach ([new SlideshowBannerWidget, new SlideshowArticleWidget, new SlidesetArticleWidget, new SlidesetBannerWidget] as $type) {
                 self::$types[$type->type()] = $type;
             }
         }
@@ -46,7 +46,15 @@ class PageWidgetRegistry
      */
     public static function relations(string $prefix = ''): array
     {
-        return array_values(array_map(fn (PageWidgetType $type) => $prefix.$type->relation(), self::all()));
+        $relations = [];
+
+        foreach (self::all() as $type) {
+            foreach ($type->eagerRelations() as $relation) {
+                $relations[] = $prefix.$relation;
+            }
+        }
+
+        return $relations;
     }
 
     /**

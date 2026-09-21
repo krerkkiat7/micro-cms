@@ -124,15 +124,20 @@ function remove() {
                     :setting="draft.setting as unknown as SlidesetSetting"
                     :categories="widgetOptions[slideset.optionsKey]"
                     :fonts="fonts"
+                    :languages="languages"
                     :errors="errors"
                 />
                 <p v-else class="text-sm text-gray-500">Widget ประเภทนี้ไม่มีการตั้งค่าเฉพาะ</p>
             </section>
 
-            <hr class="border-gray-200" />
+            <!-- การตั้งค่าการแสดงผลทั่วไปของ widget (หัวเรื่องเหนือ widget + พื้นหลัง) — กรอบเดียวกับกล่องตั้งค่าเฉพาะประเภทด้านบน -->
+            <section class="rounded-xl border border-brand-200 bg-brand-50/40 p-4">
+                <header class="mb-4">
+                    <h3 class="text-sm font-semibold text-gray-800">การตั้งค่าการแสดงผล Widget</h3>
+                    <p class="mt-0.5 text-xs text-gray-500">หัวเรื่อง หัวเรื่องรอง ข้อความเกริ่นนำ (แสดงเหนือตัว Widget) และพื้นหลัง — ใช้ร่วมกันทุกประเภท Widget</p>
+                </header>
 
-            <!-- การแสดงผลทั่วไปของ widget (หัวเรื่องเหนือ widget + พื้นหลัง) -->
-            <div class="space-y-5">
+                <div class="space-y-5">
                 <div>
                     <InputLabel value="แสดงหัวเรื่อง" />
                     <SearchableSelect v-model="draft.show_title" :options="SHOW_OPTIONS" />
@@ -155,7 +160,8 @@ function remove() {
                     <h3 class="text-sm font-medium text-gray-600">พื้นหลัง</h3>
                     <BackgroundFields :fields="draft" />
                 </div>
-            </div>
+                </div>
+            </section>
         </div>
 
         <template #footer-left>

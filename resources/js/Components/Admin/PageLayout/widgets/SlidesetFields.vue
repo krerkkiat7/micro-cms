@@ -2,8 +2,12 @@
 import { computed } from 'vue';
 import { Laptop, Monitor, Smartphone, Tablet } from 'lucide-vue-next';
 import FlagField from './FlagField.vue';
+import OptionCardPicker from './OptionCardPicker.vue';
+import ReadAllButton from './ReadAllButton.vue';
 import SettingSection from './SettingSection.vue';
 import SlidesetTextFields from './SlidesetTextFields.vue';
+import ColorPickerInput from '@/Components/Admin/ColorPickerInput.vue';
+import LangFieldGroup from '@/Components/Admin/LangFieldGroup.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
@@ -20,11 +24,20 @@ import {
     slidesetConfig,
 } from '@/utils/pageWidget';
 import type { SlidesetSetting } from '@/utils/pageWidget';
+import {
+    READ_ALL_DEFAULT_TEXT,
+    READ_ALL_ICONS,
+    READ_ALL_ICON_POSITIONS,
+    READ_ALL_POSITIONS,
+    READ_ALL_STYLES,
+    readAllIconComponent,
+} from '@/utils/readAllButton';
+import type { LanguageOption } from '@/types';
 
 /**
- * ฟอร์มตั้งค่าเฉพาะของ widget "Slideset จาก article" (อยู่ในกล่องบนสุดของ dialog ตั้งค่า widget) — มีหลายฟิลด์ จึงแบ่งเป็นการ์ดตามหัวข้อ:
- * ข้อมูลที่แสดง / จำนวนต่อแถวตามหน้าจอ / การเลื่อน / ส่วนของการ์ด (รูป, หัวเรื่อง, ข้อความเกริ่นนำ, วันที่, เข้าชม — ติ๊กเปิด/ปิดแต่ละส่วนได้
- * ปิดแล้วพับรายละเอียดทิ้ง) / การเปิดลิงก์ — แก้ค่าบน `setting` ที่ส่งเข้ามาตรง ๆ (เป็นสำเนา draft ของ dialog อยู่แล้ว)
+ * ฟอร์มตั้งค่าเฉพาะของ widget Slideset (จาก article / จาก banner — อยู่ในกล่องบนสุดของ dialog ตั้งค่า widget) — มีหลายฟิลด์ จึงแบ่งเป็นการ์ดตามหัวข้อ:
+ * ข้อมูลที่แสดง / จำนวนต่อแถวตามหน้าจอ / การเลื่อน / ส่วนของการ์ด (รูป, หัวเรื่อง, ข้อความเกริ่นนำ และของ article: วันที่, เข้าชม — ติ๊กเปิด/ปิดแต่ละส่วนได้
+ * ปิดแล้วพับรายละเอียดทิ้ง) / ปุ่มอ่านทั้งหมด (เฉพาะ article) / การเปิดลิงก์ — แก้ค่าบน `setting` ที่ส่งเข้ามาตรง ๆ (เป็นสำเนา draft ของ dialog อยู่แล้ว)
  */
 const props = defineProps<{
     widgetType: string;
@@ -32,18 +45,28 @@ const props = defineProps<{
     categories: { id: number; title: string | null }[];
     /** รายการชื่อฟอนต์ให้เลือก (จาก backend) */
     fonts: string[];
+    /** ภาษาที่เปิดใช้ (ภาษาหลักก่อน) — ไว้กรอกข้อความปุ่มอ่านทั้งหมดแยกภาษา */
+    languages: LanguageOption[];
     errors: Record<string, string>;
 }>();
 
 const config = computed(() => slidesetConfig(props.widgetType)!);
+// ฟิลด์ของปุ่มอ่านทั้งหมด (เฉพาะ article — ฟอร์มส่วนนี้แสดงเมื่อประเภทมีปุ่มเท่านั้น จึงถือว่ามีค่าครบ)
+const article = computed(() => props.setting as Required<SlidesetSetting>);
 
 const categoryOptions = computed(() => props.categories.map((c) => ({ value: String(c.id), label: c.title || `หมวดหมู่ #${c.id}` })));
 
 // SearchableSelect ผูกกับ string เสมอ — แปลงจาก/เป็นเลข id (ยังไม่เลือก = '' ↔ null)
+// ฟิลด์หมวดหมู่ใน setting ชื่อต่างกันตามแหล่งข้อมูล (article_category_info_id / banner_category_info_id)
+const settingRecord = computed(() => props.setting as unknown as Record<string, number | null>);
 const category = computed({
-    get: () => (props.setting.article_category_info_id ? String(props.setting.article_category_info_id) : ''),
+    get: () => {
+        const id = settingRecord.value[config.value.categoryKey];
+
+        return id ? String(id) : '';
+    },
     set: (value: string) => {
-        props.setting.article_category_info_id = value === '' ? null : Number(value);
+        settingRecord.value[config.value.categoryKey] = value === '' ? null : Number(value);
     },
 });
 
@@ -69,6 +92,26 @@ function numberModel(field: 'autoplay_interval' | 'transition_speed') {
 
 const interval = numberModel('autoplay_interval');
 const speed = numberModel('transition_speed');
+
+// ตัวอย่างในการ์ดเลือกตำแหน่งปุ่ม: แถบเล็กในกรอบจำลอง วางตามตำแหน่งนั้น (ชื่อ class ต้องเป็นตัวเต็มให้ Tailwind สแกนเจอ)
+const POSITION_BAR: Record<string, string> = {
+    top_left: 'left-1.5 top-1.5',
+    top_center: 'left-1/2 top-1.5 -translate-x-1/2',
+    top_right: 'right-1.5 top-1.5',
+    bottom_left: 'bottom-1.5 left-1.5',
+    bottom_center: 'bottom-1.5 left-1/2 -translate-x-1/2',
+    bottom_right: 'bottom-1.5 right-1.5',
+};
+
+// ตัวอย่างข้อความปุ่มในการ์ดเลือก = ข้อความของภาษาหลักที่กรอก (ถ้าว่างใช้ข้อความมาตรฐาน)
+const sampleText = computed(() => {
+    const main = props.languages.find((l) => l.is_default)?.code;
+
+    return (main ? props.setting.read_all_text?.[main]?.trim() : '') || READ_ALL_DEFAULT_TEXT;
+});
+
+// ไอคอนที่ใช้เป็นตัวอย่างในการ์ดเลือกตำแหน่งไอคอน/รูปแบบ (ถ้าเลือก "ไม่เลือก" ใช้ลูกศรขวาเป็นตัวอย่าง)
+const sampleIcon = computed(() => (props.setting.read_all_icon && props.setting.read_all_icon !== 'none' ? props.setting.read_all_icon : 'arrow_right'));
 
 const DEVICE_ICONS = { pc: Monitor, notebook: Laptop, tablet: Tablet, mobile: Smartphone };
 const perRow = (key: (typeof SLIDESET_DEVICES)[number]['key']) =>
@@ -104,7 +147,7 @@ const perRowModels = Object.fromEntries(SLIDESET_DEVICES.map((d) => [d.key, perR
             </div>
         </SettingSection>
 
-        <SettingSection title="จำนวนที่แสดงต่อแถว" description="กำหนดว่าแสดงกี่บทความต่อ 1 แถว ตามขนาดหน้าจอ">
+        <SettingSection title="จำนวนที่แสดงต่อแถว" description="กำหนดว่าแสดงกี่รายการต่อ 1 แถว ตามขนาดหน้าจอ">
             <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <div v-for="device in SLIDESET_DEVICES" :key="device.key">
                     <InputLabel>
@@ -150,7 +193,13 @@ const perRowModels = Object.fromEntries(SLIDESET_DEVICES.map((d) => [d.key, perR
                     <SearchableSelect v-model="setting.image_fit" :options="SLIDESET_IMAGE_FIT_OPTIONS" />
                 </div>
             </div>
-            <FlagField v-model="setting.image_clickable" label="รูปภาพกดลิงก์ได้" hint="ลิงก์ไปหน้าบทความ" />
+            <div v-if="setting.image_fit === 'contain'">
+                <InputLabel value="สีพื้นหลังของรูปภาพ" />
+                <ColorPickerInput v-model="setting.image_background" transparent />
+                <p class="mt-1 text-xs text-gray-500">แสดงตรงส่วนที่รูปไม่เต็มกรอบ (เลือก "โปร่งใส" ถ้าไม่ต้องการพื้นหลัง)</p>
+                <InputError :message="errors.image_background" />
+            </div>
+            <FlagField v-model="setting.image_clickable" label="รูปภาพกดลิงก์ได้" :hint="config.hasReadAll ? 'ลิงก์ไปหน้าบทความ' : 'ใช้ลิงก์ของ banner — banner ที่ไม่มีลิงก์จะกดไม่ได้'" />
         </SettingSection>
 
         <SettingSection v-model:enabled="setting.show_title" toggleable title="หัวเรื่อง">
@@ -161,12 +210,79 @@ const perRowModels = Object.fromEntries(SLIDESET_DEVICES.map((d) => [d.key, perR
             <SlidesetTextFields :setting="setting" part="intro_text" :fonts="fonts" rich />
         </SettingSection>
 
-        <SettingSection v-model:enabled="setting.show_date" toggleable title="วันที่เผยแพร่">
+        <SettingSection v-if="config.hasMeta" v-model:enabled="setting.show_date" toggleable title="วันที่เผยแพร่">
             <SlidesetTextFields :setting="setting" part="date" :fonts="fonts" />
         </SettingSection>
 
-        <SettingSection v-model:enabled="setting.show_views" toggleable title="จำนวนเข้าชม">
+        <SettingSection v-if="config.hasMeta" v-model:enabled="setting.show_views" toggleable title="จำนวนเข้าชม">
             <SlidesetTextFields :setting="setting" part="views" :fonts="fonts" />
+        </SettingSection>
+
+        <SettingSection v-if="config.hasReadAll" v-model:enabled="setting.show_read_all" toggleable title="ปุ่มอ่านทั้งหมด" description="ปุ่ม/ลิงก์ไปหน้ารวมของรายการทั้งหมด">
+            <div>
+                <InputLabel value="ตำแหน่งที่แสดง" />
+                <OptionCardPicker v-model="article.read_all_position" name="read_all_position" :options="READ_ALL_POSITIONS" columns="grid-cols-3">
+                    <template #visual="{ option }">
+                        <div class="relative h-9 w-full rounded border border-gray-300 bg-gray-50">
+                            <span class="absolute h-1.5 w-6 rounded-sm bg-brand-500" :class="POSITION_BAR[option.value]" />
+                        </div>
+                    </template>
+                </OptionCardPicker>
+            </div>
+
+            <LangFieldGroup label="ข้อความแทน" :languages="languages" :description="`กรอกแทนข้อความ &quot;${READ_ALL_DEFAULT_TEXT}&quot; แยกตามภาษา — ไม่กรอกจะใช้ &quot;${READ_ALL_DEFAULT_TEXT}&quot;`">
+                <template #default="{ lang }">
+                    <TextInput v-model="article.read_all_text[lang.code]" :placeholder="READ_ALL_DEFAULT_TEXT" maxlength="100" />
+                    <InputError :message="errors[`read_all_text.${lang.code}`]" />
+                </template>
+            </LangFieldGroup>
+
+            <div>
+                <InputLabel value="ไอคอนที่แสดงร่วมกับข้อความ" />
+                <OptionCardPicker v-model="article.read_all_icon" name="read_all_icon" :options="READ_ALL_ICONS" columns="grid-cols-2 sm:grid-cols-4">
+                    <template #visual="{ option }">
+                        <component :is="readAllIconComponent(option.value)" v-if="readAllIconComponent(option.value)" class="size-6" />
+                        <span v-else class="text-lg leading-none text-gray-300">—</span>
+                    </template>
+                </OptionCardPicker>
+            </div>
+
+            <div v-if="setting.read_all_icon !== 'none'">
+                <InputLabel value="ตำแหน่งไอคอน" />
+                <OptionCardPicker v-model="article.read_all_icon_position" name="read_all_icon_position" :options="READ_ALL_ICON_POSITIONS" columns="grid-cols-2">
+                    <template #visual="{ option }">
+                        <ReadAllButton :text="sampleText" :icon="sampleIcon" :icon-position="option.value as 'before' | 'after'" style-type="link" small />
+                    </template>
+                </OptionCardPicker>
+            </div>
+
+            <div>
+                <InputLabel value="รูปแบบลิงก์" />
+                <OptionCardPicker v-model="article.read_all_style" name="read_all_style" :options="READ_ALL_STYLES" columns="grid-cols-3">
+                    <template #visual="{ option }">
+                        <ReadAllButton
+                            :text="sampleText"
+                            :icon="setting.read_all_icon ?? 'none'"
+                            :icon-position="setting.read_all_icon_position ?? 'after'"
+                            :style-type="option.value as 'button' | 'link' | 'pill'"
+                            small
+                        />
+                    </template>
+                </OptionCardPicker>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div class="sm:col-span-2">
+                    <InputLabel value="ลิงก์ URL ปลายทาง" :required="true" />
+                    <TextInput v-model="article.read_all_url" placeholder="https://example.com/news หรือ /th/news" maxlength="500" />
+                    <p class="mt-1 text-xs text-gray-500">ขึ้นต้นด้วย http://, https:// หรือ / (ภายหลังจะเลือกจากเมนูของหน้าบ้านได้)</p>
+                    <InputError :message="errors.read_all_url" />
+                </div>
+                <div>
+                    <InputLabel value="เป้าหมายการเปิดลิงก์" />
+                    <SearchableSelect v-model="article.read_all_link_target" :options="LINK_TARGET_OPTIONS" />
+                </div>
+            </div>
         </SettingSection>
 
         <SettingSection title="การเปิดลิงก์" description="ใช้ร่วมกับรูปภาพ หัวเรื่อง และข้อความเกริ่นนำที่ตั้งให้กดลิงก์ได้">

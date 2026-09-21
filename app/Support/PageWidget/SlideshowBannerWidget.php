@@ -2,22 +2,17 @@
 
 namespace App\Support\PageWidget;
 
-use App\Models\BannerCategoryInfo;
-use App\Models\BannerItemInfo;
 use App\Models\PageItemWidgetSlideshowBanner;
-use App\Support\Setting;
-use Illuminate\Database\Eloquent\Builder;
 
 /**
  * widget "Slideshow จาก banner" — ภาพเต็มภาพเดียวที่สไลด์ได้ ข้อมูลมาจากป้ายโฆษณา (banner_item_*) ของหมวดหมู่ที่เลือก
- * ตาราง `page_item_widget_slideshowbanner` (PK = `page_item_widget.id`) การตั้งค่าส่วนใหญ่อยู่ใน SlideshowWidget
+ * ตาราง `page_item_widget_slideshowbanner` (PK = `page_item_widget.id`) การตั้งค่าส่วนใหญ่อยู่ใน SlideshowWidget แหล่งข้อมูลอยู่ใน ReadsBanners
  */
 class SlideshowBannerWidget extends SlideshowWidget
 {
-    public const TYPE = 'slideshowbanner';
+    use ReadsBanners;
 
-    /** วันที่เผยแพร่ล่าสุด/เก่าสุด (เผยแพร่) และลำดับ (sort_order ของ banner) น้อยไปมาก/มากไปน้อย */
-    public const SORTS = ['publish_desc', 'publish_asc', 'order_asc', 'order_desc'];
+    public const TYPE = 'slideshowbanner';
 
     public function type(): string
     {
@@ -32,80 +27,5 @@ class SlideshowBannerWidget extends SlideshowWidget
     protected function model(): string
     {
         return PageItemWidgetSlideshowBanner::class;
-    }
-
-    protected function categoryField(): string
-    {
-        return 'banner_category_info_id';
-    }
-
-    protected function categoryTable(): string
-    {
-        return 'banner_category_info';
-    }
-
-    protected function categoryLabel(): string
-    {
-        return 'หมวดหมู่ banner';
-    }
-
-    protected function sorts(): array
-    {
-        return self::SORTS;
-    }
-
-    public function options(): array
-    {
-        $defaultLang = Setting::defaultLanguage();
-
-        // ชื่อหมวดหมู่ = ภาษาหลัก เรียงตามชื่อ (หมวดหมู่ banner ไม่มี sort_order)
-        $categories = BannerCategoryInfo::query()
-            ->join('banner_category_detail as d', function ($join) use ($defaultLang) {
-                $join->on('d.id', '=', 'banner_category_info.id')->where('d.lang', $defaultLang);
-            })
-            ->whereNull('d.deleted_at')
-            ->where('banner_category_info.status', 'Y')
-            ->orderBy('d.title')
-            ->get(['banner_category_info.id', 'd.title as title'])
-            ->map(fn ($row) => ['id' => (int) $row->id, 'title' => $row->title])
-            ->values()
-            ->all();
-
-        return ['banner_categories' => $categories];
-    }
-
-    protected function previewQuery(int $categoryId): Builder
-    {
-        $defaultLang = Setting::defaultLanguage();
-        $now = now();
-
-        return BannerItemInfo::query()
-            ->join('banner_item_detail as d', function ($join) use ($defaultLang) {
-                $join->on('d.id', '=', 'banner_item_info.id')->where('d.lang', $defaultLang);
-            })
-            // ต้องมีรูปที่ใช้งานได้ (ภาพคือตัวเนื้อหาของ slideshow)
-            ->join('file_info as img', function ($join) {
-                $join->on('img.id', '=', 'banner_item_info.intro_image_id')
-                    ->where('img.status', 'Y')
-                    ->whereNull('img.deleted_at');
-            })
-            ->whereNull('d.deleted_at') // join ตรง ไม่ผ่าน scope ของ model ต้องกันเองไม่ให้ดึงแถวที่ถูกลบ
-            ->where('banner_item_info.banner_category_info_id', $categoryId)
-            ->where('banner_item_info.status', 'Y')
-            ->where(fn ($q) => $q->whereNull('banner_item_info.publish_date')->orWhere('banner_item_info.publish_date', '<=', $now))
-            ->where(fn ($q) => $q->whereNull('banner_item_info.publish_down')->orWhere('banner_item_info.publish_down', '>', $now))
-            ->selectRaw("banner_item_info.id, img.hash_name as image, d.title, d.intro_text, (banner_item_info.url is not null and banner_item_info.url <> '') as has_link");
-    }
-
-    protected function orderPreview(Builder $query, string $sortBy): void
-    {
-        match ($sortBy) {
-            'publish_asc' => $query->orderByRaw('COALESCE(banner_item_info.publish_date, banner_item_info.created_at) asc'),
-            'order_asc' => $query->orderBy('banner_item_info.sort_order'),
-            'order_desc' => $query->orderByDesc('banner_item_info.sort_order'),
-            default => $query->orderByRaw('COALESCE(banner_item_info.publish_date, banner_item_info.created_at) desc'),
-        };
-
-        $query->orderBy('banner_item_info.id'); // tie-breaker ให้ลำดับเสถียร
     }
 }

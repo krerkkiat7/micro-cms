@@ -8,6 +8,7 @@ use App\Models\PageItemDetail;
 use App\Models\PageItemInfo;
 use App\Models\PageItemWidget;
 use App\Models\PageItemWidgetSlidesetArticle;
+use App\Models\PageItemWidgetSlidesetArticleDetail;
 use App\Support\PageWidget\PageWidgetRegistry;
 use Database\Seeders\DatabaseSeeder;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -80,11 +81,15 @@ test('the defaults follow the requested spec', function () {
         ->and($d['views_color'])->toBe('#667085')
         ->and($d['max_items'])->toBe(0)
         ->and($d['article_category_info_id'])->toBeNull()
-        ->and([$d['per_row_pc'], $d['per_row_notebook'], $d['per_row_tablet'], $d['per_row_mobile']])->toBe([4, 3, 2, 1]);
+        ->and([$d['per_row_pc'], $d['per_row_notebook'], $d['per_row_tablet'], $d['per_row_mobile']])->toBe([4, 3, 2, 1])
+        ->and($d['image_background'])->toBe('#F3F4F6')
+        ->and($d['show_read_all'])->toBe('N')
+        ->and($d['read_all_text'])->toBe(['th' => '', 'en' => '']);
 });
 
 test('every setting field has a column in the table and a fillable entry on the model (no drift)', function () {
-    $keys = array_keys(PageWidgetRegistry::find('slidesetarticle')->defaults());
+    // ฟิลด์แยกภาษา (read_all_text) อยู่ตาราง detail ไม่ใช่คอลัมน์ของตารางตั้งค่า
+    $keys = array_values(array_diff(array_keys(PageWidgetRegistry::find('slidesetarticle')->defaults()), ['read_all_text']));
     $columns = Schema::getColumnListing('page_item_widget_slidesetarticle');
     $fillable = (new PageItemWidgetSlidesetArticle)->getFillable();
 
@@ -211,7 +216,94 @@ test('slidesetarticle rejects invalid values', function (string $field, mixed $v
     'date color' => ['date_color', 'gray'],
     'views color transparent' => ['views_color', 'transparent'],
     'title color' => ['title_color', 'black'],
+    'image background' => ['image_background', 'gray'],
+    'read all position' => ['read_all_position', 'middle_left'],
+    'read all icon' => ['read_all_icon', 'star'],
+    'read all icon position' => ['read_all_icon_position', 'above'],
+    'read all style' => ['read_all_style', 'rounded'],
+    'read all target' => ['read_all_link_target', '_top'],
+    'read all url without scheme' => ['read_all_url', 'example.com/news'],
 ]);
+
+test('the read-all text is limited to 100 characters per language', function () {
+    actingAsUserWithPermissions(['page.item.manage']);
+
+    $this->put(route('admin.page.item.layout.update', $this->page->id), slidesetPayload($this->category->id, ['read_all_text' => ['th' => 'ก'.str_repeat('ข', 100)]]))
+        ->assertSessionHasErrors('rows.0.columns.0.widgets.0.setting.read_all_text.th');
+});
+
+test('the image background accepts a hex colour or transparent', function (string $color) {
+    actingAsUserWithPermissions(['page.item.manage']);
+
+    $this->put(route('admin.page.item.layout.update', $this->page->id), slidesetPayload($this->category->id, ['image_fit' => 'contain', 'image_background' => $color]))
+        ->assertSessionHasNoErrors();
+
+    expect(PageItemWidgetSlidesetArticle::findOrFail(newestSlideset()->id)->image_background)->toBe($color);
+})->with(['#F3F4F6', '#ffffff', 'transparent']);
+
+test('the read-all button settings are saved with a per-language text in the detail table', function () {
+    actingAsUserWithPermissions(['page.item.manage']);
+
+    $this->put(route('admin.page.item.layout.update', $this->page->id), slidesetPayload($this->category->id, [
+        'show_read_all' => 'Y', 'read_all_position' => 'top_right', 'read_all_icon' => 'plus_circle', 'read_all_icon_position' => 'before',
+        'read_all_style' => 'pill', 'read_all_url' => 'https://example.com/news', 'read_all_link_target' => '_blank',
+        'read_all_text' => ['th' => '  ดูข่าวทั้งหมด  ', 'en' => 'View all news'],
+    ]))->assertSessionHasNoErrors();
+
+    $widget = newestSlideset();
+    $row = PageItemWidgetSlidesetArticle::findOrFail($widget->id);
+    expect($row->show_read_all)->toBe('Y')
+        ->and($row->read_all_position)->toBe('top_right')
+        ->and($row->read_all_icon)->toBe('plus_circle')
+        ->and($row->read_all_icon_position)->toBe('before')
+        ->and($row->read_all_style)->toBe('pill')
+        ->and($row->read_all_url)->toBe('https://example.com/news')
+        ->and($row->read_all_link_target)->toBe('_blank')
+        ->and(PageItemWidgetSlidesetArticleDetail::where('id', $widget->id)->where('lang', 'th')->value('read_all_text'))->toBe('ดูข่าวทั้งหมด')
+        ->and(PageItemWidgetSlidesetArticleDetail::where('id', $widget->id)->where('lang', 'en')->value('read_all_text'))->toBe('View all news');
+
+    // แก้ข้อความซ้ำ = update แถวเดิม (composite key) ไม่สร้างซ้ำ; ล้างข้อความ = null
+    $this->put(route('admin.page.item.layout.update', $this->page->id), slidesetPayload($this->category->id, [
+        'show_read_all' => 'Y', 'read_all_url' => '/th/news', 'read_all_text' => ['th' => '', 'en' => 'All']],
+        ['id' => $widget->id],
+    ))->assertSessionHasNoErrors();
+
+    expect(PageItemWidgetSlidesetArticleDetail::where('id', $widget->id)->count())->toBe(2)
+        ->and(PageItemWidgetSlidesetArticleDetail::where('id', $widget->id)->where('lang', 'th')->value('read_all_text'))->toBeNull()
+        ->and(PageItemWidgetSlidesetArticleDetail::where('id', $widget->id)->where('lang', 'en')->value('read_all_text'))->toBe('All');
+});
+
+test('the read-all url is required only when the button is shown; an empty url is stored as null', function () {
+    actingAsUserWithPermissions(['page.item.manage']);
+    $url = route('admin.page.item.layout.update', $this->page->id);
+
+    $this->put($url, slidesetPayload($this->category->id, ['show_read_all' => 'Y', 'read_all_url' => '']))
+        ->assertSessionHasErrors('rows.0.columns.0.widgets.0.setting.read_all_url');
+    $this->put($url, slidesetPayload($this->category->id, ['show_read_all' => 'Y', 'read_all_url' => null]))
+        ->assertSessionHasErrors('rows.0.columns.0.widgets.0.setting.read_all_url');
+
+    foreach (['/th/news', '#top', 'mailto:a@b.com', 'tel:0812345678', 'HTTP://EXAMPLE.COM'] as $ok) {
+        $this->put($url, slidesetPayload($this->category->id, ['show_read_all' => 'Y', 'read_all_url' => $ok]))->assertSessionHasNoErrors();
+    }
+
+    $this->put($url, slidesetPayload($this->category->id, ['show_read_all' => 'N', 'read_all_url' => '']))->assertSessionHasNoErrors();
+    expect(PageItemWidgetSlidesetArticle::findOrFail(newestSlideset()->id)->read_all_url)->toBeNull();
+});
+
+test('the layout page serves the read-all text for every enabled language', function () {
+    actingAsUserWithPermissions(['page.item.view', 'page.item.manage']);
+    $this->put(route('admin.page.item.layout.update', $this->page->id), slidesetPayload($this->category->id, [
+        'show_read_all' => 'Y', 'read_all_url' => '/th/news', 'read_all_text' => ['th' => 'ดูทั้งหมด'],
+    ]))->assertSessionHasNoErrors();
+
+    $this->get(route('admin.page.item.layout', $this->page->id))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('rows.0.columns.0.widgets.0.setting.read_all_text.th', 'ดูทั้งหมด')
+            ->where('rows.0.columns.0.widgets.0.setting.read_all_text.en', '')
+            ->where('rows.0.columns.0.widgets.0.setting.read_all_url', '/th/news')
+        );
+});
 
 test('validation errors use the field labels', function () {
     actingAsUserWithPermissions(['page.item.manage']);

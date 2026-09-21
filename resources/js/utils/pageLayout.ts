@@ -264,7 +264,7 @@ export function createWidget(languages: LanguageOption[], widgetType: string): W
         status: 'Y',
         show_title: 'Y',
         widget_type: widgetType,
-        setting: defaultSetting(widgetType),
+        setting: defaultSetting(widgetType, languages.map((l) => l.code)),
         detail: emptyDetailMap(languages),
         ...newBackground(),
         ...defaultTextStyles('widget'),
