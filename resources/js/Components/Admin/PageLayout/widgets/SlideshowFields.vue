@@ -10,30 +10,40 @@ import {
     SLIDESHOW_ASPECT_OPTIONS,
     SLIDESHOW_EFFECT_OPTIONS,
     SLIDESHOW_INTERVAL_RANGE,
-    SLIDESHOW_SORT_OPTIONS,
     SLIDESHOW_SPEED_RANGE,
     SLIDESHOW_TEXT_ALIGN_OPTIONS,
     SLIDESHOW_TEXT_WIDTH_OPTIONS,
+    slideshowConfig,
 } from '@/utils/pageWidget';
-import type { SlideshowBannerSetting } from '@/utils/pageWidget';
+import type { SlideshowCommonSetting } from '@/utils/pageWidget';
 
 /**
- * ฟอร์มตั้งค่าเฉพาะของ widget "Slideshow จาก banner" (อยู่ในกล่องบนสุดของ dialog ตั้งค่า widget) — แก้ค่าบน `setting` ที่ส่งเข้ามาตรง ๆ
- * (เป็นสำเนา draft ของ dialog อยู่แล้ว) `errors` = ข้อความ error ตามชื่อฟิลด์จากตัวตรวจฝั่งหน้าจอ
+ * ฟอร์มตั้งค่าเฉพาะของ widget กลุ่ม Slideshow (จาก banner / จาก article — ตั้งค่าเหมือนกัน ต่างที่หมวดหมู่ที่ให้เลือกและตัวเลือกการเรียงลำดับ)
+ * อยู่ในกล่องบนสุดของ dialog ตั้งค่า widget — แก้ค่าบน `setting` ที่ส่งเข้ามาตรง ๆ (เป็นสำเนา draft ของ dialog อยู่แล้ว)
+ * `errors` = ข้อความ error ตามชื่อฟิลด์จากตัวตรวจฝั่งหน้าจอ
  */
 const props = defineProps<{
-    setting: SlideshowBannerSetting;
+    widgetType: string;
+    setting: SlideshowCommonSetting;
     categories: { id: number; title: string | null }[];
     errors: Record<string, string>;
 }>();
+
+const config = computed(() => slideshowConfig(props.widgetType)!);
+// ฟิลด์หมวดหมู่ใน setting ชื่อต่างกันตามประเภท (banner_category_info_id / article_category_info_id)
+const settingRecord = computed(() => props.setting as unknown as Record<string, number | null>);
 
 const categoryOptions = computed(() => props.categories.map((c) => ({ value: String(c.id), label: c.title || `หมวดหมู่ #${c.id}` })));
 
 // SearchableSelect ผูกกับ string เสมอ — แปลงจาก/เป็นเลข id (ยังไม่เลือก = '' ↔ null)
 const category = computed({
-    get: () => (props.setting.banner_category_info_id ? String(props.setting.banner_category_info_id) : ''),
+    get: () => {
+        const id = settingRecord.value[config.value.categoryKey];
+
+        return id ? String(id) : '';
+    },
     set: (value: string) => {
-        props.setting.banner_category_info_id = value === '' ? null : Number(value);
+        settingRecord.value[config.value.categoryKey] = value === '' ? null : Number(value);
     },
 });
 
@@ -58,14 +68,14 @@ const hasText = computed(() => props.setting.show_title === 'Y' || props.setting
     <div class="space-y-5">
         <div class="grid gap-4 sm:grid-cols-2">
             <div class="sm:col-span-2">
-                <InputLabel value="หมวดหมู่ banner" required />
-                <SearchableSelect v-model="category" :options="categoryOptions" placeholder="เลือกหมวดหมู่ banner" />
-                <p v-if="categories.length === 0" class="mt-1 text-xs text-amber-600">ยังไม่มีหมวดหมู่ banner ที่เปิดใช้งาน — สร้างที่เมนูป้ายโฆษณาก่อน</p>
-                <InputError :message="errors.banner_category_info_id" />
+                <InputLabel :value="config.categoryLabel" required />
+                <SearchableSelect v-model="category" :options="categoryOptions" :placeholder="`เลือก${config.categoryLabel}`" />
+                <p v-if="categories.length === 0" class="mt-1 text-xs text-amber-600">ยังไม่มี{{ config.categoryLabel }}ที่เปิดใช้งาน — สร้างที่เมนูของโมดูลนั้นก่อน</p>
+                <InputError :message="errors[config.categoryKey]" />
             </div>
             <div>
                 <InputLabel value="ลำดับการเรียงลำดับ" />
-                <SearchableSelect v-model="setting.sort_by" :options="SLIDESHOW_SORT_OPTIONS" />
+                <SearchableSelect v-model="setting.sort_by" :options="config.sortOptions" />
             </div>
             <div>
                 <InputLabel value="สัดส่วนภาพ" />
@@ -102,7 +112,7 @@ const hasText = computed(() => props.setting.show_title === 'Y' || props.setting
         <div class="space-y-3">
             <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-500">ลิงก์</h4>
             <div class="grid gap-4 sm:grid-cols-2">
-                <FlagField v-model="setting.is_clickable" label="กดลิงก์ได้" hint="ใช้ลิงก์ของ banner — banner ที่ไม่มีลิงก์จะกดไม่ได้" />
+                <FlagField v-model="setting.is_clickable" label="กดลิงก์ได้" :hint="config.linkHint" />
                 <div v-if="setting.is_clickable === 'Y'">
                     <InputLabel value="เป้าหมายการเปิดลิงก์" />
                     <SearchableSelect v-model="setting.link_target" :options="LINK_TARGET_OPTIONS" />
@@ -113,7 +123,7 @@ const hasText = computed(() => props.setting.show_title === 'Y' || props.setting
         <div class="space-y-3">
             <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-500">ข้อความบนภาพ</h4>
             <div class="grid gap-3 sm:grid-cols-2">
-                <FlagField v-model="setting.show_title" label="แสดงหัวเรื่องบนภาพ" hint="หัวเรื่องของ banner (ไม่ใช้แท็ก h1, h2 …)" />
+                <FlagField v-model="setting.show_title" label="แสดงหัวเรื่องบนภาพ" :hint="`หัวเรื่องของ${config.itemLabel} (ไม่ใช้แท็ก h1, h2 …)`" />
                 <FlagField v-model="setting.show_intro_text" label="แสดงข้อความเกริ่นนำบนภาพ" />
             </div>
             <div v-if="hasText" class="grid gap-4 sm:grid-cols-2">

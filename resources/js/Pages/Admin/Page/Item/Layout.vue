@@ -25,7 +25,7 @@ import {
     layoutFromServer,
     layoutToPayload,
 } from '@/utils/pageLayout';
-import type { ColumnData, ColumnSettings, RowData, RowSettings, ServerRow, WidgetData, WidgetSettings } from '@/utils/pageLayout';
+import type { ColumnData, ColumnSettings, RowData, RowSettings, ServerRow, WidgetData, WidgetOptions, WidgetSettings } from '@/utils/pageLayout';
 import type { FileItem, LanguageOption } from '@/types';
 
 const props = defineProps<{
@@ -46,7 +46,7 @@ const props = defineProps<{
     fonts: string[];
     fontsUrl: string;
     /** ข้อมูลประกอบฟอร์มตั้งค่า widget เฉพาะประเภท (จาก PageWidgetRegistry::options()) */
-    widgetOptions: { banner_categories: { id: number; title: string | null }[] };
+    widgetOptions: WidgetOptions;
     can: { manage: boolean };
 }>();
 
@@ -376,7 +376,7 @@ function formatDate(value: string | null): string {
             :widget="widgetAdd?.widget ?? null"
             :languages="languages"
             :fonts="fonts"
-            :banner-categories="widgetOptions.banner_categories"
+            :widget-options="widgetOptions"
             @close="widgetAdd = null"
             @back="backToWidgetPicker"
             @save="addWidget"
@@ -387,7 +387,7 @@ function formatDate(value: string | null): string {
             :widget="widgetDialog?.widget ?? null"
             :languages="languages"
             :fonts="fonts"
-            :banner-categories="widgetOptions.banner_categories"
+            :widget-options="widgetOptions"
             @close="widgetDialog = null"
             @save="saveWidget"
             @remove="removeWidget"

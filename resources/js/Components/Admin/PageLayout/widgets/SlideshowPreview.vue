@@ -3,21 +3,25 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import type { CSSProperties } from 'vue';
 import { ChevronLeft, ChevronRight, Link2 } from 'lucide-vue-next';
 import { useWidgetPreview } from '@/composables/useWidgetPreview';
-import type { SlideshowBannerSetting } from '@/utils/pageWidget';
+import { slideshowConfig } from '@/utils/pageWidget';
+import type { SlideshowCommonSetting } from '@/utils/pageWidget';
 
 /**
- * ตัวอย่างการแสดงผลของ widget "Slideshow จาก banner" ในหน้าโครงสร้าง — ข้อมูลจริงจาก banner ของหมวดหมู่ที่เลือก
+ * ตัวอย่างการแสดงผลของ widget กลุ่ม Slideshow (จาก banner / จาก article) ในหน้าโครงสร้าง — ข้อมูลจริงจากหมวดหมู่ที่เลือก
  * (ผ่าน endpoint ตัวอย่าง: เฉพาะที่เผยแพร่อยู่และมีรูป ตามลำดับที่ตั้งไว้) แสดงตามค่าตั้งค่าทั้งหมด (สัดส่วนภาพ ลูกศร จุด
  * ข้อความบนภาพ effect และเลื่อนอัตโนมัติ) ลูกศร/จุดกดเลื่อนดูได้ แต่ลิงก์เป็นแค่ป้ายบอกว่ามีลิงก์ — กดไม่ได้และไม่มี URL
  */
 const props = defineProps<{
-    setting: SlideshowBannerSetting;
+    widgetType: string;
+    setting: SlideshowCommonSetting;
 }>();
 
-const { items, loading, failed } = useWidgetPreview('slideshowbanner', () =>
-    props.setting.banner_category_info_id
-        ? { banner_category_info_id: props.setting.banner_category_info_id, sort_by: props.setting.sort_by }
-        : null,
+// คีย์หมวดหมู่ใน setting ต่างกันตามประเภท (banner_category_info_id / article_category_info_id)
+const config = slideshowConfig(props.widgetType)!;
+const categoryId = () => (props.setting as unknown as Record<string, number | null>)[config.categoryKey];
+
+const { items, loading, failed } = useWidgetPreview(props.widgetType, () =>
+    categoryId() ? { [config.categoryKey]: categoryId(), sort_by: props.setting.sort_by } : null,
 );
 
 const index = ref(0);
@@ -94,15 +98,15 @@ const showText = (i: number) =>
 </script>
 
 <template>
-    <div v-if="!setting.banner_category_info_id" class="rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 py-6 text-center text-xs text-gray-500">
-        ยังไม่ได้เลือกหมวดหมู่ banner
+    <div v-if="!categoryId()" class="rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 py-6 text-center text-xs text-gray-500">
+        ยังไม่ได้เลือก{{ config.categoryLabel }}
     </div>
     <div v-else-if="loading" class="flex items-center justify-center rounded-md bg-gray-100 text-xs text-gray-500" :style="frameStyle">กำลังโหลดตัวอย่าง…</div>
     <div v-else-if="failed" class="rounded-md border border-dashed border-red-200 bg-red-50 px-3 py-6 text-center text-xs text-red-600">
-        โหลดตัวอย่างไม่สำเร็จ (ตรวจสอบหมวดหมู่ banner ที่เลือก)
+        โหลดตัวอย่างไม่สำเร็จ (ตรวจสอบหมวดหมู่ที่เลือก)
     </div>
     <div v-else-if="count === 0" class="flex items-center justify-center rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 text-center text-xs text-gray-500" :style="frameStyle">
-        ไม่มี banner ที่เผยแพร่อยู่ในหมวดหมู่นี้
+        ไม่มี{{ config.itemLabel }}ที่เผยแพร่อยู่ในหมวดหมู่นี้
     </div>
 
     <div v-else class="relative select-none overflow-hidden rounded-md bg-gray-200" :style="frameStyle">

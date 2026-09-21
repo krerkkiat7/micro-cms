@@ -68,4 +68,10 @@ class PageItemWidget extends Model
     {
         return $this->hasOne(PageItemWidgetSlideshowBanner::class, 'id');
     }
+
+    /** การตั้งค่าเฉพาะของประเภท slideshowarticle */
+    public function slideshowArticle()
+    {
+        return $this->hasOne(PageItemWidgetSlideshowArticle::class, 'id');
+    }
 }

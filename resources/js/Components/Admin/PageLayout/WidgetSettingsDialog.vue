@@ -4,16 +4,16 @@ import { ArrowLeft, Trash2 } from 'lucide-vue-next';
 import LayoutDialog from './LayoutDialog.vue';
 import BackgroundFields from './BackgroundFields.vue';
 import TextFieldsSection from './TextFieldsSection.vue';
-import SlideshowBannerFields from './widgets/SlideshowBannerFields.vue';
+import SlideshowFields from './widgets/SlideshowFields.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
 import { SHOW_OPTIONS, cloneDeep, pickBackground, pickTextStyles } from '@/utils/pageLayout';
-import { validateSetting, widgetTypeLabel } from '@/utils/pageWidget';
-import type { SlideshowBannerSetting } from '@/utils/pageWidget';
-import type { WidgetData, WidgetSettings } from '@/utils/pageLayout';
+import { slideshowConfig, validateSetting, widgetTypeLabel } from '@/utils/pageWidget';
+import type { SlideshowCommonSetting } from '@/utils/pageWidget';
+import type { WidgetData, WidgetOptions, WidgetSettings } from '@/utils/pageLayout';
 import type { LanguageOption } from '@/types';
 
 /**
@@ -29,8 +29,8 @@ const props = defineProps<{
     languages: LanguageOption[];
     /** รายการชื่อฟอนต์ให้เลือก (จาก backend) */
     fonts: string[];
-    /** หมวดหมู่ banner ที่เลือกได้ (ใช้กับ widget ประเภทที่ดึงข้อมูลจาก banner) */
-    bannerCategories: { id: number; title: string | null }[];
+    /** ข้อมูลประกอบฟอร์มตั้งค่าเฉพาะประเภท เช่น รายการหมวดหมู่ banner/article ที่เลือกได้ (จาก PageWidgetRegistry::options()) */
+    widgetOptions: WidgetOptions;
 }>();
 
 const emit = defineEmits<{
@@ -69,6 +69,9 @@ watch(
 
 const typeLabel = computed(() => (draft.value ? widgetTypeLabel(draft.value.widget_type) : ''));
 
+// ประเภท Slideshow (จาก banner / จาก article) ใช้ฟอร์มเดียวกัน — รายการหมวดหมู่ที่ให้เลือกขึ้นกับประเภท
+const slideshow = computed(() => (draft.value ? slideshowConfig(draft.value.widget_type) : undefined));
+
 function confirm() {
     if (!draft.value) {
         return;
@@ -104,10 +107,11 @@ function remove() {
                     <span v-if="mode === 'edit'" class="text-xs text-gray-500">(เปลี่ยนประเภทไม่ได้)</span>
                 </header>
 
-                <SlideshowBannerFields
-                    v-if="draft.widget_type === 'slideshowbanner'"
-                    :setting="draft.setting as unknown as SlideshowBannerSetting"
-                    :categories="bannerCategories"
+                <SlideshowFields
+                    v-if="slideshow"
+                    :widget-type="draft.widget_type"
+                    :setting="draft.setting as unknown as SlideshowCommonSetting"
+                    :categories="widgetOptions[slideshow.optionsKey]"
                     :errors="errors"
                 />
                 <p v-else class="text-sm text-gray-500">Widget ประเภทนี้ไม่มีการตั้งค่าเฉพาะ</p>

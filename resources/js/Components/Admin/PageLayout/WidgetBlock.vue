@@ -2,11 +2,11 @@
 import { computed } from 'vue';
 import LayoutToolbar from './LayoutToolbar.vue';
 import LayoutTexts from './LayoutTexts.vue';
-import SlideshowBannerPreview from './widgets/SlideshowBannerPreview.vue';
+import SlideshowPreview from './widgets/SlideshowPreview.vue';
 import { usePageLayoutEditor } from '@/composables/usePageLayoutEditor';
 import { backgroundStyle, displayTitle } from '@/utils/pageLayout';
-import { widgetTypeLabel } from '@/utils/pageWidget';
-import type { SlideshowBannerSetting } from '@/utils/pageWidget';
+import { slideshowConfig, widgetTypeLabel } from '@/utils/pageWidget';
+import type { SlideshowCommonSetting } from '@/utils/pageWidget';
 import type { ColumnData, WidgetData } from '@/utils/pageLayout';
 
 /**
@@ -22,7 +22,7 @@ const props = defineProps<{
 const editor = usePageLayoutEditor();
 
 const title = computed(() => displayTitle(props.widget.detail, editor.languages, '(ไม่มีชื่อ)'));
-const slideshowBannerSetting = computed(() => props.widget.setting as unknown as SlideshowBannerSetting);
+const slideshowSetting = computed(() => props.widget.setting as unknown as SlideshowCommonSetting);
 </script>
 
 <template>
@@ -52,6 +52,11 @@ const slideshowBannerSetting = computed(() => props.widget.setting as unknown as
             class="mt-2"
         />
 
-        <SlideshowBannerPreview v-if="widget.widget_type === 'slideshowbanner'" :setting="slideshowBannerSetting" class="mt-3" />
+        <SlideshowPreview
+            v-if="slideshowConfig(widget.widget_type)"
+            :widget-type="widget.widget_type"
+            :setting="slideshowSetting"
+            class="mt-3"
+        />
     </div>
 </template>

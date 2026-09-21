@@ -37,7 +37,7 @@ export const WIDGET_TYPE_DEFS: WidgetTypeDef[] = [
         description: 'ภาพเต็มภาพเดียวที่สไลด์เปลี่ยนภาพได้ ข้อมูลจากบทความ (article)',
         layout: 'slideshow',
         source: 'article',
-        available: false,
+        available: true,
     },
     {
         value: 'slidesetbanner',
@@ -96,13 +96,12 @@ export function widgetTypeLabel(type: string): string {
     return widgetTypeDef(type)?.label ?? type;
 }
 
-// ---- Slideshow จาก banner ----
+// ---- Slideshow (จาก banner / จาก article) ----
 
 export type YesNo = 'Y' | 'N';
 
-export interface SlideshowBannerSetting {
-    /** หมวดหมู่ banner ที่ดึงมาแสดง (จำเป็นต้องเลือก) */
-    banner_category_info_id: number | null;
+/** ค่าตั้งค่าที่ Slideshow ทุกแหล่งข้อมูลมีเหมือนกัน (ต่างกันแค่คีย์หมวดหมู่และตัวเลือกการเรียงลำดับ) */
+export interface SlideshowCommonSetting {
     sort_by: 'publish_desc' | 'publish_asc' | 'order_asc' | 'order_desc';
     show_arrows: YesNo;
     show_dots: YesNo;
@@ -121,8 +120,18 @@ export interface SlideshowBannerSetting {
     text_width: 'full' | 'container';
 }
 
-export const SLIDESHOW_INTERVAL_RANGE = { min: 1, max: 60 } as const;
-export const SLIDESHOW_SPEED_RANGE = { min: 100, max: 3000 } as const;
+export interface SlideshowBannerSetting extends SlideshowCommonSetting {
+    /** หมวดหมู่ banner ที่ดึงมาแสดง (จำเป็นต้องเลือก) */
+    banner_category_info_id: number | null;
+}
+
+export interface SlideshowArticleSetting extends SlideshowCommonSetting {
+    /** หมวดหมู่ article ที่ดึงมาแสดง (จำเป็นต้องเลือก) */
+    article_category_info_id: number | null;
+}
+
+/** ค่าตั้งค่าของ Slideshow ประเภทใดก็ได้ — คีย์หมวดหมู่ขึ้นกับประเภท (ดู SLIDESHOW_TYPES) */
+export type SlideshowSetting = SlideshowBannerSetting | SlideshowArticleSetting;
 
 export const SLIDESHOW_SORT_OPTIONS = [
     { value: 'publish_desc', label: 'วันที่เผยแพร่ล่าสุด' },
@@ -130,6 +139,47 @@ export const SLIDESHOW_SORT_OPTIONS = [
     { value: 'order_asc', label: 'ลำดับน้อยไปมาก' },
     { value: 'order_desc', label: 'ลำดับมากไปน้อย' },
 ];
+
+export interface SlideshowTypeConfig {
+    /** ชื่อฟิลด์หมวดหมู่ใน setting (= คอลัมน์ในตารางตั้งค่าของประเภท) */
+    categoryKey: 'banner_category_info_id' | 'article_category_info_id';
+    /** คีย์รายการหมวดหมู่ใน `widgetOptions` ที่ backend ส่งมา */
+    optionsKey: 'banner_categories' | 'article_categories';
+    categoryLabel: string;
+    /** ตัวเลือกการเรียงลำดับที่ใช้ได้กับแหล่งข้อมูลนี้ (บทความไม่มีลำดับต่อรายการ จึงเรียงตามวันที่เผยแพร่ได้อย่างเดียว) */
+    sortOptions: { value: string; label: string }[];
+    /** ชื่อเรียกรายการที่ดึงมาแสดง (ใช้ในป้ายของฟอร์ม เช่น "หัวเรื่องของ banner") */
+    itemLabel: string;
+    /** คำอธิบายใต้ตัวเลือก "กดลิงก์ได้" */
+    linkHint: string;
+}
+
+/** ประเภท widget ที่เป็น Slideshow — ตรงกับ SlideshowBannerWidget / SlideshowArticleWidget ฝั่ง backend */
+export const SLIDESHOW_TYPES: Record<string, SlideshowTypeConfig> = {
+    slideshowbanner: {
+        categoryKey: 'banner_category_info_id',
+        optionsKey: 'banner_categories',
+        categoryLabel: 'หมวดหมู่ banner',
+        sortOptions: SLIDESHOW_SORT_OPTIONS,
+        itemLabel: 'banner',
+        linkHint: 'ใช้ลิงก์ของ banner — banner ที่ไม่มีลิงก์จะกดไม่ได้',
+    },
+    slideshowarticle: {
+        categoryKey: 'article_category_info_id',
+        optionsKey: 'article_categories',
+        categoryLabel: 'หมวดหมู่ article',
+        sortOptions: SLIDESHOW_SORT_OPTIONS.filter((o) => o.value.startsWith('publish_')),
+        itemLabel: 'บทความ',
+        linkHint: 'ลิงก์ไปหน้าบทความ — บทความที่ยังไม่มี slug จะกดไม่ได้',
+    },
+};
+
+export function slideshowConfig(type: string): SlideshowTypeConfig | undefined {
+    return SLIDESHOW_TYPES[type];
+}
+
+export const SLIDESHOW_INTERVAL_RANGE = { min: 1, max: 60 } as const;
+export const SLIDESHOW_SPEED_RANGE = { min: 100, max: 3000 } as const;
 
 export const SLIDESHOW_EFFECT_OPTIONS = [
     { value: 'slide', label: 'เลื่อน (Slide)' },
@@ -157,9 +207,9 @@ export const SLIDESHOW_TEXT_WIDTH_OPTIONS = [
 
 export { LINK_TARGET_OPTIONS };
 
-export function defaultSlideshowBannerSetting(): SlideshowBannerSetting {
-    return {
-        banner_category_info_id: null,
+/** ค่าตั้งค่าเริ่มต้นของ Slideshow ประเภทนั้น — ต้องตรงกับ `defaults()` ของ SlideshowWidget ฝั่ง backend */
+export function defaultSlideshowSetting(type: string): SlideshowSetting {
+    const common: SlideshowCommonSetting = {
         sort_by: 'publish_desc',
         show_arrows: 'Y',
         show_dots: 'Y',
@@ -175,15 +225,13 @@ export function defaultSlideshowBannerSetting(): SlideshowBannerSetting {
         text_align: 'center',
         text_width: 'container',
     };
+
+    return type === 'slideshowarticle' ? { ...common, article_category_info_id: null } : { ...common, banner_category_info_id: null };
 }
 
-/** ค่าตั้งค่าเริ่มต้นของ widget ประเภทนั้น (ประเภทที่ไม่มีการตั้งค่า = object ว่าง) — ต้องตรงกับ `defaults()` ฝั่ง backend */
+/** ค่าตั้งค่าเริ่มต้นของ widget ประเภทนั้น (ประเภทที่ไม่มีการตั้งค่า = object ว่าง) */
 export function defaultSetting(type: string): Record<string, unknown> {
-    if (type === 'slideshowbanner') {
-        return { ...defaultSlideshowBannerSetting() };
-    }
-
-    return {};
+    return slideshowConfig(type) ? { ...defaultSlideshowSetting(type) } : {};
 }
 
 /** ผสานค่าที่ backend ส่งมากับค่าเริ่มต้น (กันคีย์ขาดหาย) — PHP ส่ง array ว่างมาเป็น [] จึงรับได้ทั้ง array/object/null */
@@ -198,12 +246,13 @@ export function settingFromServer(type: string, setting: Record<string, unknown>
  */
 export function validateSetting(type: string, setting: Record<string, unknown>): Record<string, string> {
     const errors: Record<string, string> = {};
+    const config = slideshowConfig(type);
 
-    if (type === 'slideshowbanner') {
-        const s = setting as unknown as SlideshowBannerSetting;
+    if (config) {
+        const s = setting as unknown as SlideshowCommonSetting & Record<string, unknown>;
 
-        if (!s.banner_category_info_id) {
-            errors.banner_category_info_id = 'กรุณาเลือกหมวดหมู่ banner';
+        if (!s[config.categoryKey]) {
+            errors[config.categoryKey] = `กรุณาเลือก${config.categoryLabel}`;
         }
 
         if (!Number.isInteger(s.autoplay_interval) || s.autoplay_interval < SLIDESHOW_INTERVAL_RANGE.min || s.autoplay_interval > SLIDESHOW_INTERVAL_RANGE.max) {

@@ -10,7 +10,7 @@
 |---|--------|-----------|-------|
 | 1 | หน้าเพจ (ข้อมูลทั่วไป) | `page_item_info`, `page_item_detail` | 🟢 schema + controller/route/UI (list, add, edit) เสร็จครบ |
 | 2 | โครงสร้าง แถว → คอลัมน์ → widget | `page_item_row/column/widget` + `*_detail` | 🟢 schema + หน้าจัดโครงสร้างแบบเห็นผลจริง + บันทึกเสร็จ |
-| 3 | ประเภท widget และการตั้งค่าเฉพาะประเภท | `page_item_widget.widget_type` + `page_item_widget_<ประเภท>` | 🟡 โครงระบบเสร็จ + ประเภท `slideshowbanner` เสร็จ; อีก 6 ประเภทรอทำ (§3) |
+| 3 | ประเภท widget และการตั้งค่าเฉพาะประเภท | `page_item_widget.widget_type` + `page_item_widget_<ประเภท>` | 🟡 โครงระบบเสร็จ + ประเภท `slideshowbanner`, `slideshowarticle` เสร็จ; อีก 5 ประเภทรอทำ (§3) |
 | 4 | การแสดงผลหน้าบ้านตาม slug/โครงสร้าง | (front-office) | 🔴 ยังไม่ได้ทำ |
 
 ---
@@ -222,7 +222,7 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 | ประเภท (`widget_type`) | การแสดงผล / แหล่งข้อมูล | สถานะ |
 |------------------------|--------------------------|-------|
 | `slideshowbanner` | Slideshow — ภาพเต็มภาพเดียวสไลด์ได้ จาก banner | 🟢 เสร็จ |
-| `slideshowarticle` | Slideshow จาก article | 🔴 เร็ว ๆ นี้ |
+| `slideshowarticle` | Slideshow — ภาพเต็มภาพเดียวสไลด์ได้ จาก article (ตั้งค่าเหมือน `slideshowbanner`) | 🟢 เสร็จ |
 | `slidesetbanner` / `slidesetarticle` | Slideset — การ์ดที่เลื่อนได้ จาก banner / article | 🔴 เร็ว ๆ นี้ |
 | `gridbanner` / `gridarticle` | Grid — กล่องเรียงต่อเนื่อง จาก banner / article | 🔴 เร็ว ๆ นี้ |
 | `customtext` | Custom Text — กรอกเนื้อหาเอง คล้าย part ของบทความ (ตารางแยก + ข้อมูลแยกภาษา) | 🔴 เร็ว ๆ นี้ |
@@ -242,7 +242,7 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
    (endpoint ตัวอย่างไม่ส่ง URL มาเลย); ดึงผ่าน `GET admin.page.item.widget.preview` (สิทธิ์ `page.item.view`, ไม่บันทึก log) โดย `composables/useWidgetPreview.ts`
    (cache ตามค่าตั้งค่า, ล้างเมื่อเข้าหน้าโครงสร้างใหม่)
 
-### `slideshowbanner` — Slideshow จาก banner
+### `slideshowbanner` — Slideshow จาก banner (และ `slideshowarticle` — ดูหัวข้อถัดไป)
 
 ตาราง `page_item_widget_slideshowbanner` (migration `2026_09_21_000001_*`; มี audit + timestamps + softDeletes ไม่มี `status` เพราะอยู่ที่ตัว widget):
 
@@ -261,9 +261,21 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 
 - **ข้อมูลที่แสดง** (`SlideshowBannerWidget::preview()`, ตัวกรองเดียวกับที่หน้าบ้านจะใช้): banner ของหมวดหมู่นั้นที่ `status = Y`, ไม่ถูกลบ, มีรูป (ไฟล์ใช้งานได้),
   อยู่ในช่วงเผยแพร่ (`publish_date` ว่างหรือ ≤ ตอนนี้ และ `publish_down` ว่างหรือ > ตอนนี้), ชื่อ/เกริ่นนำเป็นของภาษาหลัก — ตัวอย่างในหน้าโครงสร้างแสดงสูงสุด 10 ใบ
-- ตัวอย่าง (`widgets/SlideshowBannerPreview.vue`): กรอบตามสัดส่วนภาพ, ลูกศร/จุดกดเลื่อนดูได้, effect ด้วย CSS transition, เลื่อนอัตโนมัติตามระยะค้าง,
-  สถานะ "ยังไม่ได้เลือกหมวดหมู่" / "ไม่มี banner ที่เผยแพร่อยู่ในหมวดหมู่นี้" / กำลังโหลด; ฟอร์มตั้งค่าอยู่ที่ `widgets/SlideshowBannerFields.vue`
-- ตัวเลือก/ช่วงค่า/ค่าเริ่มต้นต้องตรงกันระหว่าง `App\Support\PageWidget\SlideshowBannerWidget` และ `resources/js/utils/pageWidget.ts`
+- ตัวอย่าง (`widgets/SlideshowPreview.vue` ใช้ร่วมกับ `slideshowarticle`): กรอบตามสัดส่วนภาพ, ลูกศร/จุดกดเลื่อนดูได้, effect ด้วย CSS transition, เลื่อนอัตโนมัติตามระยะค้าง,
+  สถานะ "ยังไม่ได้เลือกหมวดหมู่" / "ไม่มี banner ที่เผยแพร่อยู่ในหมวดหมู่นี้" / กำลังโหลด; ฟอร์มตั้งค่าอยู่ที่ `widgets/SlideshowFields.vue` (ใช้ร่วมกับ `slideshowarticle`)
+- ตัวเลือก/ช่วงค่า/ค่าเริ่มต้นต้องตรงกันระหว่าง `App\Support\PageWidget\SlideshowWidget` (คลาสแม่ที่ `SlideshowBannerWidget`/`SlideshowArticleWidget` สืบทอด) และ `resources/js/utils/pageWidget.ts`
+  (`SLIDESHOW_TYPES` = คีย์หมวดหมู่/ตัวเลือกการเรียงลำดับ/ข้อความของแต่ละแหล่งข้อมูล)
+
+### `slideshowarticle` — Slideshow จาก article
+
+ตาราง `page_item_widget_slideshowarticle` (migration `2026_09_21_000002_*`) โครงเดียวกับ `slideshowbanner` ทุกคอลัมน์ ต่างกัน 3 เรื่อง:
+
+- หมวดหมู่ = `article_category_info_id` (FK → `article_category_info`, ตั้งชื่อ FK เอง `pi_widget_slideshowarticle_category_foreign` เพราะชื่ออัตโนมัติยาวเกิน 64 ตัวอักษรของ MySQL);
+  รายการหมวดหมู่ที่ให้เลือกเรียงตาม `sort_order` ของหมวดหมู่ แล้วชื่อ
+- **เรียงลำดับได้เฉพาะ `publish_desc` / `publish_asc`** — บทความไม่มีคอลัมน์ "ลำดับ" ต่อรายการ (มีแต่หมวดหมู่) จึงไม่มีตัวเลือก `order_asc`/`order_desc` (backend ปฏิเสธ); ถ้าต้องการเรียงตามลำดับ
+  ต้องเพิ่ม `sort_order` ให้ `article_item_info` ก่อน
+- **ข้อมูลที่แสดง** (`SlideshowArticleWidget::preview()`): บทความของหมวดหมู่นั้นที่ `status = Y`, ไม่ถูกลบ, **มีรูปหน้าปก** (`intro_image_id` ที่ไฟล์ใช้งานได้ — บทความไม่มีรูปหน้าปกไม่ถูกแสดง),
+  อยู่ในช่วงเผยแพร่, ชื่อ/เกริ่นนำเป็นของภาษาหลัก; "กดลิงก์ได้" = ลิงก์ไปหน้าบทความ (`has_link` = บทความมี slug ของภาษานั้น — หน้าบ้านยังไม่ทำ ตัวอย่างจึงแสดงแค่ป้าย "ลิงก์")
 
 ### โครงระบบประเภท widget (เพิ่มประเภทใหม่)
 
@@ -285,6 +297,6 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 |-----|--------|-------|
 | 0 — schema | `page_item_info/detail` + `page_item_row/column/widget` + `*_detail` + `PageSeeder` ตัวอย่าง | ✅ เสร็จ |
 | 1 — CRUD หน้าเพจ + จัดโครงสร้าง | list/add/edit (ข้อมูลทั่วไป + SEO) + แท็บโครงสร้าง (แถว/คอลัมน์/widget, ลากเรียง, ตั้งค่า, พื้นหลัง, บันทึก) | ✅ เสร็จ |
-| **2 — ประเภท widget** | โครงระบบประเภท widget (ตารางแยกต่อประเภท + registry + dialog เลือกประเภท/ตั้งค่า + ตัวอย่าง) + `slideshowbanner` | ✅ เสร็จ (ประเภทแรก) |
-| 2.1 — ประเภท widget ที่เหลือ | `slideshowarticle`, `slidesetbanner/article`, `gridbanner/article`, `customtext` | 🔴 ยังไม่เริ่ม |
+| **2 — ประเภท widget** | โครงระบบประเภท widget (ตารางแยกต่อประเภท + registry + dialog เลือกประเภท/ตั้งค่า + ตัวอย่าง) + `slideshowbanner` + `slideshowarticle` | ✅ เสร็จ |
+| 2.1 — ประเภท widget ที่เหลือ | `slidesetbanner/article`, `gridbanner/article`, `customtext` | 🔴 ยังไม่เริ่ม |
 | 3 — หน้าบ้าน | แสดงหน้าเพจตาม slug + โครงสร้าง (grid 12) ที่ `front.*` | 🔴 ยังไม่เริ่ม |

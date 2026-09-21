@@ -82,6 +82,12 @@ export interface RowData extends BackgroundFields, TextStyles {
     columns: ColumnData[];
 }
 
+/** ข้อมูลประกอบฟอร์มตั้งค่า widget เฉพาะประเภท (PageWidgetRegistry::options() ฝั่ง backend) — รายการหมวดหมู่ที่เลือกได้ */
+export interface WidgetOptions {
+    banner_categories: { id: number; title: string | null }[];
+    article_categories: { id: number; title: string | null }[];
+}
+
 /** ค่าที่ dialog ตั้งค่าของแต่ละชั้นแก้ไขได้ (ไม่รวมลูก) — dialog แก้บนสำเนาแล้วส่งกลับเมื่อกด "ตกลง" */
 export type RowSettings = Pick<RowData, 'detail' | 'show_title' | 'use_container'> & BackgroundFields & TextStyles;
 export type ColumnSettings = Pick<ColumnData, 'detail' | 'show_title' | 'column_size'> & BackgroundFields & TextStyles;

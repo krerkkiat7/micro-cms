@@ -18,7 +18,7 @@ class PageWidgetRegistry
         if (self::$types === null) {
             self::$types = [];
 
-            foreach ([new SlideshowBannerWidget] as $type) {
+            foreach ([new SlideshowBannerWidget, new SlideshowArticleWidget] as $type) {
                 self::$types[$type->type()] = $type;
             }
         }
