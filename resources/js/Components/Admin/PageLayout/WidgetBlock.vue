@@ -3,10 +3,11 @@ import { computed } from 'vue';
 import LayoutToolbar from './LayoutToolbar.vue';
 import LayoutTexts from './LayoutTexts.vue';
 import SlideshowPreview from './widgets/SlideshowPreview.vue';
+import SlidesetPreview from './widgets/SlidesetPreview.vue';
 import { usePageLayoutEditor } from '@/composables/usePageLayoutEditor';
 import { backgroundStyle, displayTitle } from '@/utils/pageLayout';
-import { slideshowConfig, widgetTypeLabel } from '@/utils/pageWidget';
-import type { SlideshowCommonSetting } from '@/utils/pageWidget';
+import { slideshowConfig, slidesetConfig, widgetTypeLabel } from '@/utils/pageWidget';
+import type { SlideshowCommonSetting, SlidesetSetting } from '@/utils/pageWidget';
 import type { ColumnData, WidgetData } from '@/utils/pageLayout';
 
 /**
@@ -23,6 +24,7 @@ const editor = usePageLayoutEditor();
 
 const title = computed(() => displayTitle(props.widget.detail, editor.languages, '(ไม่มีชื่อ)'));
 const slideshowSetting = computed(() => props.widget.setting as unknown as SlideshowCommonSetting);
+const slidesetSetting = computed(() => props.widget.setting as unknown as SlidesetSetting);
 </script>
 
 <template>
@@ -58,5 +60,6 @@ const slideshowSetting = computed(() => props.widget.setting as unknown as Slide
             :setting="slideshowSetting"
             class="mt-3"
         />
+        <SlidesetPreview v-else-if="slidesetConfig(widget.widget_type)" :widget-type="widget.widget_type" :setting="slidesetSetting" class="mt-3" />
     </div>
 </template>

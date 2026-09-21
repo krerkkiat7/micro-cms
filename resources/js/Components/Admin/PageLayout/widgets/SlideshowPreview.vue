@@ -128,7 +128,7 @@ const showText = (i: number) =>
         <div v-else class="relative select-none overflow-hidden rounded-md bg-gray-200" :style="frameStyle">
             <div v-for="(item, i) in items" :key="item.id" class="absolute inset-0" :style="slideStyle(i)" :aria-hidden="i !== index">
                 <img
-                    :src="route('admin.system.file.get.thumbnail.size', { size: 960, hashname: item.image })"
+                    :src="route('admin.system.file.get.thumbnail.size', { size: 960, hashname: item.image ?? '' })"
                     :alt="item.title"
                     class="size-full object-cover"
                     draggable="false"

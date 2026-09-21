@@ -5,14 +5,15 @@ import LayoutDialog from './LayoutDialog.vue';
 import BackgroundFields from './BackgroundFields.vue';
 import TextFieldsSection from './TextFieldsSection.vue';
 import SlideshowFields from './widgets/SlideshowFields.vue';
+import SlidesetFields from './widgets/SlidesetFields.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
 import { SHOW_OPTIONS, cloneDeep, pickBackground, pickTextStyles } from '@/utils/pageLayout';
-import { slideshowConfig, validateSetting, widgetTypeLabel } from '@/utils/pageWidget';
-import type { SlideshowCommonSetting } from '@/utils/pageWidget';
+import { slideshowConfig, slidesetConfig, validateSetting, widgetTypeLabel } from '@/utils/pageWidget';
+import type { SlideshowCommonSetting, SlidesetSetting } from '@/utils/pageWidget';
 import type { WidgetData, WidgetOptions, WidgetSettings } from '@/utils/pageLayout';
 import type { LanguageOption } from '@/types';
 
@@ -71,6 +72,8 @@ const typeLabel = computed(() => (draft.value ? widgetTypeLabel(draft.value.widg
 
 // ประเภท Slideshow (จาก banner / จาก article) ใช้ฟอร์มเดียวกัน — รายการหมวดหมู่ที่ให้เลือกขึ้นกับประเภท
 const slideshow = computed(() => (draft.value ? slideshowConfig(draft.value.widget_type) : undefined));
+// Slideset (การ์ดเลื่อนได้) มีฟอร์มของตัวเองเพราะมีฟิลด์ตั้งค่ามาก
+const slideset = computed(() => (draft.value ? slidesetConfig(draft.value.widget_type) : undefined));
 
 function confirm() {
     if (!draft.value) {
@@ -112,6 +115,14 @@ function remove() {
                     :widget-type="draft.widget_type"
                     :setting="draft.setting as unknown as SlideshowCommonSetting"
                     :categories="widgetOptions[slideshow.optionsKey]"
+                    :fonts="fonts"
+                    :errors="errors"
+                />
+                <SlidesetFields
+                    v-else-if="slideset"
+                    :widget-type="draft.widget_type"
+                    :setting="draft.setting as unknown as SlidesetSetting"
+                    :categories="widgetOptions[slideset.optionsKey]"
                     :fonts="fonts"
                     :errors="errors"
                 />

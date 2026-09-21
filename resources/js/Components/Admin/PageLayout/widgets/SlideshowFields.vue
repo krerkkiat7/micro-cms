@@ -16,7 +16,7 @@ import {
     SLIDESHOW_TEXT_ALIGN_OPTIONS,
     SLIDESHOW_TEXT_WIDTH_OPTIONS,
     slideshowConfig,
-    slideshowTextStyle,
+    settingTextStyle,
 } from '@/utils/pageWidget';
 import type { SlideshowCommonSetting } from '@/utils/pageWidget';
 
@@ -73,8 +73,8 @@ const maxItems = computed({
 });
 
 // ตัวอักษรของหัวเรื่อง/ข้อความเกริ่นนำบนภาพ มองเป็น TextStyle (ขนาด/ฟอนต์/สี) ให้ใช้กับ TextStyleFields
-const titleStyle = computed(() => slideshowTextStyle(props.setting, 'title'));
-const introStyle = computed(() => slideshowTextStyle(props.setting, 'intro_text'));
+const titleStyle = computed(() => settingTextStyle(props.setting, 'title'));
+const introStyle = computed(() => settingTextStyle(props.setting, 'intro_text'));
 
 const interval = numberModel('autoplay_interval');
 const speed = numberModel('transition_speed');

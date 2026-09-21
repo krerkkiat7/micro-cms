@@ -52,10 +52,10 @@ export const WIDGET_TYPE_DEFS: WidgetTypeDef[] = [
     {
         value: 'slidesetarticle',
         label: 'Slideset จาก article',
-        description: 'การ์ดหลายใบที่เลื่อนดูได้ ข้อมูลจากบทความ (article)',
+        description: 'การ์ดบทความหลายใบที่เลื่อนดูได้ (รูป หัวเรื่อง ข้อความเกริ่นนำ วันที่ จำนวนเข้าชม) ข้อมูลจากบทความ (article)',
         layout: 'slideset',
         source: 'article',
-        available: false,
+        available: true,
     },
     {
         value: 'gridbanner',
@@ -151,7 +151,8 @@ export const SLIDESHOW_SORT_OPTIONS = [
     { value: 'order_desc', label: 'ลำดับมากไปน้อย' },
 ];
 
-export interface SlideshowTypeConfig {
+/** ส่วนที่ widget "ดึงรายการจากหมวดหมู่" ทุกกลุ่ม (Slideshow / Slideset) ใช้ร่วมกัน — ตรงกับ CategoryListWidget ฝั่ง backend */
+export interface ListTypeConfig {
     /** ชื่อฟิลด์หมวดหมู่ใน setting (= คอลัมน์ในตารางตั้งค่าของประเภท) */
     categoryKey: 'banner_category_info_id' | 'article_category_info_id';
     /** คีย์รายการหมวดหมู่ใน `widgetOptions` ที่ backend ส่งมา */
@@ -159,10 +160,13 @@ export interface SlideshowTypeConfig {
     categoryLabel: string;
     /** ตัวเลือกการเรียงลำดับที่ใช้ได้กับแหล่งข้อมูลนี้ (บทความไม่มีลำดับต่อรายการ จึงเรียงตามวันที่เผยแพร่ได้อย่างเดียว) */
     sortOptions: { value: string; label: string }[];
-    /** คำอธิบายใต้ "แสดงหัวเรื่องบนภาพ" */
-    titleHint: string;
     /** ข้อความเมื่อหมวดหมู่ที่เลือกไม่มีรายการที่เผยแพร่อยู่ (ในตัวอย่าง) */
     emptyText: string;
+}
+
+export interface SlideshowTypeConfig extends ListTypeConfig {
+    /** คำอธิบายใต้ "แสดงหัวเรื่องบนภาพ" */
+    titleHint: string;
     /** คำอธิบายใต้ตัวเลือก "กดลิงก์ได้" */
     linkHint: string;
 }
@@ -192,6 +196,103 @@ export const SLIDESHOW_TYPES: Record<string, SlideshowTypeConfig> = {
 export function slideshowConfig(type: string): SlideshowTypeConfig | undefined {
     return SLIDESHOW_TYPES[type];
 }
+
+// ---- Slideset (การ์ดหลายใบที่เลื่อนได้) ----
+
+/** ค่าตั้งค่าของ Slideset จาก article — ชื่อฟิลด์ตรงกับคอลัมน์ `page_item_widget_slidesetarticle` (ดู SlidesetArticleWidget) */
+export interface SlidesetSetting {
+    article_category_info_id: number | null;
+    sort_by: 'publish_desc' | 'publish_asc';
+    /** จำนวนที่แสดงสูงสุด (0 = แสดงทั้งหมด) */
+    max_items: number;
+    show_arrows: YesNo;
+    show_dots: YesNo;
+    autoplay: YesNo;
+    autoplay_interval: number;
+    transition_speed: number;
+    /** จำนวนการ์ดต่อแถวตามขนาดหน้าจอ (1 - 6) */
+    per_row_pc: number;
+    per_row_notebook: number;
+    per_row_tablet: number;
+    per_row_mobile: number;
+    show_image: YesNo;
+    aspect_ratio: '16:9' | '21:9' | '4:3' | '1:1';
+    image_fit: 'cover' | 'contain';
+    image_clickable: YesNo;
+    link_target: '_self' | '_blank';
+    show_title: YesNo;
+    title_font_size: number;
+    title_bold: YesNo;
+    title_font_family: string;
+    title_color: string;
+    title_align: 'left' | 'center' | 'right';
+    title_clickable: YesNo;
+    title_lines: number;
+    show_intro_text: YesNo;
+    intro_text_font_size: number;
+    intro_text_bold: YesNo;
+    intro_text_font_family: string;
+    intro_text_color: string;
+    intro_text_align: 'left' | 'center' | 'right';
+    intro_text_clickable: YesNo;
+    intro_text_lines: number;
+    show_date: YesNo;
+    date_font_size: number;
+    date_bold: YesNo;
+    date_font_family: string;
+    date_color: string;
+    show_views: YesNo;
+    views_font_size: number;
+    views_bold: YesNo;
+    views_font_family: string;
+    views_color: string;
+}
+
+/** ประเภท widget ที่เป็น Slideset — ตรงกับ SlidesetArticleWidget ฝั่ง backend */
+export const SLIDESET_TYPES: Record<string, ListTypeConfig> = {
+    slidesetarticle: {
+        categoryKey: 'article_category_info_id',
+        optionsKey: 'article_categories',
+        categoryLabel: 'หมวดหมู่ article',
+        sortOptions: SLIDESHOW_SORT_OPTIONS.filter((o) => o.value.startsWith('publish_')),
+        emptyText: 'ไม่มีบทความที่เผยแพร่อยู่ในหมวดหมู่นี้',
+    },
+};
+
+export function slidesetConfig(type: string): ListTypeConfig | undefined {
+    return SLIDESET_TYPES[type];
+}
+
+/** หมวดหมู่/ตัวเลือกร่วมของ widget ที่ดึงรายการจากหมวดหมู่ (Slideshow หรือ Slideset) */
+export function listConfig(type: string): ListTypeConfig | undefined {
+    return slideshowConfig(type) ?? slidesetConfig(type);
+}
+
+export const SLIDESET_PER_ROW_RANGE = { min: 1, max: 6 } as const;
+
+/** ขนาดหน้าจอที่กำหนดจำนวนการ์ดต่อแถว (breakpoint = ความกว้างหน้าจอขั้นต่ำ px — ตรงกับ Tailwind xl/lg/md ที่หน้าบ้านจะใช้) */
+export const SLIDESET_DEVICES = [
+    { key: 'pc', label: 'PC', range: '1280 px ขึ้นไป', minWidth: 1280 },
+    { key: 'notebook', label: 'Notebook', range: '1024 - 1279 px', minWidth: 1024 },
+    { key: 'tablet', label: 'Tablet', range: '768 - 1023 px', minWidth: 768 },
+    { key: 'mobile', label: 'Mobile', range: 'ต่ำกว่า 768 px', minWidth: 0 },
+] as const;
+
+export type SlidesetDevice = (typeof SLIDESET_DEVICES)[number]['key'];
+
+/** ขนาดหน้าจอที่ตรงกับความกว้างหน้าต่างเบราว์เซอร์ตอนนี้ — ใช้เป็นค่าเริ่มต้นของตัวเลือกดูตัวอย่างตามขนาดหน้าจอ */
+export function currentDevice(width: number = typeof window === 'undefined' ? 1280 : window.innerWidth): SlidesetDevice {
+    return SLIDESET_DEVICES.find((d) => width >= d.minWidth)!.key;
+}
+
+export const SLIDESET_LINES_OPTIONS = [1, 2, 3].map((n) => ({ value: String(n), label: `${n} บรรทัด` }));
+
+export const SLIDESET_PER_ROW_OPTIONS = [1, 2, 3, 4, 5, 6].map((n) => ({ value: String(n), label: `${n} รายการ` }));
+
+export const SLIDESET_IMAGE_FIT_OPTIONS = [
+    { value: 'cover', label: 'Cover — เต็มกรอบ (ครอปส่วนเกิน)' },
+    { value: 'contain', label: 'Contain — เห็นทั้งภาพ (เว้นขอบ)' },
+];
 
 export const SLIDESHOW_INTERVAL_RANGE = { min: 1, max: 60 } as const;
 export const SLIDESHOW_MAX_ITEMS_LIMIT = 1000;
@@ -253,9 +354,62 @@ export function defaultSlideshowSetting(type: string): SlideshowSetting {
     return type === 'slideshowarticle' ? { ...common, article_category_info_id: null } : { ...common, banner_category_info_id: null };
 }
 
+/** ค่าตั้งค่าเริ่มต้นของ Slideset จาก article — ต้องตรงกับ `fields()` ของ SlidesetArticleWidget ฝั่ง backend */
+export function defaultSlidesetSetting(): SlidesetSetting {
+    return {
+        article_category_info_id: null,
+        sort_by: 'publish_desc',
+        max_items: 0,
+        show_arrows: 'Y',
+        show_dots: 'Y',
+        autoplay: 'N',
+        autoplay_interval: 5,
+        transition_speed: 500,
+        per_row_pc: 4,
+        per_row_notebook: 3,
+        per_row_tablet: 2,
+        per_row_mobile: 1,
+        show_image: 'Y',
+        aspect_ratio: '16:9',
+        image_fit: 'cover',
+        image_clickable: 'Y',
+        link_target: '_self',
+        show_title: 'Y',
+        title_font_size: 18,
+        title_bold: 'Y',
+        title_font_family: 'Sarabun',
+        title_color: '#000000',
+        title_align: 'left',
+        title_clickable: 'Y',
+        title_lines: 1,
+        show_intro_text: 'Y',
+        intro_text_font_size: 14,
+        intro_text_bold: 'N',
+        intro_text_font_family: 'Sarabun',
+        intro_text_color: '#000000',
+        intro_text_align: 'left',
+        intro_text_clickable: 'N',
+        intro_text_lines: 2,
+        show_date: 'Y',
+        date_font_size: 12,
+        date_bold: 'N',
+        date_font_family: 'Sarabun',
+        date_color: '#667085',
+        show_views: 'N',
+        views_font_size: 12,
+        views_bold: 'N',
+        views_font_family: 'Sarabun',
+        views_color: '#667085',
+    };
+}
+
 /** ค่าตั้งค่าเริ่มต้นของ widget ประเภทนั้น (ประเภทที่ไม่มีการตั้งค่า = object ว่าง) */
 export function defaultSetting(type: string): Record<string, unknown> {
-    return slideshowConfig(type) ? { ...defaultSlideshowSetting(type) } : {};
+    if (slideshowConfig(type)) {
+        return { ...defaultSlideshowSetting(type) };
+    }
+
+    return slidesetConfig(type) ? { ...defaultSlidesetSetting() } : {};
 }
 
 /** ผสานค่าที่ backend ส่งมากับค่าเริ่มต้น (กันคีย์ขาดหาย) — PHP ส่ง array ว่างมาเป็น [] จึงรับได้ทั้ง array/object/null */
@@ -270,7 +424,7 @@ export function settingFromServer(type: string, setting: Record<string, unknown>
  */
 export function validateSetting(type: string, setting: Record<string, unknown>): Record<string, string> {
     const errors: Record<string, string> = {};
-    const config = slideshowConfig(type);
+    const config = listConfig(type);
 
     if (config) {
         const s = setting as unknown as SlideshowCommonSetting & Record<string, unknown>;
@@ -290,20 +444,27 @@ export function validateSetting(type: string, setting: Record<string, unknown>):
         if (!Number.isInteger(s.transition_speed) || s.transition_speed < SLIDESHOW_SPEED_RANGE.min || s.transition_speed > SLIDESHOW_SPEED_RANGE.max) {
             errors.transition_speed = `ความเร็วในการเปลี่ยนภาพต้องอยู่ระหว่าง ${SLIDESHOW_SPEED_RANGE.min} - ${SLIDESHOW_SPEED_RANGE.max} มิลลิวินาที`;
         }
+
+        if (slidesetConfig(type)) {
+            SLIDESET_DEVICES.forEach(({ key, label }) => {
+                const value = s[`per_row_${key}`] as number;
+
+                if (!Number.isInteger(value) || value < SLIDESET_PER_ROW_RANGE.min || value > SLIDESET_PER_ROW_RANGE.max) {
+                    errors[`per_row_${key}`] = `จำนวนที่แสดงต่อแถว (${label}) ต้องอยู่ระหว่าง ${SLIDESET_PER_ROW_RANGE.min} - ${SLIDESET_PER_ROW_RANGE.max}`;
+                }
+            });
+        }
     }
 
     return errors;
 }
 
-/** ส่วนของข้อความบนภาพที่จัดรูปแบบตัวอักษรได้ */
-export type SlideshowTextPart = 'title' | 'intro_text';
-
 /**
- * มองฟิลด์ตัวอักษรแบบแบน (`title_font_size` ฯลฯ) ของ setting เป็น `TextStyle` (ขนาด/ฟอนต์/สี — ไม่มีการจัดตำแหน่ง เพราะใช้ `text_align` ร่วมกันทั้งสองส่วน)
- * ให้ใช้กับ TextStyleFields ได้ตรง ๆ — อ่าน/เขียนผ่าน object เดิมของ setting เสมอ
+ * มองฟิลด์ตัวอักษรแบบแบนของ setting (`<part>_font_size`, `<part>_font_family`, `<part>_color` และ `<part>_align` ถ้ามี) เป็น `TextStyle`
+ * ให้ใช้กับ TextStyleFields ได้ตรง ๆ — อ่าน/เขียนผ่าน object เดิมของ setting เสมอ (ส่วนที่ไม่มี `<part>_align` ใช้ซ่อนตัวเลือกจัดตำแหน่งด้วย show-align=false)
  */
-export function slideshowTextStyle(setting: SlideshowCommonSetting, part: SlideshowTextPart): TextStyle {
-    const record = setting as unknown as Record<string, number | string>;
+export function settingTextStyle(setting: object, part: string): TextStyle {
+    const record = setting as Record<string, number | string>;
 
     return reactive({
         get font_size() {
@@ -324,6 +485,13 @@ export function slideshowTextStyle(setting: SlideshowCommonSetting, part: Slides
         set color(value: string) {
             record[`${part}_color`] = value;
         },
-        align: setting.text_align,
+        get align() {
+            return (record[`${part}_align`] ?? 'left') as TextStyle['align'];
+        },
+        set align(value: TextStyle['align']) {
+            if (`${part}_align` in record) {
+                record[`${part}_align`] = value;
+            }
+        },
     }) as TextStyle;
 }

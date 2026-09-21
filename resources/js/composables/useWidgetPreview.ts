@@ -9,12 +9,15 @@ import type { Ref } from 'vue';
  */
 export interface PreviewItem {
     id: number;
-    /** hash_name ของรูป (ใช้ประกอบ URL ผ่าน route admin.system.file.get.thumbnail.size) */
-    image: string;
+    /** hash_name ของรูป (ใช้ประกอบ URL ผ่าน route admin.system.file.get.thumbnail.size) — null = ไม่มีรูป (เฉพาะ widget ที่ไม่บังคับรูป เช่น Slideset) */
+    image: string | null;
     title: string;
     intro_text: string;
-    /** มีลิงก์หรือไม่ — ไม่ส่ง URL มาเลย (ตัวอย่างกดไม่ได้) */
-    has_link: boolean;
+    /** มีลิงก์หรือไม่ (Slideshow) — ไม่ส่ง URL มาเลย (ตัวอย่างกดไม่ได้) */
+    has_link?: boolean;
+    /** วันที่เผยแพร่ Y-m-d และจำนวนเข้าชม (Slideset จาก article) */
+    date?: string | null;
+    views?: number;
 }
 
 /** จำนวนรายการสูงสุดที่ backend ส่งมาเป็นตัวอย่าง (ตรงกับ SlideshowWidget::PREVIEW_LIMIT) */

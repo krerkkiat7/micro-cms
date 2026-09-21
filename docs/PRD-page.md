@@ -10,7 +10,7 @@
 |---|--------|-----------|-------|
 | 1 | หน้าเพจ (ข้อมูลทั่วไป) | `page_item_info`, `page_item_detail` | 🟢 schema + controller/route/UI (list, add, edit) เสร็จครบ |
 | 2 | โครงสร้าง แถว → คอลัมน์ → widget | `page_item_row/column/widget` + `*_detail` | 🟢 schema + หน้าจัดโครงสร้างแบบเห็นผลจริง + บันทึกเสร็จ |
-| 3 | ประเภท widget และการตั้งค่าเฉพาะประเภท | `page_item_widget.widget_type` + `page_item_widget_<ประเภท>` | 🟡 โครงระบบเสร็จ + ประเภท `slideshowbanner`, `slideshowarticle` เสร็จ; อีก 5 ประเภทรอทำ (§3) |
+| 3 | ประเภท widget และการตั้งค่าเฉพาะประเภท | `page_item_widget.widget_type` + `page_item_widget_<ประเภท>` | 🟡 โครงระบบเสร็จ + ประเภท `slideshowbanner`, `slideshowarticle`, `slidesetarticle` เสร็จ; อีก 4 ประเภทรอทำ (§3) |
 | 4 | การแสดงผลหน้าบ้านตาม slug/โครงสร้าง | (front-office) | 🔴 ยังไม่ได้ทำ |
 
 ---
@@ -223,7 +223,8 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 |------------------------|--------------------------|-------|
 | `slideshowbanner` | Slideshow — ภาพเต็มภาพเดียวสไลด์ได้ จาก banner | 🟢 เสร็จ |
 | `slideshowarticle` | Slideshow — ภาพเต็มภาพเดียวสไลด์ได้ จาก article (ตั้งค่าเหมือน `slideshowbanner`) | 🟢 เสร็จ |
-| `slidesetbanner` / `slidesetarticle` | Slideset — การ์ดที่เลื่อนได้ จาก banner / article | 🔴 เร็ว ๆ นี้ |
+| `slidesetarticle` | Slideset — การ์ดบทความที่เลื่อนได้ (รูป/หัวเรื่อง/เกริ่นนำ/วันที่/เข้าชม) จาก article | 🟢 เสร็จ |
+| `slidesetbanner` | Slideset จาก banner | 🔴 เร็ว ๆ นี้ |
 | `gridbanner` / `gridarticle` | Grid — กล่องเรียงต่อเนื่อง จาก banner / article | 🔴 เร็ว ๆ นี้ |
 | `customtext` | Custom Text — กรอกเนื้อหาเอง คล้าย part ของบทความ (ตารางแยก + ข้อมูลแยกภาษา) | 🔴 เร็ว ๆ นี้ |
 | `placeholder` | ประเภทเดิมก่อนมีประเภทจริง (**legacy**) — ไม่มีตารางตั้งค่า โหลด/บันทึกได้แต่เลือกสร้างใหม่ไม่ได้ | — |
@@ -280,14 +281,44 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 - **ข้อมูลที่แสดง** (`SlideshowArticleWidget::preview()`): บทความของหมวดหมู่นั้นที่ `status = Y`, ไม่ถูกลบ, **มีรูปหน้าปก** (`intro_image_id` ที่ไฟล์ใช้งานได้ — บทความไม่มีรูปหน้าปกไม่ถูกแสดง),
   อยู่ในช่วงเผยแพร่, ชื่อ/เกริ่นนำเป็นของภาษาหลัก; "กดลิงก์ได้" = ลิงก์ไปหน้าบทความ — **บทความทุกใบมีลิงก์ ไม่ขึ้นกับว่ามี slug หรือไม่** (`has_link` เป็น true เสมอ; หน้าบ้านยังไม่ทำ ตัวอย่างจึงแสดงแค่ป้าย "ลิงก์")
 
+### `slidesetarticle` — Slideset จาก article
+
+การ์ดบทความหลายใบที่เลื่อนดูได้ — ตาราง `page_item_widget_slidesetarticle` (migration `2026_09_23_000001_*`; FK หมวดหมู่ตั้งชื่อเอง `pi_widget_slidesetarticle_category_foreign`)
+class `SlidesetArticleWidget extends CategoryListWidget` (ใช้ trait `ReadsArticles` ร่วมกับ `slideshowarticle`: หมวดหมู่ article, เรียงได้เฉพาะวันที่เผยแพร่, query บทความที่เผยแพร่อยู่)
+
+**หน้าตั้งค่า** (`widgets/SlidesetFields.vue`) มีฟิลด์มาก จึงแบ่งเป็นการ์ด (`SettingSection.vue`): ข้อมูลที่แสดง · จำนวนที่แสดงต่อแถว (ตามขนาดหน้าจอ) · การเลื่อน ·
+ส่วนของการ์ดที่ **ติ๊กแสดง/ซ่อนได้ทีละส่วน** (ซ่อนแล้วพับรายละเอียดทิ้ง): รูปภาพ · หัวเรื่อง · ข้อความเกริ่นนำ · วันที่เผยแพร่ · จำนวนเข้าชม · การเปิดลิงก์
+
+| กลุ่ม | คอลัมน์ (ค่าเริ่มต้น) |
+|-------|------------------------|
+| ข้อมูล | `article_category_info_id` (**จำเป็นต้องเลือก**), `sort_by` (`publish_desc`/`publish_asc`), `max_items` (0 - 1000, **ว่างหรือ 0 = แสดงทั้งหมด**) |
+| จำนวนต่อแถว | `per_row_pc` (4) / `per_row_notebook` (3) / `per_row_tablet` (2) / `per_row_mobile` (1) — 1 - 6; breakpoint: PC ≥ 1280 px, Notebook 1024 - 1279, Tablet 768 - 1023, Mobile < 768 (`SLIDESET_DEVICES`) |
+| การเลื่อน | `show_arrows` (Y), `show_dots` (Y — จุดอยู่ใต้การ์ด เป็นพื้นที่ด้านล่าง ไม่ซ้อนบนการ์ด), `autoplay` (N), `autoplay_interval` (5 วินาที, 1 - 60), `transition_speed` (500 ms, 100 - 3000) |
+| รูปภาพ | `show_image` (Y), `aspect_ratio` (16:9 / 21:9 / 4:3 / 1:1), `image_fit` (`cover`/`contain`), `image_clickable` (Y) |
+| หัวเรื่อง | `show_title` (Y), `title_font_size` (18), `title_bold` (Y), `title_font_family` (Sarabun), `title_color` (**`#000000`**), `title_align` (left), `title_clickable` (Y), `title_lines` (**1**, ช่วง 1 - 3 เกินตัดด้วย ...) |
+| ข้อความเกริ่นนำ | `show_intro_text` (Y), `intro_text_font_size` (14), `intro_text_bold` (N), `intro_text_font_family`, `intro_text_color` (**`#000000`**), `intro_text_align` (left), `intro_text_clickable` (N), `intro_text_lines` (**2**, 1 - 3) |
+| วันที่เผยแพร่ | `show_date` (Y), `date_font_size` (12), `date_bold` (N), `date_font_family`, `date_color` (**เทา `#667085`**) |
+| จำนวนเข้าชม | `show_views` (N), `views_font_size` (12), `views_bold` (N), `views_font_family`, `views_color` (**เทา `#667085`**) |
+| ลิงก์ | `link_target` (`_self`/`_blank`) — **ใช้ร่วมกัน**ทั้งรูป/หัวเรื่อง/ข้อความเกริ่นนำที่ตั้งให้กดลิงก์ได้ (ลิงก์ไปหน้าบทความ) |
+
+- ชื่อคอลัมน์ตัวอักษรตาม `PageTextStyle` (`<part>_font_size` ฯลฯ) ฟอนต์ = ชุดเดียวกับหัวเรื่องของแถว/คอลัมน์ สีเป็น hex เท่านั้น; วันที่/จำนวนเข้าชมไม่มีจัดตำแหน่ง — แถววันที่/เข้าชมใช้ตำแหน่งเดียวกับ `title_align`
+- **ข้อมูลที่แสดง** (`SlidesetArticleWidget::preview()`): บทความที่เผยแพร่อยู่ของหมวดหมู่ (เหมือน slideshowarticle) แต่ **ไม่บังคับมีรูปหน้าปก** (ไม่มีรูปแสดงกรอบเทา + ไอคอน);
+  ส่ง `id, image, title, intro_text, date (วันที่เผยแพร่ Y-m-d, ถ้าไม่มีใช้วันที่สร้าง), views (view_amount)` — ไม่ส่ง URL
+- **ตัวอย่าง** (`widgets/SlidesetPreview.vue`): การ์ดตามค่าตั้งค่าทั้งหมด; เลื่อนทีละ "หน้า" (ครั้งละเท่าจำนวนต่อแถว, หน้าสุดท้ายถอยให้เต็มแถว, จุด = จำนวนหน้า, วนกลับหน้าแรก);
+  มีตัวเลือก **ดูตามขนาดหน้าจอ** (PC/Notebook/Tablet/Mobile — ค่าเริ่มต้นตามความกว้างหน้าต่างที่เปิดอยู่) เพื่อดูจำนวนการ์ดต่อแถวของแต่ละขนาด; ตัดข้อความด้วย `line-clamp-1/2/3`,
+  ข้อความเกริ่นนำคงการขึ้นบรรทัดใหม่; ลิงก์เป็นแค่ไอคอน (กดไม่ได้)
+- โครงคลาสของ widget กลุ่มที่ดึงจากหมวดหมู่: `App\Support\PageWidget\SettingsWidget` (ประกาศฟิลด์ครั้งเดียวใน `fields()` → ได้ rules/messages/defaults/บันทึก/แปลงข้อมูลให้เอง
+  ข้อความ error ใช้ป้ายชื่อของฟิลด์) → `CategoryListWidget` (หมวดหมู่ + เรียงลำดับ + จำนวนสูงสุด + carousel + preview) → `SlideshowWidget` / `SlidesetArticleWidget`;
+  เทสต์ตรวจว่าฟิลด์ทุกตัวมีคอลัมน์และอยู่ใน `$fillable` (กันหลุดเมื่อเพิ่มฟิลด์)
+
 ### โครงระบบประเภท widget (เพิ่มประเภทใหม่)
 
-ทุกอย่างของแต่ละประเภทรวมอยู่ในคลาสเดียว `App\Support\PageWidget\<ชื่อ>Widget implements PageWidgetType` (กฎ validation, ค่าเริ่มต้น, บันทึก/ลบ, แปลงเป็นข้อมูลส่งหน้าจอ,
+ทุกอย่างของแต่ละประเภทรวมอยู่ในคลาสเดียว `App\Support\PageWidget\<ชื่อ>Widget` (extends `SettingsWidget` / `CategoryListWidget` ซึ่ง implements `PageWidgetType`) (กฎ validation, ค่าเริ่มต้น, บันทึก/ลบ, แปลงเป็นข้อมูลส่งหน้าจอ,
 ตัวเลือกประกอบฟอร์ม เช่น รายการหมวดหมู่, ข้อมูลตัวอย่าง) ลงทะเบียนใน `PageWidgetRegistry` — `PageLayoutSync`, `UpdatePageItemLayoutRequest`, `PageItemController` เรียกผ่านทะเบียนนี้
 ไม่รู้จักประเภทใดโดยเฉพาะ. เพิ่มประเภทใหม่:
 
 1. migration ตาราง `page_item_widget_<ประเภท>` (PK = `page_item_widget.id`, FK cascade) + model + relation บน `PageItemWidget`
-2. คลาส `<ชื่อ>Widget` + ลงทะเบียนใน `PageWidgetRegistry::all()`
+2. คลาส `<ชื่อ>Widget` (ประกาศฟิลด์ใน `fields()`) + ลงทะเบียนใน `PageWidgetRegistry::all()` — ตารางประเภทที่มีฟิลด์มาก ๆ ให้ตั้งชื่อ FK เอง (ชื่ออัตโนมัติยาวเกิน 64 ตัวอักษรของ MySQL)
 3. `resources/js/utils/pageWidget.ts`: เปลี่ยน `available: true` ใน `WIDGET_TYPE_DEFS`, เพิ่ม interface/ค่าเริ่มต้น (`defaultSetting`)/ตัวตรวจ (`validateSetting`)
 4. component ฟอร์มตั้งค่า + ตัวอย่างใน `Components/Admin/PageLayout/widgets/` แล้วผูกใน `WidgetSettingsDialog.vue` / `WidgetBlock.vue`
 5. เทสต์ (ดู `tests/Feature/Admin/Page/PageItemWidgetTest.php`) + อัปเดตตารางด้านบน
@@ -301,5 +332,5 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 | 0 — schema | `page_item_info/detail` + `page_item_row/column/widget` + `*_detail` + `PageSeeder` ตัวอย่าง | ✅ เสร็จ |
 | 1 — CRUD หน้าเพจ + จัดโครงสร้าง | list/add/edit (ข้อมูลทั่วไป + SEO) + แท็บโครงสร้าง (แถว/คอลัมน์/widget, ลากเรียง, ตั้งค่า, พื้นหลัง, บันทึก) | ✅ เสร็จ |
 | **2 — ประเภท widget** | โครงระบบประเภท widget (ตารางแยกต่อประเภท + registry + dialog เลือกประเภท/ตั้งค่า + ตัวอย่าง) + `slideshowbanner` + `slideshowarticle` | ✅ เสร็จ |
-| 2.1 — ประเภท widget ที่เหลือ | `slidesetbanner/article`, `gridbanner/article`, `customtext` | 🔴 ยังไม่เริ่ม |
+| 2.1 — ประเภท widget ที่เหลือ | `slidesetbanner`, `gridbanner/article`, `customtext` | 🔴 ยังไม่เริ่ม |
 | 3 — หน้าบ้าน | แสดงหน้าเพจตาม slug + โครงสร้าง (grid 12) ที่ `front.*` | 🔴 ยังไม่เริ่ม |
