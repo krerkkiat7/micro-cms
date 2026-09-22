@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\SysSetting;
+use App\Providers\AppServiceProvider;
 use App\Support\Setting;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +27,7 @@ function validSitePayload(array $overrides = []): array
         'copyright_owner' => '',
         'lang_selected' => ['th', 'en'],
         'lang_default' => 'th',
+        'timezone' => '',
     ], $overrides);
 }
 
@@ -150,4 +152,52 @@ test('Setting::selectedLanguages and defaultLanguage fall back to th,en / th whe
 
     expect(Setting::selectedLanguages())->toBe(['th', 'en']);
     expect(Setting::defaultLanguage())->toBe('th');
+});
+
+// ---------------------------------------------------------------- โซนเวลา (timezone)
+
+test('saving a valid timezone identifier persists it', function () {
+    actingAsUserWithPermissions(['system.setting.manage']);
+
+    $this->put(route('admin.system.setting.update.site'), validSitePayload(['timezone' => 'Asia/Bangkok']))
+        ->assertRedirect();
+
+    $this->assertDatabaseHas('sys_setting', ['group' => 'site', 'name' => 'timezone', 'value' => 'Asia/Bangkok']);
+});
+
+test('an unknown timezone identifier is rejected', function () {
+    actingAsUserWithPermissions(['system.setting.manage']);
+
+    $this->put(route('admin.system.setting.update.site'), validSitePayload(['timezone' => 'Asia/Fakeville']))
+        ->assertInvalid(['timezone']);
+});
+
+test('the timezone field is optional — leaving it empty is stored as null', function () {
+    actingAsUserWithPermissions(['system.setting.manage']);
+
+    $this->put(route('admin.system.setting.update.site'), validSitePayload(['timezone' => '']))
+        ->assertSessionHasNoErrors();
+
+    expect(SysSetting::query()->where('group', 'site')->where('name', 'timezone')->value('value'))->toBeNull();
+});
+
+test('Setting::timezoneOptions lists every PHP timezone identifier as value/label pairs', function () {
+    $options = Setting::timezoneOptions();
+
+    expect($options)->toHaveCount(count(DateTimeZone::listIdentifiers()));
+    expect(collect($options)->firstWhere('value', 'Asia/Bangkok'))->toBe(['value' => 'Asia/Bangkok', 'label' => 'Asia/Bangkok']);
+});
+
+test('a timezone saved in sys_setting is applied on the next application boot (AppServiceProvider::applyTimezoneSetting)', function () {
+    actingAsUserWithPermissions(['system.setting.manage']);
+
+    $this->put(route('admin.system.setting.update.site'), validSitePayload(['timezone' => 'Pacific/Auckland']))
+        ->assertRedirect();
+
+    // จำลอง "boot ครั้งถัดไป" (เช่น request ใหม่) โดยไม่ reboot ทั้งแอป (จะทำให้ SQLite :memory: หลุดข้อมูลที่ seed ไว้) —
+    // register() provider เดิมซ้ำบน container ที่ boot แล้วจะเรียก boot() ให้ใหม่ทันที (ดู Application::register())
+    $this->app->register(AppServiceProvider::class, force: true);
+
+    expect(config('app.timezone'))->toBe('Pacific/Auckland')
+        ->and(date_default_timezone_get())->toBe('Pacific/Auckland');
 });

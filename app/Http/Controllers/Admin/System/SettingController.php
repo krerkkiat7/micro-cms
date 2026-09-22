@@ -65,6 +65,7 @@ class SettingController extends Controller
             'settings' => $settings,
             'logoFile' => $this->fileToArray($settings->get('site')?->get('logo_id')),
             'faviconFile' => $this->fileToArray($settings->get('site')?->get('favicon_id')),
+            'timezoneOptions' => Setting::timezoneOptions(),
         ]);
     }
 

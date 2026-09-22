@@ -284,6 +284,17 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   หน้าโครงสร้างโหลดฟอนต์ไทยจาก Bunny Fonts (`fontsUrl`)
   **ข้อควรระวัง:** ห้ามตั้งชื่อ prop ของ Vue component ว่า `style`/`class` แล้วส่งค่า object เข้ามา — Vue ถือเป็น attribute พิเศษและ
   คัดลอก object ให้ก่อนส่ง (ค่าที่ component แก้ไม่ถึง object เดิม; เคยทำให้ตัวตั้งค่าตัวอักษรใน dialog แถว/คอลัมน์/widget ไม่ทำงาน แก้เป็น `textStyle`)
+- **timezone ของระบบ** — Laravel เดิมฮาร์ดโค้ด `config('app.timezone')` เป็น `UTC` (ไม่มี `APP_TIMEZONE` ให้ตั้งผ่าน `.env` เลย) ทำให้
+  `now()`/`Carbon::now()` ทั้งระบบผิดเพี้ยนจากเวลาไทยจริงอยู่ 7 ชั่วโมง (เคยทำให้บทความที่ตั้งวันที่เผยแพร่เป็นเวลาไทย "ตอนนี้" ไม่ขึ้นใน
+  widget ที่กรองตามช่วงเผยแพร่ จนกว่าจะตั้งเวลาย้อนไปหลายชั่วโมง — `resources/js/Components/Admin/DateTimeInput.vue` ไม่มีการแปลง timezone
+  ใด ๆ ส่งค่าที่พิมพ์ดิบ ๆ ไปเก็บในคอลัมน์ `dateTime` ของ MySQL ตรง ๆ) ตอนนี้ timezone เป็นลำดับชั้น: **(1) `sys_setting` กลุ่ม `site`
+  คอลัมน์ `timezone`** (ตั้งได้ที่หน้าตั้งค่าระบบ → ฟิลด์ "โซนเวลา", ตัวเลือกจาก `Setting::timezoneOptions()` = `DateTimeZone::listIdentifiers()`
+  ทั้งหมด ผ่าน SearchableSelect) **> (2) `.env` `APP_TIMEZONE`** (ค่าแนะนำของโปรเจกต์ = `Asia/Bangkok`, ตั้งไว้ใน `.env.example`/`.env` แล้ว)
+  **> (3) ค่า default ของ php.ini** — `config/app.php` ตั้งค่าฐาน (`'timezone' => env('APP_TIMEZONE', date_default_timezone_get())`)
+  แล้ว `App\Providers\AppServiceProvider::applyTimezoneSetting()` (คู่กับ `applySmtpSetting()` ที่มีอยู่แล้ว pattern เดียวกัน — เช็ก
+  `Schema::hasTable('sys_setting')` กันพังตอนยังไม่ migrate) override ทับอีกชั้นถ้ามีค่าใน `sys_setting` ทำงานทุก request/คำสั่ง artisan
+  เพราะ provider boot ทำงานทั้ง HTTP และ console — **ข้อมูลเดิมใน DB ไม่ต้อง migrate ย้อนหลัง** เพราะค่าที่เคยพิมพ์ไว้ก็คือเวลาไทยที่ตั้งใจ
+  อยู่แล้ว ปัญหาอยู่ที่การคำนวณ "ตอนนี้" เพื่อเปรียบเทียบเท่านั้น
 
 ## ทดสอบ
 

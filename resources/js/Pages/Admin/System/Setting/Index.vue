@@ -27,6 +27,8 @@ interface Props {
     };
     logoFile: FileItem | null;
     faviconFile: FileItem | null;
+    /** รายชื่อ timezone identifier ทั้งหมดที่ PHP รู้จัก — ใช้กับ SearchableSelect ของฟิลด์ "โซนเวลา" */
+    timezoneOptions: { value: string; label: string }[];
 }
 
 const props = defineProps<Props>();
@@ -57,6 +59,8 @@ const siteForm = useForm({
     favicon_id: props.faviconFile?.id ?? null,
     copyright_year: props.settings.site?.copyright_year ?? '',
     copyright_owner: props.settings.site?.copyright_owner ?? '',
+    // ว่าง = ไม่ระบุ (cascade ไปใช้ .env APP_TIMEZONE หรือ php.ini ต่อไป — ดู config/app.php)
+    timezone: props.settings.site?.timezone ?? '',
     // เก็บรวมเป็น 1 record คั่นด้วย , ในฐานข้อมูล (ดู App\Support\Setting::selectedLanguages()) — ฝั่งฟอร์มแยกเป็น array
     lang_selected: (props.settings.site?.lang_selected ?? 'th,en').split(',').filter(Boolean),
     lang_default: props.settings.site?.lang_default ?? 'th',
@@ -70,6 +74,9 @@ const availableDefaultLanguages = computed(() =>
 const availableDefaultLanguageOptions = computed(() =>
     availableDefaultLanguages.value.map((lang) => ({ value: lang.code, label: `${lang.label} (${lang.code})` })),
 );
+
+// เพิ่มตัวเลือก "ไม่ระบุ" ไว้ตัวแรกให้เลือกกลับไปว่างได้ (ว่าง = cascade ไปใช้ .env/php.ini แทน — ดู config/app.php)
+const timezoneSelectOptions = computed(() => [{ value: '', label: 'ไม่ระบุ (ใช้ค่าจาก .env / เซิร์ฟเวอร์)' }, ...props.timezoneOptions]);
 
 function toggleLang(code: string) {
     const idx = siteForm.lang_selected.indexOf(code);
@@ -254,6 +261,16 @@ function submitLoginBack() {
                         <InputLabel for="lang_default" value="ภาษาหลัก" required />
                         <SearchableSelect id="lang_default" v-model="siteForm.lang_default" :options="availableDefaultLanguageOptions" />
                         <InputError :message="siteForm.errors.lang_default" />
+                    </div>
+
+                    <div class="sm:col-span-3">
+                        <InputLabel for="timezone" value="โซนเวลา" />
+                        <SearchableSelect id="timezone" v-model="siteForm.timezone" :options="timezoneSelectOptions" />
+                        <p class="mt-1 text-xs text-gray-500">
+                            ใช้คำนวณ "เวลาปัจจุบัน" ทั้งระบบ (เช่น วันที่เผยแพร่บทความ/ป้ายโฆษณา) — ไม่ระบุจะใช้ค่าจาก .env
+                            (<code>APP_TIMEZONE</code>) หรือค่าเริ่มต้นของเซิร์ฟเวอร์แทน
+                        </p>
+                        <InputError :message="siteForm.errors.timezone" />
                     </div>
                 </div>
 

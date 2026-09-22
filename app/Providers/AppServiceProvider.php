@@ -35,6 +35,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->applySmtpSetting();
+        $this->applyTimezoneSetting();
     }
 
     /**
@@ -75,5 +76,26 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Config::set('mail.default', 'smtp');
+    }
+
+    /**
+     * โซนเวลาของระบบ — ลำดับความสำคัญ: sys_setting (กลุ่ม site คอลัมน์ timezone) มาก่อนเสมอถ้าตั้งไว้ > `.env` (`APP_TIMEZONE`)
+     * > ค่า default ของ php.ini (ตั้งเป็น config('app.timezone') ไว้แล้วตามลำดับนี้ตั้งแต่ config/app.php — ดูคอมเมนต์ที่นั่น)
+     * เมธอดนี้ override ชั้นบนสุดเมื่อมีค่าตั้งไว้ใน sys_setting เท่านั้น เช็ก Schema::hasTable() กันพังตอนยังไม่ได้ migrate
+     */
+    private function applyTimezoneSetting(): void
+    {
+        if (! Schema::hasTable('sys_setting')) {
+            return;
+        }
+
+        $timezone = Setting::get('site', 'timezone');
+
+        if (! $timezone) {
+            return;
+        }
+
+        date_default_timezone_set($timezone);
+        Config::set('app.timezone', $timezone);
     }
 }

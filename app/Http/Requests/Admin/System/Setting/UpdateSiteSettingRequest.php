@@ -37,6 +37,8 @@ class UpdateSiteSettingRequest extends FormRequest
             ],
             'copyright_year' => ['nullable', 'digits:4'],
             'copyright_owner' => ['nullable', 'string', 'max:150'],
+            // ไม่ตั้งก็ได้ (ว่าง = ใช้ค่าจาก .env APP_TIMEZONE หรือ php.ini ต่อไป — ดู config/app.php)
+            'timezone' => ['nullable', 'string', Rule::in(\DateTimeZone::listIdentifiers())],
             // ภาษาในระบบ — เลือกได้หลายภาษา อย่างน้อย 1 ภาษา (เก็บรวมเป็น 1 record ใน saveGroup())
             'lang_selected' => ['required', 'array', 'min:1'],
             'lang_selected.*' => [Rule::in(self::AVAILABLE_LANGUAGES)],

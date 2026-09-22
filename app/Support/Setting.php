@@ -108,4 +108,18 @@ class Setting
 
         return implode('|', array_map('preg_quote', $selected !== [] ? $selected : ['th', 'en']));
     }
+
+    /**
+     * รายชื่อ timezone identifier ทั้งหมดที่ PHP รู้จัก สำหรับตัวเลือกในฟอร์มตั้งค่าระบบ (ฟิลด์ `site.timezone`) —
+     * ใช้กับ SearchableSelect (พิมพ์ค้นหาได้) แทน dropdown รายการยาว ๆ
+     *
+     * @return list<array{value: string, label: string}>
+     */
+    public static function timezoneOptions(): array
+    {
+        return array_map(
+            fn (string $tz) => ['value' => $tz, 'label' => $tz],
+            \DateTimeZone::listIdentifiers(),
+        );
+    }
 }

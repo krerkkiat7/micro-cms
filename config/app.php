@@ -59,13 +59,16 @@ return [
     | Application Timezone
     |--------------------------------------------------------------------------
     |
-    | Here you may specify the default timezone for your application, which
-    | will be used by the PHP date and date-time functions. The timezone
-    | is set to "UTC" by default as it is suitable for most use cases.
+    | ลำดับความสำคัญของ timezone ในโปรเจกต์นี้ (สูงไปต่ำ): (1) sys_setting กลุ่ม 'site' คอลัมน์ 'timezone' — ตั้งได้ที่
+    | หน้าตั้งค่าระบบ, ใช้ override ทับค่านี้อีกทีตอน boot (ดู App\Providers\AppServiceProvider::applyTimezoneSetting());
+    | (2) .env APP_TIMEZONE (ดู .env.example — ค่าแนะนำของโปรเจกต์คือ Asia/Bangkok); (3) ไม่มีทั้งคู่ = ใช้ค่า default ของ
+    | php.ini ตอน boot (date_default_timezone_get() ตรงนี้ยังไม่มีอะไรเรียก date_default_timezone_set() มาก่อน จึงอ่านค่า
+    | php.ini ล้วน ๆ) — เดิม Laravel ฮาร์ดโค้ดเป็น "UTC" ทำให้ now()/Carbon::now() ทั้งระบบผิดเพี้ยนจากเวลาไทยจริง (เคยทำให้
+    | บทความที่ตั้งวันที่เผยแพร่เป็นเวลาไทยไม่ขึ้นใน widget จนกว่าจะตั้งเวลาย้อนไปหลายชั่วโมง)
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => env('APP_TIMEZONE', date_default_timezone_get()),
 
     /*
     |--------------------------------------------------------------------------
