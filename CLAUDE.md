@@ -324,6 +324,20 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   ครั้งเดียวแล้ว dispatch ไปยัง `PartText`/`PartImage`/`PartImages`/`PartVideo`, เรียงลำดับผ่าน `PartReorderDialog.vue` เหมือน part ของบทความ)
   — เพิ่ม prop `stacked` ให้ `LangFieldGroup.vue` (บังคับคอลัมน์เดียว) ใช้เฉพาะกับตัวแก้ไขข้อความ (rich text) ของ part ข้อความ เพราะ dialog
   ตั้งค่า widget มี 2 คอลัมน์อยู่แล้ว ซ้อนอีกชั้นจะเบียดเกินไป — ฟิลด์อื่น (หัวเรื่อง, alt text) ยังคง 2 คอลัมน์ปกติ ดู `docs/PRD-page.md` §3
+- **โมดูล "จัดการเมนูหน้าบ้าน" (front menu)** — เฉพาะฝั่งจัดการเท่านั้น (ยังไม่ render จริงที่หน้าบ้าน) `front_menu_info`/
+  `front_menu_detail` (migration `2026_09_29_000001_*`, pattern `_info`/`_detail` แทนตาราง `sys_front_menu` เดียวที่เอกสาร
+  เคยเสนอไว้ก่อนหน้า) tree ไม่จำกัดระดับผ่าน `parent_id` — เฉพาะเมนูประเภท `heading` (`App\Support\FrontMenuType`) เป็น parent
+  ได้ ประเภทอื่นผูกได้กับหมวดหมู่บทความ/บทความ/หน้าเพจ/URL ภายนอก พร้อมชุดตั้งค่า "หัวเรื่องของหน้าเป้าหมาย" (รูปพื้นหลัง +
+  หัวเรื่อง/หัวเรื่องรองจัดสไตล์ได้ + ตำแหน่ง 9 ทิศ — **reuse `Components/Admin/IntropageBackground/PositionPicker.vue` ตรง ๆ**
+  เพราะ `header_content_align` ใช้ value set เดียวกับ CSS `background-position`, reuse ฟอนต์จาก `PageTextStyle::fontNames()`
+  ของโมดูล Page) หน้าเดียว `admin.system.menu.index` (`Pages/Admin/System/FrontMenu/Index.vue`) ไม่มีหน้า add/edit แยก ทุกอย่าง
+  ทำผ่าน dialog: `MenuFormDialog.vue` (ฟอร์มยาว), `MenuReorderDialog.vue` (ลาก tree ข้ามระดับด้วย `vuedraggable` ซ้อนกันแบบ
+  recursive ผ่าน `MenuReorderNode.vue` — เฉพาะเมนู `heading` เท่านั้นที่ render กล่องลูกให้ลาก ประเภทอื่นวางเมนูอื่นลงไปไม่ได้
+  โดยธรรมชาติ ไม่ต้องเช็กเพิ่มฝั่ง UI, มี `:move` callback กัน cycle), `ArticleItemPickerDialog.vue`/`PageItemPickerDialog.vue`
+  (dialog เลือก 1 รายการใหม่ — ไม่มีของเดิมให้ reuse) permission `system.menu.view/manage/delete` และเมนู sidebar
+  `system-menu` **seed ไว้รอแล้วตั้งแต่ก่อนโมดูลนี้เริ่มทำ** (`DatabaseSeeder`/`MenuSeeder.php`) แค่สร้างโค้ดให้ตรงชื่อ route
+  `admin.system.menu.*` ไม่ต้องแก้ seeder ส่วนสิทธิ์/เมนู — `FrontMenuSeeder` (เรียกหลัง `ArticleSeeder`/`PageSeeder` เพราะอ้าง
+  id ตัวอย่างของทั้งคู่) ดูรายละเอียดเต็มที่ `docs/PRD-system-frontmenu.md`
 
 ## ทดสอบ
 

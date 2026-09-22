@@ -47,7 +47,8 @@ test('menu items are filtered by permission and empty groups drop out', function
             ->where('menu.0.items.0.href', route('admin.system.user.index')) // route มีจริงแล้ว
             ->where('menu.0.items.0.activePattern', 'admin.system.user.*')
             ->where('menu.0.items.1.id', 'system-menu')
-            ->where('menu.0.items.1.href', null)   // system-menu ยังไม่มี route จริง
+            ->where('menu.0.items.1.href', route('admin.system.menu.index')) // route มีจริงแล้ว
+            ->where('menu.0.items.1.activePattern', 'admin.system.menu.*')
         );
 });
 

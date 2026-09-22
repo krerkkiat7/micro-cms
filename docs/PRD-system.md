@@ -250,29 +250,52 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 
 **Route (เสนอ)** — `admin.system.menu.*` ใต้ `/admin/system/menu`
 
-### 3.2 เมนูหน้าบ้าน (public nav) — 🔴 เสนอ
+### 3.2 เมนูหน้าบ้าน (public nav) — 🟡 schema + admin CRUD เสร็จแล้ว, ยังไม่ render ที่หน้าบ้าน
 
-**วัตถุประสงค์** — จัดเมนูนำทางของเว็บหน้าบ้านแบบ tree ต่อภาษา ผูกกับหน้า (page), โมดูล หรือ URL ภายนอก
+**วัตถุประสงค์** — จัดเมนูนำทางของเว็บหน้าบ้านแบบ tree (ผูกกับหน้าเพจ, หมวดหมู่บทความ, บทความ หรือ URL ภายนอก)
+พร้อมชุดตั้งค่า "หัวเรื่องของหน้าเป้าหมาย" (รูปพื้นหลัง + หัวเรื่อง/หัวเรื่องรองพร้อมสไตล์ตัวอักษร)
 
-**Data model เสนอ — `sys_front_menu`** (แยกจาก `sys_menu` ของหลังบ้าน)
+**Data model — `front_menu_info` + `front_menu_detail`** (ตาม pattern `_info`/`_detail` เดียวกับ `article_category_info/detail`,
+`page_item_info/detail` — **ไม่ใช่ตารางเดียว `sys_front_menu`** ตามที่เคยเสนอไว้ในรุ่นก่อนหน้าของเอกสารนี้ เพื่อให้
+ชื่อเมนู/หัวเรื่อง/หัวเรื่องรองแยกภาษาได้แบบเดียวกับโมดูลอื่น) รายละเอียดครบดู [PRD-system-frontmenu.md](PRD-system-frontmenu.md)
 
-| คอลัมน์ | ชนิด | หมายเหตุ |
-|---------|------|----------|
-| `id` | bigint PK | |
-| `parent_id` | bigint null FK → `sys_front_menu` | tree |
-| `lang` | `char(2)` | `th` / `en` |
-| `title` | `varchar(150)` | ข้อความเมนู |
-| `type` | `varchar(20)` | `page` / `module` / `url` / `label` |
-| `target_id` | bigint null | id ของ page/หมวด เมื่อ `type` = page/module |
-| `url` | `varchar(255)` null | เมื่อ `type = url` |
-| `open_new_tab` | boolean default false | |
-| `sort_order` | unsigned int default 0 | |
-| `status` | `char(1)` default `Y` | |
-| `timestamps`, `deleted_at` | | |
+**Model** — `App\Models\FrontMenuInfo` (`parent()`/`children()` self-relation, `SoftDeletes`) / `App\Models\FrontMenuDetail`
+(composite key `id`+`lang` เหมือน `PageItemDetail` — ค้นด้วย `where()` เสมอ ห้าม `find()`)
 
-**หน้าจอ** — ตัวจัดเรียง tree (drag & drop), ฟอร์มต่อโหนด, สลับภาษา — หน้าบ้าน query ตาม locale แล้ว render
+**ประเภทเมนู** — `App\Support\FrontMenuType`: ไม่กำหนด / เมนูหัวข้อ (`heading` — parent ได้อย่างเดียว ไม่มีลิงก์ของตัวเอง) /
+ลิงค์ภายนอก / บทความ-รายการตามหมวดหมู่ / บทความ-รายละเอียดบทความ / หน้าเพจ
 
-**Permission** — `system.frontmenu.view`, `system.frontmenu.create`, `system.frontmenu.delete`
+**หน้าจอ** — `admin.system.menu.index` (`Pages/Admin/System/FrontMenu/Index.vue`) หน้าเดียว: รายการแบบ tree
+(`MenuTreeNode.vue` recursive) + ปุ่ม "เพิ่ม"/แก้ไขเปิด `MenuFormDialog.vue` (dialog ยาวตามฟิลด์ทั้งหมด — reuse
+`FilePickerField`/`ColorPickerInput`/`PositionPicker` (จาก `IntropageBackground/`, ใช้ value set เดียวกับ
+`background-position` สำหรับ `header_content_align` แบบ 9 ทิศ)/`LangFieldGroup`) + ปุ่ม "เรียงลำดับ" เปิด
+`MenuReorderDialog.vue` (ลาก tree ข้ามระดับได้ด้วย `vuedraggable` ซ้อนกันแบบ recursive — `MenuReorderNode.vue`
+render กล่องลูกให้เฉพาะเมนูประเภท `heading` เท่านั้น เมนูประเภทอื่นจึงวางเมนูอื่นลงไปไม่ได้โดยธรรมชาติ, กัน cycle ด้วย
+`:move` callback เพิ่ม) — เลือกบทความ/หน้าเพจทำผ่าน dialog picker ใหม่ (`ArticleItemPickerDialog.vue`/
+`PageItemPickerDialog.vue`, ค้นหา+paginate ผ่าน `admin.system.menu.pick.articles/pages`) ส่วนหมวดหมู่บทความเป็น
+dropdown ธรรมดา (`SearchableSelect`) เพราะหมวดหมู่มีจำนวนจำกัด
+
+**เงื่อนไข/การทำงาน** — เมนู `is_home='Y'` มีได้แถวเดียวทั้งระบบ (ตั้งใหม่แล้วสลับเดิมให้อัตโนมัติในทรานแซกชันเดียว) ·
+ซ่อนเมนูประเภท `heading` จะ cascade ซ่อนเมนูลูกทุกระดับไปด้วย (เปิดกลับมาไม่ cascade คืนให้ลูก) · ลบได้เฉพาะเมนูที่ไม่มี
+เมนูลูก · แก้ไข parent/ประเภทมี guard กัน cycle และกันเปลี่ยนประเภทออกจาก `heading` ทั้งที่ยังมีเมนูลูกอยู่ (`UpdateFrontMenuRequest::withValidator()`)
+
+**Permission** — `system.menu.view`/`manage`/`delete` (seed ไว้แล้วใน `DatabaseSeeder` ตั้งแต่ก่อนโมดูลนี้จะเริ่มทำ —
+`manage` ครอบคลุม store/update/reorder/toggle-status ทั้งหมด ไม่ได้แยก action ย่อยเพิ่ม)
+
+**Route** — `admin.system.menu.*` ใต้ `/admin/system/menu` (`index`/`store`/`{menu}`→`update`/`destroy`/
+`{menu}/status`→`toggleStatus`/`reorder`/`pick/articles`/`pick/pages`) — เมนู sidebar หลังบ้าน `system-menu`
+(`MenuSeeder.php`) ชี้มาที่นี่อยู่แล้วตั้งแต่ก่อนมีโค้ดจริง
+
+**Log** — `LogBackAction::record('system.menu', ...)` ทุกจุด create/update/delete (รวม reorder → `update`)
+ตาม convention log ที่บังคับทุกโมดูล CRUD ใหม่
+
+**FrontMenuSeeder** — ข้อมูลตัวอย่าง (`is_temp='Y'`) ต้องรันหลัง `ArticleSeeder`/`PageSeeder`: เมนูหน้าแรก
+(`is_home`, ชี้หน้าเพจตัวอย่าง) + เมนูหัวข้อ "บทความ" มีลูก 3 รายการชี้หมวดหมู่บทความตัวอย่าง — เรียกจาก `DatabaseSeeder`
+
+**ยังไม่ทำ (นอกขอบเขตรอบนี้)** — การ render เมนูจริงที่หน้าบ้าน: level 1 เรียงแนวนอน เมนูลูกแสดงลงมาด้านล่าง,
+level 2 เป็นต้นไปเรียงแนวตั้งไปด้านข้าง (dropdown/flyout) — ต้องมี Front controller อ่าน tree ตาม `lang`
+ปัจจุบันแล้ว render component หน้าบ้าน (`resources/js/Components/Front/`) รายละเอียดสเปกที่ต้องทำต่อดู
+[PRD-system-frontmenu.md](PRD-system-frontmenu.md) §ท้ายเอกสาร
 
 ---
 

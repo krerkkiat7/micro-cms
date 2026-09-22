@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\System\BackLogActionController;
 use App\Http\Controllers\Admin\System\BackLogLoginController;
 use App\Http\Controllers\Admin\System\FileController;
 use App\Http\Controllers\Admin\System\FileServeController;
+use App\Http\Controllers\Admin\System\FrontMenuController;
 use App\Http\Controllers\Admin\System\SettingController;
 use App\Http\Controllers\Admin\System\UserController;
 use App\Http\Controllers\Admin\System\UsergroupController;
@@ -197,6 +198,18 @@ Route::prefix('admin')->group(function () {
             Route::delete('/{usergroup}', [UsergroupController::class, 'destroy'])->name('admin.system.usergroup.destroy');
             Route::get('/{usergroup}/rights', [UsergroupController::class, 'rights'])->name('admin.system.usergroup.rights');
             Route::put('/{usergroup}/rights', [UsergroupController::class, 'rightsUpdate'])->name('admin.system.usergroup.rights.update');
+        });
+
+        // จัดการเมนูหน้าบ้าน — ตรวจสอบสิทธิ์ในแต่ละ method ของ FrontMenuController
+        Route::prefix('system/menu')->group(function () {
+            Route::get('/', [FrontMenuController::class, 'index'])->name('admin.system.menu.index');
+            Route::post('/', [FrontMenuController::class, 'store'])->name('admin.system.menu.store');
+            Route::put('/reorder', [FrontMenuController::class, 'reorder'])->name('admin.system.menu.reorder');
+            Route::get('/pick/articles', [FrontMenuController::class, 'pickArticles'])->name('admin.system.menu.pick.articles');
+            Route::get('/pick/pages', [FrontMenuController::class, 'pickPages'])->name('admin.system.menu.pick.pages');
+            Route::put('/{menu}', [FrontMenuController::class, 'update'])->name('admin.system.menu.update');
+            Route::delete('/{menu}', [FrontMenuController::class, 'destroy'])->name('admin.system.menu.destroy');
+            Route::put('/{menu}/status', [FrontMenuController::class, 'toggleStatus'])->name('admin.system.menu.status');
         });
 
         // ประวัติหลังบ้าน (log_back_*) — ตรวจสอบสิทธิ์ในแต่ละ controller
