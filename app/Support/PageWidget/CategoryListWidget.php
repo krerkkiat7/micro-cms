@@ -21,6 +21,8 @@ abstract class CategoryListWidget extends SettingsWidget
 
     public const ASPECT_RATIOS = ['16:9', '21:9', '4:3', '1:1'];
 
+    public const IMAGE_FITS = ['cover', 'contain'];
+
     public const LINK_TARGETS = ['_self', '_blank'];
 
     public const TEXT_ALIGNS = ['left', 'center', 'right'];
@@ -32,6 +34,14 @@ abstract class CategoryListWidget extends SettingsWidget
     public const SPEED_MIN = 100;
 
     public const SPEED_MAX = 3000;
+
+    /** จำนวนบรรทัดที่แสดงของหัวเรื่อง/ข้อความเกริ่นนำ (เกินตัดด้วย ...) */
+    public const LINES_MIN = 1;
+
+    public const LINES_MAX = 3;
+
+    /** สีพื้นหลังเริ่มต้นของกรอบรูปเมื่อแสดงแบบ contain (เทาอ่อน = bg-gray-100 เหมือนกรอบรูปในหน้าจัดการไฟล์) */
+    public const DEFAULT_IMAGE_BACKGROUND = '#F3F4F6';
 
     /** ชื่อคอลัมน์ FK หมวดหมู่ในตารางตั้งค่า (ชื่อเต็มของตารางที่อ้างถึง เช่น banner_category_info_id) */
     abstract protected function categoryField(): string;
@@ -106,6 +116,42 @@ abstract class CategoryListWidget extends SettingsWidget
             'autoplay' => self::flag('การเลื่อนอัตโนมัติ', $autoplayDefault ? 'Y' : 'N'),
             'autoplay_interval' => self::number('ระยะเวลาค้างต่อภาพ', 5, self::INTERVAL_MIN, self::INTERVAL_MAX, ' วินาที'),
             'transition_speed' => self::number('ความเร็วในการเปลี่ยนภาพ', 500, self::SPEED_MIN, self::SPEED_MAX, ' มิลลิวินาที'),
+        ];
+    }
+
+    /**
+     * ฟิลด์ของข้อความที่กดลิงก์ได้และกำหนดจำนวนบรรทัดได้ (หัวเรื่อง / ข้อความเกริ่นนำ): แสดง, ขนาด, ตัวหนา, ฟอนต์, สี, จัดตำแหน่ง, กดลิงก์ได้, จำนวนบรรทัด
+     * ชื่อคอลัมน์ตาม PageTextStyle (`<part>_font_size` ฯลฯ) — ใช้ร่วมกันระหว่าง Slideset และ Grid
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    protected function textFields(string $part, string $label, int $size, string $bold, string $color, int $lines, string $showDefault, string $clickable): array
+    {
+        return [
+            $part === 'title' ? 'show_title' : 'show_intro_text' => self::flag("การแสดง{$label}", $showDefault),
+            "{$part}_font_size" => self::fontSize("ขนาดตัวอักษรของ{$label}", $size),
+            "{$part}_bold" => self::flag("ตัวหนาของ{$label}", $bold),
+            "{$part}_font_family" => self::fontFamily("ฟอนต์ของ{$label}"),
+            "{$part}_color" => self::color("สีตัวอักษรของ{$label}", $color),
+            "{$part}_align" => self::choice("การจัดตำแหน่งของ{$label}", 'left', self::TEXT_ALIGNS),
+            "{$part}_clickable" => self::flag("การกดลิงก์ที่{$label}", $clickable),
+            "{$part}_lines" => self::number("จำนวนบรรทัดที่แสดงของ{$label}", $lines, self::LINES_MIN, self::LINES_MAX, ' บรรทัด'),
+        ];
+    }
+
+    /**
+     * ฟิลด์ของข้อมูลเสริมของการ์ด (เช่น วันที่เผยแพร่ / จำนวนเข้าชม): แสดง, ขนาด, ตัวหนา, ฟอนต์, สี (default เทา)
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    protected function metaFields(string $part, string $label, string $showDefault): array
+    {
+        return [
+            "show_{$part}" => self::flag("การแสดง{$label}", $showDefault),
+            "{$part}_font_size" => self::fontSize("ขนาดตัวอักษรของ{$label}", 12),
+            "{$part}_bold" => self::flag("ตัวหนาของ{$label}", 'N'),
+            "{$part}_font_family" => self::fontFamily("ฟอนต์ของ{$label}"),
+            "{$part}_color" => self::color("สีตัวอักษรของ{$label}", '#667085'),
         ];
     }
 

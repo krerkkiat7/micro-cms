@@ -70,10 +70,10 @@ export const WIDGET_TYPE_DEFS: WidgetTypeDef[] = [
     {
         value: 'gridarticle',
         label: 'Grid จาก article',
-        description: 'กล่องเรียงต่อเนื่องแบบ grid ข้อมูลจากบทความ (article)',
+        description: 'กล่องเรียงต่อเนื่องหลายคอลัมน์ (ไม่เลื่อน) ข้อมูลจากบทความ (article)',
         layout: 'grid',
         source: 'article',
-        available: false,
+        available: true,
     },
     {
         value: 'customtext',
@@ -307,9 +307,113 @@ export function slidesetConfig(type: string): SlidesetTypeConfig | undefined {
     return SLIDESET_TYPES[type];
 }
 
-/** หมวดหมู่/ตัวเลือกร่วมของ widget ที่ดึงรายการจากหมวดหมู่ (Slideshow หรือ Slideset) */
+/**
+ * ค่าตั้งค่าของ widget ที่แสดงรายการเป็น "การ์ด/แถว" ของแต่ละรายการ (Slideset หรือ Grid) — ใช้เป็นชนิดของ prop `setting` ที่ component
+ * ของส่วนย่อยบนการ์ด (เช่น `widgets/SlidesetTextFields.vue`) รับ เพราะสองประเภทนี้ใช้ชื่อฟิลด์ของแต่ละส่วน (`<part>_font_size` ฯลฯ) ตรงกัน
+ */
+export type CardListSetting = SlidesetSetting | GridSetting;
+
+// ---- Grid (กล่องเรียงต่อเนื่องหลายคอลัมน์ ไม่เลื่อน) ----
+
+/** รูปแบบการแสดงผลของ Grid — ตรงกับ GridArticleWidget::DISPLAY_TYPES ฝั่ง backend */
+export type GridDisplayType = 'card' | 'row_image' | 'row_date';
+
+/**
+ * ค่าตั้งค่าของ Grid (ตอนนี้มีเฉพาะจาก article) — ชื่อฟิลด์ตรงกับคอลัมน์ `page_item_widget_grid<แหล่ง>` (ดู GridArticleWidget ฝั่ง backend)
+ * ส่วนของการ์ด/ข้อความ/ปุ่มอ่านทั้งหมด ใช้ชุดฟิลด์เดียวกับ Slideset (ไม่มีกล่องเส้นขอบ/มุมมนและไม่มี carousel เพราะ Grid ไม่เลื่อน)
+ */
+export interface GridSetting {
+    article_category_info_id?: number | null;
+    sort_by: 'publish_desc' | 'publish_asc' | 'order_asc' | 'order_desc';
+    /** จำนวนที่แสดงสูงสุด (0 = แสดงทั้งหมด) */
+    max_items: number;
+    display_type: GridDisplayType;
+    /** จำนวนคอลัมน์ต่อแถวตามขนาดหน้าจอ (1 - 6) */
+    per_row_pc: number;
+    per_row_notebook: number;
+    per_row_tablet: number;
+    per_row_mobile: number;
+    link_target: '_self' | '_blank';
+    show_image: YesNo;
+    /** ความกว้างของพื้นที่แสดงรูปภาพ (%) — ใช้เฉพาะรูปแบบ "แถวที่มีรูปภาพ" (5 - 50) */
+    image_width_percent: number;
+    aspect_ratio: '16:9' | '21:9' | '4:3' | '1:1';
+    image_fit: 'cover' | 'contain';
+    image_background: string;
+    image_clickable: YesNo;
+    show_title: YesNo;
+    title_font_size: number;
+    title_bold: YesNo;
+    title_font_family: string;
+    title_color: string;
+    title_align: 'left' | 'center' | 'right';
+    title_clickable: YesNo;
+    title_lines: number;
+    show_intro_text: YesNo;
+    intro_text_font_size: number;
+    intro_text_bold: YesNo;
+    intro_text_font_family: string;
+    intro_text_color: string;
+    intro_text_align: 'left' | 'center' | 'right';
+    intro_text_clickable: YesNo;
+    intro_text_lines: number;
+    show_date: YesNo;
+    date_font_size: number;
+    date_bold: YesNo;
+    date_font_family: string;
+    date_color: string;
+    show_views: YesNo;
+    views_font_size: number;
+    views_bold: YesNo;
+    views_font_family: string;
+    views_color: string;
+    show_read_all: YesNo;
+    read_all_position: ReadAllPosition;
+    /** ข้อความแทน "อ่านทั้งหมด" แยกภาษา (ภาษา → ข้อความ; ว่าง = ใช้ข้อความมาตรฐาน) */
+    read_all_text: Record<string, string>;
+    read_all_icon: ReadAllIcon;
+    read_all_icon_position: ReadAllIconPosition;
+    read_all_style: ReadAllStyle;
+    read_all_font_size: number;
+    read_all_font_family: string;
+    read_all_color: string;
+    read_all_background: string;
+    read_all_url: string;
+    read_all_link_target: '_self' | '_blank';
+}
+
+export interface GridTypeConfig extends ListTypeConfig {
+    /** มีปุ่ม "อ่านทั้งหมด" (article) */
+    hasReadAll: boolean;
+}
+
+/** ประเภท widget ที่เป็น Grid — ตอนนี้มีเฉพาะ gridarticle (ตรงกับ GridArticleWidget ฝั่ง backend) */
+export const GRID_TYPES: Record<string, GridTypeConfig> = {
+    gridarticle: {
+        categoryKey: 'article_category_info_id',
+        optionsKey: 'article_categories',
+        categoryLabel: 'หมวดหมู่ article',
+        sortOptions: SLIDESHOW_SORT_OPTIONS.filter((o) => o.value.startsWith('publish_')),
+        emptyText: 'ไม่มีบทความที่เผยแพร่อยู่ในหมวดหมู่นี้',
+        hasReadAll: true,
+    },
+};
+
+export function gridConfig(type: string): GridTypeConfig | undefined {
+    return GRID_TYPES[type];
+}
+
+export const GRID_DISPLAY_TYPE_OPTIONS: { value: GridDisplayType; label: string; description: string }[] = [
+    { value: 'card', label: 'การ์ด', description: 'ทุกส่วนเปิด/ปิดเองได้' },
+    { value: 'row_image', label: 'แถวที่มีรูปภาพ', description: 'แบ่ง 2 ส่วน: รูป (กว้างเป็น %) + ข้อมูล' },
+    { value: 'row_date', label: 'แถวที่แสดงวันที่เผยแพร่แทนรูปภาพ', description: 'แบ่ง 2 ส่วน: กล่องวันที่ + ข้อมูล' },
+];
+
+export const GRID_IMAGE_WIDTH_RANGE = { min: 5, max: 50 } as const;
+
+/** หมวดหมู่/ตัวเลือกร่วมของ widget ที่ดึงรายการจากหมวดหมู่ (Slideshow, Slideset หรือ Grid) */
 export function listConfig(type: string): ListTypeConfig | undefined {
-    return slideshowConfig(type) ?? slidesetConfig(type);
+    return slideshowConfig(type) ?? slidesetConfig(type) ?? gridConfig(type);
 }
 
 export const SLIDESET_PER_ROW_RANGE = { min: 1, max: 6 } as const;
@@ -478,13 +582,79 @@ export function defaultSlidesetSetting(type: string, languages: string[] = []): 
     };
 }
 
+/**
+ * ค่าตั้งค่าเริ่มต้นของ Grid — ต้องตรงกับ `fields()` ของ GridArticleWidget ฝั่ง backend
+ * `languages` = รหัสภาษาที่เปิดใช้ (ไว้สร้างช่องข้อความแยกภาษาของปุ่มอ่านทั้งหมด)
+ */
+export function defaultGridSetting(type: string, languages: string[] = []): GridSetting {
+    return {
+        article_category_info_id: null,
+        sort_by: 'publish_desc',
+        max_items: 0,
+        display_type: 'card',
+        per_row_pc: 4,
+        per_row_notebook: 3,
+        per_row_tablet: 2,
+        per_row_mobile: 1,
+        link_target: '_self',
+        show_image: 'Y',
+        image_width_percent: 20,
+        aspect_ratio: '16:9',
+        image_fit: 'cover',
+        image_background: SLIDESET_DEFAULT_IMAGE_BACKGROUND,
+        image_clickable: 'Y',
+        show_title: 'Y',
+        title_font_size: 18,
+        title_bold: 'Y',
+        title_font_family: 'Sarabun',
+        title_color: '#000000',
+        title_align: 'left',
+        title_clickable: 'Y',
+        title_lines: 1,
+        show_intro_text: 'N',
+        intro_text_font_size: 14,
+        intro_text_bold: 'N',
+        intro_text_font_family: 'Sarabun',
+        intro_text_color: '#000000',
+        intro_text_align: 'left',
+        intro_text_clickable: 'N',
+        intro_text_lines: 2,
+        show_date: 'Y',
+        date_font_size: 12,
+        date_bold: 'N',
+        date_font_family: 'Sarabun',
+        date_color: '#667085',
+        show_views: 'N',
+        views_font_size: 12,
+        views_bold: 'N',
+        views_font_family: 'Sarabun',
+        views_color: '#667085',
+        show_read_all: 'N',
+        read_all_position: 'bottom_center',
+        read_all_text: Object.fromEntries(languages.map((code) => [code, ''])),
+        read_all_icon: 'arrow_right',
+        read_all_icon_position: 'after',
+        read_all_style: 'button',
+        read_all_font_size: 14,
+        read_all_font_family: 'Sarabun',
+        read_all_color: READ_ALL_DEFAULT_COLORS.button,
+        read_all_background: READ_ALL_DEFAULT_BACKGROUND,
+        read_all_url: '',
+        read_all_link_target: '_self',
+    };
+}
+
 /** ค่าตั้งค่าเริ่มต้นของ widget ประเภทนั้น (ประเภทที่ไม่มีการตั้งค่า = object ว่าง) */
 export function defaultSetting(type: string, languages: string[] = []): Record<string, unknown> {
     if (slideshowConfig(type)) {
         return { ...defaultSlideshowSetting(type) };
     }
 
-    return slidesetConfig(type) ? { ...defaultSlidesetSetting(type, languages) } : {};
+    if (slidesetConfig(type)) {
+        return { ...defaultSlidesetSetting(type, languages) };
+    }
+
+    return gridConfig(type) ? { ...defaultGridSetting(type, languages) } : {};
 }
 
 /** ผสานค่าที่ backend ส่งมากับค่าเริ่มต้น (กันคีย์ขาดหาย) — PHP ส่ง array ว่างมาเป็น [] จึงรับได้ทั้ง array/object/null */
@@ -512,17 +682,25 @@ export function validateSetting(type: string, setting: Record<string, unknown>):
             errors.max_items = `จำนวนที่แสดงสูงสุดต้องอยู่ระหว่าง 0 - ${SLIDESHOW_MAX_ITEMS_LIMIT} (0 = แสดงทั้งหมด)`;
         }
 
-        if (!Number.isInteger(s.autoplay_interval) || s.autoplay_interval < SLIDESHOW_INTERVAL_RANGE.min || s.autoplay_interval > SLIDESHOW_INTERVAL_RANGE.max) {
-            errors.autoplay_interval = `ระยะเวลาค้างต่อภาพต้องอยู่ระหว่าง ${SLIDESHOW_INTERVAL_RANGE.min} - ${SLIDESHOW_INTERVAL_RANGE.max} วินาที`;
+        // การเลื่อนอัตโนมัติ (carousel) — เฉพาะ Slideshow และ Slideset (Grid ไม่เลื่อน จึงไม่มีฟิลด์พวกนี้)
+        const carousel = slideshowConfig(type) ?? slidesetConfig(type);
+
+        if (carousel) {
+            if (!Number.isInteger(s.autoplay_interval) || s.autoplay_interval < SLIDESHOW_INTERVAL_RANGE.min || s.autoplay_interval > SLIDESHOW_INTERVAL_RANGE.max) {
+                errors.autoplay_interval = `ระยะเวลาค้างต่อภาพต้องอยู่ระหว่าง ${SLIDESHOW_INTERVAL_RANGE.min} - ${SLIDESHOW_INTERVAL_RANGE.max} วินาที`;
+            }
+
+            if (!Number.isInteger(s.transition_speed) || s.transition_speed < SLIDESHOW_SPEED_RANGE.min || s.transition_speed > SLIDESHOW_SPEED_RANGE.max) {
+                errors.transition_speed = `ความเร็วในการเปลี่ยนภาพต้องอยู่ระหว่าง ${SLIDESHOW_SPEED_RANGE.min} - ${SLIDESHOW_SPEED_RANGE.max} มิลลิวินาที`;
+            }
         }
 
-        if (!Number.isInteger(s.transition_speed) || s.transition_speed < SLIDESHOW_SPEED_RANGE.min || s.transition_speed > SLIDESHOW_SPEED_RANGE.max) {
-            errors.transition_speed = `ความเร็วในการเปลี่ยนภาพต้องอยู่ระหว่าง ${SLIDESHOW_SPEED_RANGE.min} - ${SLIDESHOW_SPEED_RANGE.max} มิลลิวินาที`;
-        }
-
+        // ปุ่ม "อ่านทั้งหมด" — Slideset จาก article และ Grid จาก article
         const slideset = slidesetConfig(type);
+        const grid = gridConfig(type);
+        const readAll = slideset?.hasReadAll ? slideset : grid?.hasReadAll ? grid : undefined;
 
-        if (slideset?.hasReadAll && s.show_read_all === 'Y') {
+        if (readAll && s.show_read_all === 'Y') {
             const url = String(s.read_all_url ?? '').trim();
 
             if (url === '') {
@@ -532,7 +710,8 @@ export function validateSetting(type: string, setting: Record<string, unknown>):
             }
         }
 
-        if (slideset) {
+        // จำนวนที่แสดงต่อแถวตามขนาดหน้าจอ — Slideset และ Grid
+        if (slideset ?? grid) {
             SLIDESET_DEVICES.forEach(({ key, label }) => {
                 const value = s[`per_row_${key}`] as number;
 
@@ -540,6 +719,15 @@ export function validateSetting(type: string, setting: Record<string, unknown>):
                     errors[`per_row_${key}`] = `จำนวนที่แสดงต่อแถว (${label}) ต้องอยู่ระหว่าง ${SLIDESET_PER_ROW_RANGE.min} - ${SLIDESET_PER_ROW_RANGE.max}`;
                 }
             });
+        }
+
+        // Grid: ความกว้างของพื้นที่แสดงรูปภาพ — ใช้เฉพาะรูปแบบ "แถวที่มีรูปภาพ"
+        if (grid && s.display_type === 'row_image') {
+            const value = s.image_width_percent as number;
+
+            if (!Number.isInteger(value) || value < GRID_IMAGE_WIDTH_RANGE.min || value > GRID_IMAGE_WIDTH_RANGE.max) {
+                errors.image_width_percent = `ความกว้างของพื้นที่แสดงรูปภาพต้องอยู่ระหว่าง ${GRID_IMAGE_WIDTH_RANGE.min} - ${GRID_IMAGE_WIDTH_RANGE.max}%`;
+            }
         }
     }
 

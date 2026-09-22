@@ -10,7 +10,7 @@
 |---|--------|-----------|-------|
 | 1 | หน้าเพจ (ข้อมูลทั่วไป) | `page_item_info`, `page_item_detail` | 🟢 schema + controller/route/UI (list, add, edit) เสร็จครบ |
 | 2 | โครงสร้าง แถว → คอลัมน์ → widget | `page_item_row/column/widget` + `*_detail` | 🟢 schema + หน้าจัดโครงสร้างแบบเห็นผลจริง + บันทึกเสร็จ |
-| 3 | ประเภท widget และการตั้งค่าเฉพาะประเภท | `page_item_widget.widget_type` + `page_item_widget_<ประเภท>` | 🟡 โครงระบบเสร็จ + ประเภท `slideshowbanner`, `slideshowarticle`, `slidesetarticle`, `slidesetbanner` เสร็จ; อีก 3 ประเภทรอทำ (§3) |
+| 3 | ประเภท widget และการตั้งค่าเฉพาะประเภท | `page_item_widget.widget_type` + `page_item_widget_<ประเภท>` | 🟡 โครงระบบเสร็จ + ประเภท `slideshowbanner`, `slideshowarticle`, `slidesetarticle`, `slidesetbanner`, `gridarticle` เสร็จ; อีก 2 ประเภทรอทำ (§3) |
 | 4 | การแสดงผลหน้าบ้านตาม slug/โครงสร้าง | (front-office) | 🔴 ยังไม่ได้ทำ |
 
 ---
@@ -225,7 +225,8 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 | `slideshowarticle` | Slideshow — ภาพเต็มภาพเดียวสไลด์ได้ จาก article (ตั้งค่าเหมือน `slideshowbanner`) | 🟢 เสร็จ |
 | `slidesetarticle` | Slideset — การ์ดบทความที่เลื่อนได้ (รูป/หัวเรื่อง/เกริ่นนำ/วันที่/เข้าชม) จาก article | 🟢 เสร็จ |
 | `slidesetbanner` | Slideset — การ์ดป้ายโฆษณาที่เลื่อนได้ (รูป/หัวเรื่อง/เกริ่นนำ) จาก banner | 🟢 เสร็จ |
-| `gridbanner` / `gridarticle` | Grid — กล่องเรียงต่อเนื่อง จาก banner / article | 🔴 เร็ว ๆ นี้ |
+| `gridarticle` | Grid — กล่องเรียงต่อเนื่องหลายคอลัมน์ (ไม่เลื่อน) จาก article | 🟢 เสร็จ |
+| `gridbanner` | Grid — กล่องเรียงต่อเนื่องหลายคอลัมน์ (ไม่เลื่อน) จาก banner | 🔴 เร็ว ๆ นี้ |
 | `customtext` | Custom Text — กรอกเนื้อหาเอง คล้าย part ของบทความ (ตารางแยก + ข้อมูลแยกภาษา) | 🔴 เร็ว ๆ นี้ |
 | `placeholder` | ประเภทเดิมก่อนมีประเภทจริง (**legacy**) — ไม่มีตารางตั้งค่า โหลด/บันทึกได้แต่เลือกสร้างใหม่ไม่ได้ | — |
 
@@ -346,6 +347,41 @@ class `SlidesetBannerWidget extends SlidesetWidget` (ใช้ trait `ReadsBanne
 - หมวดหมู่ = `banner_category_info_id`; ข้อมูลที่แสดง = banner ที่เผยแพร่อยู่ **และมีรูป** (เหมือน slideshowbanner); ลิงก์ของการ์ด = url ของ banner (banner ที่ไม่มี url กดไม่ได้ —
   ตัวอย่างแสดงป้ายลิงก์เฉพาะใบที่มีลิงก์)
 
+### `gridarticle` — Grid จาก article
+
+กล่องเรียงต่อเนื่องหลายคอลัมน์ของบทความ **ไม่เลื่อน** (ต่างจาก Slideset) — ตาราง `page_item_widget_gridarticle` (+ `_detail` เก็บข้อความปุ่มแยกภาษา;
+migration `2026_09_25_000003_*`; FK หมวดหมู่ตั้งชื่อเอง `pi_widget_gridarticle_category_foreign`) class `GridArticleWidget extends CategoryListWidget`
+(ใช้ trait `ReadsArticles` เหมือน `slideshowarticle`/`slidesetarticle`) ส่วนของรายการ (รูป/หัวเรื่อง/ข้อความเกริ่นนำ/วันที่/จำนวนเข้าชม) และปุ่ม "อ่านทั้งหมด"
+ใช้ฟิลด์/ตัวช่วยชุดเดียวกับ `slidesetarticle` (`textFields()`/`metaFields()` ย้ายขึ้นไปอยู่ที่ `CategoryListWidget` ให้ใช้ร่วมกันได้; ปุ่ม "อ่านทั้งหมด"
+แยกเป็น trait `HasReadAllButton` ใช้ร่วมกับ `SlidesetArticleWidget` แทนที่จะประกาศซ้ำ) **ไม่มี** carousel (ลูกศร/จุด/เลื่อนอัตโนมัติ) และ**ไม่มี**
+กล่องเส้นขอบ/มุมมนของ Slideset เพราะเป็น grid นิ่ง ๆ
+
+**รูปแบบการแสดงผล** (`display_type`, ฟอร์มเลือกด้วยการ์ด SVG `GridFields.vue`) มี 3 แบบ:
+
+| ค่า | หน้าตา | ข้อบังคับ |
+|-----|--------|-----------|
+| `card` (default) | การ์ดแนวตั้ง รูปบน ข้อมูลล่าง | ทุกส่วนเปิด/ปิดเองได้ตามปกติ |
+| `row_image` | แถวแนวนอน 2 ส่วน: รูป (กว้างเป็น % ของการ์ด) ซ้าย + ข้อมูลขวา | **บังคับแสดงหัวเรื่องเสมอ** (ฟอร์มซ่อนช่องติ๊ก, backend บังคับ `show_title = 'Y'` ตอนบันทึกด้วย) |
+| `row_date` | แถวแนวนอน 2 ส่วน: กล่องวันที่ (เลขวันที่บรรทัดใหญ่ + เดือนย่อ/ปี บรรทัดเล็ก) แทนรูป ซ้าย + ข้อมูลขวา | **บังคับแสดงหัวเรื่องและวันที่เผยแพร่เสมอ** (เหตุผลเดียวกับ `row_image` — backend บังคับทั้ง `show_title`/`show_date`) |
+
+`image_width_percent` (5 - 50%, default 20) ใช้เฉพาะ `row_image` — ปิด "แสดงรูปภาพ" ในรูปแบบนี้แล้วพื้นที่รูปจะหายไป ส่วนข้อมูลขยายเต็มแทน;
+`row_date` ไม่มีส่วนรูปภาพเลย (ฟอร์มซ่อนกล่อง "รูปภาพ" ทั้งหมดเมื่อเลือกรูปแบบนี้)
+
+| กลุ่ม | คอลัมน์ (ค่าเริ่มต้น) |
+|-------|------------------------|
+| ข้อมูล | `article_category_info_id` (**จำเป็นต้องเลือก**), `sort_by` (`publish_desc`/`publish_asc`), `max_items` (0 - 1000, **ว่างหรือ 0 = แสดงทั้งหมด**), `display_type` |
+| จำนวนคอลัมน์ต่อแถว | `per_row_pc` (4) / `per_row_notebook` (3) / `per_row_tablet` (2) / `per_row_mobile` (1) — 1 - 6 (breakpoint เดียวกับ Slideset, `SLIDESET_DEVICES`) |
+| รูปภาพ | `show_image` (Y), `image_width_percent` (20, 5 - 50 — เฉพาะ `row_image`), `aspect_ratio`, `image_fit`, `image_background` (`#F3F4F6`), `image_clickable` (Y) |
+| หัวเรื่อง | เหมือน `slidesetarticle` ทุกอย่าง (default: แสดง, 18px, ตัวหนา, ดำ, ซ้าย, กดลิงก์ได้, 1 บรรทัด) |
+| ข้อความเกริ่นนำ | เหมือน `slidesetarticle` แต่ **default ซ่อน** (`show_intro_text = N`, ต่างจาก `slidesetarticle` ที่ default แสดง) |
+| วันที่เผยแพร่ / จำนวนเข้าชม | เหมือน `slidesetarticle` ทุกอย่าง (วันที่ default แสดง, เข้าชม default ซ่อน, สีเทา `#667085`) |
+| ปุ่มอ่านทั้งหมด | ฟิลด์ชุดเดียวกับ `slidesetarticle` ทั้งหมด (ตำแหน่ง/ไอคอน/รูปแบบ/ตัวอักษร/พื้นหลัง/ลิงก์ปลายทาง) ผ่าน `HasReadAllButton` |
+| ลิงก์ | `link_target` (`_self`/`_blank`) — ใช้ร่วมกันทั้งรูป/หัวเรื่อง/ข้อความเกริ่นนำที่ตั้งให้กดลิงก์ได้ |
+
+**ตัวอย่าง** (`widgets/GridPreview.vue`) — จัดรายการเป็น CSS grid ตามจำนวนคอลัมน์ของขนาดหน้าจอที่เลือกดู (ไม่เลื่อนเหมือน Slideset จึงไม่มีลูกศร/จุด/หน้า);
+หน้าตาของแต่ละรายการเปลี่ยนตาม `display_type` (การ์ดแนวตั้ง/แถวรูป/แถววันที่ ตามตารางข้างบน); การ์ด (`card`) ซ่อนพื้นที่ข้อมูลทั้งหมดเมื่อไม่มีอะไรแสดง
+เหมือน Slideset (`hasBody()`) ส่วนรูปแบบแถวไม่มีทางว่างเพราะหัวเรื่องบังคับแสดงเสมอ; ลิงก์เป็นแค่ไอคอน/ป้ายบอกว่ามีลิงก์ (กดไม่ได้)
+
 ### โครงระบบประเภท widget (เพิ่มประเภทใหม่)
 
 ทุกอย่างของแต่ละประเภทรวมอยู่ในคลาสเดียว `App\Support\PageWidget\<ชื่อ>Widget` (extends `SettingsWidget` / `CategoryListWidget` ซึ่ง implements `PageWidgetType`) (กฎ validation, ค่าเริ่มต้น, บันทึก/ลบ, แปลงเป็นข้อมูลส่งหน้าจอ,
@@ -367,5 +403,5 @@ class `SlidesetBannerWidget extends SlidesetWidget` (ใช้ trait `ReadsBanne
 | 0 — schema | `page_item_info/detail` + `page_item_row/column/widget` + `*_detail` + `PageSeeder` ตัวอย่าง | ✅ เสร็จ |
 | 1 — CRUD หน้าเพจ + จัดโครงสร้าง | list/add/edit (ข้อมูลทั่วไป + SEO) + แท็บโครงสร้าง (แถว/คอลัมน์/widget, ลากเรียง, ตั้งค่า, พื้นหลัง, บันทึก) | ✅ เสร็จ |
 | **2 — ประเภท widget** | โครงระบบประเภท widget (ตารางแยกต่อประเภท + registry + dialog เลือกประเภท/ตั้งค่า + ตัวอย่าง) + `slideshowbanner` + `slideshowarticle` | ✅ เสร็จ |
-| 2.1 — ประเภท widget ที่เหลือ | `gridbanner/article`, `customtext` | 🔴 ยังไม่เริ่ม |
+| 2.1 — ประเภท widget ที่เหลือ | `gridarticle` ✅ เสร็จ, `gridbanner`, `customtext` | 🟡 กำลังทำ |
 | 3 — หน้าบ้าน | แสดงหน้าเพจตาม slug + โครงสร้าง (grid 12) ที่ `front.*` | 🔴 ยังไม่เริ่ม |

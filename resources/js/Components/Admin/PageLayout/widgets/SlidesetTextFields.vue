@@ -5,15 +5,15 @@ import TextStyleFields from '../TextStyleFields.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import { SLIDESET_LINES_OPTIONS, settingTextStyle } from '@/utils/pageWidget';
-import type { SlidesetSetting } from '@/utils/pageWidget';
+import type { CardListSetting } from '@/utils/pageWidget';
 
 /**
- * ตั้งค่าของข้อความ 1 ส่วนบนการ์ด Slideset — ขนาด, ฟอนต์, สี, ตัวหนา (ทุกส่วน) และเพิ่ม จัดตำแหน่ง / กดลิงก์ได้ / จำนวนบรรทัดที่แสดง
+ * ตั้งค่าของข้อความ 1 ส่วนบนการ์ด/แถว (Slideset หรือ Grid) — ขนาด, ฟอนต์, สี, ตัวหนา (ทุกส่วน) และเพิ่ม จัดตำแหน่ง / กดลิงก์ได้ / จำนวนบรรทัดที่แสดง
  * เมื่อเป็นข้อความที่ยาวได้ (`rich`: หัวเรื่อง, ข้อความเกริ่นนำ) ส่วนข้อมูลเสริม (วันที่เผยแพร่, จำนวนเข้าชม) มีแค่ขนาด/ฟอนต์/สี/ตัวหนา
- * ชื่อฟิลด์ใน setting = `<part>_font_size`, `<part>_bold`, `<part>_lines` ฯลฯ (ตรงกับคอลัมน์ฝั่ง backend)
+ * ชื่อฟิลด์ใน setting = `<part>_font_size`, `<part>_bold`, `<part>_lines` ฯลฯ (ตรงกับคอลัมน์ฝั่ง backend — ตรงกันทั้งสองประเภท)
  */
 const props = defineProps<{
-    setting: SlidesetSetting;
+    setting: CardListSetting;
     part: 'title' | 'intro_text' | 'date' | 'views';
     fonts: string[];
     /** true = มีจัดตำแหน่ง/กดลิงก์ได้/จำนวนบรรทัด (หัวเรื่อง, ข้อความเกริ่นนำ) */

@@ -86,4 +86,10 @@ class PageItemWidget extends Model
     {
         return $this->hasOne(PageItemWidgetSlidesetArticle::class, 'id');
     }
+
+    /** การตั้งค่าเฉพาะของประเภท gridarticle */
+    public function gridArticle()
+    {
+        return $this->hasOne(PageItemWidgetGridArticle::class, 'id');
+    }
 }

@@ -8,34 +8,16 @@ use Illuminate\Database\Eloquent\Builder;
 
 /**
  * widget "Slideset จาก article" — การ์ดบทความหลายใบที่เลื่อนดูได้ (รูป, หัวเรื่อง, ข้อความเกริ่นนำ, วันที่เผยแพร่, จำนวนเข้าชม — แต่ละส่วนเปิด/ปิดและ
- * จัดรูปแบบตัวอักษรเองได้) + ปุ่ม "อ่านทั้งหมด" (ตำแหน่ง ข้อความแยกภาษา ไอคอน รูปแบบ ลิงก์ปลายทาง) ตั้งค่าส่วนร่วมอยู่ใน SlidesetWidget
+ * จัดรูปแบบตัวอักษรเองได้) + ปุ่ม "อ่านทั้งหมด" (ดู HasReadAllButton — ใช้ร่วมกับ Grid จาก article) ตั้งค่าส่วนร่วมอยู่ใน SlidesetWidget
  * ต่างจาก Slideshow ตรงที่บทความที่ไม่มีรูปหน้าปกก็ยังแสดง (ไม่มีรูป = กรอบว่าง) และแต่ละส่วนของการ์ดกดลิงก์ไปหน้าบทความได้แยกกัน
  * ตาราง `page_item_widget_slidesetarticle` (+ `_detail` เก็บข้อความปุ่มแยกภาษา) PK = `page_item_widget.id`
  */
 class SlidesetArticleWidget extends SlidesetWidget
 {
+    use HasReadAllButton;
     use ReadsArticles;
 
     public const TYPE = 'slidesetarticle';
-
-    /** ตำแหน่งปุ่ม "อ่านทั้งหมด" เทียบกับการ์ด (บน/ล่าง × ซ้าย/กึ่งกลาง/ขวา) */
-    public const READ_ALL_POSITIONS = ['top_left', 'top_center', 'top_right', 'bottom_left', 'bottom_center', 'bottom_right'];
-
-    /** ไอคอนที่แสดงร่วมกับข้อความปุ่ม (`none` = ไม่แสดง) — ตัวเลือกและชื่อที่หน้าจอต้องตรงกัน */
-    public const READ_ALL_ICONS = ['none', 'plus', 'plus_circle', 'arrow_right', 'arrow_right_circle', 'chevron_right', 'chevron_right_circle', 'arrow_up_right'];
-
-    public const READ_ALL_ICON_POSITIONS = ['before', 'after'];
-
-    /** รูปแบบของปุ่ม: ปุ่ม / ลิงก์ข้อความ / ปุ่มมนใหญ่ (คล้ายวงรี) */
-    public const READ_ALL_STYLES = ['button', 'link', 'pill'];
-
-    /** สีเริ่มต้นของปุ่ม: ตัวหนังสือขาวบนพื้นเทาเข้ม (gray-800) */
-    public const READ_ALL_BUTTON_TEXT = '#FFFFFF';
-
-    public const READ_ALL_BUTTON_BACKGROUND = '#1F2937';
-
-    /** ลิงก์ปลายทางที่รับ: URL เต็ม, path ภายในเว็บ (ขึ้นต้น /), anchor (#), mailto:, tel: */
-    private const READ_ALL_URL_REGEX = '/^(https?:\/\/|\/|#|mailto:|tel:)\S*$/i';
 
     public function type(): string
     {
@@ -59,8 +41,7 @@ class SlidesetArticleWidget extends SlidesetWidget
 
     protected function detailFields(): array
     {
-        // ข้อความแทน "อ่านทั้งหมด" แยกภาษา (ว่าง = ใช้ข้อความมาตรฐานของหน้าบ้าน)
-        return ['read_all_text' => ['label' => 'ข้อความของปุ่มอ่านทั้งหมด', 'max' => 100]];
+        return $this->readAllDetailFields();
     }
 
     protected function introShownByDefault(): string
@@ -72,39 +53,12 @@ class SlidesetArticleWidget extends SlidesetWidget
     {
         return $this->metaFields('date', 'วันที่เผยแพร่', showDefault: 'Y')
             + $this->metaFields('views', 'จำนวนเข้าชม', showDefault: 'N')
-            + [
-                'show_read_all' => self::flag('การแสดงปุ่มอ่านทั้งหมด', 'N'),
-                'read_all_position' => self::choice('ตำแหน่งของปุ่มอ่านทั้งหมด', 'bottom_center', self::READ_ALL_POSITIONS),
-                'read_all_icon' => self::choice('ไอคอนของปุ่มอ่านทั้งหมด', 'arrow_right', self::READ_ALL_ICONS),
-                'read_all_icon_position' => self::choice('ตำแหน่งไอคอนของปุ่มอ่านทั้งหมด', 'after', self::READ_ALL_ICON_POSITIONS),
-                'read_all_style' => self::choice('รูปแบบของปุ่มอ่านทั้งหมด', 'button', self::READ_ALL_STYLES),
-                // ตัวอักษร (ทุกรูปแบบ) + สีพื้นหลัง (ใช้เฉพาะแบบปุ่ม/ปุ่มมนใหญ่) — default ตรงกับปุ่มสีเทาเข้มตัวหนังสือขาว
-                // (แบบลิงก์ข้อความหน้าจอจะสลับสีตัวอักษรเป็นสีน้ำเงินให้เมื่อยังเป็นค่าเริ่มต้นอยู่)
-                'read_all_font_size' => self::fontSize('ขนาดตัวอักษรของปุ่มอ่านทั้งหมด', 14),
-                'read_all_font_family' => self::fontFamily('ฟอนต์ของปุ่มอ่านทั้งหมด'),
-                'read_all_color' => self::color('สีตัวอักษรของปุ่มอ่านทั้งหมด', self::READ_ALL_BUTTON_TEXT),
-                'read_all_background' => self::color('สีพื้นหลังของปุ่มอ่านทั้งหมด', self::READ_ALL_BUTTON_BACKGROUND),
-                'read_all_url' => [
-                    'label' => 'ลิงก์ปลายทางของปุ่มอ่านทั้งหมด', 'default' => '', 'type' => 'nullstring',
-                    // จำเป็นต้องกรอกเมื่อแสดงปุ่ม (ภายหลังอาจเลือกจากเมนูหน้าบ้านแทนการกรอก URL)
-                    'rules' => ['nullable', 'string', 'max:500', 'regex:'.self::READ_ALL_URL_REGEX, 'required_if:show_read_all,Y'],
-                    'messages' => [
-                        'required_if' => 'กรุณากรอกลิงก์ปลายทางของปุ่มอ่านทั้งหมด (ต้องกรอกเมื่อเปิดแสดงปุ่ม)',
-                        'regex' => 'ลิงก์ปลายทางของปุ่มอ่านทั้งหมดต้องขึ้นต้นด้วย http://, https:// หรือ / (หรือ #, mailto:, tel:)',
-                        'max' => 'ลิงก์ปลายทางของปุ่มอ่านทั้งหมดต้องไม่เกิน 500 ตัวอักษร',
-                    ],
-                ],
-                'read_all_link_target' => self::choice('เป้าหมายการเปิดลิงก์ของปุ่มอ่านทั้งหมด', '_self', self::LINK_TARGETS),
-            ];
+            + $this->readAllFields();
     }
 
     protected function normalize(array $values): array
     {
-        $values = parent::normalize($values);
-        $url = $values['read_all_url'] ?? null;
-        $values['read_all_url'] = is_string($url) && trim($url) !== '' ? trim($url) : null;
-
-        return $values;
+        return $this->normalizeReadAllUrl(parent::normalize($values));
     }
 
     protected function previewQuery(int $categoryId): Builder

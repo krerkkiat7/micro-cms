@@ -61,3 +61,23 @@ export const READ_ALL_DEFAULT_BACKGROUND = '#1F2937';
 
 /** ลิงก์ปลายทางที่รับ: URL เต็ม, path ภายในเว็บ (ขึ้นต้น /), anchor (#), mailto:, tel: — ตรงกับ READ_ALL_URL_REGEX ฝั่ง backend */
 export const READ_ALL_URL_PATTERN = /^(https?:\/\/|\/|#|mailto:|tel:)\S*$/i;
+
+/**
+ * ฟิลด์ตั้งค่าปุ่ม "อ่านทั้งหมด" ที่ widget กลุ่ม article ใช้ร่วมกัน (Slideset จาก article, Grid จาก article) — ดู HasReadAllButton ฝั่ง backend
+ * ใช้เป็นชนิดของ prop `setting` ของ `widgets/ReadAllFields.vue` (component ฟอร์มที่ใช้ร่วมกัน)
+ */
+export interface ReadAllSettingFields {
+    show_read_all: 'Y' | 'N';
+    read_all_position: ReadAllPosition;
+    /** ข้อความแทน "อ่านทั้งหมด" แยกภาษา (ภาษา → ข้อความ; ว่าง = ใช้ข้อความมาตรฐาน) */
+    read_all_text: Record<string, string>;
+    read_all_icon: ReadAllIcon;
+    read_all_icon_position: ReadAllIconPosition;
+    read_all_style: ReadAllStyle;
+    read_all_font_size: number;
+    read_all_font_family: string;
+    read_all_color: string;
+    read_all_background: string;
+    read_all_url: string;
+    read_all_link_target: '_self' | '_blank';
+}

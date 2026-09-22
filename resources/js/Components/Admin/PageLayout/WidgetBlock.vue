@@ -2,12 +2,13 @@
 import { computed } from 'vue';
 import LayoutToolbar from './LayoutToolbar.vue';
 import LayoutTexts from './LayoutTexts.vue';
+import GridPreview from './widgets/GridPreview.vue';
 import SlideshowPreview from './widgets/SlideshowPreview.vue';
 import SlidesetPreview from './widgets/SlidesetPreview.vue';
 import { usePageLayoutEditor } from '@/composables/usePageLayoutEditor';
 import { backgroundStyle, displayTitle } from '@/utils/pageLayout';
-import { slideshowConfig, slidesetConfig, widgetTypeLabel } from '@/utils/pageWidget';
-import type { SlideshowCommonSetting, SlidesetSetting } from '@/utils/pageWidget';
+import { gridConfig, slideshowConfig, slidesetConfig, widgetTypeLabel } from '@/utils/pageWidget';
+import type { GridSetting, SlideshowCommonSetting, SlidesetSetting } from '@/utils/pageWidget';
 import type { ColumnData, WidgetData } from '@/utils/pageLayout';
 
 /**
@@ -25,6 +26,7 @@ const editor = usePageLayoutEditor();
 const title = computed(() => displayTitle(props.widget.detail, editor.languages, '(ไม่มีชื่อ)'));
 const slideshowSetting = computed(() => props.widget.setting as unknown as SlideshowCommonSetting);
 const slidesetSetting = computed(() => props.widget.setting as unknown as SlidesetSetting);
+const gridSetting = computed(() => props.widget.setting as unknown as GridSetting);
 </script>
 
 <template>
@@ -64,6 +66,13 @@ const slidesetSetting = computed(() => props.widget.setting as unknown as Slides
             v-else-if="slidesetConfig(widget.widget_type)"
             :widget-type="widget.widget_type"
             :setting="slidesetSetting"
+            :languages="editor.languages"
+            class="mt-3"
+        />
+        <GridPreview
+            v-else-if="gridConfig(widget.widget_type)"
+            :widget-type="widget.widget_type"
+            :setting="gridSetting"
             :languages="editor.languages"
             class="mt-3"
         />
