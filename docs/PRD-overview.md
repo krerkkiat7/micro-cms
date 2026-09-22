@@ -196,7 +196,10 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 | dashboard | 🟡 placeholder (การ์ดสถิติ "—") | ต่อสถิติจริงเมื่อมีโมดูล |
 | โมดูลเนื้อหาทั้ง 6 | 🟡 บทความ (article) เสร็จครบ — หมวดหมู่ ตัวบทความ (list/add/edit + part editor + แท็ก) และหน้าตั้งค่าโมดูล เสร็จครบ; banner เสร็จหมวดหมู่+ป้ายโฆษณา (ตั้งค่ายังเป็น placeholder); intropage เสร็จ list/add/edit + ปุ่มแบบเรียงลำดับ; page เสร็จ list/add/edit + จัดโครงสร้างแถว/คอลัมน์/widget (ประเภท widget เสร็จ `slideshowbanner`/`slideshowarticle`/`slidesetarticle`/`slidesetbanner`, ที่เหลือรอทำ); popup/contact us ยังไม่มี | ทยอยทำ |
 | จัดการเมนูหลังบ้าน (`sys_menu_group`/`sys_menu`) | 🟢 ตาราง + seed + `AppSidebar` อ่านจาก DB (กรองตามสิทธิ์) | หน้า CRUD จัดเมนู |
-| จัดการเมนูหน้าบ้าน / template / ประวัติ / file management | ❌ ยังไม่มี | ทยอยทำ (ดู PRD-system.md) |
+| จัดการเมนูหน้าบ้าน (`front_menu_info`/`front_menu_detail`) — [PRD-system-frontmenu.md](PRD-system-frontmenu.md) | 🟡 schema + admin CRUD (list/tree, add/edit dialog, เรียงลำดับแบบลาก, แสดง/ซ่อน, ลบ) เสร็จแล้ว | ยังไม่ render จริงที่หน้าบ้าน (nav level 1 แนวนอน, level 2+ แนวตั้ง) |
+| template | ❌ ยังไม่มี | ทยอยทำ (ดู PRD-system.md) |
+| ประวัติ (`log_back_*`) | ✅ เสร็จ (access/login/action + หน้ารายการทั้ง 3) | log ฝั่งหน้าบ้านยังไม่ทำ |
+| file management | ✅ เสร็จ (list/upload/folder/picker) | — |
 | ตั้งค่าระบบ (`sys_setting`) | 🟡 มีตาราง + seed ตัวอย่างแล้ว | หน้า UI จัดการ + helper อ่านค่า |
 
 ## 7. การปรับ schema รอบนี้ (เฟส 0)

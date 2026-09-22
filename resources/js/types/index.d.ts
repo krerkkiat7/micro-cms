@@ -101,6 +101,53 @@ export interface ActionGroupNode {
     actions: ActionNode[];
 }
 
+/** ข้อมูลแยกภาษาของเมนูหน้าบ้าน 1 รายการ (front_menu_detail) ตามที่ backend ส่งมา (แสดงผล) */
+export interface FrontMenuDetailFields {
+    name: string | null;
+    title: string | null;
+    subtitle: string | null;
+}
+
+/** ข้อมูลแยกภาษาของเมนูหน้าบ้านในฟอร์มแก้ไข (ค่าว่างเป็น '' เสมอ ไม่ใช่ null — ผูกกับ TextInput ตรง ๆ) */
+export interface FrontMenuDetailForm {
+    name: string;
+    title: string;
+    subtitle: string;
+}
+
+/** เมนูหน้าบ้าน 1 รายการแบบ tree (front_menu_info + front_menu_detail) — ดู docs/PRD-system-frontmenu.md */
+export interface FrontMenuNode {
+    id: number;
+    parent_id: number | null;
+    menu_type: string;
+    target_article_category_id: number | null;
+    target_article_item_id: number | null;
+    target_page_item_id: number | null;
+    url: string | null;
+    link_target: string;
+    is_home: string;
+    show_header_image: string;
+    header_image_id: number | null;
+    show_title: string;
+    title_font_size: number;
+    title_font_family: string;
+    title_color: string;
+    title_bold: string;
+    show_subtitle: string;
+    subtitle_font_size: number;
+    subtitle_font_family: string;
+    subtitle_color: string;
+    subtitle_bold: string;
+    header_content_align: string;
+    use_container: string;
+    show_breadcrumb: string;
+    sort_order: number;
+    status: string;
+    detail: Record<string, FrontMenuDetailFields>;
+    target_label: string | null;
+    children: FrontMenuNode[];
+}
+
 export type PageProps<
     T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {

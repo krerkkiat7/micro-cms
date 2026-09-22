@@ -176,5 +176,8 @@ class DatabaseSeeder extends Seeder
 
         // หน้าเพจตัวอย่าง พร้อมโครงสร้างแถว/คอลัมน์/widget (ข้อมูลตัวอย่าง — แยกไฟล์)
         $this->call(PageSeeder::class);
+
+        // เมนูหน้าบ้านตัวอย่าง (ข้อมูลตัวอย่าง — แยกไฟล์ ต้องรันหลัง ArticleSeeder/PageSeeder)
+        $this->call(FrontMenuSeeder::class);
     }
 }
