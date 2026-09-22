@@ -90,37 +90,48 @@ const breadcrumbs = [
 
     <AdminLayout>
         <template #header>
-            <PageHeader title="จัดการเมนูหน้าบ้าน" :breadcrumbs="breadcrumbs">
-                <template #actions>
-                    <SecondaryButton type="button" @click="showReorder = true">
-                        <ArrowUpDown class="mr-1.5 size-4" /> เรียงลำดับ
-                    </SecondaryButton>
-                    <PrimaryButton v-if="can.manage" type="button" @click="openAdd">
-                        <Plus class="mr-1.5 size-4" /> เพิ่ม
-                    </PrimaryButton>
-                </template>
-            </PageHeader>
+            <PageHeader title="จัดการเมนูหน้าบ้าน" :breadcrumbs="breadcrumbs" />
         </template>
 
-        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-xs">
-            <p v-if="deleteForm.errors.menu" class="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                {{ deleteForm.errors.menu }}
-            </p>
+        <div class="space-y-4">
+            <div class="flex flex-wrap items-center gap-3">
+                <SecondaryButton type="button" @click="showReorder = true">
+                    <ArrowUpDown class="mr-1.5 size-4" /> เรียงลำดับ
+                </SecondaryButton>
+                <PrimaryButton v-if="can.manage" type="button" @click="openAdd">
+                    <Plus class="mr-1.5 size-4" /> เพิ่ม
+                </PrimaryButton>
+            </div>
 
-            <MenuTreeNode
-                v-for="node in tree"
-                :key="node.id"
-                :node="node"
-                :depth="0"
-                :menu-types="menuTypes"
-                :can-manage="can.manage"
-                :can-delete="can.delete"
-                @edit="openEdit"
-                @toggle-status="toggleStatus"
-                @remove="(node) => (pendingDelete = node)"
-            />
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-xs">
+                <p v-if="deleteForm.errors.menu" class="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                    {{ deleteForm.errors.menu }}
+                </p>
 
-            <p v-if="tree.length === 0" class="py-10 text-center text-sm text-gray-400">ยังไม่มีเมนู — กด "เพิ่ม" เพื่อเริ่มสร้างเมนู</p>
+                <MenuTreeNode
+                    v-for="node in tree"
+                    :key="node.id"
+                    :node="node"
+                    :depth="0"
+                    :menu-types="menuTypes"
+                    :can-manage="can.manage"
+                    :can-delete="can.delete"
+                    @edit="openEdit"
+                    @toggle-status="toggleStatus"
+                    @remove="(node) => (pendingDelete = node)"
+                />
+
+                <p v-if="tree.length === 0" class="py-10 text-center text-sm text-gray-400">ยังไม่มีเมนู — กด "เพิ่ม" เพื่อเริ่มสร้างเมนู</p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+                <SecondaryButton type="button" @click="showReorder = true">
+                    <ArrowUpDown class="mr-1.5 size-4" /> เรียงลำดับ
+                </SecondaryButton>
+                <PrimaryButton v-if="can.manage" type="button" @click="openAdd">
+                    <Plus class="mr-1.5 size-4" /> เพิ่ม
+                </PrimaryButton>
+            </div>
         </div>
 
         <MenuFormDialog
