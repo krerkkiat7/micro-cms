@@ -16,6 +16,18 @@ export const FrontMenuType = {
     PAGE: 'page',
 } as const;
 
+/** ประเภทเมนูที่ลิงก์ไปหน้าเนื้อหาจริงบนเว็บนี้ — เฉพาะกลุ่มนี้เท่านั้นที่มีชุดตั้งค่า "หัวเรื่องของหน้าเป้าหมาย" */
+export const CONTENT_MENU_TYPES: string[] = [FrontMenuType.ARTICLE_CATEGORY, FrontMenuType.ARTICLE_ITEM, FrontMenuType.PAGE];
+
+/** อัตราส่วนรูปภาพส่วนหัว — 'natural' = ไม่ครอป แสดงตามขนาดจริงของรูป (ไม่มี image_fit/สีพื้นหลังให้ตั้ง) */
+export const HEADER_IMAGE_ASPECT_OPTIONS = [
+    { value: 'natural', label: 'ตามขนาดรูปภาพ' },
+    { value: '16:9', label: '16:9 (มาตรฐาน)' },
+    { value: '21:9', label: '21:9 (แบนเนอร์กว้าง)' },
+    { value: '4:3', label: '4:3' },
+    { value: '1:1', label: '1:1 (จัตุรัส)' },
+];
+
 export function menuTypeOptions(menuTypes: Record<string, string>): { value: string; label: string }[] {
     return Object.entries(menuTypes).map(([value, label]) => ({ value, label }));
 }

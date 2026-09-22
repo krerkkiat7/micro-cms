@@ -63,8 +63,8 @@ const emit = defineEmits<{
                     v-if="canDelete"
                     type="button"
                     class="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30"
-                    title="ลบ (ลบได้เฉพาะเมนูที่ไม่มีเมนูลูก)"
-                    :disabled="node.children.length > 0"
+                    :title="node.is_home === 'Y' ? 'ลบไม่ได้ — เมนูนี้ตั้งเป็นหน้าหลักอยู่' : 'ลบ (ลบได้เฉพาะเมนูที่ไม่มีเมนูลูก)'"
+                    :disabled="node.children.length > 0 || node.is_home === 'Y'"
                     @click="emit('remove', node)"
                 >
                     <Trash2 class="size-4" />

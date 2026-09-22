@@ -41,6 +41,7 @@ class FrontMenuController extends Controller
         $menus = FrontMenuInfo::query()
             ->with([
                 'details',
+                'headerImage',
                 'targetArticleCategory.details',
                 'targetArticleItem.details',
                 'targetPageItem.details',
@@ -77,7 +78,10 @@ class FrontMenuController extends Controller
                 FrontMenuInfo::where('is_home', 'Y')->update(['is_home' => 'N', 'updated_by' => $actorId]);
             }
 
-            $menu = FrontMenuInfo::create($this->infoPayload($data) + ['created_by' => $actorId]);
+            // เรียงไปอยู่ท้ายสุดภายใต้ parent เดียวกันเสมอ (ไม่ใช้ default 0 ของ migration เพราะจะไปแทรกบนสุด)
+            $nextSortOrder = 1 + (int) FrontMenuInfo::where('parent_id', $data['parent_id'] ?? null)->max('sort_order');
+
+            $menu = FrontMenuInfo::create($this->infoPayload($data) + ['sort_order' => $nextSortOrder, 'created_by' => $actorId]);
 
             foreach ($data['detail'] as $lang => $detail) {
                 FrontMenuDetail::create([
@@ -160,6 +164,10 @@ class FrontMenuController extends Controller
 
         if (FrontMenuInfo::where('parent_id', $model->id)->exists()) {
             return back()->withErrors(['menu' => 'ไม่สามารถลบเมนูที่มีเมนูลูกอยู่ได้']);
+        }
+
+        if ($model->is_home === 'Y') {
+            return back()->withErrors(['menu' => 'ไม่สามารถลบเมนูที่ตั้งเป็นหน้าหลักอยู่ได้']);
         }
 
         $name = $this->detailName($model, Setting::defaultLanguage()) ?? (string) $model->id;
@@ -354,6 +362,9 @@ class FrontMenuController extends Controller
             'is_home' => $data['is_home'],
             'show_header_image' => $data['show_header_image'],
             'header_image_id' => $data['header_image_id'] ?? null,
+            'header_image_aspect_ratio' => $data['header_image_aspect_ratio'],
+            'header_image_fit' => $data['header_image_fit'],
+            'header_image_background' => $data['header_image_background'],
             'show_title' => $data['show_title'],
             'title_font_size' => $data['title_font_size'],
             'title_font_family' => $data['title_font_family'],
@@ -454,6 +465,18 @@ class FrontMenuController extends Controller
             'is_home' => $menu->is_home,
             'show_header_image' => $menu->show_header_image,
             'header_image_id' => $menu->header_image_id,
+            'header_image' => $menu->headerImage ? [
+                'id' => $menu->headerImage->id,
+                'name' => $menu->headerImage->name,
+                'hash_name' => $menu->headerImage->hash_name,
+                'extension' => $menu->headerImage->extension,
+                'file_size' => $menu->headerImage->file_size,
+                'is_image' => $menu->headerImage->isImage(),
+                'created_at' => $menu->headerImage->created_at,
+            ] : null,
+            'header_image_aspect_ratio' => $menu->header_image_aspect_ratio,
+            'header_image_fit' => $menu->header_image_fit,
+            'header_image_background' => $menu->header_image_background,
             'show_title' => $menu->show_title,
             'title_font_size' => $menu->title_font_size,
             'title_font_family' => $menu->title_font_family,

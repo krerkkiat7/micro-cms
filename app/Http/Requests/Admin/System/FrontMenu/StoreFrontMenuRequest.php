@@ -19,6 +19,9 @@ class StoreFrontMenuRequest extends FormRequest
         '',
     ];
 
+    /** ค่าที่เลือกได้ของ header_image_aspect_ratio — 'natural' = ตามขนาดรูปภาพ (ไม่ครอป) ที่เหลือเหมือน widget Slideset/Grid */
+    public const ASPECT_RATIO_VALUES = ['natural', '16:9', '21:9', '4:3', '1:1'];
+
     /**
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -65,6 +68,9 @@ class StoreFrontMenuRequest extends FormRequest
                 Rule::exists('file_info', 'id')->where(fn ($query) => $query
                     ->where('status', 'Y')->whereNull('deleted_at')),
             ],
+            'header_image_aspect_ratio' => ['required', 'string', Rule::in(self::ASPECT_RATIO_VALUES)],
+            'header_image_fit' => ['required', 'string', Rule::in(['cover', 'contain'])],
+            'header_image_background' => ['required', 'string', 'max:20', 'regex:/^(transparent|#[0-9a-fA-F]{3,8})$/'],
 
             'show_title' => ['required', Rule::in(['Y', 'N'])],
             'title_font_size' => ['required', 'integer', 'min:'.PageTextStyle::FONT_SIZE_MIN, 'max:'.PageTextStyle::FONT_SIZE_MAX],

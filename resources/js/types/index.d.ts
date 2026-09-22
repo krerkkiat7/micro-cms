@@ -128,6 +128,10 @@ export interface FrontMenuNode {
     is_home: string;
     show_header_image: string;
     header_image_id: number | null;
+    header_image: FileItem | null;
+    header_image_aspect_ratio: string;
+    header_image_fit: string;
+    header_image_background: string;
     show_title: string;
     title_font_size: number;
     title_font_family: string;

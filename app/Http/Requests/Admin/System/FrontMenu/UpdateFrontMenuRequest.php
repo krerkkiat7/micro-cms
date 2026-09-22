@@ -57,6 +57,9 @@ class UpdateFrontMenuRequest extends FormRequest
                 Rule::exists('file_info', 'id')->where(fn ($query) => $query
                     ->where('status', 'Y')->whereNull('deleted_at')),
             ],
+            'header_image_aspect_ratio' => ['required', 'string', Rule::in(StoreFrontMenuRequest::ASPECT_RATIO_VALUES)],
+            'header_image_fit' => ['required', 'string', Rule::in(['cover', 'contain'])],
+            'header_image_background' => ['required', 'string', 'max:20', 'regex:/^(transparent|#[0-9a-fA-F]{3,8})$/'],
 
             'show_title' => ['required', Rule::in(['Y', 'N'])],
             'title_font_size' => ['required', 'integer', 'min:'.PageTextStyle::FONT_SIZE_MIN, 'max:'.PageTextStyle::FONT_SIZE_MAX],
