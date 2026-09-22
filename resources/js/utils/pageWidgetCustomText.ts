@@ -56,8 +56,9 @@ export interface CustomTextPartData {
     /** ตั้งค่าที่ไม่แยกภาษาของ part — รูปร่างต่างกันไปตามประเภท (เหมือน PartData.setting ของบทความ) */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setting: Record<string, any>;
-    /** การจัดรูปแบบหัวเรื่องของ part นี้ (ใช้กับ settingTextStyle(part, 'title') จาก @/utils/pageWidget ได้ตรง ๆ) */
+    /** การจัดรูปแบบหัวเรื่องของ part นี้ (ใช้กับ settingTextStyle(part, 'title') จาก @/utils/pageWidget ได้ตรง ๆ ยกเว้น title_bold ที่แยกต่างหาก) */
     title_font_size: number;
+    title_bold: 'Y' | 'N';
     title_font_family: string;
     title_align: 'left' | 'center' | 'right';
     title_color: string;
@@ -138,6 +139,7 @@ export function createCustomTextPart(type: CustomTextPartType, languages: Langua
         status: 'Y',
         setting: defaultPartSetting(type),
         title_font_size: 20,
+        title_bold: 'Y',
         title_font_family: 'Sarabun',
         title_align: 'left',
         title_color: '#000000',
@@ -180,6 +182,7 @@ export function customTextPartsFromServer(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         setting: Record<string, any> | null;
         title_font_size: number;
+        title_bold: 'Y' | 'N';
         title_font_family: string;
         title_align: 'left' | 'center' | 'right';
         title_color: string;
@@ -202,6 +205,7 @@ export function customTextPartsFromServer(
         status: part.status ?? 'Y',
         setting: part.setting && Object.keys(part.setting).length > 0 ? part.setting : defaultPartSetting(part.part_type),
         title_font_size: part.title_font_size,
+        title_bold: part.title_bold,
         title_font_family: part.title_font_family,
         title_align: part.title_align,
         title_color: part.title_color,
@@ -226,6 +230,7 @@ export function customTextPartsToPayload(parts: CustomTextPartData[]) {
         status: part.status,
         setting: part.setting,
         title_font_size: part.title_font_size,
+        title_bold: part.title_bold,
         title_font_family: part.title_font_family,
         title_align: part.title_align,
         title_color: part.title_color,

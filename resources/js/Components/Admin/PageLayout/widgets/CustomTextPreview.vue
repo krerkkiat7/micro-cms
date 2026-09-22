@@ -31,6 +31,7 @@ function defaultLangDetail(part: CustomTextPartData): string {
 function titleStyle(part: CustomTextPartData): CSSProperties {
     return {
         fontSize: `${part.title_font_size}px`,
+        fontWeight: part.title_bold === 'Y' ? 700 : 400,
         fontFamily: `'${part.title_font_family}', sans-serif`,
         textAlign: part.title_align,
         color: part.title_color,

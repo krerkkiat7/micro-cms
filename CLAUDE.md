@@ -317,8 +317,9 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   (`App\Support\PageWidget\CustomTextWidget`, `relation()` เป็น `hasMany` → `toArray()` ได้ `Collection` แทน `Model` เดี่ยว — ต้องแก้
   `PageWidgetType::toArray()`/`SettingsWidget::toArray()` ให้รับ `Model|Collection|null` แทน `?Model` เดิม) `save()` แทนที่ part ทั้งหมด
   ของ widget ด้วยชุดที่ส่งมาใหม่ทุกครั้ง (ลบแล้วสร้างใหม่ เทียบเคียง `ArticleItemController::syncParts()`) ตาราง `page_item_widget_customtext_part`
-  (+ `_file` + `_detail`, migration `2026_09_27_000001_*`) — **หัวเรื่องของแต่ละ part จัดรูปแบบได้เอง** (ขนาด/ฟอนต์/ตำแหน่ง/สี อยู่บนตัว part
-  เอง ต่างจาก part ของบทความที่ไม่มีการจัดรูปแบบเลย) ฝั่งหน้าจอ `utils/pageWidgetCustomText.ts` (เทียบเคียง `utils/articleParts.ts`) +
+  (+ `_file` + `_detail`, migration `2026_09_27_000001_*`) — **หัวเรื่องของแต่ละ part จัดรูปแบบได้เอง** (ขนาด/ตัวหนา/ฟอนต์/ตำแหน่ง/สี อยู่บนตัว part
+  เอง ต่างจาก part ของบทความที่ไม่มีการจัดรูปแบบเลย — ตัวหนา `title_bold` เพิ่มทีหลังใน migration `2026_09_28_000001_*` ให้ครบชุดเดียวกับหัวเรื่อง/
+  ข้อความเกริ่นนำของ Slideset/Grid) ฝั่งหน้าจอ `utils/pageWidgetCustomText.ts` (เทียบเคียง `utils/articleParts.ts`) +
   `Components/Admin/PageLayout/widgets/CustomTextFields.vue` + subfolder `widgets/CustomTextPart/` (`PartCard.vue` แสดงหัวเรื่อง+การจัดรูปแบบ
   ครั้งเดียวแล้ว dispatch ไปยัง `PartText`/`PartImage`/`PartImages`/`PartVideo`, เรียงลำดับผ่าน `PartReorderDialog.vue` เหมือน part ของบทความ)
   — เพิ่ม prop `stacked` ให้ `LangFieldGroup.vue` (บังคับคอลัมน์เดียว) ใช้เฉพาะกับตัวแก้ไขข้อความ (rich text) ของ part ข้อความ เพราะ dialog

@@ -431,10 +431,12 @@ migration `2026_09_25_000003_*`; FK หมวดหมู่ตั้งชื�
 ตาราง: `page_item_widget_customtext_part` (1 แถวต่อ 1 part, คีย์หลักเป็นของตัวเอง) + `_file` (ไฟล์ของ part) + `_detail` (หัวข้อ/เนื้อหาแยกภาษา
 PK = id + lang) — migration `2026_09_27_000001_*` (มีทั้ง FK และ index ที่ต้องตั้งชื่อเองเพราะยาวเกิน 64 ตัวอักษรของ MySQL)
 
-**หัวเรื่องของแต่ละ part จัดรูปแบบได้เอง** (ขนาดฟอนต์/ฟอนต์/จัดตำแหน่ง/สี — คอลัมน์ `title_font_size`/`title_font_family`/`title_align`/
-`title_color` อยู่บนตัว part เอง ไม่ใช่ต่อ widget เหมือน §2) ต่างจาก part ของบทความที่ไม่มีการจัดรูปแบบหัวเรื่องเลย — ฝั่งหน้าจอ
-(`PartCard.vue`) จึงยกส่วน "หัวเรื่อง" ขึ้นมาแสดงครั้งเดียวเหนือเนื้อหาเฉพาะประเภท (ใช้ `TextStyleFields.vue`/`settingTextStyle(part, 'title')`
-ร่วมกับส่วนอื่นของระบบ) แทนที่จะซ้ำในแต่ละ `PartText`/`PartImage`/`PartImages`/`PartVideo` เหมือนของบทความ หัวเรื่องที่แสดงในตัวอย่าง
+**หัวเรื่องของแต่ละ part จัดรูปแบบได้เอง** (ขนาดฟอนต์/ตัวหนา/ฟอนต์/จัดตำแหน่ง/สี — คอลัมน์ `title_font_size`/`title_bold`/`title_font_family`/
+`title_align`/`title_color` อยู่บนตัว part เอง ไม่ใช่ต่อ widget เหมือน §2 — `title_bold` เพิ่มทีหลังจากรอบแรกที่ทำ, migration `2026_09_28_000001_*`)
+ต่างจาก part ของบทความที่ไม่มีการจัดรูปแบบหัวเรื่องเลย — ฝั่งหน้าจอ (`PartCard.vue`) จึงยกส่วน "หัวเรื่อง" ขึ้นมาแสดงครั้งเดียวเหนือเนื้อหาเฉพาะประเภท
+(ใช้ `TextStyleFields.vue`/`settingTextStyle(part, 'title')` ร่วมกับส่วนอื่นของระบบสำหรับขนาด/ฟอนต์/ตำแหน่ง/สี ส่วนตัวหนาแยกเป็น `FlagField`
+ต่างหากเหมือนที่ `SlidesetTextFields.vue` ทำกับ `<part>_bold`) แทนที่จะซ้ำในแต่ละ `PartText`/`PartImage`/`PartImages`/`PartVideo` เหมือนของบทความ
+หัวเรื่องที่แสดงในตัวอย่าง
 (`CustomTextPreview.vue`) ใช้ `<div>` เหมือนหัวเรื่องอื่น ๆ ในหน้าโครงสร้าง (ที่หน้าบ้านของจริงในอนาคตจะใช้ `<h3>` แทน ตาม convention เดียวกับ
 `HEADING_TAGS` ใน §2 — ยังไม่มีหน้าบ้านให้ implement จริง)
 

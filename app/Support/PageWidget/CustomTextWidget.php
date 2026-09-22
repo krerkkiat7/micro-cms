@@ -40,6 +40,8 @@ class CustomTextWidget implements PageWidgetType
 
     public const DEFAULT_TITLE_FONT_SIZE = 20;
 
+    public const DEFAULT_TITLE_BOLD = 'Y';
+
     public const DEFAULT_TITLE_ALIGN = 'left';
 
     public function type(): string
@@ -73,6 +75,7 @@ class CustomTextWidget implements PageWidgetType
             'parts.*.status' => ['nullable', Rule::in(['Y', 'N'])],
             'parts.*.setting' => ['nullable', 'array'],
             'parts.*.title_font_size' => ['nullable', 'integer', 'between:'.PageTextStyle::FONT_SIZE_MIN.','.PageTextStyle::FONT_SIZE_MAX],
+            'parts.*.title_bold' => ['nullable', Rule::in(['Y', 'N'])],
             'parts.*.title_font_family' => ['nullable', Rule::in(PageTextStyle::fontNames())],
             'parts.*.title_align' => ['nullable', Rule::in(PageTextStyle::ALIGNS)],
             'parts.*.title_color' => ['nullable', 'string', 'max:20', 'regex:/^#[0-9a-fA-F]{3,8}$/'],
@@ -161,6 +164,7 @@ class CustomTextWidget implements PageWidgetType
                 'status' => $partData['status'] ?? 'Y',
                 'setting' => $partData['setting'] ?? null,
                 'title_font_size' => $partData['title_font_size'] ?? self::DEFAULT_TITLE_FONT_SIZE,
+                'title_bold' => $partData['title_bold'] ?? self::DEFAULT_TITLE_BOLD,
                 'title_font_family' => $partData['title_font_family'] ?? PageTextStyle::DEFAULT_FONT,
                 'title_align' => $partData['title_align'] ?? self::DEFAULT_TITLE_ALIGN,
                 'title_color' => $partData['title_color'] ?? PageTextStyle::DEFAULT_COLOR,
@@ -223,6 +227,7 @@ class CustomTextWidget implements PageWidgetType
                     'status' => $part->status,
                     'setting' => $part->setting ?? [],
                     'title_font_size' => (int) $part->title_font_size,
+                    'title_bold' => $part->title_bold,
                     'title_font_family' => $part->title_font_family,
                     'title_align' => $part->title_align,
                     'title_color' => $part->title_color,

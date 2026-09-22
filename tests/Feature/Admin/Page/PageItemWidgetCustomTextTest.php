@@ -32,6 +32,7 @@ function customTextPart(array $overrides = []): array
         'status' => 'Y',
         'setting' => [],
         'title_font_size' => 22,
+        'title_bold' => 'N',
         'title_font_family' => 'Kanit',
         'title_align' => 'center',
         'title_color' => '#111111',
@@ -79,6 +80,7 @@ test('saving a customtext widget stores every part in its own table with a title
         customTextPart([
             'part_type' => 'image',
             'title_font_size' => 18,
+            'title_bold' => 'Y',
             'title_font_family' => 'Sarabun',
             'title_align' => 'left',
             'title_color' => '#000000',
@@ -99,6 +101,7 @@ test('saving a customtext widget stores every part in its own table with a title
     $text = $rows[0];
     expect($text->part_type)->toBe('text')
         ->and($text->title_font_size)->toBe(22)
+        ->and($text->title_bold)->toBe('N')
         ->and($text->title_font_family)->toBe('Kanit')
         ->and($text->title_align)->toBe('center')
         ->and($text->title_color)->toBe('#111111')
@@ -107,8 +110,24 @@ test('saving a customtext widget stores every part in its own table with a title
 
     $image = $rows[1];
     expect($image->part_type)->toBe('image')
+        ->and($image->title_bold)->toBe('Y')
         ->and($image->setting)->toBe(['alignment' => 'center', 'size' => 'large', 'show_caption' => false])
         ->and($image->files()->first()->file_id)->toBe($this->image->id);
+});
+
+test('title_bold defaults to Y and is validated as Y/N', function () {
+    actingAsUserWithPermissions(['page.item.manage']);
+
+    $part = customTextPart();
+    unset($part['title_bold']);
+
+    $this->put(route('admin.page.item.layout.update', $this->page->id), customTextPayload([$part]))
+        ->assertSessionHasNoErrors();
+
+    expect(newestCustomTextWidget()->customtextParts()->first()->title_bold)->toBe('Y');
+
+    $this->put(route('admin.page.item.layout.update', $this->page->id), customTextPayload([customTextPart(['title_bold' => 'maybe'])]))
+        ->assertSessionHasErrors(['rows.0.columns.0.widgets.0.setting.parts.0.title_bold']);
 });
 
 test('saving again replaces the previous parts (whole-list replace, not a diff)', function () {

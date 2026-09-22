@@ -10,6 +10,7 @@ import InputError from '@/Components/InputError.vue';
 import LangFieldGroup from '@/Components/Admin/LangFieldGroup.vue';
 import TextInput from '@/Components/TextInput.vue';
 import TextStyleFields from '@/Components/Admin/PageLayout/TextStyleFields.vue';
+import FlagField from '@/Components/Admin/PageLayout/widgets/FlagField.vue';
 import { settingTextStyle } from '@/utils/pageWidget';
 import { CUSTOMTEXT_PART_TYPE_ICONS, CUSTOMTEXT_PART_TYPE_LABELS } from '@/utils/pageWidgetCustomText';
 import type { LanguageOption } from '@/types';
@@ -90,7 +91,10 @@ function titleError(lang: string): string | undefined {
 
             <div class="rounded-xl bg-white p-4">
                 <p class="mb-3 text-xs font-medium text-gray-500">การจัดรูปแบบตัวอักษร — หัวเรื่อง</p>
-                <TextStyleFields :text-style="titleStyle" :fonts="fonts" />
+                <div class="space-y-4">
+                    <TextStyleFields :text-style="titleStyle" :fonts="fonts" />
+                    <FlagField v-model="part.title_bold" label="ตัวหนา" />
+                </div>
             </div>
 
             <component :is="meta.component" :part="part" :languages="languages" :error-prefix="errorPrefix" :form-errors="formErrors" />

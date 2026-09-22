@@ -12,8 +12,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * images_display_type ใช้เฉพาะ part_type = images (ค่าเดียวกับ ArticleItemPart::images_display_type)
  * show_title: แสดงหัวเรื่องของ part นี้หรือไม่ (Y/N)
  * status: แสดง/ซ่อน part นี้ทั้งอัน (Y/N) — คนละความหมายกับ soft delete
- * title_font_size/title_font_family/title_align/title_color: การจัดรูปแบบหัวเรื่องของ part นี้ (ชุดฟิลด์เดียวกับ
- * App\Support\PageTextStyle แต่เก็บแยกต่อ part เพราะแต่ละ part มีหัวเรื่องของตัวเอง)
+ * title_font_size/title_bold/title_font_family/title_align/title_color: การจัดรูปแบบหัวเรื่องของ part นี้ (ชุดฟิลด์เดียวกับ
+ * App\Support\PageTextStyle บวกตัวหนา (`title_bold`) เหมือนหัวเรื่อง/ข้อความเกริ่นนำของ Slideset/Grid แต่เก็บแยกต่อ part
+ * เพราะแต่ละ part มีหัวเรื่องของตัวเอง)
  */
 class PageItemWidgetCustomtextPart extends Model
 {
@@ -30,6 +31,7 @@ class PageItemWidgetCustomtextPart extends Model
         'status',
         'setting',
         'title_font_size',
+        'title_bold',
         'title_font_family',
         'title_align',
         'title_color',
