@@ -132,11 +132,13 @@ function formatDate(value: string | null): string {
 // ตัวอย่างแสดงไม่เกิน PREVIEW_LIMIT ใบ — บอกผู้ใช้เมื่อจำนวนจริงที่จะแสดง (ตามจำนวนสูงสุดที่ตั้งไว้) อาจมากกว่านี้
 const previewTruncated = computed(() => count.value >= PREVIEW_LIMIT && (props.setting.max_items === 0 || props.setting.max_items > PREVIEW_LIMIT));
 
-// ---- กล่องของการ์ด: เส้นขอบ / มุมมน ----
-const cardClass = computed(() => [
-    props.setting.show_border === 'Y' ? 'border border-gray-200' : '',
-    props.setting.rounded_corners === 'Y' ? 'rounded-lg' : '',
-]);
+// ---- กล่องของการ์ด: เส้นขอบ + สี / มุมมน / สีพื้นหลังของแต่ละรายการ ----
+const itemStyle = computed<CSSProperties>(() => ({
+    backgroundColor: props.setting.item_background,
+    borderWidth: props.setting.show_border === 'Y' ? '1px' : '0',
+    borderStyle: 'solid',
+    borderColor: props.setting.border_color,
+}));
 
 // ส่วนล่างของการ์ด (ข้อความ/วันที่/เข้าชม) — ถ้าทุกส่วนถูกซ่อนหรือไม่มีข้อมูลให้ไม่แสดงเลย (ไม่เหลือพื้นที่ว่าง)
 function hasBody(item: { title: string; intro_text: string; date?: string | null }): boolean {
@@ -201,7 +203,11 @@ const linkIcon = 'ml-1 inline size-3 shrink-0 align-baseline opacity-60';
                 <div class="select-none overflow-hidden">
                     <div class="flex" :style="trackStyle">
                         <div v-for="item in items" :key="item.id" class="px-1.5" :style="slotStyle">
-                            <article class="flex h-full flex-col overflow-hidden bg-white" :class="cardClass">
+                            <article
+                                class="flex h-full flex-col overflow-hidden"
+                                :class="setting.rounded_corners === 'Y' ? 'rounded-lg' : ''"
+                                :style="itemStyle"
+                            >
                                 <div v-if="setting.show_image === 'Y'" class="relative flex items-center justify-center" :style="frameStyle">
                                     <img
                                         v-if="item.image"

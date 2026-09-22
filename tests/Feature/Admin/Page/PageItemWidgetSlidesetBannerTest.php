@@ -74,7 +74,7 @@ test('the defaults differ from the article slideset: intro hidden, no date / vie
         ->and($d['title_lines'])->toBe(1)
         ->and($d['intro_text_lines'])->toBe(2)
         ->and($d['image_background'])->toBe('#F3F4F6')
-        ->and([$d['show_border'], $d['rounded_corners']])->toBe(['Y', 'Y'])
+        ->and([$d['show_border'], $d['border_color'], $d['rounded_corners'], $d['item_background']])->toBe(['Y', '#E5E7EB', 'Y', '#FFFFFF'])
         ->and($d['banner_category_info_id'])->toBeNull()
         ->and($d)->not->toHaveKeys(['show_date', 'date_color', 'show_views', 'views_color', 'show_read_all', 'read_all_text', 'read_all_color', 'read_all_background', 'article_category_info_id']);
 });
@@ -181,18 +181,22 @@ test('slidesetbanner rejects invalid values', function (string $field, mixed $va
     'link target' => ['link_target', '_top'],
     'flag' => ['show_arrows', 'yes'],
     'border flag' => ['show_border', 'yes'],
+    'border color name' => ['border_color', 'gray'],
+    'border color transparent' => ['border_color', 'transparent'],
     'rounded flag' => ['rounded_corners', 'no'],
+    'item background name' => ['item_background', 'white'],
 ]);
 
-test('the card box border / rounded corners are saved', function () {
+test('the card box border / border colour / rounded corners / item background are saved', function () {
     actingAsUserWithPermissions(['page.item.manage']);
 
-    $this->put(route('admin.page.item.layout.update', $this->page->id), slidesetBannerPayload($this->category->id, ['show_border' => 'N', 'rounded_corners' => 'N']))
-        ->assertSessionHasNoErrors();
+    $this->put(route('admin.page.item.layout.update', $this->page->id), slidesetBannerPayload($this->category->id, [
+        'show_border' => 'N', 'border_color' => '#ff00ff', 'rounded_corners' => 'N', 'item_background' => 'transparent',
+    ]))->assertSessionHasNoErrors();
 
     $row = PageItemWidgetSlidesetBanner::findOrFail(newestSlidesetBanner()->id);
 
-    expect([$row->show_border, $row->rounded_corners])->toBe(['N', 'N']);
+    expect([$row->show_border, $row->border_color, $row->rounded_corners, $row->item_background])->toBe(['N', '#ff00ff', 'N', 'transparent']);
 });
 
 test('the article-only settings are not part of the banner slideset', function () {

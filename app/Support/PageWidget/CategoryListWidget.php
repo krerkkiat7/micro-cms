@@ -43,6 +43,9 @@ abstract class CategoryListWidget extends SettingsWidget
     /** สีพื้นหลังเริ่มต้นของกรอบรูปเมื่อแสดงแบบ contain (เทาอ่อน = bg-gray-100 เหมือนกรอบรูปในหน้าจัดการไฟล์) */
     public const DEFAULT_IMAGE_BACKGROUND = '#F3F4F6';
 
+    /** สีเส้นขอบเริ่มต้นของกล่อง/แถวที่ครอบแต่ละรายการ (เทาอ่อน = border-gray-200 เหมือนที่แสดงอยู่เดิมก่อนเลือกสีเองได้) */
+    public const DEFAULT_BORDER_COLOR = '#E5E7EB';
+
     /** ชื่อคอลัมน์ FK หมวดหมู่ในตารางตั้งค่า (ชื่อเต็มของตารางที่อ้างถึง เช่น banner_category_info_id) */
     abstract protected function categoryField(): string;
 
@@ -152,6 +155,21 @@ abstract class CategoryListWidget extends SettingsWidget
             "{$part}_bold" => self::flag("ตัวหนาของ{$label}", 'N'),
             "{$part}_font_family" => self::fontFamily("ฟอนต์ของ{$label}"),
             "{$part}_color" => self::color("สีตัวอักษรของ{$label}", '#667085'),
+        ];
+    }
+
+    /**
+     * ฟิลด์ของกล่อง/แถวที่ครอบแต่ละรายการ: เส้นขอบ (แสดง/สี) + มุมมน + สีพื้นหลังของแต่ละรายการ — ใช้ร่วมกันระหว่าง Slideset และ Grid
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    protected function cardBoxFields(): array
+    {
+        return [
+            'show_border' => self::flag('การแสดงเส้นขอบของกล่อง', 'Y'),
+            'border_color' => self::color('สีเส้นขอบของกล่อง', self::DEFAULT_BORDER_COLOR),
+            'rounded_corners' => self::flag('การทำมุมมนของกล่อง', 'Y'),
+            'item_background' => self::backgroundColor('สีพื้นหลังของแต่ละรายการ', '#FFFFFF'),
         ];
     }
 

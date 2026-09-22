@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { Laptop, Monitor, Smartphone, Tablet } from 'lucide-vue-next';
+import CardBoxFields from './CardBoxFields.vue';
 import FlagField from './FlagField.vue';
 import ReadAllFields from './ReadAllFields.vue';
 import SettingSection from './SettingSection.vue';
@@ -152,11 +153,8 @@ const perRowModels = Object.fromEntries(SLIDESET_DEVICES.map((d) => [d.key, perR
             </div>
         </SettingSection>
 
-        <SettingSection title="กล่องของการ์ด" description="เส้นขอบและมุมของกล่องที่ครอบแต่ละรายการ">
-            <div class="grid gap-3 sm:grid-cols-2">
-                <FlagField v-model="setting.show_border" label="แสดงเส้นขอบ" hint="เส้นบาง ๆ รอบกล่อง" />
-                <FlagField v-model="setting.rounded_corners" label="มุมมน" hint="ปิดเพื่อให้เป็นมุมเหลี่ยม" />
-            </div>
+        <SettingSection title="กล่องของการ์ด" description="เส้นขอบ สี และมุมของกล่องที่ครอบแต่ละรายการ">
+            <CardBoxFields :setting="setting" :errors="errors" />
         </SettingSection>
 
         <SettingSection v-model:enabled="setting.show_image" toggleable title="รูปภาพ">

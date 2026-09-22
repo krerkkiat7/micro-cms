@@ -9,8 +9,9 @@ use Illuminate\Database\Eloquent\Builder;
 /**
  * widget "Grid จาก article" — กล่องเรียงต่อเนื่องหลายคอลัมน์ (ไม่เลื่อน ต่างจาก Slideset) ของบทความในหมวดหมู่ที่เลือก มี 3 รูปแบบการแสดงผล
  * (`display_type`): `card` (การ์ด — ทุกส่วนเปิด/ปิดเองได้), `row_image` (แถวแบ่ง 2 ส่วน ซ้าย=รูปกว้างเป็น % ขวา=ข้อมูล — หัวเรื่องบังคับแสดงเสมอ),
- * `row_date` (แถวแบ่ง 2 ส่วน ซ้าย=กล่องวันที่ (วันที่ + เดือนย่อปี) แทนรูป ขวา=ข้อมูล — หัวเรื่องและวันที่บังคับแสดงเสมอ) จำนวนคอลัมน์ต่อแถวตามขนาดหน้าจอ
- * ใช้ร่วมกันทุกรูปแบบ ส่วนของการ์ด (รูป/หัวเรื่อง/ข้อความเกริ่นนำ/วันที่/จำนวนเข้าชม) ใช้ฟิลด์ชุดเดียวกับ SlidesetWidget (ผ่าน CategoryListWidget::textFields/metaFields)
+ * `row_date` (แถวแบ่ง 2 ส่วน ซ้าย=กล่องวันที่ (เลขวัน + เดือนย่อ/ปี แยกตัวอักษรกันคนละส่วน — `dateBoxFields()`) แทนรูป ขวา=ข้อมูล — หัวเรื่องและวันที่บังคับแสดงเสมอ)
+ * จำนวนคอลัมน์ต่อแถวตามขนาดหน้าจอ, กล่องของการ์ด (เส้นขอบ+สี, มุมมน, สีพื้นหลัง — `CategoryListWidget::cardBoxFields()`) ใช้ร่วมกันทุกรูปแบบ ส่วนของการ์ด
+ * (รูป/หัวเรื่อง/ข้อความเกริ่นนำ/วันที่/จำนวนเข้าชม) ใช้ฟิลด์ชุดเดียวกับ SlidesetWidget (ผ่าน CategoryListWidget::textFields/metaFields)
  * และมีปุ่ม "อ่านทั้งหมด" เหมือน Slideset จาก article (ดู HasReadAllButton) ตาราง `page_item_widget_gridarticle` (+ `_detail`) PK = `page_item_widget.id`
  */
 class GridArticleWidget extends CategoryListWidget
@@ -82,11 +83,34 @@ class GridArticleWidget extends CategoryListWidget
                 'image_background' => self::backgroundColor('สีพื้นหลังของรูปภาพ', self::DEFAULT_IMAGE_BACKGROUND),
                 'image_clickable' => self::flag('การกดลิงก์ที่รูปภาพ', 'Y'),
             ]
+            + $this->cardBoxFields()
             + $this->textFields('title', 'หัวเรื่อง', size: 18, bold: 'Y', color: '#000000', lines: 1, showDefault: 'Y', clickable: 'Y')
             + $this->textFields('intro_text', 'ข้อความเกริ่นนำ', size: 14, bold: 'N', color: '#000000', lines: 2, showDefault: 'N', clickable: 'N')
             + $this->metaFields('date', 'วันที่เผยแพร่', showDefault: 'Y')
             + $this->metaFields('views', 'จำนวนเข้าชม', showDefault: 'N')
+            + $this->dateBoxFields()
             + $this->readAllFields();
+    }
+
+    /**
+     * ฟิลด์ของ "กล่องวันที่เผยแพร่" ที่แทนพื้นที่รูปภาพทั้งหมดในรูปแบบ `row_date` — แยกตัวอักษรของเลขวัน (`date_day_*`) กับเดือน/ปี (`date_month_*`)
+     * ออกจากกันเพราะเป็นคนละบรรทัด/ขนาดกัน (เลขวันตัวใหญ่ เดือน/ปีตัวเล็ก) ต่างจาก `metaFields('date', ...)` ที่ใช้แสดงวันที่บรรทัดเดียวในรูปแบบการ์ด/แถวที่มีรูปภาพ
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    private function dateBoxFields(): array
+    {
+        return [
+            'date_day_font_size' => self::fontSize('ขนาดฟอนต์วันที่เผยแพร่ (วัน)', 18),
+            'date_day_bold' => self::flag('ตัวหนาวันที่เผยแพร่ (วัน)', 'Y'),
+            'date_day_font_family' => self::fontFamily('ฟอนต์วันที่เผยแพร่ (วัน)'),
+            'date_day_color' => self::color('สีตัวอักษรวันที่เผยแพร่ (วัน)', '#374151'), // เทาเข้ม (gray-700)
+            'date_month_font_size' => self::fontSize('ขนาดฟอนต์วันที่เผยแพร่ (เดือน/ปี)', 11),
+            'date_month_bold' => self::flag('ตัวหนาวันที่เผยแพร่ (เดือน/ปี)', 'N'),
+            'date_month_font_family' => self::fontFamily('ฟอนต์วันที่เผยแพร่ (เดือน/ปี)'),
+            'date_month_color' => self::color('สีตัวอักษรวันที่เผยแพร่ (เดือน/ปี)', '#9CA3AF'), // เทาอ่อน (gray-400)
+            'date_box_background' => self::backgroundColor('สีพื้นหลังกล่องวันที่เผยแพร่', self::DEFAULT_IMAGE_BACKGROUND), // เทาจาง
+        ];
     }
 
     protected function normalize(array $values): array

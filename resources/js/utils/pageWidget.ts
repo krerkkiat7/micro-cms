@@ -62,10 +62,10 @@ export const WIDGET_TYPE_DEFS: WidgetTypeDef[] = [
     {
         value: 'gridbanner',
         label: 'Grid จาก banner',
-        description: 'กล่องเรียงต่อเนื่องแบบ grid ข้อมูลจากป้ายโฆษณา (banner)',
+        description: 'กล่องเรียงต่อเนื่องหลายคอลัมน์ (ไม่เลื่อน) ข้อมูลจากป้ายโฆษณา (banner)',
         layout: 'grid',
         source: 'banner',
-        available: false,
+        available: true,
     },
     {
         value: 'gridarticle',
@@ -228,9 +228,11 @@ export interface SlidesetSetting {
     image_background: string;
     image_clickable: YesNo;
     link_target: '_self' | '_blank';
-    /** กล่องของการ์ด: แสดงเส้นขอบ / มุมมน */
+    /** กล่องของการ์ด: แสดงเส้นขอบ + สีเส้นขอบ / มุมมน / สีพื้นหลังของแต่ละรายการ */
     show_border: YesNo;
+    border_color: string;
     rounded_corners: YesNo;
+    item_background: string;
     show_title: YesNo;
     title_font_size: number;
     title_bold: YesNo;
@@ -319,11 +321,13 @@ export type CardListSetting = SlidesetSetting | GridSetting;
 export type GridDisplayType = 'card' | 'row_image' | 'row_date';
 
 /**
- * ค่าตั้งค่าของ Grid (ตอนนี้มีเฉพาะจาก article) — ชื่อฟิลด์ตรงกับคอลัมน์ `page_item_widget_grid<แหล่ง>` (ดู GridArticleWidget ฝั่ง backend)
- * ส่วนของการ์ด/ข้อความ/ปุ่มอ่านทั้งหมด ใช้ชุดฟิลด์เดียวกับ Slideset (ไม่มีกล่องเส้นขอบ/มุมมนและไม่มี carousel เพราะ Grid ไม่เลื่อน)
+ * ค่าตั้งค่าของ Grid (จาก article / จาก banner) — ชื่อฟิลด์ตรงกับคอลัมน์ `page_item_widget_grid<แหล่ง>` (ดู GridArticleWidget/
+ * GridBannerWidget ฝั่ง backend) ส่วนของการ์ด/ข้อความ ใช้ชุดฟิลด์เดียวกับ Slideset (ไม่มี carousel เพราะ Grid ไม่เลื่อน)
+ * ฟิลด์เฉพาะ article (วันที่/จำนวนเข้าชม/ปุ่มอ่านทั้งหมด/กล่องวันที่เผยแพร่) และคีย์หมวดหมู่ (ต่างกันตามแหล่ง) เป็น optional — ใช้ตาม GridTypeConfig
  */
 export interface GridSetting {
     article_category_info_id?: number | null;
+    banner_category_info_id?: number | null;
     sort_by: 'publish_desc' | 'publish_asc' | 'order_asc' | 'order_desc';
     /** จำนวนที่แสดงสูงสุด (0 = แสดงทั้งหมด) */
     max_items: number;
@@ -341,6 +345,11 @@ export interface GridSetting {
     image_fit: 'cover' | 'contain';
     image_background: string;
     image_clickable: YesNo;
+    /** กล่องของการ์ด/แถว: แสดงเส้นขอบ + สีเส้นขอบ / มุมมน / สีพื้นหลังของแต่ละรายการ */
+    show_border: YesNo;
+    border_color: string;
+    rounded_corners: YesNo;
+    item_background: string;
     show_title: YesNo;
     title_font_size: number;
     title_bold: YesNo;
@@ -357,50 +366,49 @@ export interface GridSetting {
     intro_text_align: 'left' | 'center' | 'right';
     intro_text_clickable: YesNo;
     intro_text_lines: number;
-    show_date: YesNo;
-    date_font_size: number;
-    date_bold: YesNo;
-    date_font_family: string;
-    date_color: string;
-    show_views: YesNo;
-    views_font_size: number;
-    views_bold: YesNo;
-    views_font_family: string;
-    views_color: string;
-    show_read_all: YesNo;
-    read_all_position: ReadAllPosition;
+    // ---- เฉพาะ article ----
+    show_date?: YesNo;
+    date_font_size?: number;
+    date_bold?: YesNo;
+    date_font_family?: string;
+    date_color?: string;
+    show_views?: YesNo;
+    views_font_size?: number;
+    views_bold?: YesNo;
+    views_font_family?: string;
+    views_color?: string;
+    /** ตัวอักษรของ "กล่องวันที่เผยแพร่" (ใช้แทนรูปภาพในรูปแบบ row_date) — แยกเลขวัน (ตัวใหญ่) กับเดือน/ปี (ตัวเล็ก) คนละส่วนกัน */
+    date_day_font_size?: number;
+    date_day_bold?: YesNo;
+    date_day_font_family?: string;
+    date_day_color?: string;
+    date_month_font_size?: number;
+    date_month_bold?: YesNo;
+    date_month_font_family?: string;
+    date_month_color?: string;
+    date_box_background?: string;
+    show_read_all?: YesNo;
+    read_all_position?: ReadAllPosition;
     /** ข้อความแทน "อ่านทั้งหมด" แยกภาษา (ภาษา → ข้อความ; ว่าง = ใช้ข้อความมาตรฐาน) */
-    read_all_text: Record<string, string>;
-    read_all_icon: ReadAllIcon;
-    read_all_icon_position: ReadAllIconPosition;
-    read_all_style: ReadAllStyle;
-    read_all_font_size: number;
-    read_all_font_family: string;
-    read_all_color: string;
-    read_all_background: string;
-    read_all_url: string;
-    read_all_link_target: '_self' | '_blank';
+    read_all_text?: Record<string, string>;
+    read_all_icon?: ReadAllIcon;
+    read_all_icon_position?: ReadAllIconPosition;
+    read_all_style?: ReadAllStyle;
+    read_all_font_size?: number;
+    read_all_font_family?: string;
+    read_all_color?: string;
+    read_all_background?: string;
+    read_all_url?: string;
+    read_all_link_target?: '_self' | '_blank';
 }
 
 export interface GridTypeConfig extends ListTypeConfig {
+    /** มีวันที่เผยแพร่/จำนวนเข้าชม/กล่องวันที่เผยแพร่ (article) */
+    hasMeta: boolean;
     /** มีปุ่ม "อ่านทั้งหมด" (article) */
     hasReadAll: boolean;
-}
-
-/** ประเภท widget ที่เป็น Grid — ตอนนี้มีเฉพาะ gridarticle (ตรงกับ GridArticleWidget ฝั่ง backend) */
-export const GRID_TYPES: Record<string, GridTypeConfig> = {
-    gridarticle: {
-        categoryKey: 'article_category_info_id',
-        optionsKey: 'article_categories',
-        categoryLabel: 'หมวดหมู่ article',
-        sortOptions: SLIDESHOW_SORT_OPTIONS.filter((o) => o.value.startsWith('publish_')),
-        emptyText: 'ไม่มีบทความที่เผยแพร่อยู่ในหมวดหมู่นี้',
-        hasReadAll: true,
-    },
-};
-
-export function gridConfig(type: string): GridTypeConfig | undefined {
-    return GRID_TYPES[type];
+    /** ตัวเลือก "รูปแบบการแสดงผล" ที่ใช้ได้กับแหล่งข้อมูลนี้ (banner ไม่มี "แถวที่แสดงวันที่เผยแพร่แทนรูปภาพ") */
+    displayTypeOptions: { value: GridDisplayType; label: string; description: string }[];
 }
 
 export const GRID_DISPLAY_TYPE_OPTIONS: { value: GridDisplayType; label: string; description: string }[] = [
@@ -408,6 +416,34 @@ export const GRID_DISPLAY_TYPE_OPTIONS: { value: GridDisplayType; label: string;
     { value: 'row_image', label: 'แถวที่มีรูปภาพ', description: 'แบ่ง 2 ส่วน: รูป (กว้างเป็น %) + ข้อมูล' },
     { value: 'row_date', label: 'แถวที่แสดงวันที่เผยแพร่แทนรูปภาพ', description: 'แบ่ง 2 ส่วน: กล่องวันที่ + ข้อมูล' },
 ];
+
+/** ประเภท widget ที่เป็น Grid — ตรงกับ GridArticleWidget / GridBannerWidget ฝั่ง backend */
+export const GRID_TYPES: Record<string, GridTypeConfig> = {
+    gridarticle: {
+        categoryKey: 'article_category_info_id',
+        optionsKey: 'article_categories',
+        categoryLabel: 'หมวดหมู่ article',
+        sortOptions: SLIDESHOW_SORT_OPTIONS.filter((o) => o.value.startsWith('publish_')),
+        emptyText: 'ไม่มีบทความที่เผยแพร่อยู่ในหมวดหมู่นี้',
+        hasMeta: true,
+        hasReadAll: true,
+        displayTypeOptions: GRID_DISPLAY_TYPE_OPTIONS,
+    },
+    gridbanner: {
+        categoryKey: 'banner_category_info_id',
+        optionsKey: 'banner_categories',
+        categoryLabel: 'หมวดหมู่ banner',
+        sortOptions: SLIDESHOW_SORT_OPTIONS,
+        emptyText: 'ไม่มี banner ที่เผยแพร่อยู่ในหมวดหมู่นี้',
+        hasMeta: false,
+        hasReadAll: false,
+        displayTypeOptions: GRID_DISPLAY_TYPE_OPTIONS.filter((o) => o.value !== 'row_date'),
+    },
+};
+
+export function gridConfig(type: string): GridTypeConfig | undefined {
+    return GRID_TYPES[type];
+}
 
 export const GRID_IMAGE_WIDTH_RANGE = { min: 5, max: 50 } as const;
 
@@ -439,6 +475,9 @@ export const SLIDESET_PER_ROW_OPTIONS = [1, 2, 3, 4, 5, 6].map((n) => ({ value: 
 
 /** สีพื้นหลังเริ่มต้นของกรอบรูปเมื่อแสดงแบบ contain (เทาอ่อน = bg-gray-100 เหมือนกรอบรูปในหน้าจัดการไฟล์) */
 export const SLIDESET_DEFAULT_IMAGE_BACKGROUND = '#F3F4F6';
+
+/** สีเส้นขอบเริ่มต้นของกล่อง/แถวที่ครอบแต่ละรายการ (เทาอ่อน = border-gray-200 — ตรงกับ CategoryListWidget::DEFAULT_BORDER_COLOR ฝั่ง backend) */
+export const DEFAULT_BORDER_COLOR = '#E5E7EB';
 
 export const SLIDESET_IMAGE_FIT_OPTIONS = [
     { value: 'cover', label: 'Cover — เต็มกรอบ (ครอปส่วนเกิน)' },
@@ -530,7 +569,9 @@ export function defaultSlidesetSetting(type: string, languages: string[] = []): 
         image_clickable: 'Y',
         link_target: '_self',
         show_border: 'Y',
+        border_color: DEFAULT_BORDER_COLOR,
         rounded_corners: 'Y',
+        item_background: '#FFFFFF',
         show_title: 'Y',
         title_font_size: 18,
         title_bold: 'Y',
@@ -583,12 +624,12 @@ export function defaultSlidesetSetting(type: string, languages: string[] = []): 
 }
 
 /**
- * ค่าตั้งค่าเริ่มต้นของ Grid — ต้องตรงกับ `fields()` ของ GridArticleWidget ฝั่ง backend
- * `languages` = รหัสภาษาที่เปิดใช้ (ไว้สร้างช่องข้อความแยกภาษาของปุ่มอ่านทั้งหมด)
+ * ค่าตั้งค่าเริ่มต้นของ Grid — ต้องตรงกับ `fields()` ของ GridArticleWidget / GridBannerWidget ฝั่ง backend
+ * `languages` = รหัสภาษาที่เปิดใช้ (ไว้สร้างช่องข้อความแยกภาษาของปุ่มอ่านทั้งหมด — เฉพาะ article)
  */
 export function defaultGridSetting(type: string, languages: string[] = []): GridSetting {
-    return {
-        article_category_info_id: null,
+    const article = type === 'gridarticle';
+    const common: GridSetting = {
         sort_by: 'publish_desc',
         max_items: 0,
         display_type: 'card',
@@ -603,6 +644,10 @@ export function defaultGridSetting(type: string, languages: string[] = []): Grid
         image_fit: 'cover',
         image_background: SLIDESET_DEFAULT_IMAGE_BACKGROUND,
         image_clickable: 'Y',
+        show_border: 'Y',
+        border_color: DEFAULT_BORDER_COLOR,
+        rounded_corners: 'Y',
+        item_background: '#FFFFFF',
         show_title: 'Y',
         title_font_size: 18,
         title_bold: 'Y',
@@ -619,6 +664,15 @@ export function defaultGridSetting(type: string, languages: string[] = []): Grid
         intro_text_align: 'left',
         intro_text_clickable: 'N',
         intro_text_lines: 2,
+    };
+
+    if (!article) {
+        return { ...common, banner_category_info_id: null };
+    }
+
+    return {
+        ...common,
+        article_category_info_id: null,
         show_date: 'Y',
         date_font_size: 12,
         date_bold: 'N',
@@ -629,6 +683,15 @@ export function defaultGridSetting(type: string, languages: string[] = []): Grid
         views_bold: 'N',
         views_font_family: 'Sarabun',
         views_color: '#667085',
+        date_day_font_size: 18,
+        date_day_bold: 'Y',
+        date_day_font_family: 'Sarabun',
+        date_day_color: '#374151',
+        date_month_font_size: 11,
+        date_month_bold: 'N',
+        date_month_font_family: 'Sarabun',
+        date_month_color: '#9CA3AF',
+        date_box_background: SLIDESET_DEFAULT_IMAGE_BACKGROUND,
         show_read_all: 'N',
         read_all_position: 'bottom_center',
         read_all_text: Object.fromEntries(languages.map((code) => [code, ''])),

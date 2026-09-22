@@ -87,9 +87,13 @@ test('the defaults follow the requested spec', function () {
         ->and([$d['per_row_pc'], $d['per_row_notebook'], $d['per_row_tablet'], $d['per_row_mobile']])->toBe([4, 3, 2, 1])
         ->and($d['image_width_percent'])->toBe(20)
         ->and($d['image_background'])->toBe('#F3F4F6')
+        ->and([$d['show_border'], $d['border_color'], $d['rounded_corners'], $d['item_background']])->toBe(['Y', '#E5E7EB', 'Y', '#FFFFFF'])
         ->and($d['show_read_all'])->toBe('N')
         ->and($d['read_all_text'])->toBe(['th' => '', 'en' => ''])
-        ->and([$d['read_all_font_size'], $d['read_all_font_family'], $d['read_all_color'], $d['read_all_background']])->toBe([14, 'Sarabun', '#FFFFFF', '#1F2937']);
+        ->and([$d['read_all_font_size'], $d['read_all_font_family'], $d['read_all_color'], $d['read_all_background']])->toBe([14, 'Sarabun', '#FFFFFF', '#1F2937'])
+        ->and([$d['date_day_font_size'], $d['date_day_bold'], $d['date_day_font_family'], $d['date_day_color']])->toBe([18, 'Y', 'Sarabun', '#374151'])
+        ->and([$d['date_month_font_size'], $d['date_month_bold'], $d['date_month_font_family'], $d['date_month_color']])->toBe([11, 'N', 'Sarabun', '#9CA3AF'])
+        ->and($d['date_box_background'])->toBe('#F3F4F6');
 });
 
 test('every setting field has a column in the table and a fillable entry on the model (no drift)', function () {
@@ -112,10 +116,14 @@ test('saving a gridarticle widget stores every setting in its own table with the
         'sort_by' => 'publish_asc', 'max_items' => 9, 'display_type' => 'row_image',
         'per_row_pc' => 5, 'per_row_notebook' => 4, 'per_row_tablet' => 3, 'per_row_mobile' => 2,
         'show_image' => 'Y', 'image_width_percent' => 35, 'aspect_ratio' => '4:3', 'image_fit' => 'contain', 'image_clickable' => 'N', 'link_target' => '_blank',
+        'show_border' => 'N', 'border_color' => '#ff00ff', 'rounded_corners' => 'N', 'item_background' => 'transparent',
         'title_font_size' => 22, 'title_bold' => 'N', 'title_font_family' => 'Kanit', 'title_color' => '#ff0000', 'title_align' => 'center', 'title_clickable' => 'N', 'title_lines' => 3,
         'show_intro_text' => 'Y', 'intro_text_lines' => 1, 'intro_text_clickable' => 'Y', 'intro_text_align' => 'right',
         'show_date' => 'N', 'date_font_size' => 13, 'date_bold' => 'Y', 'date_color' => '#111111',
         'show_views' => 'Y', 'views_font_family' => 'Mitr', 'views_bold' => 'Y',
+        'date_day_font_size' => 24, 'date_day_bold' => 'N', 'date_day_font_family' => 'Kanit', 'date_day_color' => '#222222',
+        'date_month_font_size' => 9, 'date_month_bold' => 'Y', 'date_month_font_family' => 'Mitr', 'date_month_color' => '#aaaaaa',
+        'date_box_background' => '#eeeeee',
     ]))->assertSessionHasNoErrors();
 
     $widget = newestGrid();
@@ -144,6 +152,10 @@ test('saving a gridarticle widget stores every setting in its own table with the
         ->and($row->date_bold)->toBe('Y')
         ->and($row->show_views)->toBe('Y')
         ->and($row->views_font_family)->toBe('Mitr')
+        ->and([$row->show_border, $row->border_color, $row->rounded_corners, $row->item_background])->toBe(['N', '#ff00ff', 'N', 'transparent'])
+        ->and([$row->date_day_font_size, $row->date_day_bold, $row->date_day_font_family, $row->date_day_color])->toBe([24, 'N', 'Kanit', '#222222'])
+        ->and([$row->date_month_font_size, $row->date_month_bold, $row->date_month_font_family, $row->date_month_color])->toBe([9, 'Y', 'Mitr', '#aaaaaa'])
+        ->and($row->date_box_background)->toBe('#eeeeee')
         ->and($row->created_by)->toBe($me->id);
 });
 
@@ -245,6 +257,19 @@ test('gridarticle rejects invalid values', function (string $field, mixed $value
     'views color transparent' => ['views_color', 'transparent'],
     'title color' => ['title_color', 'black'],
     'image background' => ['image_background', 'gray'],
+    'border flag' => ['show_border', 'yes'],
+    'border color name' => ['border_color', 'gray'],
+    'border color transparent' => ['border_color', 'transparent'],
+    'rounded flag' => ['rounded_corners', 'no'],
+    'item background name' => ['item_background', 'white'],
+    'date day font' => ['date_day_font_family', 'Comic Sans'],
+    'date day size low' => ['date_day_font_size', 7],
+    'date day color' => ['date_day_color', 'gray'],
+    'date day flag' => ['date_day_bold', 'yes'],
+    'date month font' => ['date_month_font_family', 'Comic Sans'],
+    'date month size high' => ['date_month_font_size', 121],
+    'date month color' => ['date_month_color', 'gray'],
+    'date box background name' => ['date_box_background', 'gray'],
     'read all position' => ['read_all_position', 'middle_left'],
     'read all icon' => ['read_all_icon', 'star'],
     'read all icon position' => ['read_all_icon_position', 'above'],

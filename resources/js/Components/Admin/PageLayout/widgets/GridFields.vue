@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue';
 import { Laptop, Monitor, Smartphone, Tablet } from 'lucide-vue-next';
+import CardBoxFields from './CardBoxFields.vue';
 import FlagField from './FlagField.vue';
 import OptionCardPicker from './OptionCardPicker.vue';
 import ReadAllFields from './ReadAllFields.vue';
@@ -12,7 +13,6 @@ import InputLabel from '@/Components/InputLabel.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import TextInput from '@/Components/TextInput.vue';
 import {
-    GRID_DISPLAY_TYPE_OPTIONS,
     GRID_IMAGE_WIDTH_RANGE,
     LINK_TARGET_OPTIONS,
     SLIDESET_DEVICES,
@@ -26,11 +26,11 @@ import type { GridSetting } from '@/utils/pageWidget';
 import type { LanguageOption } from '@/types';
 
 /**
- * ฟอร์มตั้งค่าเฉพาะของ widget Grid จาก article (อยู่ในกล่องบนสุดของ dialog ตั้งค่า widget) — คล้าย Slideset แต่ไม่เลื่อน (ไม่มีลูกศร/จุด/เลื่อนอัตโนมัติ)
- * และไม่มีเส้นขอบ/มุมมนของกล่อง แบ่งเป็นการ์ดตามหัวข้อ: ข้อมูลที่แสดง / รูปแบบการแสดงผล (การ์ด, แถวที่มีรูปภาพ, แถวที่แสดงวันที่แทนรูปภาพ) /
- * จำนวนคอลัมน์ต่อแถวตามหน้าจอ / ส่วนของรายการ (รูป, หัวเรื่อง, ข้อความเกริ่นนำ, วันที่, เข้าชม — ติ๊กเปิด/ปิดแต่ละส่วนได้ ปิดแล้วพับรายละเอียดทิ้ง —
- * รูปแบบแถวบังคับแสดงหัวเรื่องเสมอ, แถวที่แสดงวันที่แทนรูปภาพบังคับแสดงวันที่เสมอ) / ปุ่มอ่านทั้งหมด / การเปิดลิงก์
- * แก้ค่าบน `setting` ที่ส่งเข้ามาตรง ๆ (เป็นสำเนา draft ของ dialog อยู่แล้ว)
+ * ฟอร์มตั้งค่าเฉพาะของ widget Grid (จาก article / จาก banner — อยู่ในกล่องบนสุดของ dialog ตั้งค่า widget) — คล้าย Slideset แต่ไม่เลื่อน
+ * (ไม่มีลูกศร/จุด/เลื่อนอัตโนมัติ) แบ่งเป็นการ์ดตามหัวข้อ: ข้อมูลที่แสดง / รูปแบบการแสดงผล (การ์ด, แถวที่มีรูปภาพ และเฉพาะ article: แถวที่แสดงวันที่แทนรูปภาพ) /
+ * จำนวนคอลัมน์ต่อแถวตามหน้าจอ / กล่องของการ์ด / ส่วนของรายการ (รูป, หัวเรื่อง, ข้อความเกริ่นนำ และเฉพาะ article: วันที่, เข้าชม, กล่องวันที่เผยแพร่ —
+ * ติ๊กเปิด/ปิดแต่ละส่วนได้ ปิดแล้วพับรายละเอียดทิ้ง — รูปแบบแถวบังคับแสดงหัวเรื่องเสมอ, แถวที่แสดงวันที่แทนรูปภาพบังคับแสดงวันที่เสมอ) /
+ * ปุ่มอ่านทั้งหมด (เฉพาะ article) / การเปิดลิงก์ — แก้ค่าบน `setting` ที่ส่งเข้ามาตรง ๆ (เป็นสำเนา draft ของ dialog อยู่แล้ว)
  */
 const props = defineProps<{
     widgetType: string;
@@ -44,14 +44,22 @@ const props = defineProps<{
 }>();
 
 const config = computed(() => gridConfig(props.widgetType)!);
+// ฟิลด์ของปุ่มอ่านทั้งหมด (เฉพาะ article — ฟอร์มส่วนนี้แสดงเมื่อประเภทมีปุ่มเท่านั้น จึงถือว่ามีค่าครบ)
+const article = computed(() => props.setting as Required<GridSetting>);
 
 const categoryOptions = computed(() => props.categories.map((c) => ({ value: String(c.id), label: c.title || `หมวดหมู่ #${c.id}` })));
 
 // SearchableSelect ผูกกับ string เสมอ — แปลงจาก/เป็นเลข id (ยังไม่เลือก = '' ↔ null)
+// ฟิลด์หมวดหมู่ใน setting ชื่อต่างกันตามแหล่งข้อมูล (article_category_info_id / banner_category_info_id)
+const settingRecord = computed(() => props.setting as unknown as Record<string, number | null>);
 const category = computed({
-    get: () => (props.setting.article_category_info_id ? String(props.setting.article_category_info_id) : ''),
+    get: () => {
+        const id = settingRecord.value[config.value.categoryKey];
+
+        return id ? String(id) : '';
+    },
     set: (value: string) => {
-        props.setting.article_category_info_id = value === '' ? null : Number(value);
+        settingRecord.value[config.value.categoryKey] = value === '' ? null : Number(value);
     },
 });
 
@@ -121,7 +129,7 @@ const perRowModels = Object.fromEntries(SLIDESET_DEVICES.map((d) => [d.key, perR
         </SettingSection>
 
         <SettingSection title="รูปแบบการแสดงผล">
-            <OptionCardPicker v-model="setting.display_type" name="display_type" :options="GRID_DISPLAY_TYPE_OPTIONS" columns="grid-cols-1 sm:grid-cols-3">
+            <OptionCardPicker v-model="setting.display_type" name="display_type" :options="config.displayTypeOptions" columns="grid-cols-1 sm:grid-cols-3">
                 <template #visual="{ option }">
                     <svg viewBox="0 0 120 64" class="h-14 w-full text-gray-300">
                         <!-- card: การ์ดเรียง 3 ใบ รูปด้านบน ข้อความด้านล่าง -->
@@ -195,6 +203,10 @@ const perRowModels = Object.fromEntries(SLIDESET_DEVICES.map((d) => [d.key, perR
             </div>
         </SettingSection>
 
+        <SettingSection title="กล่องของการ์ด" description="เส้นขอบ สี และมุมของกล่องที่ครอบแต่ละรายการ">
+            <CardBoxFields :setting="setting" :errors="errors" />
+        </SettingSection>
+
         <SettingSection v-if="setting.display_type !== 'row_date'" v-model:enabled="setting.show_image" toggleable title="รูปภาพ">
             <p v-if="setting.display_type === 'row_image'" class="text-xs text-gray-500">ถ้าปิด พื้นที่รูปภาพจะหายไปและส่วนข้อมูลขยายเต็มแทน</p>
             <div v-if="setting.display_type === 'row_image'">
@@ -235,6 +247,7 @@ const perRowModels = Object.fromEntries(SLIDESET_DEVICES.map((d) => [d.key, perR
         </SettingSection>
 
         <SettingSection
+            v-if="config.hasMeta"
             v-model:enabled="setting.show_date"
             :toggleable="setting.display_type !== 'row_date'"
             title="วันที่เผยแพร่"
@@ -243,11 +256,27 @@ const perRowModels = Object.fromEntries(SLIDESET_DEVICES.map((d) => [d.key, perR
             <SlidesetTextFields :setting="setting" part="date" :fonts="fonts" />
         </SettingSection>
 
-        <SettingSection v-model:enabled="setting.show_views" toggleable title="จำนวนเข้าชม">
+        <SettingSection v-if="config.hasMeta" v-model:enabled="setting.show_views" toggleable title="จำนวนเข้าชม">
             <SlidesetTextFields :setting="setting" part="views" :fonts="fonts" />
         </SettingSection>
 
-        <ReadAllFields v-if="config.hasReadAll" :setting="setting" :fonts="fonts" :languages="languages" :errors="errors" />
+        <SettingSection v-if="config.hasMeta && setting.display_type === 'row_date'" title="กล่องวันที่เผยแพร่" description="แทนที่พื้นที่รูปภาพทั้งหมดในรูปแบบนี้">
+            <div class="space-y-4 rounded-lg border border-gray-200 bg-white p-3">
+                <p class="text-sm font-medium text-gray-700">วัน (ตัวเลขวันที่)</p>
+                <SlidesetTextFields :setting="setting" part="date_day" :fonts="fonts" />
+            </div>
+            <div class="space-y-4 rounded-lg border border-gray-200 bg-white p-3">
+                <p class="text-sm font-medium text-gray-700">เดือน/ปี</p>
+                <SlidesetTextFields :setting="setting" part="date_month" :fonts="fonts" />
+            </div>
+            <div class="sm:max-w-40">
+                <InputLabel value="สีพื้นหลังกล่อง" />
+                <ColorPickerInput v-model="setting.date_box_background" transparent />
+                <InputError :message="errors.date_box_background" />
+            </div>
+        </SettingSection>
+
+        <ReadAllFields v-if="config.hasReadAll" :setting="article" :fonts="fonts" :languages="languages" :errors="errors" />
 
         <SettingSection title="การเปิดลิงก์" description="ใช้ร่วมกับรูปภาพ หัวเรื่อง และข้อความเกริ่นนำที่ตั้งให้กดลิงก์ได้">
             <div class="max-w-sm">

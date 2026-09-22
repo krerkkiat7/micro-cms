@@ -6,14 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * การตั้งค่าเฉพาะของ widget ประเภท "Slideset จาก banner" — 1 widget = 1 แถว, PK `id` = `page_item_widget.id`
- * (ไม่ auto-increment; สร้างพร้อม widget เสมอ) ดู App\Support\PageWidget\SlidesetBannerWidget
+ * การตั้งค่าเฉพาะของ widget ประเภท "Grid จาก banner" — 1 widget = 1 แถว, PK `id` = `page_item_widget.id`
+ * (ไม่ auto-increment; สร้างพร้อม widget เสมอ) ดู App\Support\PageWidget\GridBannerWidget
  */
-class PageItemWidgetSlidesetBanner extends Model
+class PageItemWidgetGridBanner extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'page_item_widget_slidesetbanner';
+    protected $table = 'page_item_widget_gridbanner';
 
     public $incrementing = false;
 
@@ -22,21 +22,18 @@ class PageItemWidgetSlidesetBanner extends Model
         'banner_category_info_id',
         'sort_by',
         'max_items',
-        'show_arrows',
-        'show_dots',
-        'autoplay',
-        'autoplay_interval',
-        'transition_speed',
+        'display_type',
         'per_row_pc',
         'per_row_notebook',
         'per_row_tablet',
         'per_row_mobile',
+        'link_target',
         'show_image',
+        'image_width_percent',
         'aspect_ratio',
         'image_fit',
         'image_background',
         'image_clickable',
-        'link_target',
         'show_border',
         'border_color',
         'rounded_corners',

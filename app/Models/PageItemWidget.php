@@ -92,4 +92,10 @@ class PageItemWidget extends Model
     {
         return $this->hasOne(PageItemWidgetGridArticle::class, 'id');
     }
+
+    /** การตั้งค่าเฉพาะของประเภท gridbanner */
+    public function gridBanner()
+    {
+        return $this->hasOne(PageItemWidgetGridBanner::class, 'id');
+    }
 }

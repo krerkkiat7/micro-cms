@@ -24,10 +24,11 @@ const props = defineProps<{
 
 const config = gridConfig(props.widgetType)!;
 
+// คีย์หมวดหมู่ใน setting ต่างกันตามแหล่งข้อมูล (article_category_info_id / banner_category_info_id)
+const categoryId = () => (props.setting as unknown as Record<string, number | null>)[config.categoryKey];
+
 const { items, loading, failed } = useWidgetPreview(props.widgetType, () =>
-    props.setting.article_category_info_id
-        ? { article_category_info_id: props.setting.article_category_info_id, sort_by: props.setting.sort_by, max_items: props.setting.max_items }
-        : null,
+    categoryId() ? { [config.categoryKey]: categoryId(), sort_by: props.setting.sort_by, max_items: props.setting.max_items } : null,
 );
 
 // ---- ขนาดหน้าจอที่ดูตัวอย่าง (กำหนดจำนวนคอลัมน์) ----
@@ -39,7 +40,7 @@ const gridStyle = computed<CSSProperties>(() => ({ gridTemplateColumns: `repeat(
 // ---- รูปแบบข้อความ ----
 const LINE_CLAMP: Record<number, string> = { 1: 'line-clamp-1', 2: 'line-clamp-2', 3: 'line-clamp-3' };
 
-function textCss(part: 'title' | 'intro_text' | 'date' | 'views'): CSSProperties {
+function textCss(part: string): CSSProperties {
     const s = props.setting as unknown as Record<string, string | number>;
 
     return {
@@ -55,6 +56,16 @@ const frameStyle = computed<CSSProperties>(() => ({
     aspectRatio: props.setting.aspect_ratio.replace(':', ' / '),
     backgroundColor: props.setting.image_fit === 'contain' ? props.setting.image_background : '#F3F4F6',
 }));
+
+// ---- กล่องของการ์ด/แถว: เส้นขอบ + สี / มุมมน / สีพื้นหลังของแต่ละรายการ ----
+const itemStyle = computed<CSSProperties>(() => ({
+    backgroundColor: props.setting.item_background,
+    borderWidth: props.setting.show_border === 'Y' ? '1px' : '0',
+    borderStyle: 'solid',
+    borderColor: props.setting.border_color,
+}));
+
+const dateBoxStyle = computed<CSSProperties>(() => ({ backgroundColor: props.setting.date_box_background }));
 
 // ---- ปุ่ม "อ่านทั้งหมด" ----
 const showReadAll = computed(() => props.setting.show_read_all === 'Y');
@@ -121,7 +132,7 @@ const linkIcon = 'ml-1 inline size-3 shrink-0 align-baseline opacity-60';
             <span class="text-[11px] text-gray-400">{{ columns }} คอลัมน์ต่อแถว</span>
         </div>
 
-        <div v-if="!setting.article_category_info_id" class="rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 py-6 text-center text-xs text-gray-500">
+        <div v-if="!categoryId()" class="rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 py-6 text-center text-xs text-gray-500">
             ยังไม่ได้เลือก{{ config.categoryLabel }}
         </div>
         <div v-else-if="loading" class="rounded-md bg-gray-100 px-3 py-6 text-center text-xs text-gray-500">กำลังโหลดตัวอย่าง…</div>
@@ -150,8 +161,9 @@ const linkIcon = 'ml-1 inline size-3 shrink-0 align-baseline opacity-60';
                 <article
                     v-for="item in items"
                     :key="item.id"
-                    class="overflow-hidden rounded-lg border border-gray-200 bg-white"
-                    :class="setting.display_type === 'card' ? 'flex h-full flex-col' : 'flex items-stretch gap-3 p-2'"
+                    class="overflow-hidden"
+                    :class="[setting.rounded_corners === 'Y' ? 'rounded-lg' : '', setting.display_type === 'card' ? 'flex h-full flex-col' : 'flex items-stretch gap-3 p-2']"
+                    :style="itemStyle"
                 >
                     <!-- การ์ด: รูปด้านบน ข้อมูลด้านล่าง -->
                     <template v-if="setting.display_type === 'card'">
@@ -245,9 +257,9 @@ const linkIcon = 'ml-1 inline size-3 shrink-0 align-baseline opacity-60';
 
                     <!-- แถวที่แสดงวันที่เผยแพร่แทนรูปภาพ: กล่องวันที่ซ้าย ข้อมูลขวา -->
                     <template v-else>
-                        <div class="flex w-16 shrink-0 flex-col items-center justify-center rounded-md bg-gray-50 py-2 text-center" :style="textCss('date')">
-                            <span class="text-lg font-bold leading-none">{{ dateBox(item.date ?? null).day }}</span>
-                            <span class="mt-1 text-[11px] leading-none">{{ dateBox(item.date ?? null).monthYear }}</span>
+                        <div class="flex w-16 shrink-0 flex-col items-center justify-center rounded-md py-2 text-center" :style="dateBoxStyle">
+                            <span class="leading-none" :style="textCss('date_day')">{{ dateBox(item.date ?? null).day }}</span>
+                            <span class="mt-1 leading-none" :style="textCss('date_month')">{{ dateBox(item.date ?? null).monthYear }}</span>
                         </div>
 
                         <div class="flex min-w-0 flex-1 flex-col justify-center gap-1 py-1">

@@ -85,7 +85,7 @@ test('the defaults follow the requested spec', function () {
         ->and($d['image_background'])->toBe('#F3F4F6')
         ->and($d['show_read_all'])->toBe('N')
         ->and($d['read_all_text'])->toBe(['th' => '', 'en' => ''])
-        ->and([$d['show_border'], $d['rounded_corners']])->toBe(['Y', 'Y'])
+        ->and([$d['show_border'], $d['border_color'], $d['rounded_corners'], $d['item_background']])->toBe(['Y', '#E5E7EB', 'Y', '#FFFFFF'])
         ->and([$d['read_all_font_size'], $d['read_all_font_family'], $d['read_all_color'], $d['read_all_background']])->toBe([14, 'Sarabun', '#FFFFFF', '#1F2937']);
 });
 
@@ -231,7 +231,10 @@ test('slidesetarticle rejects invalid values', function (string $field, mixed $v
     'read all color transparent' => ['read_all_color', 'transparent'],
     'read all background name' => ['read_all_background', 'black'],
     'border flag' => ['show_border', 'yes'],
+    'border color name' => ['border_color', 'gray'],
+    'border color transparent' => ['border_color', 'transparent'],
     'rounded flag' => ['rounded_corners', 'no'],
+    'item background name' => ['item_background', 'white'],
     'read all url without scheme' => ['read_all_url', 'example.com/news'],
 ]);
 
@@ -239,13 +242,14 @@ test('the card box border / rounded corners and the read-all button text style a
     actingAsUserWithPermissions(['page.item.manage']);
 
     $this->put(route('admin.page.item.layout.update', $this->page->id), slidesetPayload($this->category->id, [
-        'show_border' => 'N', 'rounded_corners' => 'N', 'show_read_all' => 'Y', 'read_all_url' => '/th/news', 'read_all_style' => 'pill',
+        'show_border' => 'N', 'border_color' => '#ff00ff', 'rounded_corners' => 'N', 'item_background' => 'transparent',
+        'show_read_all' => 'Y', 'read_all_url' => '/th/news', 'read_all_style' => 'pill',
         'read_all_font_size' => 18, 'read_all_font_family' => 'Kanit', 'read_all_color' => '#ffeecc', 'read_all_background' => '#123456',
     ]))->assertSessionHasNoErrors();
 
     $row = PageItemWidgetSlidesetArticle::findOrFail(newestSlideset()->id);
 
-    expect([$row->show_border, $row->rounded_corners])->toBe(['N', 'N'])
+    expect([$row->show_border, $row->border_color, $row->rounded_corners, $row->item_background])->toBe(['N', '#ff00ff', 'N', 'transparent'])
         ->and([$row->read_all_font_size, $row->read_all_font_family, $row->read_all_color, $row->read_all_background])->toBe([18, 'Kanit', '#ffeecc', '#123456']);
 });
 
