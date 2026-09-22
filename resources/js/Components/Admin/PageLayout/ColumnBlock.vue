@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import draggable from 'vuedraggable';
 import LayoutToolbar from './LayoutToolbar.vue';
 import LayoutTexts from './LayoutTexts.vue';
 import WidgetBlock from './WidgetBlock.vue';
@@ -9,8 +8,9 @@ import { backgroundStyle, displayTitle } from '@/utils/pageLayout';
 import type { ColumnData, RowData } from '@/utils/pageLayout';
 
 /**
- * คอลัมน์ในแถว — กรอบเส้นปะ + พื้นหลังตามการตั้งค่า; widget ข้างในลากสลับลำดับได้ตรงนี้เลย และลากย้ายข้ามคอลัมน์ได้
- * (ทุกคอลัมน์ใช้ group เดียวกัน "page-widgets"); เมื่อเปิด "แสดงหัวเรื่อง" จะแสดงหัวเรื่อง (h3) / หัวเรื่องรอง / ข้อความเกริ่นนำเหนือ widget ความกว้างของคอลัมน์กำหนดโดย RowBlock ผ่าน grid 12
+ * คอลัมน์ในแถว — กรอบเส้นปะ + พื้นหลังตามการตั้งค่า; widget ข้างในเรียงลำดับ/ย้ายข้ามคอลัมน์ผ่าน dialog "เรียงลำดับ Widget" เท่านั้น
+ * (ดู WidgetReorderDialog.vue — ไม่มีการลากสลับตรงในหน้าจอนี้อีกแล้ว เพราะ widget แสดงตัวอย่างจริงที่สูง/ซับซ้อนขึ้นเรื่อย ๆ ลากยาก);
+ * เมื่อเปิด "แสดงหัวเรื่อง" จะแสดงหัวเรื่อง (h3) / หัวเรื่องรอง / ข้อความเกริ่นนำเหนือ widget ความกว้างของคอลัมน์กำหนดโดย RowBlock ผ่าน grid 12
  */
 const props = defineProps<{
     column: ColumnData;
@@ -35,6 +35,7 @@ const title = computed(() => displayTitle(props.column.detail, editor.languages,
             :hidden="column.status === 'N'"
             add-label="เพิ่ม Widget"
             :readonly="editor.readonly"
+            @reorder="editor.reorderColumns()"
             @settings="editor.editColumn(row, column)"
             @toggle="editor.toggleStatus(column)"
             @remove="editor.removeColumn(row, column)"
@@ -54,22 +55,9 @@ const title = computed(() => displayTitle(props.column.detail, editor.languages,
             class="px-3 pb-2 pt-1"
         />
 
-        <draggable
-            v-model="column.widgets"
-            item-key="_key"
-            group="page-widgets"
-            handle=".layout-drag-handle-widget"
-            ghost-class="layout-drag-ghost"
-            :animation="150"
-            :disabled="editor.readonly"
-            class="min-h-16 flex-1 space-y-2 px-2 pb-2"
-        >
-            <template #item="{ element }">
-                <WidgetBlock :widget="element" :column="column" />
-            </template>
-            <template #footer>
-                <p v-if="column.widgets.length === 0" class="py-3 text-center text-xs text-gray-400">ยังไม่มี Widget</p>
-            </template>
-        </draggable>
+        <div class="min-h-16 flex-1 space-y-2 px-2 pb-2">
+            <WidgetBlock v-for="widget in column.widgets" :key="widget._key" :widget="widget" :column="column" />
+            <p v-if="column.widgets.length === 0" class="py-3 text-center text-xs text-gray-400">ยังไม่มี Widget</p>
+        </div>
     </div>
 </template>

@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { ArrowUpDown, Eye, EyeOff, GripVertical, Plus, Settings, Trash2 } from 'lucide-vue-next';
+import { ArrowUpDown, Eye, EyeOff, Plus, Settings, Trash2 } from 'lucide-vue-next';
 
 /**
  * แถบจัดการที่มุมซ้ายบนของแถว / คอลัมน์ / widget ในหน้า "โครงสร้าง" (ดู docs/PRD-page.md) — แต่ละชนิดมีสีต่างกัน
- * ให้แยกออกว่าแถบนี้เป็นของชั้นไหน: ไอคอนเรียงลำดับ (แถว = ปุ่มเปิด dialog, คอลัมน์/widget = ที่จับสำหรับลากในหน้าจอ
- * โดย vuedraggable ของพาเรนต์อ้างที่จับผ่านคลาส `layout-drag-handle-<kind>`), เฟือง (ตั้งค่า), ลูกตา (แสดง/ซ่อน),
+ * ให้แยกออกว่าแถบนี้เป็นของชั้นไหน: ปุ่มเรียงลำดับ (เปิด dialog เรียงลำดับของชั้นนั้นเสมอ — แถว/คอลัมน์/widget ทั้งหมดเรียงผ่าน
+ * dialog ไม่มีการลากสลับตรงในหน้าจอแล้ว เพราะ widget แสดงตัวอย่างจริงที่สูง/ซับซ้อนขึ้นเรื่อย ๆ ลากยาก), เฟือง (ตั้งค่า), ลูกตา (แสดง/ซ่อน),
  * ถังขยะ (ลบ — ขอยืนยันก่อนที่หน้าโครงสร้าง), ปุ่มเพิ่มลูก (เฉพาะแถว/คอลัมน์) และชื่อหัวเรื่อง — `readonly` = ผู้ใช้ไม่มีสิทธิ์แก้ไข แสดงแค่ชื่อ
  */
 const props = defineProps<{
@@ -32,7 +32,6 @@ const KIND_STYLES = {
 } as const;
 
 const style = computed(() => KIND_STYLES[props.kind]);
-const useDragHandle = computed(() => props.kind !== 'row');
 
 const buttonClass = 'rounded p-1 transition-colors hover:bg-white/25 focus:outline-hidden focus-visible:bg-white/25';
 </script>
@@ -43,14 +42,7 @@ const buttonClass = 'rounded p-1 transition-colors hover:bg-white/25 focus:outli
         :class="[style.bar, hidden ? 'opacity-60' : '']"
     >
         <template v-if="!readonly">
-            <span
-                v-if="useDragHandle"
-                :class="[buttonClass, `layout-drag-handle-${kind}`, 'cursor-grab active:cursor-grabbing']"
-                :title="`ลากเพื่อเรียงลำดับ${style.label}`"
-            >
-                <GripVertical class="size-3.5" />
-            </span>
-            <button v-else type="button" :class="buttonClass" :title="`เรียงลำดับ${style.label}`" @click="emit('reorder')">
+            <button type="button" :class="buttonClass" :title="`เรียงลำดับ${style.label}`" @click="emit('reorder')">
                 <ArrowUpDown class="size-3.5" />
             </button>
 

@@ -246,12 +246,12 @@ const perRowModels = Object.fromEntries(SLIDESET_DEVICES.map((d) => [d.key, perR
             <SlidesetTextFields :setting="setting" part="intro_text" :fonts="fonts" rich />
         </SettingSection>
 
+        <!-- รูปแบบ row_date ไม่ใช้สไตล์วันที่บรรทัดเดียวนี้เลย (ใช้ "กล่องวันที่เผยแพร่" ด้านล่างแทน) จึงซ่อนไปทั้งหมดไม่ให้สับสน -->
         <SettingSection
-            v-if="config.hasMeta"
+            v-if="config.hasMeta && setting.display_type !== 'row_date'"
             v-model:enabled="setting.show_date"
-            :toggleable="setting.display_type !== 'row_date'"
+            toggleable
             title="วันที่เผยแพร่"
-            :description="setting.display_type === 'row_date' ? 'บังคับแสดงเสมอ (แทนที่รูปภาพ)' : undefined"
         >
             <SlidesetTextFields :setting="setting" part="date" :fonts="fonts" />
         </SettingSection>

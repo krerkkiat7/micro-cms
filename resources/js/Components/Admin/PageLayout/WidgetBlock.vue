@@ -40,6 +40,7 @@ const gridSetting = computed(() => props.widget.setting as unknown as GridSettin
             :title="title"
             :hidden="widget.status === 'N'"
             :readonly="editor.readonly"
+            @reorder="editor.reorderWidgets()"
             @settings="editor.editWidget(column, widget)"
             @toggle="editor.toggleStatus(widget)"
             @remove="editor.removeWidget(column, widget)"

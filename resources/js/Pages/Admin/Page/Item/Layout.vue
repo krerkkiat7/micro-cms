@@ -10,6 +10,8 @@ import ColumnSettingsDialog from '@/Components/Admin/PageLayout/ColumnSettingsDi
 import WidgetSettingsDialog from '@/Components/Admin/PageLayout/WidgetSettingsDialog.vue';
 import WidgetTypePickerDialog from '@/Components/Admin/PageLayout/WidgetTypePickerDialog.vue';
 import RowReorderDialog from '@/Components/Admin/PageLayout/RowReorderDialog.vue';
+import ColumnReorderDialog from '@/Components/Admin/PageLayout/ColumnReorderDialog.vue';
+import WidgetReorderDialog from '@/Components/Admin/PageLayout/WidgetReorderDialog.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import type { RequestPayload } from '@inertiajs/core';
@@ -141,6 +143,8 @@ const widgetDialog = ref<{ column: ColumnData; widget: WidgetData } | null>(null
 const widgetPicker = ref<ColumnData | null>(null);
 const widgetAdd = ref<{ column: ColumnData; widget: WidgetData } | null>(null);
 const showReorder = ref(false);
+const showColumnReorder = ref(false);
+const showWidgetReorder = ref(false);
 
 function saveRow(settings: RowSettings) {
     if (rowDialog.value) Object.assign(rowDialog.value, settings);
@@ -238,6 +242,22 @@ function applyRowOrder(order: RowData[]) {
     showReorder.value = false;
 }
 
+function applyColumnOrder(order: { row: RowData; columns: ColumnData[] }[]) {
+    order.forEach(({ row, columns }) => {
+        row.columns = columns;
+    });
+    showColumnReorder.value = false;
+}
+
+function applyWidgetOrder(order: { row: RowData; columns: { column: ColumnData; widgets: WidgetData[] }[] }[]) {
+    order.forEach(({ columns }) => {
+        columns.forEach(({ column, widgets }) => {
+            column.widgets = widgets;
+        });
+    });
+    showWidgetReorder.value = false;
+}
+
 provide(PAGE_LAYOUT_EDITOR, {
     languages: props.languages,
     readonly: !props.can.manage,
@@ -253,6 +273,8 @@ provide(PAGE_LAYOUT_EDITOR, {
     editColumn: (row, column) => (columnDialog.value = { row, column }),
     editWidget: (column, widget) => (widgetDialog.value = { column, widget }),
     reorderRows: () => (showReorder.value = true),
+    reorderColumns: () => (showColumnReorder.value = true),
+    reorderWidgets: () => (showWidgetReorder.value = true),
 });
 
 // ---- หน้าจอ ----
@@ -403,14 +425,7 @@ function formatDate(value: string | null): string {
             (การลบจะมีผลเมื่อกด "บันทึกโครงสร้าง")
         </ConfirmDialog>
         <RowReorderDialog :show="showReorder" :rows="rows" :languages="languages" @close="showReorder = false" @confirm="applyRowOrder" />
+        <ColumnReorderDialog :show="showColumnReorder" :rows="rows" :languages="languages" @close="showColumnReorder = false" @confirm="applyColumnOrder" />
+        <WidgetReorderDialog :show="showWidgetReorder" :rows="rows" :languages="languages" @close="showWidgetReorder = false" @confirm="applyWidgetOrder" />
     </AdminLayout>
 </template>
-
-<style>
-/* placeholder ที่ตำแหน่งที่จะวาง (ตอนลากคอลัมน์/widget) ให้เห็นขอบเขตชัดเจนแยกจากรายการที่กำลังถูกลากอยู่ */
-.layout-drag-ghost {
-    opacity: 0.4;
-    outline: 2px dashed #93c5fd;
-    outline-offset: -2px;
-}
-</style>

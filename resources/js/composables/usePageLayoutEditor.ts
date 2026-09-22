@@ -23,7 +23,10 @@ export interface PageLayoutEditor {
     editRow: (row: RowData) => void;
     editColumn: (row: RowData, column: ColumnData) => void;
     editWidget: (column: ColumnData, widget: WidgetData) => void;
+    /** เปิด dialog เรียงลำดับของชั้นนั้น — ไม่มีการลากสลับตรงในหน้าจอแล้ว (widget แสดงตัวอย่างจริงที่สูง/ซับซ้อน ลากยาก) */
     reorderRows: () => void;
+    reorderColumns: () => void;
+    reorderWidgets: () => void;
 }
 
 export const PAGE_LAYOUT_EDITOR: InjectionKey<PageLayoutEditor> = Symbol('pageLayoutEditor');

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import draggable from 'vuedraggable';
 import LayoutToolbar from './LayoutToolbar.vue';
 import ColumnBlock from './ColumnBlock.vue';
 import LayoutTexts from './LayoutTexts.vue';
@@ -10,7 +9,8 @@ import type { RowData } from '@/utils/pageLayout';
 
 /**
  * แถวในหน้าเพจ — กรอบเส้นปะให้เห็นขอบเขต + พื้นหลังตามการตั้งค่า; คอลัมน์ข้างในเรียงเป็น grid 12 ตามความกว้างของแต่ละคอลัมน์
- * และลากสลับลำดับได้ในแถวนี้เลย; เมื่อเปิด "แสดงหัวเรื่อง" จะแสดงหัวเรื่อง (h2) / หัวเรื่องรอง / ข้อความเกริ่นนำเหนือคอลัมน์ตามที่ตั้งค่าไว้ (เมื่อ "ใช้ container" จะจำกัดความกว้างเนื้อหาไว้ตรงกลางเหมือนที่หน้าบ้านจะแสดง)
+ * (เรียงลำดับ/ย้ายคอลัมน์ข้ามแถวผ่าน dialog "เรียงลำดับคอลัมน์" เท่านั้น ไม่มีการลากสลับตรงในหน้าจอนี้อีกแล้ว — ดู ColumnReorderDialog.vue);
+ * เมื่อเปิด "แสดงหัวเรื่อง" จะแสดงหัวเรื่อง (h2) / หัวเรื่องรอง / ข้อความเกริ่นนำเหนือคอลัมน์ตามที่ตั้งค่าไว้ (เมื่อ "ใช้ container" จะจำกัดความกว้างเนื้อหาไว้ตรงกลางเหมือนที่หน้าบ้านจะแสดง)
  */
 const props = defineProps<{
     row: RowData;
@@ -65,26 +65,14 @@ function span(size: number): { gridColumn: string } {
                     class="px-2 pb-3 pt-1"
                 />
 
-                <draggable
-                    v-model="row.columns"
-                    item-key="_key"
-                    handle=".layout-drag-handle-column"
-                    ghost-class="layout-drag-ghost"
-                    :animation="150"
-                    :disabled="editor.readonly"
-                    class="grid grid-cols-12 gap-3"
-                >
-                    <template #item="{ element, index: columnIndex }">
-                        <div class="min-w-0" :style="span(element.column_size)">
-                            <ColumnBlock :column="element" :row="row" :index="columnIndex" />
-                        </div>
-                    </template>
-                    <template #footer>
-                        <p v-if="row.columns.length === 0" class="col-span-12 py-4 text-center text-xs text-gray-400">
-                            ยังไม่มีคอลัมน์ — กด "เพิ่มคอลัมน์" ที่แถบด้านบน
-                        </p>
-                    </template>
-                </draggable>
+                <div class="grid grid-cols-12 gap-3">
+                    <div v-for="(column, columnIndex) in row.columns" :key="column._key" class="min-w-0" :style="span(column.column_size)">
+                        <ColumnBlock :column="column" :row="row" :index="columnIndex" />
+                    </div>
+                    <p v-if="row.columns.length === 0" class="col-span-12 py-4 text-center text-xs text-gray-400">
+                        ยังไม่มีคอลัมน์ — กด "เพิ่มคอลัมน์" ที่แถบด้านบน
+                    </p>
+                </div>
             </div>
         </div>
     </section>
