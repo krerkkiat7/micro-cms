@@ -226,6 +226,13 @@ const dialogTitle = computed(() => (props.menu ? `แก้ไขเมนู: $
         @confirm="submit"
     >
         <div class="space-y-5">
+            <LangFieldGroup label="ชื่อเมนู" :languages="languages" required>
+                <template #default="{ lang }">
+                    <TextInput v-model="form.detail[lang.code].name" type="text" />
+                    <InputError :message="detailError(lang.code, 'name')" />
+                </template>
+            </LangFieldGroup>
+
             <div class="grid gap-4 sm:grid-cols-2">
                 <div>
                     <InputLabel value="Parent Menu" />
@@ -281,13 +288,6 @@ const dialogTitle = computed(() => (props.menu ? `แก้ไขเมนู: $
                     <InputError :message="form.errors.is_home" />
                 </div>
             </div>
-
-            <LangFieldGroup label="ชื่อเมนู" :languages="languages" required>
-                <template #default="{ lang }">
-                    <TextInput v-model="form.detail[lang.code].name" type="text" />
-                    <InputError :message="detailError(lang.code, 'name')" />
-                </template>
-            </LangFieldGroup>
 
             <div v-if="isContentType" class="space-y-3 border-t border-gray-100 pt-5">
                 <h3 class="text-sm font-medium text-gray-600">หัวเรื่องของหน้าเป้าหมาย</h3>
@@ -369,15 +369,13 @@ const dialogTitle = computed(() => (props.menu ? `แก้ไขเมนู: $
                 </SettingSection>
 
                 <SettingSection v-if="showTextPosition" title="จัดตำแหน่งข้อความ">
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <InputLabel value="จัดตำแหน่ง" />
-                            <PositionPicker v-model="form.header_content_align" />
-                        </div>
-                        <div>
-                            <InputLabel value="พื้นที่ความกว้าง" />
-                            <SearchableSelect v-model="form.use_container" :options="CONTAINER_OPTIONS" />
-                        </div>
+                    <div>
+                        <InputLabel value="พื้นที่ความกว้าง" />
+                        <SearchableSelect v-model="form.use_container" :options="CONTAINER_OPTIONS" />
+                    </div>
+                    <div>
+                        <InputLabel value="จัดตำแหน่ง" />
+                        <PositionPicker v-model="form.header_content_align" />
                     </div>
                 </SettingSection>
 

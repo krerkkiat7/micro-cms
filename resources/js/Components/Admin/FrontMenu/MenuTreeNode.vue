@@ -24,13 +24,16 @@ const emit = defineEmits<{
 
 <template>
     <div>
-        <div class="flex items-center gap-2 rounded-lg px-2 py-2 text-sm hover:bg-gray-50" :style="{ paddingLeft: `${depth * 20 + 8}px` }">
+        <div
+            class="flex items-center gap-2 rounded-lg px-2 py-2 text-sm hover:bg-gray-50"
+            :class="node.status === 'N' ? 'opacity-50' : ''"
+            :style="{ paddingLeft: `${depth * 20 + 8}px` }"
+        >
             <Home v-if="node.is_home === 'Y'" class="size-4 shrink-0 text-amber-500" title="หน้าหลัก" />
 
             <button
                 type="button"
                 class="min-w-0 flex-1 truncate text-left font-medium text-gray-700 hover:text-brand-600"
-                :class="node.status === 'N' ? 'text-gray-400' : ''"
                 @click="emit('edit', node)"
             >
                 {{ defaultMenuName(node) }}
