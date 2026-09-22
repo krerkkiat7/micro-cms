@@ -5,10 +5,13 @@ import LayoutTexts from './LayoutTexts.vue';
 import GridPreview from './widgets/GridPreview.vue';
 import SlideshowPreview from './widgets/SlideshowPreview.vue';
 import SlidesetPreview from './widgets/SlidesetPreview.vue';
+import CustomTextPreview from './widgets/CustomTextPreview.vue';
 import { usePageLayoutEditor } from '@/composables/usePageLayoutEditor';
 import { backgroundStyle, displayTitle } from '@/utils/pageLayout';
 import { gridConfig, slideshowConfig, slidesetConfig, widgetTypeLabel } from '@/utils/pageWidget';
 import type { GridSetting, SlideshowCommonSetting, SlidesetSetting } from '@/utils/pageWidget';
+import { isCustomTextWidget } from '@/utils/pageWidgetCustomText';
+import type { CustomTextSetting } from '@/utils/pageWidgetCustomText';
 import type { ColumnData, WidgetData } from '@/utils/pageLayout';
 
 /**
@@ -27,6 +30,7 @@ const title = computed(() => displayTitle(props.widget.detail, editor.languages,
 const slideshowSetting = computed(() => props.widget.setting as unknown as SlideshowCommonSetting);
 const slidesetSetting = computed(() => props.widget.setting as unknown as SlidesetSetting);
 const gridSetting = computed(() => props.widget.setting as unknown as GridSetting);
+const customTextSetting = computed(() => props.widget.setting as unknown as CustomTextSetting);
 </script>
 
 <template>
@@ -74,6 +78,13 @@ const gridSetting = computed(() => props.widget.setting as unknown as GridSettin
             v-else-if="gridConfig(widget.widget_type)"
             :widget-type="widget.widget_type"
             :setting="gridSetting"
+            :languages="editor.languages"
+            class="mt-3"
+        />
+        <CustomTextPreview
+            v-else-if="isCustomTextWidget(widget.widget_type)"
+            :widget-type="widget.widget_type"
+            :setting="customTextSetting"
             :languages="editor.languages"
             class="mt-3"
         />

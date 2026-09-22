@@ -3,6 +3,7 @@
 namespace App\Support\PageWidget;
 
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -63,11 +64,13 @@ interface PageWidgetType
     public function save(int $widgetId, array $setting, ?int $actorId): void;
 
     /**
-     * แปลงแถวตั้งค่าเป็น array ส่งหน้าจอ (ไม่มีแถว = ค่าเริ่มต้น)
+     * แปลงแถว/รายการตั้งค่าเป็น array ส่งหน้าจอ (ไม่มี = ค่าเริ่มต้น) — ปกติเป็นแถวเดียว (Model|null จาก relation แบบ hasOne)
+     * แต่ประเภทที่ตั้งค่าเป็นรายการหลายแถวต่อ widget (เช่น customtext ที่ relation() เป็น hasMany) จะได้ Collection แทน
      *
+     * @param  Model|Collection|null  $row
      * @return array<string, mixed>
      */
-    public function toArray(?Model $row): array;
+    public function toArray(mixed $row): array;
 
     /**
      * soft delete แถวตั้งค่าของ widget ที่ถูกลบ (เก็บ deleted_by)

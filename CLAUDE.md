@@ -310,6 +310,19 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   แล้วลากกล่อง widget สลับ/ย้ายข้ามคอลัมน์ (หรือข้ามแถว) ได้ — `LayoutToolbar.vue` เลิกแยก "grip ลากในหน้าจอ" (คอลัมน์/widget) กับ "ปุ่มเปิด
   dialog" (แถว) ทั้งสามชั้นใช้ปุ่มเปิด dialog เหมือนกันหมดแล้ว; `RowBlock.vue`/`ColumnBlock.vue` เอา `<draggable>` ที่ครอบคอลัมน์/widget ออก
   เหลือแค่ `v-for` เฉย ๆ
+- **widget `customtext` (Custom Text) เสร็จแล้ว — ประเภท widget สุดท้ายของ §2.1** ต่างจากทุกประเภทก่อนหน้าที่ตั้งค่าเป็นแถวเดียวต่อ widget
+  (`page_item_widget_<ประเภท>` PK = `page_item_widget.id`, extends `SettingsWidget`) — Custom Text ให้กรอกเนื้อหาเองแบ่งเป็น **"part"
+  เรียงลำดับได้หลายรายการต่อ 1 widget** เหมือนระบบ part ของบทความ (`ArticleItemPart`) รองรับ 4 ประเภท part: `text`/`image`/`images`/`video`
+  (ตัดเอกสารออกจากชุดของบทความ) เพราะเป็นรายการหลายแถวจึงไม่ extend `SettingsWidget` แต่ implement `PageWidgetType` ตรง ๆ
+  (`App\Support\PageWidget\CustomTextWidget`, `relation()` เป็น `hasMany` → `toArray()` ได้ `Collection` แทน `Model` เดี่ยว — ต้องแก้
+  `PageWidgetType::toArray()`/`SettingsWidget::toArray()` ให้รับ `Model|Collection|null` แทน `?Model` เดิม) `save()` แทนที่ part ทั้งหมด
+  ของ widget ด้วยชุดที่ส่งมาใหม่ทุกครั้ง (ลบแล้วสร้างใหม่ เทียบเคียง `ArticleItemController::syncParts()`) ตาราง `page_item_widget_customtext_part`
+  (+ `_file` + `_detail`, migration `2026_09_27_000001_*`) — **หัวเรื่องของแต่ละ part จัดรูปแบบได้เอง** (ขนาด/ฟอนต์/ตำแหน่ง/สี อยู่บนตัว part
+  เอง ต่างจาก part ของบทความที่ไม่มีการจัดรูปแบบเลย) ฝั่งหน้าจอ `utils/pageWidgetCustomText.ts` (เทียบเคียง `utils/articleParts.ts`) +
+  `Components/Admin/PageLayout/widgets/CustomTextFields.vue` + subfolder `widgets/CustomTextPart/` (`PartCard.vue` แสดงหัวเรื่อง+การจัดรูปแบบ
+  ครั้งเดียวแล้ว dispatch ไปยัง `PartText`/`PartImage`/`PartImages`/`PartVideo`, เรียงลำดับผ่าน `PartReorderDialog.vue` เหมือน part ของบทความ)
+  — เพิ่ม prop `stacked` ให้ `LangFieldGroup.vue` (บังคับคอลัมน์เดียว) ใช้เฉพาะกับตัวแก้ไขข้อความ (rich text) ของ part ข้อความ เพราะ dialog
+  ตั้งค่า widget มี 2 คอลัมน์อยู่แล้ว ซ้อนอีกชั้นจะเบียดเกินไป — ฟิลด์อื่น (หัวเรื่อง, alt text) ยังคง 2 คอลัมน์ปกติ ดู `docs/PRD-page.md` §3
 
 ## ทดสอบ
 

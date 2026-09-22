@@ -7,6 +7,7 @@ import TextFieldsSection from './TextFieldsSection.vue';
 import GridFields from './widgets/GridFields.vue';
 import SlideshowFields from './widgets/SlideshowFields.vue';
 import SlidesetFields from './widgets/SlidesetFields.vue';
+import CustomTextFields from './widgets/CustomTextFields.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import DangerButton from '@/Components/DangerButton.vue';
@@ -15,6 +16,8 @@ import ConfirmDialog from '@/Components/ConfirmDialog.vue';
 import { SHOW_OPTIONS, cloneDeep, pickBackground, pickTextStyles } from '@/utils/pageLayout';
 import { gridConfig, slideshowConfig, slidesetConfig, validateSetting, widgetTypeLabel } from '@/utils/pageWidget';
 import type { GridSetting, SlideshowCommonSetting, SlidesetSetting } from '@/utils/pageWidget';
+import { isCustomTextWidget } from '@/utils/pageWidgetCustomText';
+import type { CustomTextSetting } from '@/utils/pageWidgetCustomText';
 import type { WidgetData, WidgetOptions, WidgetSettings } from '@/utils/pageLayout';
 import type { LanguageOption } from '@/types';
 
@@ -77,6 +80,8 @@ const slideshow = computed(() => (draft.value ? slideshowConfig(draft.value.widg
 const slideset = computed(() => (draft.value ? slidesetConfig(draft.value.widget_type) : undefined));
 // Grid (กล่องเรียงต่อเนื่องหลายคอลัมน์ ไม่เลื่อน) — ฟอร์มคล้าย Slideset แต่ไม่มี carousel/กล่องเส้นขอบ
 const grid = computed(() => (draft.value ? gridConfig(draft.value.widget_type) : undefined));
+// Custom Text (เนื้อหาที่กรอกเอง แบ่งเป็น part) — ไม่ดึงรายการจากหมวดหมู่เหมือน 3 ฟอร์มข้างบน จึงไม่ต้องส่ง categories/widgetOptions
+const customtext = computed(() => draft.value !== null && isCustomTextWidget(draft.value.widget_type));
 
 function confirm() {
     if (!draft.value) {
@@ -137,6 +142,13 @@ function remove() {
                     :categories="widgetOptions[grid.optionsKey]"
                     :fonts="fonts"
                     :languages="languages"
+                    :errors="errors"
+                />
+                <CustomTextFields
+                    v-else-if="customtext"
+                    :setting="draft.setting as unknown as CustomTextSetting"
+                    :languages="languages"
+                    :fonts="fonts"
                     :errors="errors"
                 />
                 <p v-else class="text-sm text-gray-500">Widget ประเภทนี้ไม่มีการตั้งค่าเฉพาะ</p>

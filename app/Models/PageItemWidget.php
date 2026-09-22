@@ -98,4 +98,10 @@ class PageItemWidget extends Model
     {
         return $this->hasOne(PageItemWidgetGridBanner::class, 'id');
     }
+
+    /** เนื้อหาแบบแบ่ง part ของประเภท customtext (หลายแถวต่อ widget — ต่างจากประเภทอื่นที่เป็นแถวเดียว) เรียงตามลำดับ */
+    public function customtextParts()
+    {
+        return $this->hasMany(PageItemWidgetCustomtextPart::class)->orderBy('sort_order');
+    }
 }

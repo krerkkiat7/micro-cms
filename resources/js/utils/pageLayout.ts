@@ -1,6 +1,8 @@
 import type { CSSProperties } from 'vue';
 import type { FileItem, LanguageOption } from '@/types';
 import { defaultSetting, settingFromServer } from '@/utils/pageWidget';
+import { customTextSettingToPayload, isCustomTextWidget } from '@/utils/pageWidgetCustomText';
+import type { CustomTextSetting } from '@/utils/pageWidgetCustomText';
 
 /**
  * โครงสร้างหน้าเพจ แถว (row) → คอลัมน์ (column) → widget (ดู docs/PRD-page.md) — ชนิดข้อมูลตรงกับ
@@ -384,7 +386,8 @@ export function layoutToPayload(rows: RowData[]) {
                 status: widget.status,
                 show_title: widget.show_title,
                 widget_type: widget.widget_type,
-                setting: widget.setting,
+                // customtext เก็บ setting เป็นรายการ part ที่มี FileItem[]/`_key` ของหน้าจอปนอยู่ (ดู settingFromServer) ต้องแปลงกลับก่อนส่ง
+                setting: isCustomTextWidget(widget.widget_type) ? customTextSettingToPayload(widget.setting as unknown as CustomTextSetting) : widget.setting,
                 detail: widget.detail,
                 ...backgroundToPayload(widget),
                 ...textStylesToPayload(widget),

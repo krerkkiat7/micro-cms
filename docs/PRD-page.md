@@ -10,7 +10,7 @@
 |---|--------|-----------|-------|
 | 1 | หน้าเพจ (ข้อมูลทั่วไป) | `page_item_info`, `page_item_detail` | 🟢 schema + controller/route/UI (list, add, edit) เสร็จครบ |
 | 2 | โครงสร้าง แถว → คอลัมน์ → widget | `page_item_row/column/widget` + `*_detail` | 🟢 schema + หน้าจัดโครงสร้างแบบเห็นผลจริง + บันทึกเสร็จ |
-| 3 | ประเภท widget และการตั้งค่าเฉพาะประเภท | `page_item_widget.widget_type` + `page_item_widget_<ประเภท>` | 🟡 โครงระบบเสร็จ + ประเภท `slideshowbanner`, `slideshowarticle`, `slidesetarticle`, `slidesetbanner`, `gridarticle`, `gridbanner` เสร็จ; เหลือ `customtext` (§3) |
+| 3 | ประเภท widget และการตั้งค่าเฉพาะประเภท | `page_item_widget.widget_type` + `page_item_widget_<ประเภท>` | 🟢 ประเภททั้งหมดเสร็จแล้ว: `slideshowbanner`, `slideshowarticle`, `slidesetarticle`, `slidesetbanner`, `gridarticle`, `gridbanner`, `customtext` (§3) |
 | 4 | การแสดงผลหน้าบ้านตาม slug/โครงสร้าง | (front-office) | 🔴 ยังไม่ได้ทำ |
 
 ---
@@ -236,7 +236,7 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 | `slidesetbanner` | Slideset — การ์ดป้ายโฆษณาที่เลื่อนได้ (รูป/หัวเรื่อง/เกริ่นนำ) จาก banner | 🟢 เสร็จ |
 | `gridarticle` | Grid — กล่องเรียงต่อเนื่องหลายคอลัมน์ (ไม่เลื่อน) จาก article | 🟢 เสร็จ |
 | `gridbanner` | Grid — กล่องเรียงต่อเนื่องหลายคอลัมน์ (ไม่เลื่อน) จาก banner | 🟢 เสร็จ |
-| `customtext` | Custom Text — กรอกเนื้อหาเอง คล้าย part ของบทความ (ตารางแยก + ข้อมูลแยกภาษา) | 🔴 เร็ว ๆ นี้ |
+| `customtext` | Custom Text — กรอกเนื้อหาเอง แบ่งเป็น "part" เรียงลำดับได้หลายรายการต่อ widget คล้าย part ของบทความ (ตารางแยก + ข้อมูลแยกภาษา) | 🟢 เสร็จ |
 | `placeholder` | ประเภทเดิมก่อนมีประเภทจริง (**legacy**) — ไม่มีตารางตั้งค่า โหลด/บันทึกได้แต่เลือกสร้างใหม่ไม่ได้ | — |
 
 ### ขั้นตอนเพิ่ม/แก้ widget ในหน้าโครงสร้าง
@@ -416,6 +416,35 @@ migration `2026_09_25_000003_*`; FK หมวดหมู่ตั้งชื�
 - หมวดหมู่ = `banner_category_info_id`; ข้อมูลที่แสดง = banner ที่เผยแพร่อยู่ **และมีรูป**; ลิงก์ของการ์ด = url ของ banner (banner ที่ไม่มี url กดไม่ได้)
 - ข้อความเกริ่นนำ **default ซ่อน** เหมือน `gridarticle`
 
+### `customtext` — Custom Text (เนื้อหาที่กรอกเอง แบ่งเป็น part)
+
+ต่างจากทุกประเภทข้างบนที่ตั้งค่าเป็น **แถวเดียวต่อ 1 widget** (`page_item_widget_<ประเภท>` PK = `page_item_widget.id`) — Custom Text
+ไม่ดึงข้อมูลจากหมวดหมู่ article/banner เลย แต่ให้ผู้ใช้กรอกเนื้อหาเองแบ่งเป็น **"part" เรียงลำดับได้หลายรายการต่อ 1 widget** เหมือนระบบ part
+ของบทความ (`ArticleItemPart`, ดู §0 ของ [PRD-article.md](PRD-article.md)) รองรับ 4 ประเภท part: `text` (ข้อความ rich text แยกภาษา),
+`image` (รูปภาพเดี่ยว), `images` (กลุ่มรูปภาพ — ใช้ `ImagesDisplayTypePicker.vue`/`IMAGES_DISPLAY_TYPES` ร่วมกับบทความ), `video`
+(ไฟล์หรือ YouTube) — **ตัดประเภทเอกสารออก** (`document`/`documents`) เพราะ widget นี้เน้นข้อความ/สื่อ ไม่ใช่เอกสารแนบ
+
+เพราะเป็นรายการหลายแถว จึงไม่ extend `SettingsWidget` (ฐานนั้นออกแบบไว้สำหรับ "1 widget = 1 แถวตั้งค่า") แต่ implement `PageWidgetType`
+ตรง ๆ (`App\Support\PageWidget\CustomTextWidget`) — `relation()` เป็น `hasMany` (`PageItemWidget::customtextParts()`) จึงได้ `Collection`
+ใน `toArray()` แทน `Model` เดี่ยวเหมือนประเภทอื่น (อินเทอร์เฟส `PageWidgetType::toArray()` เลยรับ `Model|Collection|null` ไม่ใช่ `?Model`
+เหมือนเดิม) `save()` แทนที่ part ทั้งหมดของ widget ด้วยชุดที่ส่งมาใหม่ทุกครั้ง (ลบแล้วสร้างใหม่ เทียบเคียง `ArticleItemController::syncParts()`)
+ตาราง: `page_item_widget_customtext_part` (1 แถวต่อ 1 part, คีย์หลักเป็นของตัวเอง) + `_file` (ไฟล์ของ part) + `_detail` (หัวข้อ/เนื้อหาแยกภาษา
+PK = id + lang) — migration `2026_09_27_000001_*` (มีทั้ง FK และ index ที่ต้องตั้งชื่อเองเพราะยาวเกิน 64 ตัวอักษรของ MySQL)
+
+**หัวเรื่องของแต่ละ part จัดรูปแบบได้เอง** (ขนาดฟอนต์/ฟอนต์/จัดตำแหน่ง/สี — คอลัมน์ `title_font_size`/`title_font_family`/`title_align`/
+`title_color` อยู่บนตัว part เอง ไม่ใช่ต่อ widget เหมือน §2) ต่างจาก part ของบทความที่ไม่มีการจัดรูปแบบหัวเรื่องเลย — ฝั่งหน้าจอ
+(`PartCard.vue`) จึงยกส่วน "หัวเรื่อง" ขึ้นมาแสดงครั้งเดียวเหนือเนื้อหาเฉพาะประเภท (ใช้ `TextStyleFields.vue`/`settingTextStyle(part, 'title')`
+ร่วมกับส่วนอื่นของระบบ) แทนที่จะซ้ำในแต่ละ `PartText`/`PartImage`/`PartImages`/`PartVideo` เหมือนของบทความ หัวเรื่องที่แสดงในตัวอย่าง
+(`CustomTextPreview.vue`) ใช้ `<div>` เหมือนหัวเรื่องอื่น ๆ ในหน้าโครงสร้าง (ที่หน้าบ้านของจริงในอนาคตจะใช้ `<h3>` แทน ตาม convention เดียวกับ
+`HEADING_TAGS` ใน §2 — ยังไม่มีหน้าบ้านให้ implement จริง)
+
+ฝั่งหน้าจอ: `resources/js/utils/pageWidgetCustomText.ts` (เทียบเคียง `utils/articleParts.ts`) + `Components/Admin/PageLayout/widgets/CustomTextFields.vue`
+(รายการ part + ปุ่มเพิ่ม) + subfolder `widgets/CustomTextPart/` (`PartCard.vue` จัดการ header/หัวเรื่อง แล้ว dispatch ไปยัง `PartText`/`PartImage`/
+`PartImages`/`PartVideo`, `PartReorderDialog.vue` เรียงลำดับผ่าน dialog เหมือน part ของบทความ) — **ตัวแก้ไขข้อความ (rich text) ของ part ข้อความ
+แสดงแต่ละภาษาคนละบรรทัด (stacked)** แทนแบบ 2 คอลัมน์ปกติของ `LangFieldGroup.vue` (prop `stacked`) เพราะ dialog ตั้งค่า widget มี 2 คอลัมน์อยู่แล้ว
+ซ้อนอีกชั้นจะเบียดเกินไป — ต่างจากฟิลด์อื่น (หัวเรื่อง, alt text) ที่ยังคง 2 คอลัมน์ปกติ `CustomTextPreview.vue` แสดงตัวอย่างจาก `setting.parts`
+ที่กำลังแก้ไขตรง ๆ (ไม่เรียก endpoint ตัวอย่างแบบ Grid/Slideshow/Slideset เพราะเนื้อหาคือค่าที่ตั้งเองอยู่แล้ว ไม่ใช่ตัวอย่างจากหมวดหมู่)
+
 ### โครงระบบประเภท widget (เพิ่มประเภทใหม่)
 
 ทุกอย่างของแต่ละประเภทรวมอยู่ในคลาสเดียว `App\Support\PageWidget\<ชื่อ>Widget` (extends `SettingsWidget` / `CategoryListWidget` ซึ่ง implements `PageWidgetType`) (กฎ validation, ค่าเริ่มต้น, บันทึก/ลบ, แปลงเป็นข้อมูลส่งหน้าจอ,
@@ -437,5 +466,5 @@ migration `2026_09_25_000003_*`; FK หมวดหมู่ตั้งชื�
 | 0 — schema | `page_item_info/detail` + `page_item_row/column/widget` + `*_detail` + `PageSeeder` ตัวอย่าง | ✅ เสร็จ |
 | 1 — CRUD หน้าเพจ + จัดโครงสร้าง | list/add/edit (ข้อมูลทั่วไป + SEO) + แท็บโครงสร้าง (แถว/คอลัมน์/widget, เรียงลำดับผ่าน dialog, ตั้งค่า, พื้นหลัง, บันทึก) | ✅ เสร็จ |
 | **2 — ประเภท widget** | โครงระบบประเภท widget (ตารางแยกต่อประเภท + registry + dialog เลือกประเภท/ตั้งค่า + ตัวอย่าง) + `slideshowbanner` + `slideshowarticle` | ✅ เสร็จ |
-| 2.1 — ประเภท widget ที่เหลือ | `gridarticle` ✅ เสร็จ, `gridbanner` ✅ เสร็จ, `customtext` | 🟡 กำลังทำ |
+| 2.1 — ประเภท widget ที่เหลือ | `gridarticle` ✅ เสร็จ, `gridbanner` ✅ เสร็จ, `customtext` ✅ เสร็จ | ✅ เสร็จ |
 | 3 — หน้าบ้าน | แสดงหน้าเพจตาม slug + โครงสร้าง (grid 12) ที่ `front.*` | 🔴 ยังไม่เริ่ม |

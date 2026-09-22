@@ -234,9 +234,9 @@ abstract class SettingsWidget implements PageWidgetType
         }
     }
 
-    public function toArray(?Model $row): array
+    public function toArray(mixed $row): array
     {
-        if ($row === null || ! is_a($row, $this->model())) {
+        if (! $row instanceof Model || ! is_a($row, $this->model())) {
             return $this->defaults();
         }
 

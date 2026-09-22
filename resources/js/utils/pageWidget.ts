@@ -1,6 +1,7 @@
 import { reactive } from 'vue';
 import { LINK_TARGET_OPTIONS } from '@/utils/options';
 import type { TextStyle } from '@/utils/pageLayout';
+import { customTextSettingFromServer, defaultCustomTextSetting, isCustomTextWidget } from '@/utils/pageWidgetCustomText';
 import { READ_ALL_DEFAULT_BACKGROUND, READ_ALL_DEFAULT_COLORS, READ_ALL_URL_PATTERN } from '@/utils/readAllButton';
 import type { ReadAllIcon, ReadAllIconPosition, ReadAllPosition, ReadAllStyle } from '@/utils/readAllButton';
 
@@ -81,7 +82,7 @@ export const WIDGET_TYPE_DEFS: WidgetTypeDef[] = [
         description: 'กรอกเนื้อหาเอง แบ่งเป็นส่วน ๆ คล้าย part ของบทความ',
         layout: 'text',
         source: 'custom',
-        available: false,
+        available: true,
     },
 ];
 
@@ -717,11 +718,24 @@ export function defaultSetting(type: string, languages: string[] = []): Record<s
         return { ...defaultSlidesetSetting(type, languages) };
     }
 
-    return gridConfig(type) ? { ...defaultGridSetting(type, languages) } : {};
+    if (gridConfig(type)) {
+        return { ...defaultGridSetting(type, languages) };
+    }
+
+    // customtext เก็บเป็นรายการ part แทนฟิลด์แบน จึงไม่ผสานแบบ shallow merge เหมือนประเภทอื่น (ดู settingFromServer ด้านล่าง)
+    return isCustomTextWidget(type) ? { ...defaultCustomTextSetting() } : {};
 }
 
-/** ผสานค่าที่ backend ส่งมากับค่าเริ่มต้น (กันคีย์ขาดหาย) — PHP ส่ง array ว่างมาเป็น [] จึงรับได้ทั้ง array/object/null */
+/**
+ * ผสานค่าที่ backend ส่งมากับค่าเริ่มต้น (กันคีย์ขาดหาย) — PHP ส่ง array ว่างมาเป็น [] จึงรับได้ทั้ง array/object/null
+ * customtext เก็บเป็นรายการ part (ไม่ใช่ฟิลด์แบน) จึงต้อง hydrate ทีละ part (เติม `_key`/ห่อไฟล์เป็น FileItem[]) แยกต่างหาก
+ * แทนการ shallow merge ธรรมดาเหมือนประเภทอื่น
+ */
 export function settingFromServer(type: string, setting: Record<string, unknown> | unknown[] | null | undefined): Record<string, unknown> {
+    if (isCustomTextWidget(type)) {
+        return customTextSettingFromServer(setting) as unknown as Record<string, unknown>;
+    }
+
     const values = setting && !Array.isArray(setting) ? setting : {};
 
     return { ...defaultSetting(type), ...values };

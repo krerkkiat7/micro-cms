@@ -9,12 +9,15 @@ import { languageLabel } from '@/utils/languages';
  *
  * `required` = ฟิลด์นี้จำเป็นต้องกรอกสำหรับภาษาหลัก (แสดง * สีแดงกำกับที่ป้ายภาษาหลักเท่านั้น
  * เพราะภาษาอื่นเป็น optional เสมอตามดีไซน์ของโมดูลนี้)
+ * `stacked` = บังคับให้แสดงคอลัมน์เดียวเสมอ (ปกติภาษามากกว่า 1 จะแสดง 2 คอลัมน์) ใช้เมื่อฟิลด์ข้างในกว้าง/สูงมาก
+ * (เช่น rich text editor ใน dialog ที่มีคอลัมน์ 2 ช่องอยู่แล้ว 2 คอลัมน์ซ้อนกันอีกชั้นจะเบียดเกินไป)
  */
 defineProps<{
     label: string;
     languages: LanguageOption[];
     description?: string;
     required?: boolean;
+    stacked?: boolean;
 }>();
 </script>
 
@@ -22,7 +25,7 @@ defineProps<{
     <fieldset class="rounded-xl border border-gray-200 p-4">
         <legend class="px-1 text-sm font-medium text-gray-700">{{ label }}</legend>
         <p v-if="description" class="mb-3 mt-0.5 px-1 text-xs text-gray-500">{{ description }}</p>
-        <div class="grid gap-4" :class="languages.length > 1 ? 'sm:grid-cols-2' : ''">
+        <div class="grid gap-4" :class="!stacked && languages.length > 1 ? 'sm:grid-cols-2' : ''">
             <div v-for="lang in languages" :key="lang.code">
                 <div class="mb-1.5 flex items-center gap-1.5">
                     <span class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium uppercase tracking-wide text-gray-500">

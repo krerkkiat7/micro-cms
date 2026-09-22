@@ -259,7 +259,7 @@ test('the type of a saved widget cannot be changed', function () {
 test('an unknown widget type is rejected', function () {
     actingAsUserWithPermissions(['page.item.manage']);
 
-    $this->put(route('admin.page.item.layout.update', $this->page->id), slideshowPayload([layoutWidget(['widget_type' => 'customtext'])]))
+    $this->put(route('admin.page.item.layout.update', $this->page->id), slideshowPayload([layoutWidget(['widget_type' => 'not_a_real_type'])]))
         ->assertSessionHasErrors('rows.0.columns.0.widgets.0.widget_type');
 });
 
