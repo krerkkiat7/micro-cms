@@ -44,6 +44,7 @@ class FrontMenuController extends Controller
                 'headerImage',
                 'targetArticleCategory.details',
                 'targetArticleItem.details',
+                'targetArticleItem.category.details',
                 'targetPageItem.details',
             ])
             ->orderBy('sort_order')
@@ -291,6 +292,8 @@ class FrontMenuController extends Controller
 
     /**
      * รายการบทความสำหรับ dialog "เลือกบทความ" (ประเภทเมนู "บทความ - รายละเอียดบทความ")
+     * แสดงเฉพาะบทความที่เผยแพร่อยู่จริง (status='Y' + อยู่ในช่วง publish_date/publish_down — เทียบเคียง
+     * App\Support\PageWidget\ReadsArticles::articleQuery()) ค้นหาได้จากชื่อ+เกริ่นนำ กรองตามหมวดหมู่ได้
      */
     public function pickArticles(Request $request): JsonResponse
     {
@@ -299,20 +302,57 @@ class FrontMenuController extends Controller
         }
 
         $defaultLang = Setting::defaultLanguage();
+        $now = now();
         $q = trim((string) $request->query('q', ''));
+        $categoryId = $request->query('category_id');
+        $categoryId = is_numeric($categoryId) ? (int) $categoryId : null;
+
+        $sortable = ['title', 'category', 'publish_date'];
+        $sort = in_array($request->query('sort'), $sortable, true) ? $request->query('sort') : 'title';
+        $direction = $request->query('direction') === 'desc' ? 'desc' : 'asc';
+
+        $sortColumn = match ($sort) {
+            'category' => 'cd.title',
+            'publish_date' => 'article_item_info.publish_date',
+            default => 'd.title',
+        };
 
         $articles = ArticleItemInfo::query()
             ->join('article_item_detail as d', function ($join) use ($defaultLang) {
                 $join->on('d.id', '=', 'article_item_info.id')->where('d.lang', $defaultLang);
             })
+            ->leftJoin('article_category_detail as cd', function ($join) use ($defaultLang) {
+                $join->on('cd.id', '=', 'article_item_info.article_category_info_id')->where('cd.lang', $defaultLang);
+            })
             ->whereNull('article_item_info.deleted_at')
             ->whereNull('d.deleted_at')
             ->where('article_item_info.status', 'Y')
-            ->when($q !== '', fn ($query) => $query->where('d.title', 'like', "%{$q}%"))
-            ->select('article_item_info.id', 'd.title as title')
-            ->orderBy('d.title')
-            ->paginate(20)
-            ->withQueryString();
+            ->where(fn ($query) => $query->whereNull('article_item_info.publish_date')->orWhere('article_item_info.publish_date', '<=', $now))
+            ->where(fn ($query) => $query->whereNull('article_item_info.publish_down')->orWhere('article_item_info.publish_down', '>', $now))
+            ->when($q !== '', function ($query) use ($q) {
+                $query->where(fn ($inner) => $inner
+                    ->where('d.title', 'like', "%{$q}%")
+                    ->orWhere('d.intro_text', 'like', "%{$q}%"));
+            })
+            ->when($categoryId !== null, fn ($query) => $query->where('article_item_info.article_category_info_id', $categoryId))
+            ->select(
+                'article_item_info.id',
+                'd.title as title',
+                'article_item_info.article_category_info_id as category_id',
+                'cd.title as category_title',
+                'article_item_info.publish_date',
+            )
+            ->orderBy($sortColumn, $direction)
+            ->orderBy('article_item_info.id') // tie-breaker ให้ลำดับเสถียร
+            ->paginate(10)
+            ->withQueryString()
+            ->through(fn (ArticleItemInfo $item) => [
+                'id' => $item->id,
+                'title' => $item->title,
+                'category_id' => $item->category_id,
+                'category_title' => $item->category_title,
+                'publish_date' => optional($item->publish_date)->format('Y-m-d H:i:s'),
+            ]);
 
         return response()->json($articles);
     }
@@ -498,6 +538,7 @@ class FrontMenuController extends Controller
                 'subtitle' => $d->subtitle,
             ]),
             'target_label' => $this->targetLabel($menu),
+            'target_article_item_category' => $this->targetArticleItemCategoryLabel($menu),
             'children' => $siblings
                 ->filter(fn (FrontMenuInfo $child) => $child->parent_id === $menu->id && ! isset($path[$child->id]))
                 ->map(fn (FrontMenuInfo $child) => $this->menuNode($child, $siblings, $path))
@@ -522,6 +563,21 @@ class FrontMenuController extends Controller
                 ->firstWhere('lang', $defaultLang)?->title,
             default => null,
         };
+    }
+
+    /**
+     * ชื่อหมวดหมู่ (ภาษาหลัก) ของบทความเป้าหมาย — เฉพาะ menu_type = article_item ไว้แสดง badge ตอนเปิดแก้ไขเมนู
+     */
+    private function targetArticleItemCategoryLabel(FrontMenuInfo $menu): ?string
+    {
+        if ($menu->menu_type !== FrontMenuType::ARTICLE_ITEM) {
+            return null;
+        }
+
+        $defaultLang = Setting::defaultLanguage();
+
+        return $menu->targetArticleItem?->category?->details
+            ->firstWhere('lang', $defaultLang)?->title;
     }
 
     /**
