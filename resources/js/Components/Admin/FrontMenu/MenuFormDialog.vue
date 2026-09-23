@@ -14,6 +14,7 @@ import PositionPicker from '@/Components/Admin/IntropageBackground/PositionPicke
 import FilePickerField from '@/Components/Admin/FileManager/FilePickerField.vue';
 import ArticleItemPickerDialog from './ArticleItemPickerDialog.vue';
 import PageItemPickerDialog from './PageItemPickerDialog.vue';
+import { categoryBadgeClass } from '@/utils/categoryBadge';
 import { STATUS_OPTIONS, LINK_TARGET_OPTIONS } from '@/utils/options';
 import { SHOW_OPTIONS, CONTAINER_OPTIONS, FONT_SIZE_OPTIONS } from '@/utils/pageLayout';
 import { SLIDESET_IMAGE_FIT_OPTIONS } from '@/utils/pageWidget';
@@ -76,6 +77,7 @@ const form = useForm({
 
 const headerImage = ref<FileItem[]>([]);
 const selectedArticleLabel = ref<string>('');
+const selectedArticleCategory = ref<string>('');
 const selectedPageLabel = ref<string>('');
 const showArticlePicker = ref(false);
 const showPagePicker = ref(false);
@@ -87,6 +89,7 @@ watch(
 
         form.clearErrors();
         selectedArticleLabel.value = '';
+        selectedArticleCategory.value = '';
         selectedPageLabel.value = '';
 
         const menu = props.menu;
@@ -129,7 +132,10 @@ watch(
                     detail[lang] = { name: existing.name ?? '', title: existing.title ?? '', subtitle: existing.subtitle ?? '' };
                 }
             }
-            if (menu.menu_type === FrontMenuType.ARTICLE_ITEM) selectedArticleLabel.value = menu.target_label ?? '';
+            if (menu.menu_type === FrontMenuType.ARTICLE_ITEM) {
+                selectedArticleLabel.value = menu.target_label ?? '';
+                selectedArticleCategory.value = menu.target_article_item_category ?? '';
+            }
             if (menu.menu_type === FrontMenuType.PAGE) selectedPageLabel.value = menu.target_label ?? '';
         }
         form.detail = detail;
@@ -186,9 +192,10 @@ function detailError(lang: string, field: string): string | undefined {
     return (form.errors as Record<string, string>)[`detail.${lang}.${field}`];
 }
 
-function pickArticle(article: { id: number; title: string }) {
+function pickArticle(article: { id: number; title: string; category_title: string | null }) {
     form.target_article_item_id = article.id;
     selectedArticleLabel.value = article.title;
+    selectedArticleCategory.value = article.category_title ?? '';
     showArticlePicker.value = false;
 }
 
@@ -262,7 +269,16 @@ const dialogTitle = computed(() => (props.menu ? `แก้ไขเมนู: $
                 <InputLabel value="บทความ" required />
                 <div class="flex items-center gap-3">
                     <SecondaryButton type="button" @click="showArticlePicker = true">เลือกบทความ</SecondaryButton>
-                    <span v-if="selectedArticleLabel" class="text-sm text-gray-600">{{ selectedArticleLabel }}</span>
+                    <span v-if="selectedArticleLabel" class="inline-flex items-center gap-2 text-sm text-gray-600">
+                        {{ selectedArticleLabel }}
+                        <span
+                            v-if="selectedArticleCategory"
+                            class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                            :class="categoryBadgeClass(selectedArticleCategory)"
+                        >
+                            {{ selectedArticleCategory }}
+                        </span>
+                    </span>
                 </div>
                 <InputError :message="form.errors.target_article_item_id" />
             </div>
@@ -392,6 +408,6 @@ const dialogTitle = computed(() => (props.menu ? `แก้ไขเมนู: $
         </div>
     </LayoutDialog>
 
-    <ArticleItemPickerDialog :show="showArticlePicker" @close="showArticlePicker = false" @select="pickArticle" />
+    <ArticleItemPickerDialog :show="showArticlePicker" :categories="articleCategories" @close="showArticlePicker = false" @select="pickArticle" />
     <PageItemPickerDialog :show="showPagePicker" @close="showPagePicker = false" @select="pickPage" />
 </template>

@@ -149,6 +149,7 @@ export interface FrontMenuNode {
     status: string;
     detail: Record<string, FrontMenuDetailFields>;
     target_label: string | null;
+    target_article_item_category: string | null;
     children: FrontMenuNode[];
 }
 
