@@ -307,6 +307,16 @@ class FrontMenuController extends Controller
         $categoryId = $request->query('category_id');
         $categoryId = is_numeric($categoryId) ? (int) $categoryId : null;
 
+        $sortable = ['title', 'category', 'publish_date'];
+        $sort = in_array($request->query('sort'), $sortable, true) ? $request->query('sort') : 'title';
+        $direction = $request->query('direction') === 'desc' ? 'desc' : 'asc';
+
+        $sortColumn = match ($sort) {
+            'category' => 'cd.title',
+            'publish_date' => 'article_item_info.publish_date',
+            default => 'd.title',
+        };
+
         $articles = ArticleItemInfo::query()
             ->join('article_item_detail as d', function ($join) use ($defaultLang) {
                 $join->on('d.id', '=', 'article_item_info.id')->where('d.lang', $defaultLang);
@@ -332,8 +342,8 @@ class FrontMenuController extends Controller
                 'cd.title as category_title',
                 'article_item_info.publish_date',
             )
-            ->orderByRaw('COALESCE(article_item_info.publish_date, article_item_info.created_at) desc')
-            ->orderBy('article_item_info.id')
+            ->orderBy($sortColumn, $direction)
+            ->orderBy('article_item_info.id') // tie-breaker ให้ลำดับเสถียร
             ->paginate(10)
             ->withQueryString()
             ->through(fn (ArticleItemInfo $item) => [

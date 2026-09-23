@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import axios from 'axios';
-import { Search, X } from 'lucide-vue-next';
+import { ArrowDown, ArrowUp, ArrowUpDown, Search, X } from 'lucide-vue-next';
 import TextInput from '@/Components/TextInput.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
@@ -37,6 +37,8 @@ const page = ref(1);
 const loading = ref(false);
 const rows = ref<ArticleRow[]>([]);
 const meta = reactive({ currentPage: 1, lastPage: 1 });
+const sort = ref('title');
+const direction = ref<'asc' | 'desc'>('asc');
 
 const categoryFilterOptions = () => [{ value: '', label: 'ทุกหมวดหมู่' }, ...props.categories];
 
@@ -48,6 +50,8 @@ async function load() {
                 q: filters.q || undefined,
                 category_id: filters.category_id || undefined,
                 page: page.value,
+                sort: sort.value,
+                direction: direction.value,
             },
         });
 
@@ -67,6 +71,18 @@ function search() {
 function goToPage(target: number) {
     page.value = target;
     load();
+}
+
+function sortBy(column: string) {
+    direction.value = sort.value === column && direction.value === 'asc' ? 'desc' : 'asc';
+    sort.value = column;
+    page.value = 1;
+    load();
+}
+
+function sortIcon(column: string) {
+    if (sort.value !== column) return ArrowUpDown;
+    return direction.value === 'asc' ? ArrowUp : ArrowDown;
 }
 
 function choose(article: ArticleRow) {
@@ -99,6 +115,8 @@ watch(
             filters.q = '';
             filters.category_id = '';
             page.value = 1;
+            sort.value = 'title';
+            direction.value = 'asc';
             load();
         }
     },
@@ -140,9 +158,24 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
                             <table class="w-full min-w-[560px] text-left text-sm">
                                 <thead class="border-b border-gray-200 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                                     <tr>
-                                        <th class="px-4 py-2.5 font-medium">ชื่อ</th>
-                                        <th class="w-40 px-4 py-2.5 font-medium">หมวดหมู่</th>
-                                        <th class="w-44 px-4 py-2.5 font-medium">วันที่เผยแพร่</th>
+                                        <th class="px-4 py-2.5 font-medium">
+                                            <button type="button" class="inline-flex items-center gap-1 transition-colors hover:text-gray-700" @click="sortBy('title')">
+                                                ชื่อ
+                                                <component :is="sortIcon('title')" class="size-3.5" :class="sort === 'title' ? 'text-brand-500' : 'text-gray-400'" />
+                                            </button>
+                                        </th>
+                                        <th class="w-40 px-4 py-2.5 font-medium">
+                                            <button type="button" class="inline-flex items-center gap-1 transition-colors hover:text-gray-700" @click="sortBy('category')">
+                                                หมวดหมู่
+                                                <component :is="sortIcon('category')" class="size-3.5" :class="sort === 'category' ? 'text-brand-500' : 'text-gray-400'" />
+                                            </button>
+                                        </th>
+                                        <th class="w-44 px-4 py-2.5 font-medium">
+                                            <button type="button" class="inline-flex items-center gap-1 transition-colors hover:text-gray-700" @click="sortBy('publish_date')">
+                                                วันที่เผยแพร่
+                                                <component :is="sortIcon('publish_date')" class="size-3.5" :class="sort === 'publish_date' ? 'text-brand-500' : 'text-gray-400'" />
+                                            </button>
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
