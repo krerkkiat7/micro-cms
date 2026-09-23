@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\System\Setting\TestSmtpSettingRequest;
 use App\Http\Requests\Admin\System\Setting\UpdateLoginBackSettingRequest;
 use App\Http\Requests\Admin\System\Setting\UpdateSiteSettingRequest;
 use App\Http\Requests\Admin\System\Setting\UpdateSmtpSettingRequest;
+use App\Http\Requests\Admin\System\Setting\UpdateSocialSettingRequest;
 use App\Http\Requests\Admin\System\Setting\UpdateTurnstileSettingRequest;
 use App\Mail\TestSmtpMail;
 use App\Models\FileInfo;
@@ -31,6 +32,7 @@ class SettingController extends Controller
     /** ชื่อกลุ่มภาษาไทย — ใช้แสดงผล log และข้อความแจ้งเตือน (รวมทุกกลุ่มที่ลงทะเบียนใน Setting::GROUPS แม้จะไม่ใช่ของหน้านี้เอง) */
     private const GROUP_LABELS = [
         'site' => 'ข้อมูลระบบ',
+        'social' => 'Social Media',
         'smtp' => 'SMTP',
         'turnstile' => 'Turnstile',
         'login_back' => 'การเข้าสู่ระบบหลังบ้าน',
@@ -41,7 +43,7 @@ class SettingController extends Controller
      * กลุ่มตั้งค่าที่หน้านี้ (ตั้งค่าระบบ) มีฟอร์มให้แก้ไขเอง — ไม่ใช่ทุกกลุ่มใน Setting::GROUPS เพราะกลุ่มอื่น
      * (เช่น 'article') เป็นของโมดูลนั้น ๆ ที่มีหน้าตั้งค่าแยกของตัวเอง แค่มาลงทะเบียนแคชร่วมทะเบียนเดียวกัน
      */
-    private const OWN_GROUPS = ['site', 'smtp', 'turnstile', 'login_back'];
+    private const OWN_GROUPS = ['site', 'social', 'smtp', 'turnstile', 'login_back'];
 
     /**
      * หน้าตั้งค่าระบบ — ฟอร์มแยกกลุ่มตาม self::OWN_GROUPS
@@ -99,6 +101,11 @@ class SettingController extends Controller
         $data['lang_selected'] = implode(',', $data['lang_selected']);
 
         return $this->saveGroup($request, 'site', $data);
+    }
+
+    public function updateSocial(UpdateSocialSettingRequest $request): RedirectResponse
+    {
+        return $this->saveGroup($request, 'social');
     }
 
     public function updateSmtp(UpdateSmtpSettingRequest $request): RedirectResponse

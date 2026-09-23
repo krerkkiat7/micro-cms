@@ -13,6 +13,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import FilePickerField from '@/Components/Admin/FileManager/FilePickerField.vue';
 import TestSmtpDialog from '@/Components/Admin/TestSmtpDialog.vue';
+import SocialIcon from '@/Components/Admin/SocialIcon.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { Save, Send } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
@@ -21,6 +22,7 @@ import type { FileItem } from '@/types';
 interface Props {
     settings: {
         site: Record<string, string>;
+        social: Record<string, string>;
         smtp: Record<string, string>;
         turnstile: Record<string, string>;
         login_back: Record<string, string>;
@@ -76,7 +78,7 @@ const availableDefaultLanguageOptions = computed(() =>
 );
 
 // เพิ่มตัวเลือก "ไม่ระบุ" ไว้ตัวแรกให้เลือกกลับไปว่างได้ (ว่าง = cascade ไปใช้ .env/php.ini แทน — ดู config/app.php)
-const timezoneSelectOptions = computed(() => [{ value: '', label: 'ไม่ระบุ (ใช้ค่าจาก .env / เซิร์ฟเวอร์)' }, ...props.timezoneOptions]);
+const timezoneSelectOptions = computed(() => [{ value: '', label: 'ไม่ระบุ (ใช้การตั้งค่าของเซิร์ฟเวอร์)' }, ...props.timezoneOptions]);
 
 function toggleLang(code: string) {
     const idx = siteForm.lang_selected.indexOf(code);
@@ -114,6 +116,29 @@ watch(faviconFile, (files) => {
 
 function submitSite() {
     siteForm.put(route('admin.system.setting.update.site'), { preserveScroll: true });
+}
+
+// ---------- กลุ่ม "Social Media" ----------
+const SOCIAL_FIELDS: { key: 'facebook' | 'youtube' | 'x' | 'instagram' | 'tiktok' | 'line'; label: string }[] = [
+    { key: 'facebook', label: 'Facebook' },
+    { key: 'youtube', label: 'YouTube' },
+    { key: 'x', label: 'X' },
+    { key: 'instagram', label: 'Instagram' },
+    { key: 'tiktok', label: 'TikTok' },
+    { key: 'line', label: 'LINE' },
+];
+
+const socialForm = useForm({
+    facebook: props.settings.social?.facebook ?? '',
+    youtube: props.settings.social?.youtube ?? '',
+    x: props.settings.social?.x ?? '',
+    instagram: props.settings.social?.instagram ?? '',
+    tiktok: props.settings.social?.tiktok ?? '',
+    line: props.settings.social?.line ?? '',
+});
+
+function submitSocial() {
+    socialForm.put(route('admin.system.setting.update.social'), { preserveScroll: true });
 }
 
 // ---------- กลุ่ม "SMTP" ----------
@@ -266,16 +291,40 @@ function submitLoginBack() {
                     <div class="sm:col-span-3">
                         <InputLabel for="timezone" value="โซนเวลา" />
                         <SearchableSelect id="timezone" v-model="siteForm.timezone" :options="timezoneSelectOptions" />
-                        <p class="mt-1 text-xs text-gray-500">
-                            ใช้คำนวณ "เวลาปัจจุบัน" ทั้งระบบ (เช่น วันที่เผยแพร่บทความ/ป้ายโฆษณา) — ไม่ระบุจะใช้ค่าจาก .env
-                            (<code>APP_TIMEZONE</code>) หรือค่าเริ่มต้นของเซิร์ฟเวอร์แทน
-                        </p>
+                        <p class="mt-1 text-xs text-gray-500">ใช้กำหนดโซนเวลาของระบบ</p>
                         <InputError :message="siteForm.errors.timezone" />
                     </div>
                 </div>
 
                 <div class="mt-6">
                     <PrimaryButton type="submit" :disabled="siteForm.processing">
+                        <Save class="mr-1.5 size-4" /> บันทึก
+                    </PrimaryButton>
+                </div>
+            </form>
+
+            <!-- Social Media -->
+            <form
+                class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8"
+                @submit.prevent="submitSocial"
+            >
+                <h2 class="text-base font-semibold text-gray-800">Social Media</h2>
+
+                <div class="mt-5 grid gap-4 sm:grid-cols-6">
+                    <div v-for="field in SOCIAL_FIELDS" :key="field.key" class="sm:col-span-3">
+                        <InputLabel :for="`social_${field.key}`">
+                            <span class="inline-flex items-center gap-1.5">
+                                <SocialIcon :platform="field.key" class="size-4 shrink-0 text-gray-500" />
+                                {{ field.label }}
+                            </span>
+                        </InputLabel>
+                        <TextInput :id="`social_${field.key}`" v-model="socialForm[field.key]" type="text" />
+                        <InputError :message="socialForm.errors[field.key]" />
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <PrimaryButton type="submit" :disabled="socialForm.processing">
                         <Save class="mr-1.5 size-4" /> บันทึก
                     </PrimaryButton>
                 </div>
