@@ -236,6 +236,7 @@ Route::prefix('admin')->group(function () {
             Route::put('/site', [SettingController::class, 'updateSite'])->name('admin.system.setting.update.site');
             Route::put('/contact', [SettingController::class, 'updateContact'])->name('admin.system.setting.update.contact');
             Route::put('/social', [SettingController::class, 'updateSocial'])->name('admin.system.setting.update.social');
+            Route::put('/google-analytics', [SettingController::class, 'updateGoogleAnalytics'])->name('admin.system.setting.update.google_analytics');
             Route::put('/smtp', [SettingController::class, 'updateSmtp'])->name('admin.system.setting.update.smtp');
             // ทดสอบส่งอีเมลด้วยค่า SMTP ที่บันทึกไว้ — throttle กันสแปม/กดรัวเป็น cannon เมล
             Route::post('/smtp/test', [SettingController::class, 'testSmtp'])

@@ -24,6 +24,7 @@ interface Props {
         site: Record<string, string>;
         contact: Record<string, string>;
         social: Record<string, string>;
+        google_analytics: Record<string, string>;
         smtp: Record<string, string>;
         turnstile: Record<string, string>;
         login_back: Record<string, string>;
@@ -156,6 +157,15 @@ const socialForm = useForm({
 
 function submitSocial() {
     socialForm.put(route('admin.system.setting.update.social'), { preserveScroll: true });
+}
+
+// ---------- กลุ่ม "Google Analytics" ----------
+const gaForm = useForm({
+    tracking_id: props.settings.google_analytics?.tracking_id ?? '',
+});
+
+function submitGoogleAnalytics() {
+    gaForm.put(route('admin.system.setting.update.google_analytics'), { preserveScroll: true });
 }
 
 // ---------- กลุ่ม "SMTP" ----------
@@ -394,6 +404,32 @@ function submitLoginBack() {
 
                 <div class="mt-6">
                     <PrimaryButton type="submit" :disabled="socialForm.processing">
+                        <Save class="mr-1.5 size-4" /> บันทึก
+                    </PrimaryButton>
+                </div>
+            </form>
+
+            <!-- Google Analytics -->
+            <form
+                class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8"
+                @submit.prevent="submitGoogleAnalytics"
+            >
+                <h2 class="text-base font-semibold text-gray-800">Google Analytics</h2>
+
+                <div class="mt-5 grid gap-4 sm:grid-cols-6">
+                    <div class="sm:col-span-3">
+                        <InputLabel for="ga_tracking_id" value="รหัสติดตาม (Measurement ID)" />
+                        <TextInput id="ga_tracking_id" v-model="gaForm.tracking_id" type="text" placeholder="G-XXXXXXXXXX" />
+                        <p class="mt-1 text-xs text-gray-500">
+                            ใส่ Measurement ID จาก Google Analytics (เช่น G-XXXXXXXXXX) ระบบจะฝังสคริปต์ gtag.js
+                            ให้อัตโนมัติในหน้าบ้านเมื่อมีค่านี้ — เว้นว่างไว้เพื่อปิดการติดตาม
+                        </p>
+                        <InputError :message="gaForm.errors.tracking_id" />
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <PrimaryButton type="submit" :disabled="gaForm.processing">
                         <Save class="mr-1.5 size-4" /> บันทึก
                     </PrimaryButton>
                 </div>

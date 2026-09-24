@@ -15,6 +15,18 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=sarabun:400,500,600,700&display=swap" rel="stylesheet" />
 
+        @php($gaTrackingId = \App\Support\Setting::googleAnalyticsTrackingId())
+        {{-- Google Analytics (sys_setting: google_analytics.tracking_id) — เฉพาะหน้าบ้าน ไม่ฝังในหลังบ้าน (/admin) --}}
+        @if($gaTrackingId && ! request()->routeIs('admin.*'))
+            <script async src="https://www.googletagmanager.com/gtag/js?id={{ $gaTrackingId }}"></script>
+            <script>
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', {!! json_encode($gaTrackingId) !!});
+            </script>
+        @endif
+
         <!-- Scripts -->
         @routes
         @vite(['resources/js/app.ts', "resources/js/Pages/{$page['component']}.vue"])
