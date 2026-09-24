@@ -16,13 +16,20 @@ use App\Http\Controllers\Admin\System\BackLogActionController;
 use App\Http\Controllers\Admin\System\BackLogLoginController;
 use App\Http\Controllers\Admin\System\FileController;
 use App\Http\Controllers\Admin\System\FileServeController;
+use App\Http\Controllers\Admin\System\FrontLogAccessController;
 use App\Http\Controllers\Admin\System\FrontMenuController;
 use App\Http\Controllers\Admin\System\SettingController;
 use App\Http\Controllers\Admin\System\TemplateController;
 use App\Http\Controllers\Admin\System\UserController;
 use App\Http\Controllers\Admin\System\UsergroupController;
 use App\Http\Controllers\AppAssetController;
-use App\Http\Controllers\Front\HomeController;
+use App\Http\Controllers\Front\AccessLogController as FrontAccessLogController;
+use App\Http\Controllers\Front\Article\ArticleCategoryController as FrontArticleCategoryController;
+use App\Http\Controllers\Front\Article\ArticleItemController as FrontArticleItemController;
+use App\Http\Controllers\Front\FileController as FrontFileController;
+use App\Http\Controllers\Front\Intropage\IntropageController;
+use App\Http\Controllers\Front\Page\PageItemController as FrontPageItemController;
+use App\Http\Middleware\FrontSecurityHeaders;
 use App\Support\Setting;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -30,13 +37,13 @@ use Inertia\Inertia;
 
 /*
 |--------------------------------------------------------------------------
-| 1. Front-Office Routes (Multi-language Support)
+| 1. Front-Office Routes (Multi-language Support) — ดู docs/PRD-front.md
 |--------------------------------------------------------------------------
 */
-// Redirect จากหน้า Root (/) ไปที่ภาษาหลักตามตั้งค่าระบบ (sys_setting: site.lang_default)
-Route::get('/', function () {
-    return redirect('/'.Setting::defaultLanguage());
-});
+// หน้าแรก (/) — แสดง Intropage ของภาษาหลักทันที (ไม่มี Intropage ที่เผยแพร่อยู่ = redirect ไปหน้าแรกที่กำหนดในเมนู)
+Route::get('/', [IntropageController::class, 'root'])
+    ->middleware(['setLocale', FrontSecurityHeaders::class])
+    ->name('front.root');
 
 // โลโก้/favicon สาธารณะของระบบ — ไม่ต้อง login, ไม่มี prefix ภาษา {lang} และไม่อยู่ใต้ /admin
 // เพราะเป็น asset ที่ทั้งฝั่งแอดมินและหน้าบ้านใช้ร่วมกัน (ดู App\Http\Controllers\AppAssetController)
@@ -44,17 +51,51 @@ Route::get('/', function () {
 Route::get('/apps/logo.png', [AppAssetController::class, 'logo'])->name('app.logo');
 Route::get('/apps/favicon.ico', [AppAssetController::class, 'favicon'])->name('app.favicon');
 
+// ไฟล์/รูปของเนื้อหาหน้าบ้าน (สาธารณะ อ้างอิงด้วย hash_name) — URL สร้างจาก App\Support\Front\FrontFile ที่เดียว
+Route::prefix('file')->controller(FrontFileController::class)->group(function () {
+    Route::get('/get/{hashname}', 'show')->name('front.file.get');
+    Route::get('/type/download/get/{hashname}', 'download')->name('front.file.download');
+    Route::get('/type/thumbnail/size/{size}/get/{hashname}', 'thumbnail')
+        ->name('front.file.thumbnail')
+        ->where('size', '[0-9]+');
+});
+
+// keep-alive ของ log_front_access (ยกเว้น CSRF ใน bootstrap/app.php — sendBeacon ตั้ง header ไม่ได้)
+Route::post('/front/access/ping', [FrontAccessLogController::class, 'ping'])
+    ->name('front.access.ping')
+    ->middleware('throttle:60,1');
+
 // Group ทุก Route ของหน้าบ้านไว้ภายใต้ Prefix ภาษา — {lang} รับเฉพาะภาษาที่เปิดใช้งานจริงตามตั้งค่าระบบ
 // (sys_setting: site.lang_selected, ดู App\Support\Setting::languageRoutePattern()) ไม่ hardcode th|en อีกต่อไป
 // หมายเหตุ: ถ้าใช้ `route:cache` ในอนาคต ต้องรัน route:cache ใหม่ทุกครั้งที่แก้ค่านี้ เพราะ where ถูกฝังไว้ตอน cache
 Route::group([
     'prefix' => '{lang}',
     'where' => ['lang' => Setting::languageRoutePattern()],
-    'middleware' => ['web', 'setLocale'],
+    'middleware' => ['web', 'setLocale', FrontSecurityHeaders::class],
 ], function () {
+    // Intropage (ไม่มีที่เผยแพร่อยู่ = redirect ไปหน้าแรกที่กำหนดในเมนู)
+    Route::get('/', [IntropageController::class, 'index'])->name('front.home');
 
-    Route::get('/', [HomeController::class, 'index'])->name('front.home');
-    // เพิ่มหน้าอื่นๆ ของ Front-office ตรงนี้...
+    // หน้าเพจ — id จำเป็น, slug ไม่บังคับ
+    Route::get('/page/item/{id}/{slug?}', [FrontPageItemController::class, 'show'])
+        ->whereNumber('id')
+        ->name('front.page.item');
+
+    // รายละเอียดบทความภายใต้หมวดหมู่ — ลงทะเบียนก่อน route รายการหมวดหมู่ (3 ส่วนหลัง category ต้องไม่ถูกตีความเป็น {id}/{slug})
+    // slug ของหมวดหมู่ห้ามเป็นตัวเลขล้วน (validation หลังบ้าน) จึงไม่ชนกับ {article_id}
+    Route::get('/article/category/{id}/{article_id}/{slug?}', [FrontArticleItemController::class, 'showInCategory'])
+        ->whereNumber(['id', 'article_id'])
+        ->name('front.article.category.item');
+
+    // รายการบทความของหมวดหมู่
+    Route::get('/article/category/{id}/{slug?}', [FrontArticleCategoryController::class, 'show'])
+        ->whereNumber('id')
+        ->name('front.article.category');
+
+    // รายละเอียดบทความ (เข้าตรง)
+    Route::get('/article/item/{id}/{slug?}', [FrontArticleItemController::class, 'show'])
+        ->whereNumber('id')
+        ->name('front.article.item');
 });
 
 /*
@@ -248,6 +289,12 @@ Route::prefix('admin')->group(function () {
             Route::get('/action', [BackLogActionController::class, 'index'])->name('admin.system.backlog.action.index');
         });
 
+        // ประวัติหน้าบ้าน (log_front_*) — ตรวจสอบสิทธิ์ในแต่ละ controller
+        Route::prefix('system/frontlog')->group(function () {
+            // การเข้าชม (log_front_access)
+            Route::get('/access', [FrontLogAccessController::class, 'index'])->name('admin.system.frontlog.access.index');
+        });
+
         // ตั้งค่าระบบ (sys_setting) + ล้างแคช — ตรวจสอบสิทธิ์ในแต่ละ method ของ SettingController
         Route::prefix('system/setting')->group(function () {
             Route::get('/', [SettingController::class, 'index'])->name('admin.system.setting.index');
@@ -267,6 +314,7 @@ Route::prefix('admin')->group(function () {
             Route::post('/clearcache/{group}', [SettingController::class, 'clearCacheGroup'])->name('admin.system.setting.clearcache.group');
             Route::post('/clearcache-all', [SettingController::class, 'clearCacheAll'])->name('admin.system.setting.clearcache.all');
             Route::post('/clearcache-files', [SettingController::class, 'clearCacheFiles'])->name('admin.system.setting.clearcache.files');
+            Route::post('/clearcache-front', [SettingController::class, 'clearCacheFront'])->name('admin.system.setting.clearcache.front');
         });
 
         // จัดการไฟล์ (file_info/folder_info) — ทุกคนที่ login เข้าได้เหมือน Dashboard/Profile

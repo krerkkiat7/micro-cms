@@ -170,7 +170,7 @@ Page ตรง ๆ (รายชื่อฟอนต์ไทยเป็น re
 ทุกแถว `is_temp='Y'`, ใช้ `updateOrCreate` โดย resolve id เดิมผ่านชื่อเมนูภาษาหลัก (เทียบเคียง `PageSeeder`) — รันซ้ำได้
 (`php artisan db:seed --class=FrontMenuSeeder` ต้องรัน `ArticleSeeder`/`PageSeeder` มาก่อนแล้ว)
 
-## Roadmap — การแสดงผลหน้าบ้าน (ยังไม่ทำในรอบนี้)
+## Roadmap — การแสดงผลหน้าบ้าน (✅ ทำแล้วใน branch `front-init` — ดู [PRD-front.md](PRD-front.md) §3, `App\Support\Front\FrontMenuResolver`)
 
 ขอบเขตรอบที่ทำนี้เป็น **เฉพาะฝั่งจัดการ** (schema + seeder ตัวอย่าง + admin CRUD) ตามที่ตกลงกับเจ้าของโปรเจกต์ —
 การ render เมนูจริงที่หน้าบ้านยังไม่ได้ทำ งานที่เหลือ:

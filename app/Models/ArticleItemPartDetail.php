@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FlushesFrontCache;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class ArticleItemPartDetail extends Model
 {
-    use SoftDeletes;
+    use FlushesFrontCache, SoftDeletes;
 
     protected $table = 'article_item_part_detail';
 

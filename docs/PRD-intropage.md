@@ -168,9 +168,11 @@
 
 ---
 
-## 3. การเลือกว่าจะแสดง Intropage ใด (ยังไม่ทำ — หมายเหตุสำหรับตอนทำหน้าบ้าน)
+## 3. การเลือกว่าจะแสดง Intropage ใด
 
-**สถานะ**: 🔴 ยังไม่ได้ทำ — เก็บกติกาไว้ที่นี่สำหรับตอนพัฒนาหน้าบ้าน (front-office)
+**สถานะ**: 🟢 ทำแล้ว — `App\Support\Front\IntropageResolver` + `Front\Intropage\IntropageController` (ดู [PRD-front.md](PRD-front.md) §2)
+แสดงทุกครั้งที่เข้า `/` หรือ `/{lang}` บน layout เปล่า; ไม่มีรายการที่ตรงเงื่อนไข → redirect ไปหน้าแรกตามเมนู (`is_home`); ข้อมูลตัวอย่าง
+`is_temp = Y` แสดงได้ตามปกติ; cache 60 วินาที (`config/front.php`)
 
 Intropage บันทึกเก็บได้หลายรายการ แต่ "แสดงจริง" ที่หน้าบ้านได้ทีละ 1 รายการเท่านั้น **หลังบ้านไม่มีกลไกสลับ/
 exclusive switch ใด ๆ** (ยืนยันกับผู้ใช้แล้ว) — แค่มี `status`/`publish_date`/`publish_down` ปกติเหมือนโมดูลอื่น
@@ -190,4 +192,4 @@ exclusive switch ใด ๆ** (ยืนยันกับผู้ใช้แ�
 |-----|--------|-------|
 | 0 — schema Intropage + ปุ่ม | `intropage_item_info`/`intropage_item_detail`/`intropage_item_button` + `IntropageSeeder` ตัวอย่าง | ✅ เสร็จ |
 | 1 — CRUD Intropage + จัดการปุ่ม | controller/route/หน้า Vue list+add+edit (พื้นหลัง+สื่อหลัก+ช่วงเวลาประกาศ+ปุ่มแบบเรียงลำดับ) | ✅ เสร็จ |
-| **2 — การเลือกแสดง Intropage ที่หน้าบ้าน** *(รอบถัดไป)* | คำนวณรายการที่จะแสดงตามกติกา §3 ที่หน้าบ้าน | 🔴 ยังไม่เริ่ม |
+| 2 — การเลือกแสดง Intropage ที่หน้าบ้าน | คำนวณรายการที่จะแสดงตามกติกา §3 ที่หน้าบ้าน + หน้า `Front/Intropage/Index` | ✅ เสร็จ (branch `front-init`) |

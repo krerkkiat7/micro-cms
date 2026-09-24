@@ -18,6 +18,7 @@ use App\Models\LogBackAction;
 use App\Models\SysSetting;
 use App\Support\AppAsset;
 use App\Support\FileCache;
+use App\Support\Front\FrontCache;
 use App\Support\Setting;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\RedirectResponse;
@@ -273,6 +274,7 @@ class SettingController extends Controller
 
         Setting::forgetAll();
         AppAsset::forgetCache();
+        FrontCache::forgetAll();
 
         LogBackAction::record('system.setting.cache', 'clear', 'ทั้งหมด');
 
@@ -294,5 +296,22 @@ class SettingController extends Controller
         LogBackAction::record('system.setting.cache', 'clear', 'ไฟล์ทั้งหมด');
 
         return back()->with('success', 'ล้างแคชไฟล์เรียบร้อยแล้ว');
+    }
+
+    /**
+     * ล้างแคชข้อมูลหน้าบ้าน (template/เมนู/หน้าเพจ/บทความ/intropage — App\Support\Front\FrontCache)
+     * ปกติล้างเองอัตโนมัติเมื่อบันทึกข้อมูลในหลังบ้าน ปุ่มนี้ใช้กรณีแก้ข้อมูลตรงในฐานข้อมูล/ต้องการเห็นผลทันที
+     */
+    public function clearCacheFront(Request $request): RedirectResponse
+    {
+        if (! $request->user()->hasPermission('system.setting.manage')) {
+            return redirect()->route('admin.dashboard');
+        }
+
+        FrontCache::forgetAll();
+
+        LogBackAction::record('system.setting.cache', 'clear', 'หน้าบ้าน');
+
+        return back()->with('success', 'ล้างแคชหน้าบ้านเรียบร้อยแล้ว');
     }
 }

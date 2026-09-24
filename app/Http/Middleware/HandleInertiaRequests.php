@@ -34,10 +34,14 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        // ข้อมูลผู้ใช้/สิทธิ์/เมนูหลังบ้าน ส่งเฉพาะหน้าหลังบ้าน (/admin) — หน้าบ้านไม่ใช้ และ HTML หน้าบ้านอาจถูก cache ที่ proxy/CDN
+        // จึงไม่ควรมีข้อมูลส่วนตัว (อีเมล/เบอร์/สิทธิ์) ของผู้ดูแลที่เปิดดูหน้าบ้านอยู่ปนไปด้วย
+        $isAdmin = $request->is('admin', 'admin/*');
+
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user() ? [
+                'user' => $isAdmin && $request->user() ? [
                     'id' => $request->user()->id,
                     'titlename' => $request->user()->titlename,
                     'firstname' => $request->user()->firstname,
@@ -61,7 +65,7 @@ class HandleInertiaRequests extends Middleware
             'appLogoUrl' => fn () => AppAsset::logo() ? route('app.logo') : null,
             // เมนู sidebar หลังบ้าน สร้างจาก sys_menu_group + sys_menu กรองตามสิทธิ์ของผู้ใช้
             // (closure = ประเมินเฉพาะตอนที่ Inertia ต้องส่ง prop นี้จริง)
-            'menu' => fn () => $this->adminMenu($request->user()),
+            'menu' => fn () => $isAdmin ? $this->adminMenu($request->user()) : [],
             // ข้อความแจ้งผลสำเร็จ (flash) — successId ใหม่ทุกครั้งเพื่อให้ frontend ตรวจจับได้แม้ข้อความซ้ำ
             'flash' => function () use ($request) {
                 $success = $request->session()->get('success');

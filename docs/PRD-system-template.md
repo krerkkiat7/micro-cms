@@ -1,7 +1,7 @@
 # PRD — โมดูลจัดการ Template (system.template)
 
 > สถานะ: 🟡 schema + หลังบ้านครบ (รายการ / เพิ่ม / แท็บข้อมูลทั่วไป / แท็บโครงสร้างพร้อมตัวอย่าง / Custom CSS/JS / หน้า Loading) —
-> การ render template จริงที่หน้าบ้านยังไม่ทำ (ดู §Roadmap ท้ายเอกสาร)
+> การ render template ที่หน้าบ้านทำแล้ว — ดู [PRD-front.md](PRD-front.md) §3 (ปุ่มค้นหาใน header ยังซ่อนไว้จนกว่าจะมีหน้าค้นหา)
 > ลิงก์กลับ: [PRD-overview.md](PRD-overview.md), [PRD-system.md](PRD-system.md) §4
 
 ## 0. ภาพรวมโมดูล
@@ -188,7 +188,7 @@ Migration: `database/migrations/2026_09_30_000001_create_sys_template_tables.php
 
 รันเดี่ยว: `php artisan db:seed --class=TemplateSeeder`
 
-## Roadmap — การแสดงผลหน้าบ้าน (ยังไม่ทำในรอบนี้)
+## Roadmap — การแสดงผลหน้าบ้าน (✅ ทำแล้วใน branch `front-init` ตามรายการด้านล่าง ยกเว้น "ค้นหา" ที่ยังซ่อนไว้ — ดู [PRD-front.md](PRD-front.md) §3)
 
 - `Layouts/Front/FrontLayout.vue` อ่าน template ที่ `status = Y` (share ผ่าน middleware / cache แบบ `Setting::group()` แล้วล้างแคชตอนบันทึก)
   แล้ว render header / body / footer / aside ตามค่าตั้งค่าเดียวกับ preview (แยก component หน้าบ้านไว้ `Components/Front/Template/*`)

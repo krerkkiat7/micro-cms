@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FlushesFrontCache;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class IntropageItemInfo extends Model
 {
-    use SoftDeletes;
+    use FlushesFrontCache, SoftDeletes;
 
     protected $table = 'intropage_item_info';
 

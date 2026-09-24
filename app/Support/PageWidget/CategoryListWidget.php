@@ -2,6 +2,7 @@
 
 namespace App\Support\PageWidget;
 
+use App\Support\Front\FrontFile;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\Rule;
 
@@ -59,9 +60,17 @@ abstract class CategoryListWidget extends SettingsWidget
     abstract protected function sorts(): array;
 
     /**
-     * query ข้อมูลที่ widget จะแสดง (ยังไม่ order/limit) — เฉพาะรายการที่เผยแพร่อยู่ ภาษาหลัก; select ให้ครบตามที่ previewRow() ใช้
+     * query ข้อมูลที่ widget จะแสดง (ยังไม่ order/limit) — เฉพาะรายการที่เผยแพร่อยู่; select ให้ครบตามที่ previewRow() และ frontLink() ใช้
+     * `$lang` = ภาษาของข้อความ (null = ภาษาหลัก — หน้าโครงสร้างหลังบ้าน)
      */
-    abstract protected function previewQuery(int $categoryId): Builder;
+    abstract protected function previewQuery(int $categoryId, ?string $lang = null): Builder;
+
+    /**
+     * ลิงก์ปลายทางของรายการ 1 แถวสำหรับหน้าบ้าน (url = null คือไม่มีลิงก์)
+     *
+     * @return array{url: string|null, link_target: string}
+     */
+    abstract protected function frontLink(object $row, string $lang): array;
 
     /** เรียงลำดับ query ของ previewQuery ตามตัวเลือก `sort_by` */
     abstract protected function orderPreview(Builder $query, string $sortBy): void;
@@ -198,6 +207,48 @@ abstract class CategoryListWidget extends SettingsWidget
             ->limit($limit)
             ->get()
             ->map(fn ($row) => $this->previewRow($row))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * ความกว้างของรูปที่หน้าบ้านขอ (thumbnail) — Slideshow แสดงเต็มความกว้างจึงใช้ใหญ่กว่า (override ใน SlideshowWidget)
+     */
+    protected function frontImageWidth(): int
+    {
+        return 640;
+    }
+
+    /**
+     * รายการที่ widget แสดงจริงที่หน้าบ้าน — เหมือน preview() แต่ตามภาษาที่ขอ, จำนวนตามที่ตั้งไว้ (0 = ทั้งหมด ไม่เกิน MAX_ITEMS_LIMIT),
+     * มีลิงก์ปลายทางจริง และ URL รูปสำหรับหน้าบ้าน (ไม่ส่ง hash_name)
+     *
+     * @param  array<string, mixed>  $setting  ค่าจาก toArray()
+     * @return list<array<string, mixed>>
+     */
+    public function frontItems(array $setting, string $lang): array
+    {
+        $categoryId = (int) ($setting[$this->categoryField()] ?? 0);
+
+        if ($categoryId <= 0) {
+            return [];
+        }
+
+        $query = $this->previewQuery($categoryId, $lang);
+        $this->orderPreview($query, $setting['sort_by'] ?? $this->sorts()[0]);
+
+        $maxItems = (int) ($setting['max_items'] ?? 0);
+
+        return $query
+            ->limit($maxItems > 0 ? min($maxItems, self::MAX_ITEMS_LIMIT) : self::MAX_ITEMS_LIMIT)
+            ->get()
+            ->map(function ($row) use ($lang) {
+                $item = $this->previewRow($row);
+                $item['image_url'] = FrontFile::thumbnail($item['image'] ?? null, $this->frontImageWidth());
+                unset($item['image'], $item['has_link']);
+
+                return [...$item, ...$this->frontLink($row, $lang)];
+            })
             ->values()
             ->all();
     }

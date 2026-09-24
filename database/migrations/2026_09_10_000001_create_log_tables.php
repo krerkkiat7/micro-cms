@@ -12,8 +12,9 @@ return new class extends Migration
      * ไฟล์กลางของตาราง log ทั้งหมด (หลังบ้าน + หน้าบ้าน) — เก็บ log แยก 3 ประเภท
      * ต่อฝั่ง: access (การเข้าชม/เข้าถึงหน้า), action (การกระทำ สร้าง/แก้/ลบ), login (เข้า/ออกระบบ)
      *
-     * ตารางถัดไป (`log_back_action`, `log_back_login`, `log_front_access`,
-     * `log_front_action`, `log_front_login`) ให้ `Schema::create` เพิ่มในไฟล์นี้ ไม่แยกไฟล์
+     * ตารางถัดไป (`log_front_action`, `log_front_login`) ให้ `Schema::create` เพิ่มในไฟล์นี้ ไม่แยกไฟล์
+     * (ตอนนี้มีแล้ว: log_back_access, log_back_login, log_back_action, log_front_access)
+     * หมายเหตุ: เพิ่มตารางในไฟล์นี้หลังจาก migrate ไปแล้ว ต้อง `php artisan migrate:fresh --seed` ในเครื่อง dev
      *
      * โครงคอลัมน์เดินตาม convention ของตาราง sys_*: `status` char(1) 'Y'/'N',
      * softDeletes, บล็อก audit created_by/updated_by/deleted_by (sys_user.id — เช็กในโค้ด ไม่มี FK)
@@ -120,6 +121,48 @@ return new class extends Migration
             $table->index('created_at');
             $table->index(['module_code', 'ref_id']); // ประวัติของข้อมูลชิ้นเดียว
         });
+
+        // log_front_access — การเข้าชมหน้าบ้าน (1 request = 1 แถว) โครงเดียวกับ log_back_access ทุกคอลัมน์
+        // ผู้เข้าชมส่วนใหญ่ไม่ได้ login (user_id = null) — keep-alive ping จึงอ้างอิงด้วย token + session_id แทน user_id
+        Schema::create('log_front_access', function (Blueprint $table) {
+            $table->id();
+
+            $table->unsignedBigInteger('user_id')->nullable();   // ผู้ใช้งาน (sys_user.id — ถ้า login อยู่, เช็กในโค้ด ไม่มี FK)
+            $table->string('token', 26)->nullable()->unique();   // โทเคนสาธารณะ (ULID) — ใช้อ้างอิงตอน ping อัปเดต last_visited โดยไม่เปิดเผย id
+            $table->string('session_id', 100)->nullable();       // session id
+            $table->text('uri_string')->nullable();              // URI ที่เข้าถึง
+            $table->string('title_name', 255)->nullable();       // ชื่อหน้า
+            $table->string('remote_ip', 45)->nullable();         // IP address (รองรับ IPv6)
+            $table->string('geo_ip', 10)->nullable();            // รหัสประเทศจาก IP
+            $table->string('geo_ip_city', 250)->nullable();      // เมืองจาก IP
+            $table->string('browser', 50)->nullable();           // เบราว์เซอร์
+            $table->string('browser_version', 50)->nullable();   // เวอร์ชันเบราว์เซอร์
+            $table->string('mobile', 50)->nullable();            // ชื่อรุ่นอุปกรณ์พกพา (ถ้าตรวจได้)
+            $table->string('device_type', 50)->nullable();       // ประเภทอุปกรณ์ (desktop / tablet / mobile / robot)
+            $table->string('robot', 50)->nullable();             // ชื่อบอท (ถ้าเป็น bot)
+            $table->string('platform', 50)->nullable();          // ระบบปฏิบัติการ
+            $table->string('referrer', 250)->nullable();         // อ้างอิงจาก URL
+            $table->string('agent', 255)->nullable();            // User-Agent ดิบ (ตัดที่ 255)
+            $table->string('accept_lang', 50)->nullable();       // Accept-Language
+            $table->string('accept_charset', 50)->nullable();    // Accept-Charset
+            $table->date('action_date')->nullable();             // วันที่เข้าถึง — ไว้กรอง / สรุปรายวัน
+            $table->dateTime('last_visited')->nullable();        // เวลาที่อยู่หน้านี้ล่าสุด (keep-alive) — ครั้งแรก = created_at
+
+            $table->char('status', 1)->default('Y');             // Y = ใช้งาน, N = ไม่ใช้งาน
+
+            // ผู้กระทำ (sys_user.id — เช็ก/ผูกในโค้ด ไม่มี FK)
+            $table->unsignedBigInteger('created_by')->nullable(); // ผู้สร้าง
+            $table->unsignedBigInteger('updated_by')->nullable(); // ผู้แก้ไขล่าสุด
+            $table->unsignedBigInteger('deleted_by')->nullable(); // ผู้ลบ
+
+            $table->timestamps();
+            $table->softDeletes();
+
+            $table->index('user_id');
+            $table->index('session_id');
+            $table->index('action_date');
+            $table->index('created_at');
+        });
     }
 
     /**
@@ -127,6 +170,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('log_front_access');
         Schema::dropIfExists('log_back_action');
         Schema::dropIfExists('log_back_login');
         Schema::dropIfExists('log_back_access');

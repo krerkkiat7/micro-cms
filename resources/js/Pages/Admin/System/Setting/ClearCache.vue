@@ -40,6 +40,12 @@ function clearGroup(group: string) {
     groupForm.post(route('admin.system.setting.clearcache.group', group), { preserveScroll: true });
 }
 
+const frontForm = useForm({});
+
+function clearFront() {
+    frontForm.post(route('admin.system.setting.clearcache.front'), { preserveScroll: true });
+}
+
 const allForm = useForm({});
 
 function clearAll() {
@@ -117,9 +123,23 @@ function clearFiles() {
             </div>
 
             <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8">
+                <h2 class="text-base font-semibold text-gray-800">ล้างแคชหน้าบ้าน</h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    ล้างแคชข้อมูลที่หน้าบ้านใช้ (Template, เมนู, หน้าเพจ, บทความ, Intropage) — ปกติระบบล้างให้อัตโนมัติเมื่อบันทึกข้อมูลในหลังบ้าน
+                    ใช้ปุ่มนี้เมื่อหน้าบ้านยังแสดงข้อมูลไม่ตรงกับข้อมูลล่าสุด
+                </p>
+
+                <div class="mt-5">
+                    <PrimaryButton type="button" :disabled="frontForm.processing" @click="clearFront">
+                        <Trash2 class="mr-1.5 size-4" /> ล้าง Cache หน้าบ้าน
+                    </PrimaryButton>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8">
                 <h2 class="text-base font-semibold text-gray-800">ล้างแคชทั้งหมด</h2>
                 <p class="mt-1 text-sm text-gray-500">
-                    ล้างแคชของค่าตั้งค่าทุกกลุ่มในครั้งเดียว รวมถึงตั้งค่าของโมดูลอื่น (เช่น บทความ) ด้วย
+                    ล้างแคชของค่าตั้งค่าทุกกลุ่มในครั้งเดียว รวมถึงตั้งค่าของโมดูลอื่น (เช่น บทความ) และแคชหน้าบ้านด้วย
                 </p>
 
                 <div class="mt-5">

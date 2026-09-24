@@ -1,7 +1,9 @@
 <?php
 
 use App\Support\Setting;
+use Database\Seeders\IntropageSeeder;
 use Illuminate\Support\Facades\App;
+use Inertia\Testing\AssertableInertia as Assert;
 
 /**
  * หมายเหตุสำคัญ: route `where('lang', Setting::languageRoutePattern())` (routes/web.php) evaluate
@@ -14,11 +16,17 @@ use Illuminate\Support\Facades\App;
 
 // ---------------------------------------------------------------- ยังไม่ได้ตั้งค่า (fallback th,en / th)
 
-test('root redirects to th when languages are not configured', function () {
-    $this->get('/')->assertRedirect('/th');
+// หน้าแรก (/ และ /{lang}) แสดง Intropage — seed Intropage ตัวอย่างไว้ให้มีหน้าให้แสดง (ไม่มี = redirect ไปหน้าแรกตามเมนู / 404)
+
+test('root renders the th intropage when languages are not configured', function () {
+    $this->seed(IntropageSeeder::class);
+
+    $this->get('/')->assertOk()->assertInertia(fn (Assert $page) => $page->where('front.lang', 'th'));
 });
 
 test('both th and en are reachable when languages are not configured', function () {
+    $this->seed(IntropageSeeder::class);
+
     $this->get('/th')->assertOk();
     $this->get('/en')->assertOk();
 });
@@ -26,11 +34,13 @@ test('both th and en are reachable when languages are not configured', function 
 // ---------------------------------------------------------------- ตั้งค่าไว้แล้ว (ผ่านการ redirect/middleware
 // ที่ประเมินตอน dispatch request จริง จึงเห็นค่าที่เปลี่ยนกลางเทสได้ ต่างจาก route where() ด้านบน)
 
-test('root redirects to the configured lang_default', function () {
+test('root uses the configured lang_default', function () {
     setSiteSetting('lang_selected', 'th,en');
     setSiteSetting('lang_default', 'en');
+    $this->seed(IntropageSeeder::class);
 
-    $this->get('/')->assertRedirect('/en');
+    $this->get('/')->assertOk()->assertInertia(fn (Assert $page) => $page->where('front.lang', 'en'));
+    expect(App::getLocale())->toBe('en');
 });
 
 test('SetLocale sets the app locale to the matched {lang} segment', function () {

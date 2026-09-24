@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FlushesFrontCache;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class FrontMenuDetail extends Model
 {
-    use SoftDeletes;
+    use FlushesFrontCache, SoftDeletes;
 
     protected $table = 'front_menu_detail';
 

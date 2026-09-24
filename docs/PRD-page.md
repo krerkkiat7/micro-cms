@@ -11,7 +11,7 @@
 | 1 | หน้าเพจ (ข้อมูลทั่วไป) | `page_item_info`, `page_item_detail` | 🟢 schema + controller/route/UI (list, add, edit) เสร็จครบ |
 | 2 | โครงสร้าง แถว → คอลัมน์ → widget | `page_item_row/column/widget` + `*_detail` | 🟢 schema + หน้าจัดโครงสร้างแบบเห็นผลจริง + บันทึกเสร็จ |
 | 3 | ประเภท widget และการตั้งค่าเฉพาะประเภท | `page_item_widget.widget_type` + `page_item_widget_<ประเภท>` | 🟢 ประเภททั้งหมดเสร็จแล้ว: `slideshowbanner`, `slideshowarticle`, `slidesetarticle`, `slidesetbanner`, `gridarticle`, `gridbanner`, `customtext` (§3) |
-| 4 | การแสดงผลหน้าบ้านตาม slug/โครงสร้าง | (front-office) | 🔴 ยังไม่ได้ทำ |
+| 4 | การแสดงผลหน้าบ้านตามโครงสร้าง + ยอดเข้าชม | (front-office) — [PRD-front.md](PRD-front.md) §4, §8 | 🟢 เสร็จ |
 
 ---
 
@@ -469,4 +469,12 @@ PK = id + lang) — migration `2026_09_27_000001_*` (มีทั้ง FK แ�
 | 1 — CRUD หน้าเพจ + จัดโครงสร้าง | list/add/edit (ข้อมูลทั่วไป + SEO) + แท็บโครงสร้าง (แถว/คอลัมน์/widget, เรียงลำดับผ่าน dialog, ตั้งค่า, พื้นหลัง, บันทึก) | ✅ เสร็จ |
 | **2 — ประเภท widget** | โครงระบบประเภท widget (ตารางแยกต่อประเภท + registry + dialog เลือกประเภท/ตั้งค่า + ตัวอย่าง) + `slideshowbanner` + `slideshowarticle` | ✅ เสร็จ |
 | 2.1 — ประเภท widget ที่เหลือ | `gridarticle` ✅ เสร็จ, `gridbanner` ✅ เสร็จ, `customtext` ✅ เสร็จ | ✅ เสร็จ |
-| 3 — หน้าบ้าน | แสดงหน้าเพจตาม slug + โครงสร้าง (grid 12) ที่ `front.*` | 🔴 ยังไม่เริ่ม |
+| 3 — หน้าบ้าน | แสดงหน้าเพจ `front.page.item` (`/{lang}/page/item/{id}/{slug?}`) ตามโครงสร้าง (grid 12) + `page_item_view`/`view_amount` | ✅ เสร็จ — [PRD-front.md](PRD-front.md) |
+
+## หน้าบ้าน (สรุป — รายละเอียดเต็มดู [PRD-front.md](PRD-front.md) §4, §8)
+
+- `/{lang}/page/item/{id}/{slug?}` (`front.page.item`) — `status = Y` และไม่ถูกลบ ไม่งั้น 404; หัวเรื่องของหน้าเป็น h1 ที่ซ่อนไว้ (sr-only)
+- หัวเรื่องหน้าบ้าน: แถว h2 / คอลัมน์ h3 / widget h4 / หัวข้อ part ของ Custom Text และชื่อรายการใน Slideset/Grid h5
+- widget ที่ดึงรายการจากหมวดหมู่: `CategoryListWidget::frontItems($setting, $lang)` (query เดียวกับ preview + ภาษา + ลิงก์จริง);
+  `previewQuery()`/`articleQuery()`/`bannerQuery()` รับพารามิเตอร์ `$lang` เพิ่ม (null = ภาษาหลัก — หลังบ้านทำงานเหมือนเดิม)
+- ยอดเข้าชม: ตาราง `page_item_view` + คอลัมน์ใหม่ `page_item_info.view_amount` (migration `2026_10_01_000001_create_item_view_tables.php`)

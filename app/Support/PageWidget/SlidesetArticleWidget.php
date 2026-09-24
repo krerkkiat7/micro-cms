@@ -61,10 +61,10 @@ class SlidesetArticleWidget extends SlidesetWidget
         return $this->normalizeReadAllUrl(parent::normalize($values));
     }
 
-    protected function previewQuery(int $categoryId): Builder
+    protected function previewQuery(int $categoryId, ?string $lang = null): Builder
     {
         // ไม่บังคับมีรูปหน้าปก (การ์ดแสดงกรอบว่างแทน) — วันที่ที่แสดงใช้วันที่เผยแพร่ (ถ้าไม่มีใช้วันที่สร้าง เหมือนตอนเรียงลำดับ)
-        return $this->articleQuery($categoryId, requireImage: false)
+        return $this->articleQuery($categoryId, requireImage: false, lang: $lang)
             ->selectRaw('article_item_info.id, img.hash_name as image, d.title, d.intro_text, COALESCE(article_item_info.publish_date, article_item_info.created_at) as shown_date, article_item_info.view_amount');
     }
 

@@ -1,7 +1,12 @@
 <?php
 
-it('redirects the root path to the default language', function () {
-    $response = $this->get('/');
+use Database\Seeders\IntropageSeeder;
+use Inertia\Testing\AssertableInertia as Assert;
 
-    $response->assertRedirect('/th');
+it('renders the intropage on the root path in the default language', function () {
+    $this->seed(IntropageSeeder::class);
+
+    $this->get('/')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->component('Front/Intropage/Index')->where('front.lang', 'th'));
 });

@@ -4,6 +4,8 @@ namespace App\Support\PageWidget;
 
 use App\Models\BannerCategoryInfo;
 use App\Models\BannerItemInfo;
+use App\Support\Front\FrontLang;
+use App\Support\Front\FrontUrl;
 use App\Support\Setting;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -61,15 +63,12 @@ trait ReadsBanners
      * ป้ายโฆษณาของหมวดหมู่ที่เผยแพร่อยู่ (`status = Y`, ไม่ถูกลบ, อยู่ในช่วงเผยแพร่) และมีรูปที่ใช้งานได้ (ภาพคือตัวเนื้อหาของ banner)
      * พร้อมข้อมูลภาษาหลักเป็น `d` และรูปเป็น `img` — select ให้ครบตามที่ previewRow() ใช้ (`has_link` = มี url)
      */
-    protected function bannerQuery(int $categoryId): Builder
+    protected function bannerQuery(int $categoryId, ?string $lang = null): Builder
     {
-        $defaultLang = Setting::defaultLanguage();
         $now = now();
 
         return BannerItemInfo::query()
-            ->join('banner_item_detail as d', function ($join) use ($defaultLang) {
-                $join->on('d.id', '=', 'banner_item_info.id')->where('d.lang', $defaultLang);
-            })
+            ->join('banner_item_detail as d', fn ($join) => FrontLang::joinDetail($join, 'd', 'banner_item_detail', 'banner_item_info.id', $lang))
             ->join('file_info as img', function ($join) {
                 $join->on('img.id', '=', 'banner_item_info.intro_image_id')
                     ->where('img.status', 'Y')
@@ -80,12 +79,25 @@ trait ReadsBanners
             ->where('banner_item_info.status', 'Y')
             ->where(fn ($q) => $q->whereNull('banner_item_info.publish_date')->orWhere('banner_item_info.publish_date', '<=', $now))
             ->where(fn ($q) => $q->whereNull('banner_item_info.publish_down')->orWhere('banner_item_info.publish_down', '>', $now))
-            ->selectRaw("banner_item_info.id, img.hash_name as image, d.title, d.intro_text, (banner_item_info.url is not null and banner_item_info.url <> '') as has_link");
+            ->selectRaw("banner_item_info.id, img.hash_name as image, d.title, d.intro_text, (banner_item_info.url is not null and banner_item_info.url <> '') as has_link, banner_item_info.url as front_url, banner_item_info.link_target as front_link_target");
     }
 
-    protected function previewQuery(int $categoryId): Builder
+    protected function previewQuery(int $categoryId, ?string $lang = null): Builder
     {
-        return $this->bannerQuery($categoryId);
+        return $this->bannerQuery($categoryId, $lang);
+    }
+
+    /**
+     * ลิงก์ของ banner 1 แถว — URL ที่ตั้งไว้ (เฉพาะรูปแบบที่ปลอดภัย) + เป้าหมายการเปิด
+     *
+     * @return array{url: string|null, link_target: string}
+     */
+    protected function frontLink(object $row, string $lang): array
+    {
+        return [
+            'url' => FrontUrl::safeExternal($row->front_url),
+            'link_target' => $row->front_link_target === '_blank' ? '_blank' : '_self',
+        ];
     }
 
     protected function orderPreview(Builder $query, string $sortBy): void

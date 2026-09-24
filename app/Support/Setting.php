@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\SysSetting;
+use App\Support\Front\FrontCache;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 
@@ -51,6 +52,9 @@ class Setting
     public static function forget(string $group): void
     {
         Cache::forget("sys_setting.{$group}");
+
+        // หน้าบ้านใช้ค่าตั้งค่า (ชื่อไซต์/ติดต่อ/social/ภาษา/บทความ ฯลฯ) ใน cache ของตัวเอง — ล้างตามไปด้วย
+        FrontCache::forgetAll();
     }
 
     /**

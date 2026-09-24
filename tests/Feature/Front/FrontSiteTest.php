@@ -1,0 +1,310 @@
+<?php
+
+use App\Models\ArticleCategoryDetail;
+use App\Models\ArticleCategoryInfo;
+use App\Models\ArticleItemInfo;
+use App\Models\FrontMenuInfo;
+use App\Models\IntropageItemInfo;
+use App\Models\LogFrontAccess;
+use App\Models\PageItemDetail;
+use App\Models\PageItemInfo;
+use App\Models\SysSetting;
+use App\Support\Front\FrontCache;
+use App\Support\Front\FrontUrl;
+use App\Support\Front\HtmlSanitizer;
+use App\Support\Front\ViewCounter;
+use App\Support\Front\Views\ArrayViewBuffer;
+use App\Support\Setting;
+use Database\Seeders\DatabaseSeeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Inertia\Testing\AssertableInertia as Assert;
+
+/**
+ * หน้าบ้าน (docs/PRD-front.md) — ใช้ข้อมูลตัวอย่างจาก DatabaseSeeder (intropage / หน้าเพจ / บทความ / เมนู / template)
+ * ข้อมูลตัวอย่าง is_temp = Y ต้องแสดงได้ตามปกติ (ผู้ใช้อาจแก้ตัวอย่างแล้วใช้ต่อ)
+ */
+beforeEach(function () {
+    $this->seed(DatabaseSeeder::class);
+});
+
+function samplePage(): PageItemInfo
+{
+    return PageItemInfo::query()->orderBy('id')->firstOrFail();
+}
+
+function sampleArticle(): ArticleItemInfo
+{
+    return ArticleItemInfo::query()->whereNotNull('article_category_info_id')->orderBy('id')->firstOrFail();
+}
+
+// ---------------------------------------------------------------- Intropage
+
+test('home shows the published intropage on a blank layout', function () {
+    $this->get('/th')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Front/Intropage/Index')
+            ->where('intro.buttons.0.type', 'home')
+            ->where('homeUrl', FrontMenuResolverUrlHelper::home())
+            ->missing('front.template'));
+});
+
+test('home redirects to the home menu when no intropage is in its publish window', function () {
+    IntropageItemInfo::query()->update(['publish_down' => now()->subDay()]);
+    FrontCache::forgetAll();
+
+    $this->get('/th')->assertRedirect(FrontMenuResolverUrlHelper::home());
+});
+
+test('home returns the front 404 page when there is no intropage and no home menu', function () {
+    IntropageItemInfo::query()->update(['status' => 'N']);
+    FrontMenuInfo::query()->update(['is_home' => 'N']);
+    FrontCache::forgetAll();
+
+    $this->get('/th')
+        ->assertNotFound()
+        ->assertInertia(fn (Assert $page) => $page->component('Front/Error')->where('status', 404));
+});
+
+// ---------------------------------------------------------------- หน้าเพจ
+
+test('page renders with or without slug, including sample (is_temp) data', function () {
+    $page = samplePage();
+    expect($page->is_temp)->toBe('Y');
+    $slug = PageItemDetail::where('id', $page->id)->where('lang', 'th')->value('slug');
+
+    $this->get("/th/page/item/{$page->id}")
+        ->assertOk()
+        ->assertInertia(fn (Assert $p) => $p
+            ->component('Front/Page/Item')
+            ->where('page.id', $page->id)
+            ->has('page.rows')
+            ->where('seo.canonical', FrontUrl::page('th', $page->id, $slug)));
+
+    $this->get("/th/page/item/{$page->id}/".rawurlencode((string) $slug))->assertOk();
+    $this->get("/th/page/item/{$page->id}/wrong-slug")->assertOk();
+});
+
+test('unpublished, deleted or missing pages return 404', function () {
+    $page = samplePage();
+
+    $this->get('/th/page/item/999999')->assertNotFound();
+
+    $page->update(['status' => 'N']);
+    $this->get("/th/page/item/{$page->id}")->assertNotFound();
+
+    $page->update(['status' => 'Y']);
+    $page->delete();
+    $this->get("/th/page/item/{$page->id}")->assertNotFound();
+});
+
+test('page view is counted once per session and bots are ignored', function () {
+    $page = samplePage();
+
+    $this->get("/th/page/item/{$page->id}")->assertOk();
+    $this->get("/th/page/item/{$page->id}")->assertOk();
+
+    expect(DB::table('page_item_view')->where('page_item_info_id', $page->id)->count())->toBe(1)
+        ->and($page->fresh()->view_amount)->toBe(1);
+
+    $this->withHeader('User-Agent', 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)')
+        ->flushSession()
+        ->get("/th/page/item/{$page->id}")
+        ->assertOk();
+
+    expect($page->fresh()->view_amount)->toBe(1);
+});
+
+// ---------------------------------------------------------------- บทความ
+
+test('article category lists published articles with the configured display mode', function () {
+    $article = sampleArticle();
+    $categoryId = $article->article_category_info_id;
+
+    // sys_setting ใช้ composite PK — แก้ด้วย query ตรง
+    SysSetting::where('group', 'article')->where('name', 'list_display_mode')->update(['value' => 'row']);
+    Setting::forget('article');
+
+    $this->get("/th/article/category/{$categoryId}")
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Front/Article/Category')
+            ->where('category.id', $categoryId)
+            ->where('view', 'row')
+            ->has('articles.data'));
+
+    $this->get("/th/article/category/{$categoryId}?view=card")
+        ->assertInertia(fn (Assert $page) => $page->where('view', 'card'));
+});
+
+test('unpublished or deleted categories return 404', function () {
+    $category = ArticleCategoryInfo::query()->orderBy('id')->firstOrFail();
+
+    $category->update(['status' => 'N']);
+    $this->get("/th/article/category/{$category->id}")->assertNotFound();
+
+    $category->update(['status' => 'Y']);
+    $category->delete();
+    $this->get("/th/article/category/{$category->id}")->assertNotFound();
+});
+
+test('article detail works through its category and directly', function () {
+    $article = sampleArticle();
+    $categoryId = $article->article_category_info_id;
+
+    $this->get("/th/article/category/{$categoryId}/{$article->id}")
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Front/Article/Item')
+            ->where('article.id', $article->id)
+            ->where('category.id', $categoryId));
+
+    $this->get("/th/article/item/{$article->id}/any-slug")->assertOk();
+
+    // บทความต้องอยู่ในหมวดหมู่ที่ถูกต้อง
+    $otherCategory = ArticleCategoryInfo::query()->where('id', '!=', $categoryId)->value('id');
+    $this->get("/th/article/category/{$otherCategory}/{$article->id}")->assertNotFound();
+});
+
+test('unpublished articles return 404', function () {
+    $article = sampleArticle();
+
+    $article->update(['publish_down' => now()->subMinute()]);
+    $this->get("/th/article/item/{$article->id}")->assertNotFound();
+
+    $article->update(['publish_down' => null, 'status' => 'N']);
+    $this->get("/th/article/item/{$article->id}")->assertNotFound();
+});
+
+test('article views are recorded in article_item_view', function () {
+    $article = sampleArticle();
+    $before = (int) $article->view_amount;
+
+    $this->get("/th/article/item/{$article->id}")->assertOk();
+
+    expect(DB::table('article_item_view')->where('article_item_info_id', $article->id)->count())->toBe(1)
+        ->and((int) $article->fresh()->view_amount)->toBe($before + 1);
+});
+
+test('category slugs cannot be all digits (would collide with the article route)', function () {
+    actingAsUserWithPermissions(['article.category.manage', 'article.category.view']);
+    $category = ArticleCategoryInfo::query()->orderBy('id')->firstOrFail();
+    $detail = ArticleCategoryDetail::where('id', $category->id)->where('lang', 'th')->firstOrFail();
+
+    $this->put(route('admin.article.category.update', $category->id), [
+        'status' => 'Y',
+        'detail' => ['th' => ['title' => $detail->title, 'slug' => '12345']],
+    ])->assertSessionHasErrors('detail.th.slug');
+});
+
+// ---------------------------------------------------------------- ประวัติการเข้าชม + keep-alive
+
+test('front pages record log_front_access and share the keep-alive token', function () {
+    $page = samplePage();
+
+    $response = $this->get("/th/page/item/{$page->id}");
+    $log = LogFrontAccess::sole();
+
+    $response->assertInertia(fn (Assert $p) => $p->where('accessLog.token', $log->token));
+    expect($log->user_id)->toBeNull()
+        ->and($log->uri_string)->toBe("/th/page/item/{$page->id}");
+});
+
+test('ping updates last_visited only for the same session', function () {
+    $page = samplePage();
+    $this->get("/th/page/item/{$page->id}");
+    $log = LogFrontAccess::sole();
+    $first = $log->last_visited;
+
+    // เบราว์เซอร์ส่งคุกกี้ session เดิมกลับมา (test client ไม่เก็บคุกกี้ข้าม request ให้เอง)
+    $this->travel(5)->minutes();
+    $this->withCookie(config('session.cookie'), $log->session_id)
+        ->post(route('front.access.ping'), ['token' => $log->token])
+        ->assertNoContent();
+    expect($log->fresh()->last_visited->gt($first))->toBeTrue();
+
+    // session อื่นอัปเดตไม่ได้
+    $this->travel(5)->minutes();
+    $before = $log->fresh()->last_visited;
+    $this->withCookie(config('session.cookie'), str_repeat('x', 40))->post(route('front.access.ping'), ['token' => $log->token])->assertNoContent();
+    expect($log->fresh()->last_visited->equalTo($before))->toBeTrue();
+});
+
+test('admin front access log requires permission', function () {
+    actingAsUserWithPermissions([]);
+    $this->get(route('admin.system.frontlog.access.index'))->assertRedirect(route('admin.dashboard'));
+
+    actingAsUserWithPermissions(['system.frontlog.access']);
+    $this->get(route('admin.system.frontlog.access.index', ['q' => 'x']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->component('Admin/System/FrontLogAccess/Index'));
+});
+
+// ---------------------------------------------------------------- ไฟล์ / ความปลอดภัย / cache
+
+test('public file route serves files by hash and rejects unknown sizes', function () {
+    Storage::fake('local');
+    fakeFileInfo('doc.pdf', '01JFRONTTESTFILE000000000.pdf', 'pdf', 'application/pdf');
+
+    $this->get('/file/get/01JFRONTTESTFILE000000000.pdf')->assertOk();
+    $this->get('/file/get/does-not-exist.pdf')->assertNotFound();
+    $this->get('/file/type/thumbnail/size/123/get/01JFRONTTESTFILE000000000.pdf')->assertNotFound();
+});
+
+test('front pages do not expose admin user data or the admin route list', function () {
+    actingAsUserWithPermissions(['system.frontlog.access']);
+    $page = samplePage();
+
+    $response = $this->get("/th/page/item/{$page->id}");
+
+    $response->assertInertia(fn (Assert $p) => $p->where('auth.user', null)->where('menu', []));
+    expect($response->getContent())->not->toContain('admin.dashboard');
+});
+
+test('saving front content bumps the front cache version', function () {
+    $version = FrontCache::version();
+
+    FrontMenuInfo::query()->firstOrFail()->touch();
+
+    expect(FrontCache::version())->toBeGreaterThan($version);
+});
+
+test('the view buffer flushes queued views in one batch', function () {
+    $buffer = new ArrayViewBuffer;
+    $counter = new ViewCounter($buffer);
+    $page = samplePage();
+
+    foreach (range(1, 3) as $i) {
+        $buffer->push('page', ['id' => $page->id, 'lang' => 'th', 'at' => now()->format('Y-m-d H:i:s')]);
+    }
+
+    expect($counter->flush('page'))->toBe(3)
+        ->and($buffer->size('page'))->toBe(0)
+        ->and(DB::table('page_item_view')->count())->toBe(3)
+        ->and($page->fresh()->view_amount)->toBe(3);
+});
+
+test('rich text is sanitized before it reaches the front', function () {
+    $html = HtmlSanitizer::clean('<h1>หัว</h1><p onclick="x()">ok <a href="javascript:alert(1)">bad</a> <a href="https://example.com" target="_blank">good</a></p><script>alert(1)</script>');
+
+    expect($html)->toContain('<h2>หัว</h2>')
+        ->not->toContain('onclick')
+        ->not->toContain('javascript:')
+        ->not->toContain('<script')
+        ->toContain('rel="noopener noreferrer"');
+});
+
+/**
+ * URL หน้าแรกตามเมนู (is_home) ของข้อมูลตัวอย่าง — หน้าเพจตัวอย่าง
+ */
+final class FrontMenuResolverUrlHelper
+{
+    public static function home(): string
+    {
+        $menu = FrontMenuInfo::where('is_home', 'Y')->firstOrFail();
+        $slug = PageItemDetail::where('id', $menu->target_page_item_id)->where('lang', 'th')->value('slug');
+
+        return FrontUrl::page('th', (int) $menu->target_page_item_id, $slug);
+    }
+}

@@ -367,3 +367,13 @@ log action module_code = `article.tag`
 | 2 — schema บทความ + content part + แท็ก | `article_item_*` + ตาราง part (ข้อความ/รูปภาพ/วิดีโอ/เอกสาร) + `article_tag_*` + `ArticleSeeder` ตัวอย่าง | ✅ เสร็จ |
 | 3 — CRUD บทความ | controller/route/หน้า Vue list+add+edit พร้อม part editor (ลากสลับลำดับรูป/เอกสารในกลุ่มตรง ๆ, สลับลำดับ part ผ่าน dialog), `TagPicker.vue` เลือก/สร้างแท็กแบบ autocomplete, แสดง/ซ่อน part + ตัวเลือกแสดงหัวเรื่อง | ✅ เสร็จ |
 | **4 — ตั้งค่าโมดูลบทความ** *(รอบนี้)* | หน้า `admin.article.setting.index` + ล้างแคช (`sys_setting` group `article`) + ลงทะเบียนร่วมกับล้างแคชของตั้งค่าระบบ | ✅ เสร็จ |
+
+## หน้าบ้าน (สรุป — รายละเอียดเต็มดู [PRD-front.md](PRD-front.md) §5, §8)
+
+- หมวดหมู่: `/{lang}/article/category/{id}/{slug?}` (`front.article.category`) — h1 ชื่อหมวดหมู่, การ์ด/แถวตาม `list_display_mode`
+  (ผู้ชมสลับได้ `?view=`), จำนวนต่อหน้าตาม `list_per_page`
+- รายละเอียด: `/{lang}/article/category/{id}/{article_id}/{slug?}` (`front.article.category.item` — บทความต้องอยู่ในหมวดหมู่นั้น) และ
+  `/{lang}/article/item/{id}/{slug?}` (`front.article.item`) — h1 ชื่อบทความ, หัวข้อ part h2, canonical ของทั้งสองทางชี้ URL เดียวกัน
+- slug หมวดหมู่ห้ามเป็นตัวเลขล้วน/มี `/` (validation `not_regex` ใน Store/UpdateArticleCategoryRequest) — กันชนกับ `{article_id}`
+- ยอดเข้าชม: ตาราง `article_item_view` (แทนตารางระบบเดิมที่ insert → count → update ทุกครั้ง) + บวก `article_item_info.view_amount` แบบ batch
+  ผ่านคิว Redis + `php artisan front:flush-views` (ดู PRD-front.md §8)
