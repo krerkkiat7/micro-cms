@@ -119,6 +119,8 @@ export interface FrontMenuDetailForm {
 export interface FrontMenuNode {
     id: number;
     parent_id: number | null;
+    /** ชื่อเมนูของภาษาหลัก (null = ยังไม่ได้กรอก) */
+    name: string | null;
     menu_type: string;
     target_article_category_id: number | null;
     target_article_item_id: number | null;

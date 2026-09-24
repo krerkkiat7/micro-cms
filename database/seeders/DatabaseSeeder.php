@@ -179,5 +179,8 @@ class DatabaseSeeder extends Seeder
 
         // เมนูหน้าบ้านตัวอย่าง (ข้อมูลตัวอย่าง — แยกไฟล์ ต้องรันหลัง ArticleSeeder/PageSeeder)
         $this->call(FrontMenuSeeder::class);
+
+        // Template หน้าบ้านตัวอย่าง จากแม่แบบตั้งต้น (ข้อมูลตัวอย่าง — แยกไฟล์)
+        $this->call(TemplateSeeder::class);
     }
 }

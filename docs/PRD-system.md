@@ -10,7 +10,7 @@
 | 1 | จัดการผู้ใช้งาน | `sys_user` | 🟢 list/add/edit/เปลี่ยนรหัสผ่าน เสร็จ (ต้นแบบ §5) |
 | 2 | จัดการกลุ่มผู้ใช้งาน + สิทธิ์ | `sys_usergroup`, `sys_action_group`, `sys_action`, `sys_usergroup_action` | 🟢 list/add/edit + หน้ากำหนดสิทธิ์ (tree) เสร็จ |
 | 3 | จัดการเมนู (หลังบ้าน / หน้าบ้าน) | `sys_menu_group`, `sys_menu` / `sys_front_menu` *(เสนอ)* | 🟡 เมนูหลังบ้าน: ตาราง/model/seed ตัวอย่างมี, ยังไม่ต่อ UI · หน้าบ้าน: 🔴 |
-| 4 | จัดการ template | `sys_template` *(เสนอ)* | 🔴 |
+| 4 | จัดการ template | `sys_template` + `sys_template_header/body/footer/aside` | 🟡 หลังบ้านครบ (list/add/ข้อมูลทั่วไป/โครงสร้าง+preview/Custom CSS/JS/Loading) · render หน้าบ้าน 🔴 — [PRD-system-template.md](PRD-system-template.md) |
 | 5 | ประวัติ login / เข้าชม / การกระทำ | `log_back_access`, `log_back_action`, `log_back_login` (+ `log_front_*`) | 🟡 หลังบ้านครบ 3 ตัว (บันทึก + หน้ารายการ) · `log_front_*` 🔴 |
 | 6 | ตั้งค่าระบบ/เว็บไซต์ | `sys_setting` | 🟡 ตาราง/model/seed ตัวอย่างมี, ยังไม่มี UI |
 | 7 | profile | `sys_user` | 🟢 |
@@ -299,25 +299,16 @@ level 2 เป็นต้นไปเรียงแนวตั้งไปด
 
 ---
 
-## 4. จัดการ template — 🔴 เสนอ
+## 4. จัดการ template — 🟡 หลังบ้านเสร็จ · render หน้าบ้าน 🔴
 
-**วัตถุประสงค์** — กำหนดชุดการแสดงผล layout ของหน้าบ้าน (header / footer / โครงหน้า) เลือกใช้ต่อ page ได้
+**วัตถุประสงค์** — กำหนดหน้าตาส่วนกลางของหน้าบ้าน 4 โซน (header / main body / footer / aside) สร้างได้หลายรายการ ใช้งานได้ครั้งละ 1 รายการ
 
-**Data model เสนอ — `sys_template`**
+รายละเอียดเต็ม (data model, ตัวเลือก, แม่แบบตั้งต้น, หน้าจอ, permission/log, roadmap หน้าบ้าน) ดู [PRD-system-template.md](PRD-system-template.md)
 
-| คอลัมน์ | ชนิด | หมายเหตุ |
-|---------|------|----------|
-| `id` | `varchar(20)` PK | เช่น `default`, `landing` |
-| `name` | `varchar(100)` | ชื่อที่แสดง |
-| `header_html` / `footer_html` | `longtext` null | หรือเก็บเป็น config JSON |
-| `config` | `json` null | ตัวเลือก layout (มี sidebar, ความกว้าง, ฯลฯ) |
-| `is_default` | boolean default false | |
-| `status` | `char(1)` default `Y` | |
-| `timestamps`, `deleted_at` | | |
-
-**หน้าจอ** — list, ฟอร์มแก้ไข (+ preview), ตั้ง default
-
-**Permission** — `system.template.view`, `system.template.create`, `system.template.delete`
+- ตาราง: `sys_template` (ข้อมูลทั่วไป + Custom CSS/JS + หน้า Loading) + ตั้งค่าโซน 1:1 `sys_template_header` / `_body` / `_footer` / `_aside`
+  (migration `2026_09_30_000001_create_sys_template_tables.php`) — แทนข้อเสนอเดิม (`id` varchar + `header_html`/`footer_html`/`config` JSON + `is_default`)
+- ข้อมูลไซต์ (โลโก้/ชื่อ/ติดต่อ/social/ภาษา/ลิขสิทธิ์) อ่านจาก `sys_setting` ไม่เก็บซ้ำ
+- Permission — `system.template.view`, `system.template.manage`, `system.template.delete` (ใช้ `manage` แทน `create` ตามที่ seed ไว้)
 
 ---
 

@@ -102,8 +102,10 @@ function findNode(nodes: FrontMenuNode[], id: number): FrontMenuNode | null {
     return null;
 }
 
-/** ชื่อเมนู (ภาษาแรกที่มีค่า) ไว้แสดงในรายการ/ตัวเลือก */
+/** ชื่อเมนูภาษาหลักไว้แสดงในรายการ/การเรียงลำดับ/ตัวเลือก — ภาษาหลักไม่มีชื่อ ค่อยใช้ภาษาอื่นที่มีค่า */
 export function defaultMenuName(node: FrontMenuNode): string {
+    if (node.name) return node.name;
+
     const withName = Object.values(node.detail).find((d) => d.name);
 
     return withName?.name ?? `เมนู #${node.id}`;
