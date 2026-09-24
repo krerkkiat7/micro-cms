@@ -22,6 +22,7 @@ import type { FileItem } from '@/types';
 interface Props {
     settings: {
         site: Record<string, string>;
+        contact: Record<string, string>;
         social: Record<string, string>;
         smtp: Record<string, string>;
         turnstile: Record<string, string>;
@@ -116,6 +117,22 @@ watch(faviconFile, (files) => {
 
 function submitSite() {
     siteForm.put(route('admin.system.setting.update.site'), { preserveScroll: true });
+}
+
+// ---------- กลุ่ม "ข้อมูลติดต่อ" ----------
+// ที่อยู่แยกตามภาษา — ใช้ชุดภาษาเดียวกับ LANGUAGE_OPTIONS ด้านบน (ระบบรองรับแค่ th/en ตอนนี้ เทียบเคียง
+// UpdateContactSettingRequest::rules() ฝั่ง backend ที่ผูกชื่อฟิลด์ address_th/address_en ตรง ๆ)
+const contactForm = useForm({
+    address_th: props.settings.contact?.address_th ?? '',
+    address_en: props.settings.contact?.address_en ?? '',
+    phone: props.settings.contact?.phone ?? '',
+    fax: props.settings.contact?.fax ?? '',
+    mobile: props.settings.contact?.mobile ?? '',
+    email: props.settings.contact?.email ?? '',
+});
+
+function submitContact() {
+    contactForm.put(route('admin.system.setting.update.contact'), { preserveScroll: true });
 }
 
 // ---------- กลุ่ม "Social Media" ----------
@@ -298,6 +315,58 @@ function submitLoginBack() {
 
                 <div class="mt-6">
                     <PrimaryButton type="submit" :disabled="siteForm.processing">
+                        <Save class="mr-1.5 size-4" /> บันทึก
+                    </PrimaryButton>
+                </div>
+            </form>
+
+            <!-- ข้อมูลติดต่อ -->
+            <form
+                class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8"
+                @submit.prevent="submitContact"
+            >
+                <h2 class="text-base font-semibold text-gray-800">ข้อมูลติดต่อ</h2>
+
+                <div class="mt-5 grid gap-4 sm:grid-cols-6">
+                    <div class="sm:col-span-3">
+                        <InputLabel for="contact_address_th" value="ที่อยู่ (ไทย)" />
+                        <Textarea id="contact_address_th" v-model="contactForm.address_th" rows="3" />
+                        <InputError :message="contactForm.errors.address_th" />
+                    </div>
+
+                    <div class="sm:col-span-3">
+                        <InputLabel for="contact_address_en" value="ที่อยู่ (English)" />
+                        <Textarea id="contact_address_en" v-model="contactForm.address_en" rows="3" />
+                        <InputError :message="contactForm.errors.address_en" />
+                    </div>
+
+                    <div class="sm:col-span-3">
+                        <InputLabel for="contact_phone" value="เบอร์ติดต่อ" />
+                        <TextInput id="contact_phone" v-model="contactForm.phone" type="text" />
+                        <InputError :message="contactForm.errors.phone" />
+                    </div>
+
+                    <div class="sm:col-span-3">
+                        <InputLabel for="contact_fax" value="เบอร์แฟกซ์" />
+                        <TextInput id="contact_fax" v-model="contactForm.fax" type="text" />
+                        <InputError :message="contactForm.errors.fax" />
+                    </div>
+
+                    <div class="sm:col-span-3">
+                        <InputLabel for="contact_mobile" value="เบอร์มือถือ" />
+                        <TextInput id="contact_mobile" v-model="contactForm.mobile" type="text" />
+                        <InputError :message="contactForm.errors.mobile" />
+                    </div>
+
+                    <div class="sm:col-span-3">
+                        <InputLabel for="contact_email" value="อีเมล" />
+                        <TextInput id="contact_email" v-model="contactForm.email" type="email" />
+                        <InputError :message="contactForm.errors.email" />
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <PrimaryButton type="submit" :disabled="contactForm.processing">
                         <Save class="mr-1.5 size-4" /> บันทึก
                     </PrimaryButton>
                 </div>
