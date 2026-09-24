@@ -68,7 +68,7 @@ class IntropageController extends FrontController
                 'defaultLanguage' => $layout['defaultLanguage'],
                 'site' => $layout['site'],
                 'copyright' => $layout['copyright'],
-                'fontsUrl' => null,
+                'fontsUrl' => $intro['fontsUrl'],
                 't' => $layout['t'],
             ],
             'seo' => $seo,

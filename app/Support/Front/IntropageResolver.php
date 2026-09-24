@@ -4,6 +4,7 @@ namespace App\Support\Front;
 
 use App\Models\IntropageItemButton;
 use App\Models\IntropageItemInfo;
+use App\Support\PageTextStyle;
 use App\Support\Setting;
 
 /**
@@ -79,6 +80,17 @@ final class IntropageResolver
                 'attachment' => $backgroundUrl ? $item->background_attachment : null,
                 'position' => $backgroundUrl ? $item->background_position : null,
             ],
+            // การจัดรูปแบบข้อความต้อนรับ / ปุ่ม
+            'detail_style' => [
+                'font_family' => $item->detail_font_family ?: PageTextStyle::DEFAULT_FONT,
+                'font_size' => (int) ($item->detail_font_size ?: 18),
+                'color' => $item->detail_color ?: '#1F2937',
+            ],
+            'button_style' => [
+                'font_family' => $item->button_font_family ?: PageTextStyle::DEFAULT_FONT,
+                'font_size' => (int) ($item->button_font_size ?: 16),
+            ],
+            'fontsUrl' => PageTextStyle::stylesheetUrlFor([$item->detail_font_family, $item->button_font_family]),
             'show_button' => $item->show_button === 'Y',
             'buttons' => $item->buttons
                 ->map(function (IntropageItemButton $button) use ($lang, $defaultLang) {

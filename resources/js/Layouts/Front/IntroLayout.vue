@@ -22,7 +22,7 @@ onMounted(() => {
 
 <template>
     <div class="min-h-screen">
-        <SeoHead :seo="seo" />
+        <SeoHead :seo="seo" :fonts="[front.fontsUrl]" />
 
         <a
             href="#main-content"

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\Intropage\Concerns;
 
+use App\Support\PageTextStyle;
 use App\Support\Setting;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
@@ -65,7 +66,15 @@ trait IntropageItemValidationRules
                 ),
             ],
 
+            // การจัดรูปแบบข้อความต้อนรับ
+            'detail_font_family' => ['required', Rule::in(PageTextStyle::fontNames())],
+            'detail_font_size' => ['required', 'integer', 'between:'.PageTextStyle::FONT_SIZE_MIN.','.PageTextStyle::FONT_SIZE_MAX],
+            'detail_color' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{3,8}$/'],
+
             'show_button' => ['required', Rule::in(['Y', 'N'])],
+            // ตัวอักษรของปุ่ม (ใช้กับทุกปุ่มแบบข้อความ)
+            'button_font_size' => ['required', 'integer', 'between:'.PageTextStyle::FONT_SIZE_MIN.','.PageTextStyle::FONT_SIZE_MAX],
+            'button_font_family' => ['required', Rule::in(PageTextStyle::fontNames())],
 
             'publish_date' => ['required', 'date'],
             'publish_down' => ['required', 'date', 'after:publish_date'],

@@ -30,12 +30,18 @@
 
 ### รูปแบบการกรอกข้อมูล
 
-ฟอร์มแบ่งเป็น 3 การ์ดเสมอ:
+ฟอร์มเพิ่ม/แก้ไขใช้ component กลาง `Components/Admin/IntropageForm/IntropageFormFields.vue` (Add.vue/Edit.vue ต่างกันแค่ค่าเริ่มต้น
++ ปุ่มบันทึก/ลบ) แบ่งเป็น 5 การ์ด เรียงตามลำดับที่ผู้ใช้กำหนด:
 
-- **กลุ่มข้อมูลร่วม** ("ข้อมูลทั่วไป") — ไม่แยกภาษา: พื้นหลัง (สี/รูป/repeat/size/attachment/position),
-  ประเภท+ขนาดการแสดงผลของสื่อหลัก, สื่อหลักตามประเภทที่เลือก, ช่วงเวลาประกาศ, สถานะ
-- **กลุ่มข้อมูลแยกภาษา** ("ข้อมูลหน้า Intropage") — ชื่อ + ข้อความต้อนรับ ผ่าน `LangFieldGroup.vue`
-- **กลุ่มการจัดการปุ่ม** ("การจัดการปุ่ม") — `show_button` (แสดง/ซ่อนโซนปุ่มทั้งหมด) + รายการปุ่ม (ดู §2)
+1. **ข้อความ** — ชื่อ (แยกภาษา — ใช้ในหลังบ้าน/ชื่อหน้าเว็บ **ไม่แสดงบนหน้า Intropage**) → ข้อความต้อนรับ (แยกภาษา) → กล่อง
+   "รูปแบบข้อความต้อนรับ": ฟอนต์ (`detail_font_family`) / ขนาดฟอนต์ (`detail_font_size`) / สีตัวอักษร (`detail_color`) + ตัวอย่างข้อความ
+2. **รูปภาพ / วิดีโอ** — ประเภทการแสดงผล → รูปภาพ/ไฟล์วิดีโอ/URL ตามประเภท → ขนาดการแสดงผล
+3. **การจัดการพื้นหลัง** — สี + รูป (ตัวเลือก repeat/size/attachment/position แสดงเมื่อเลือกรูปแล้วเท่านั้น)
+4. **การจัดการปุ่ม** — แสดงโซนปุ่ม (`show_button` เป็น checkbox — ไม่เลือกจะซ่อนการตั้งค่าปุ่มที่เหลือ) → ขนาดฟอนต์ของปุ่ม
+   (`button_font_size`) / ฟอนต์ของปุ่ม (`button_font_family`) → รายการปุ่ม (ดู §2)
+5. **การเผยแพร่** — วันที่ประกาศ + วันที่ปิดประกาศ → สถานะ
+
+ฟอนต์เลือกจาก `App\Support\PageTextStyle::fontNames()` (ชุดเดียวกับโมดูล page/template) ขนาด 8–120 px
 
 ---
 
@@ -57,7 +63,12 @@
 | `image_file_id` | bigint FK → `file_info.id` null (nullOnDelete) | ใช้เมื่อ `display_type=image` |
 | `vdo_file_id` | bigint FK → `file_info.id` null (nullOnDelete) | ใช้เมื่อ `display_type=vdo` |
 | `vdo_url` | `varchar(500)` null | ใช้เมื่อ `display_type=vdourl` หรือ `youtubeurl` (คอลัมน์เดียวใช้ร่วมกัน) |
+| `detail_font_family` | `varchar(50)` default `Sarabun` | ฟอนต์ข้อความต้อนรับ (migration `2026_10_02_000001_add_text_style_to_intropage_item_info_table.php`) |
+| `detail_font_size` | `smallint unsigned` default `18` | ขนาดฟอนต์ข้อความต้อนรับ (px) |
+| `detail_color` | `varchar(20)` default `#1F2937` | สีตัวอักษรข้อความต้อนรับ (hex) |
 | `show_button` | `char(1)` default `Y` | แสดง/ซ่อนโซนปุ่มทั้งหมด — ฟิลด์นี้อยู่ในฟอร์มการ์ด "การจัดการปุ่ม" ไม่ใช่ "ข้อมูลทั่วไป" |
+| `button_font_size` | `smallint unsigned` default `16` | ขนาดฟอนต์ของปุ่ม (px) — ใช้กับทุกปุ่มแบบข้อความ |
+| `button_font_family` | `varchar(50)` default `Sarabun` | ฟอนต์ของปุ่ม |
 | `publish_date` | `datetime` null | วันที่ประกาศ — **required ที่ FormRequest** ฟอร์มเพิ่มตั้งค่าเริ่มต้นเป็นวันเวลาปัจจุบัน |
 | `publish_down` | `datetime` null | วันที่ปิดประกาศ — **required ที่ FormRequest** (ต่างจาก banner/article ที่ optional) + `after:publish_date` |
 | `status` | `char(1)` default `Y` | `Y` = เปิดใช้งาน, `N` = ปิด |
@@ -171,7 +182,8 @@
 ## 3. การเลือกว่าจะแสดง Intropage ใด
 
 **สถานะ**: 🟢 ทำแล้ว — `App\Support\Front\IntropageResolver` + `Front\Intropage\IntropageController` (ดู [PRD-front.md](PRD-front.md) §2)
-แสดงทุกครั้งที่เข้า `/` หรือ `/{lang}` บน layout เปล่า; ไม่มีรายการที่ตรงเงื่อนไข → redirect ไปหน้าแรกตามเมนู (`is_home`); ข้อมูลตัวอย่าง
+แสดงทุกครั้งที่เข้า `/` หรือ `/{lang}` บน layout เปล่า — **ไม่แสดงชื่อ** (เป็น h1 ที่ซ่อนไว้) รูปภาพ/วิดีโอชิดขอบบนสุด,
+ข้อความต้อนรับ/ปุ่มใช้ฟอนต์ ขนาด และสีตามที่ตั้งไว้ (โหลดเฉพาะฟอนต์ที่ใช้); ไม่มีรายการที่ตรงเงื่อนไข → redirect ไปหน้าแรกตามเมนู (`is_home`); ข้อมูลตัวอย่าง
 `is_temp = Y` แสดงได้ตามปกติ; cache 60 วินาที (`config/front.php`)
 
 Intropage บันทึกเก็บได้หลายรายการ แต่ "แสดงจริง" ที่หน้าบ้านได้ทีละ 1 รายการเท่านั้น **หลังบ้านไม่มีกลไกสลับ/

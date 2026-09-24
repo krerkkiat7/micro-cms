@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import type { CSSProperties } from 'vue';
 import FrontLink from '@/Components/Front/FrontLink.vue';
 import IntroLayout from '@/Layouts/Front/IntroLayout.vue';
 import { useFront } from '@/composables/useFront';
@@ -7,7 +8,9 @@ import { backgroundCss } from '@/utils/front';
 import type { FrontBackground, FrontFileData, SeoData } from '@/utils/front';
 
 /**
- * Intropage (หน้าคั่นก่อนเข้าเว็บ) — สื่อหลัก (รูป / วิดีโอไฟล์ / วิดีโอจาก URL / YouTube) ตามขนาดที่ตั้งไว้ + ข้อความต้อนรับ + ปุ่ม
+ * Intropage (หน้าคั่นก่อนเข้าเว็บ) — สื่อหลัก (รูป / วิดีโอไฟล์ / วิดีโอจาก URL / YouTube) ชิดขอบบนสุดตามขนาดที่ตั้งไว้
+ * + ข้อความต้อนรับ (ฟอนต์/ขนาด/สีตามตั้งค่า) + ปุ่ม (ฟอนต์/ขนาดตามตั้งค่า)
+ * ชื่อ Intropage ไม่แสดงบนหน้า — ใช้เป็น h1 ที่ซ่อนไว้ (screen reader / SEO) และชื่อหน้าเว็บเท่านั้น
  * ปุ่ม "เข้าหน้าแรก" ไปหน้าแรกตามเมนู (is_home) เสมอ, ปุ่มอื่นไป URL ที่ตั้งไว้ — ดู docs/PRD-intropage.md
  */
 interface IntroButton {
@@ -33,6 +36,8 @@ const props = defineProps<{
         video_url: string | null;
         youtube_id: string | null;
         background: FrontBackground;
+        detail_style: { font_family: string; font_size: number; color: string };
+        button_style: { font_family: string; font_size: number };
         show_button: boolean;
         buttons: IntroButton[];
     };
@@ -56,6 +61,17 @@ const buttons = computed(() =>
         .filter((button) => button.href),
 );
 
+const detailCss = computed<CSSProperties>(() => ({
+    fontFamily: `'${props.intro.detail_style.font_family}', sans-serif`,
+    fontSize: `${props.intro.detail_style.font_size}px`,
+    color: props.intro.detail_style.color,
+}));
+
+const buttonFontCss = computed<CSSProperties>(() => ({
+    fontFamily: `'${props.intro.button_style.font_family}', sans-serif`,
+    fontSize: `${props.intro.button_style.font_size}px`,
+}));
+
 function buttonLabel(button: IntroButton): string {
     return button.text || (button.type === 'home' ? t('enter_site') : '');
 }
@@ -63,8 +79,8 @@ function buttonLabel(button: IntroButton): string {
 
 <template>
     <IntroLayout :seo="seo">
-        <div class="flex min-h-screen flex-col items-center justify-center gap-6 py-10" :style="backgroundCss(intro.background)">
-            <h1 :class="intro.title ? 'px-4 text-center text-2xl font-bold sm:text-3xl' : 'sr-only'">{{ intro.title || front.site.name }}</h1>
+        <div class="flex min-h-screen flex-col items-center gap-6 pb-10" :style="backgroundCss(intro.background)">
+            <h1 class="sr-only">{{ intro.title || front.site.name }}</h1>
 
             <div :class="mediaWrapperClass">
                 <div class="mx-auto" :style="mediaWidth">
@@ -94,14 +110,13 @@ function buttonLabel(button: IntroButton): string {
                             class="absolute inset-0 size-full"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowfullscreen
-                            loading="lazy"
                             referrerpolicy="strict-origin-when-cross-origin"
                         />
                     </div>
                 </div>
             </div>
 
-            <p v-if="intro.detail" class="max-w-3xl whitespace-pre-line px-4 text-center text-lg leading-relaxed">{{ intro.detail }}</p>
+            <p v-if="intro.detail" class="max-w-3xl whitespace-pre-line px-4 text-center leading-relaxed" :style="detailCss">{{ intro.detail }}</p>
 
             <div v-if="intro.show_button && buttons.length" class="flex flex-wrap items-center justify-center gap-3 px-4">
                 <FrontLink
@@ -111,7 +126,7 @@ function buttonLabel(button: IntroButton): string {
                     :target="button.target"
                     class="inline-flex min-h-11 items-center justify-center rounded-lg font-medium transition-opacity hover:opacity-90 focus-visible:outline-3 focus-visible:outline-offset-2"
                     :class="button.display === 'image' ? '' : 'px-6 py-2.5 shadow'"
-                    :style="button.display === 'text' ? { backgroundColor: button.background_color ?? '#465fff', color: button.text_color ?? '#ffffff' } : undefined"
+                    :style="button.display === 'text' ? { ...buttonFontCss, backgroundColor: button.background_color ?? '#465fff', color: button.text_color ?? '#ffffff' } : undefined"
                 >
                     <img v-if="button.display === 'image' && button.image_url" :src="button.image_url" :alt="buttonLabel(button)" class="max-h-20 w-auto" />
                     <template v-else>{{ buttonLabel(button) }}</template>

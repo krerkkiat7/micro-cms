@@ -37,8 +37,9 @@
 
 - เลือกตามกติกา `docs/PRD-intropage.md` §3 (`App\Support\Front\IntropageResolver`) — แสดงทุกครั้งที่เข้า `/` หรือ `/{lang}`
 - layout เปล่า `Layouts/Front/IntroLayout.vue` (ไม่ใช้ sys_template) ใช้เฉพาะข้อมูลระบบร่วม (ชื่อไซต์/ภาษา/ข้อความ UI)
-- หน้าจอ `Pages/Front/Intropage/Index.vue` — สื่อหลัก (รูป / วิดีโอไฟล์ / วิดีโอ URL / YouTube แบบ youtube-nocookie) ตาม `display_size`,
-  ข้อความต้อนรับ, ปุ่ม (`home` = URL หน้าแรกตามเมนู, `other` = URL ที่ตั้ง), พื้นหลังตามตั้งค่า; หัวเรื่องเป็น h1
+- หน้าจอ `Pages/Front/Intropage/Index.vue` — สื่อหลัก (รูป / วิดีโอไฟล์ / วิดีโอ URL / YouTube แบบ youtube-nocookie) **ชิดขอบบนสุด**
+  ตาม `display_size`, ข้อความต้อนรับ (ฟอนต์/ขนาด/สีตามตั้งค่า), ปุ่ม (ฟอนต์/ขนาดตามตั้งค่า — `home` = URL หน้าแรกตามเมนู, `other` = URL ที่ตั้ง),
+  พื้นหลังตามตั้งค่า; **ไม่แสดงชื่อ** — ชื่อเป็น h1 ที่ซ่อนไว้ (sr-only) สำหรับ screen reader/SEO
 
 ## 3. Layout หน้าภายใน (`Layouts/Front/FrontLayout.vue`)
 
