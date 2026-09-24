@@ -32,8 +32,11 @@ const slots = computed(() => {
     return result;
 });
 
-/** เต็มหน้าจอ = แถบกว้างเต็มพื้นที่ / ตาม container = แถบกว้างเท่า container กึ่งกลาง (ในตัวอย่างใช้ 88% ของพื้นที่) */
-function barClass(width: Width): string {
+/**
+ * ขอบเขตความกว้างมีผลกับ "ข้อมูลในแถบ" เท่านั้น — พื้นหลังของแถบกว้างเต็มหน้าจอเสมอ
+ * เต็มหน้าจอ = ข้อมูลกว้างเต็มพื้นที่ / ตาม container = ข้อมูลอยู่ในกรอบ container กึ่งกลาง (ในตัวอย่างใช้ 88% ของพื้นที่)
+ */
+function contentClass(width: Width): string {
     return width === 'container' ? 'mx-auto w-[88%]' : 'w-full';
 }
 
@@ -46,18 +49,17 @@ const showSiteName = computed(() => props.zone.logo_display !== 'image');
         <!-- แถบบน -->
         <div
             v-if="zone.layout_type === 'topbar_main'"
-            :class="barClass(zone.topbar_width)"
             :style="{ backgroundColor: zone.topbar_background_color, color: zone.topbar_text_color }"
         >
-            <div class="flex min-h-8 items-center justify-between gap-3 px-4 py-1">
+            <div class="flex min-h-8 items-center justify-between gap-3 px-4 py-1" :class="contentClass(zone.topbar_width)">
                 <HeaderTools :zone="zone" :preview="preview" only="social" />
                 <HeaderTools :zone="zone" :preview="preview" only="tools" />
             </div>
         </div>
 
         <!-- แถบหลัก -->
-        <div :class="barClass(zone.main_width)" :style="{ ...zoneBackgroundStyle(zone), color: zone.main_text_color }">
-            <div class="relative grid min-h-16 grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-3">
+        <div :style="{ ...zoneBackgroundStyle(zone), color: zone.main_text_color }">
+            <div class="relative grid min-h-16 grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-3" :class="contentClass(zone.main_width)">
                 <div
                     v-for="align in (['left', 'center', 'right'] as Align[])"
                     :key="align"
@@ -98,12 +100,8 @@ const showSiteName = computed(() => props.zone.logo_display !== 'image');
         </div>
 
         <!-- แถวเมนู -->
-        <div
-            v-if="zone.layout_type === 'main_menubar'"
-            :class="barClass(zone.menubar_width)"
-            :style="{ backgroundColor: zone.menubar_background_color }"
-        >
-            <div class="flex px-4 py-1" :class="JUSTIFY[zone.menu_align]">
+        <div v-if="zone.layout_type === 'main_menubar'" :style="{ backgroundColor: zone.menubar_background_color }">
+            <div class="flex px-4 py-1" :class="[contentClass(zone.menubar_width), JUSTIFY[zone.menu_align]]">
                 <HeaderMenu :items="preview.menu" :menu-style="zone.menu_style" :text-color="zone.menu_text_color" :active-color="zone.menu_active_color" />
             </div>
         </div>

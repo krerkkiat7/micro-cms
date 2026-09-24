@@ -90,7 +90,7 @@ Migration: `database/migrations/2026_09_30_000001_create_sys_template_tables.php
   validation ของแท็บโครงสร้าง, ส่งค่าไปหน้าจอ และบันทึก — **เพิ่มคอลัมน์ใหม่ต้องแก้ 3 ที่ให้ตรงกัน**: migration, `TemplateZone::fields()`,
   interface ใน `resources/js/utils/template.ts` (+ UI ใน dialog / preview)
 - `App\Support\Template\TemplatePreset` — แม่แบบตั้งต้น (ค่าที่ต่างจากค่าเริ่มต้นของแต่ละโซน)
-- `App\Support\FrontMenuTree::forLanguage()` — tree เมนูหน้าบ้านที่เปิดใช้ (เฉพาะชื่อ ไม่มี URL) สำหรับ preview
+- `App\Support\FrontMenuTree::forLanguage()` — tree เมนูหน้าบ้านที่เปิดใช้ (ชื่อ + `menu_type` ไม่มี URL) สำหรับ preview
 
 ## 2. ตัวเลือกที่ออกแบบเพิ่ม
 
@@ -154,6 +154,16 @@ Migration: `database/migrations/2026_09_30_000001_create_sys_template_tables.php
 5. ตัวอย่างใช้ข้อมูลจริงของระบบ ณ ปัจจุบัน (`TemplateController::previewData()`) และกดไม่ได้ (`pointer-events-none`, ไม่มีลิงก์)
    ข้อมูลที่ยังไม่ได้ตั้งค่า (เช่น เบอร์แฟกซ์) แสดงเป็นข้อความจาง ๆ, ไม่มีเมนูหน้าบ้าน = แสดงเมนูสมมติ
 
+**กติกาการแสดงผล (ใช้ทั้ง preview และตอน render หน้าบ้านในอนาคต)**
+- **ขอบเขตความกว้าง** (`*_width`: เต็มหน้าจอ / ตาม container) มีผลกับ **ข้อมูลในแถบเท่านั้น** — พื้นหลังของแถบ/footer/แถบลิขสิทธิ์กว้างเต็มหน้าจอเสมอ
+- **Social Media** แสดงเป็นไอคอนของแต่ละแบรนด์ (`Preview/SocialIcon.vue` — facebook / youtube / x / instagram / tiktok / line) เฉพาะช่องทางที่ตั้งค่าไว้
+- **footer — ข้อมูลไซต์** แสดงโลโก้ (`site.logo_id`) คู่ชื่อเว็บ
+- **footer — ติดต่อเรา** ขึ้นต้นด้วยชื่อเจ้าของไซต์ (`site.copyright_owner`) เฉพาะเมื่อตั้งค่าไว้ แล้วตามด้วยที่อยู่/เบอร์/อีเมลที่เลือกแสดง
+- **footer — เมนู** แสดงเมนูระดับแรก + เมนูย่อยระดับที่สองเฉพาะที่เป็นลิงก์ (ของในระบบ `page` / `article_category` / `article_item`
+  และลิงก์ภายนอก `external` — `LINK_MENU_TYPES` ใน `utils/template.ts`) แสดงเยื้องเป็นเมนูย่อย; เมนูหัวข้อ/ไม่มีลิงก์ และระดับที่ 3 ขึ้นไปไม่แสดง
+- **aside** มีพื้นที่ fix ด้านล่าง (ไม่เลื่อนตามเมนู) แสดง social / ภาษา / ปรับขนาดตัวอักษร / การแสดงสี **ตามที่เปิดไว้ในตั้งค่า header**
+  (ไม่มีค้นหา) — ไม่มีรายการใดเปิดเลย = ไม่มีพื้นที่นี้; ใน preview แผง aside สูงเท่าพื้นที่เนื้อหาพอดี เมนูที่ยาวเกินถูกตัดในส่วนบน
+
 ส่วนประกอบใน `resources/js/Components/Admin/Template/`: dialog 4 ตัว (`HeaderSettingsDialog` ฯลฯ บนเปลือก `PageLayout/LayoutDialog.vue`),
 ตัวเลือกแบบการ์ด SVG (`VisualPicker.vue` + `PresetPicker` / `HeaderLayoutPicker` / `HeaderMenuStylePicker` / `FooterLayoutPicker` /
 `AsideDisplayPicker` / `AsideMenuStylePicker`), `SegmentedChoice.vue` (ตัวเลือกสั้น 2-3 ค่า), `YesNoCheckbox.vue` (แสดง/ซ่อนทุกจุดเป็น checkbox),
@@ -183,6 +193,6 @@ Migration: `database/migrations/2026_09_30_000001_create_sys_template_tables.php
   แล้ว render header / body / footer / aside ตามค่าตั้งค่าเดียวกับ preview (แยก component หน้าบ้านไว้ `Components/Front/Template/*`)
 - header: sticky, เมนูหลายระดับ (dropdown / flyout ตาม PRD-system-frontmenu.md), ตัวเลือกภาษาสลับ `{lang}`, ค้นหา,
   ปรับขนาดตัวอักษร (เก็บใน localStorage), โหมดสี (ปกติ / ขาวดำ / ตัดกันสูง)
-- บนจอเล็ก เมนูใน header ยุบเข้า aside เสมอ (แม้ `aside.status = N` จะใช้ไอคอนเปิดเมนูแทน)
+- บนจอเล็ก เมนูใน header ยุบเข้า aside เสมอ (แม้ `aside.status = N` จะใช้ไอคอนเปิดเมนูแทน); ส่วนล่างของ aside ที่ fix ไว้ต้องเลื่อนเมนูด้านบนได้ (overflow-y auto)
 - Custom CSS แทรกท้าย `<head>`, Custom JS แทรกท้าย `<body>` (เฉพาะเมื่อ `*_status = Y`), หน้า Loading แสดงจนกว่า `window.load`
 - favicon / Google Analytics มีอยู่แล้วในตั้งค่าระบบ (`site.favicon_id`, `google_analytics.tracking_id`) ไม่ต้องย้ายมา template

@@ -12,7 +12,7 @@ use App\Models\FrontMenuInfo;
 final class FrontMenuTree
 {
     /**
-     * @return list<array{id: int, name: string, children: list<array<string, mixed>>}>
+     * @return list<array{id: int, name: string, menu_type: string, children: list<array<string, mixed>>}>
      */
     public static function forLanguage(?string $lang = null): array
     {
@@ -22,7 +22,7 @@ final class FrontMenuTree
             ->where('status', 'Y')
             ->orderBy('sort_order')
             ->orderBy('id')
-            ->get(['id', 'parent_id']);
+            ->get(['id', 'parent_id', 'menu_type']);
 
         $names = FrontMenuDetail::query()
             ->whereIn('id', $menus->pluck('id'))
@@ -36,6 +36,7 @@ final class FrontMenuTree
                 ->map(fn (FrontMenuInfo $menu) => [
                     'id' => $menu->id,
                     'name' => (string) ($names->get($menu->id) ?? ''),
+                    'menu_type' => $menu->menu_type,
                     'children' => $build($menu->id),
                 ])
                 ->values()

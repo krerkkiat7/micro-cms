@@ -41,7 +41,9 @@ test('layout renders zones, preview data and fonts', function () {
             ->has('zones.footer.copyright_status')
             ->has('zones.aside.menu_style')
             ->has('preview.siteName')
-            ->has('preview.menu')
+            ->has('preview.menu.0.menu_type') // footer กรองเมนูย่อยระดับ 2 ตามประเภท
+            ->has('preview.menu.0.children')
+            ->has('preview.contact.owner')
             ->has('fonts')
             ->where('can.manage', false)
         );

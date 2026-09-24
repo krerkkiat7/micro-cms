@@ -107,8 +107,13 @@ export type ServerZones = { [K in ZoneName]: ServerZone<TemplateZones[K]> };
 export interface PreviewMenu {
     id: number;
     name: string;
+    /** App\Support\FrontMenuType (heading / none / external / article_category / article_item / page) */
+    menu_type: string;
     children: PreviewMenu[];
 }
+
+/** ประเภทเมนูที่เป็นลิงก์จริง (ของในระบบ + ลิงก์ภายนอก) — เมนูย่อยใน footer แสดงเฉพาะประเภทเหล่านี้ */
+export const LINK_MENU_TYPES = ['external', 'article_category', 'article_item', 'page'];
 
 /** ข้อมูลจริงของระบบที่ใช้แสดงตัวอย่าง (TemplateController::previewData) */
 export interface TemplatePreviewData {
@@ -116,7 +121,7 @@ export interface TemplatePreviewData {
     logoUrl: string | null;
     languages: string[];
     defaultLanguage: string;
-    contact: { address: string | null; phone: string | null; fax: string | null; mobile: string | null; email: string | null };
+    contact: { owner: string | null; address: string | null; phone: string | null; fax: string | null; mobile: string | null; email: string | null };
     social: string[];
     copyright: { year: string; owner: string };
     menu: PreviewMenu[];

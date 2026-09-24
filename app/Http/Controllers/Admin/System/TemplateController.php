@@ -518,6 +518,8 @@ class TemplateController extends Controller
             'languages' => Setting::selectedLanguages(),
             'defaultLanguage' => $defaultLang,
             'contact' => [
+                // ชื่อเจ้าของไซต์ (ค่าดิบ ไม่ fallback) — แสดงหัวข้อมูลติดต่อใน footer เฉพาะเมื่อตั้งค่าไว้
+                'owner' => Setting::get('site', 'copyright_owner'),
                 'address' => Setting::get('contact', "address_{$defaultLang}"),
                 'phone' => Setting::get('contact', 'phone'),
                 'fax' => Setting::get('contact', 'fax'),

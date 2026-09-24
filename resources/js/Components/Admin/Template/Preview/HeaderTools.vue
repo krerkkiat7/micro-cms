@@ -1,35 +1,31 @@
 <script setup lang="ts">
 import { ChevronDown, Contrast, Minus, Plus, Search } from 'lucide-vue-next';
 import LanguageFlag from '@/Components/Admin/Template/Preview/LanguageFlag.vue';
+import SocialIcon from '@/Components/Admin/Template/Preview/SocialIcon.vue';
 import { SOCIAL_LABELS } from '@/utils/template';
 import type { HeaderZone, TemplatePreviewData } from '@/utils/template';
 
 /**
  * ตัวอย่างเครื่องมือใน header — social / ค้นหา / ปรับขนาดตัวอักษร / การแสดงสี / ภาษา (ตามที่เปิดแสดงไว้)
- * `only` = กลุ่มที่ให้แสดงในตำแหน่งนี้ (แถบบนแยก social ไว้ซ้าย ส่วนเครื่องมืออื่นไว้ขวา)
+ * `only` = กลุ่มที่ให้แสดงในตำแหน่งนี้ (แถบบนแยก social ไว้ซ้าย ส่วนเครื่องมืออื่นไว้ขวา; `aside` = ท้ายเมนูข้าง — ทุกอย่างยกเว้นค้นหา)
  */
 defineProps<{
     zone: HeaderZone;
     preview: TemplatePreviewData;
-    only: 'social' | 'tools' | 'all';
+    only: 'social' | 'tools' | 'all' | 'aside';
 }>();
 </script>
 
 <template>
     <div class="flex flex-wrap items-center gap-3 text-xs">
-        <div v-if="only !== 'tools' && zone.social_status === 'Y'" class="flex items-center gap-1.5">
-            <span
-                v-for="key in preview.social.length ? preview.social : ['facebook', 'youtube', 'line']"
-                :key="key"
-                class="flex size-5 items-center justify-center rounded-full border border-current text-[10px] font-semibold opacity-80"
-                :title="SOCIAL_LABELS[key]"
-            >
-                {{ (SOCIAL_LABELS[key] ?? key).charAt(0) }}
+        <div v-if="only !== 'tools' && zone.social_status === 'Y'" class="flex items-center gap-2.5">
+            <span v-for="key in preview.social.length ? preview.social : ['facebook', 'youtube', 'line']" :key="key" :title="SOCIAL_LABELS[key]">
+                <SocialIcon :name="key" />
             </span>
         </div>
 
         <template v-if="only !== 'social'">
-            <Search v-if="zone.search_status === 'Y'" class="size-4" />
+            <Search v-if="only !== 'aside' && zone.search_status === 'Y'" class="size-4" />
 
             <div v-if="zone.fontsize_status === 'Y'" class="flex items-center gap-1">
                 <template v-if="zone.fontsize_display === 'icon'">

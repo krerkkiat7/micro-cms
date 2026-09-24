@@ -210,8 +210,12 @@ function formatDate(value: string | null): string {
                             @settings="editing = 'aside'"
                             @toggle="toggleZone('aside')"
                         />
-                        <div v-if="zones.aside.status === 'Y'" class="pointer-events-none h-full select-none">
-                            <AsidePreview :zone="zones.aside" :menu="preview.menu" />
+                        <!-- จอกว้าง: แผง aside สูงเท่าพื้นที่เนื้อหาพอดี (absolute — เมนูยาวไม่ดันความสูงแถว) เพื่อให้เห็นส่วนล่างที่ fix ไว้ -->
+                        <div
+                            v-if="zones.aside.status === 'Y'"
+                            class="pointer-events-none h-96 select-none sm:absolute sm:inset-x-0 sm:bottom-0 sm:top-7 sm:h-auto"
+                        >
+                            <AsidePreview :zone="zones.aside" :header="zones.header" :preview="preview" />
                         </div>
                         <p v-else class="px-4 py-4 text-center text-sm text-gray-400">ไม่ใช้เมนูข้าง</p>
                     </div>

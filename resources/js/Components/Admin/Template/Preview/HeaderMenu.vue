@@ -14,7 +14,7 @@ const props = defineProps<{
     activeColor: string;
 }>();
 
-const SAMPLE: PreviewMenu[] = ['หน้าแรก', 'เกี่ยวกับเรา', 'ข่าวสาร', 'ติดต่อเรา'].map((name, i) => ({ id: -i - 1, name, children: [] }));
+const SAMPLE: PreviewMenu[] = ['หน้าแรก', 'เกี่ยวกับเรา', 'ข่าวสาร', 'ติดต่อเรา'].map((name, i) => ({ id: -i - 1, name, menu_type: 'page', children: [] }));
 
 const menus = computed(() => (props.items.length ? props.items : SAMPLE));
 
