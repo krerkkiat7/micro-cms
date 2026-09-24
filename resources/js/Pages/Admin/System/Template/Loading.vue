@@ -24,17 +24,22 @@ const props = defineProps<{
         id: number;
         name: string;
         loading_status: string;
+        loading_show_logo: string;
         loading_type: string;
         loading_spinner: string;
         loading_color: string;
         loading_background_color: string;
         loading_image: FileItem | null;
     };
+    /** โลโก้จากตั้งค่าระบบ (null = ยังไม่ได้ตั้งค่า) */
+    logoUrl: string | null;
+    siteName: string;
     can: { manage: boolean };
 }>();
 
 const form = useForm({
     loading_status: props.template.loading_status,
+    loading_show_logo: props.template.loading_show_logo,
     loading_type: props.template.loading_type,
     loading_spinner: props.template.loading_spinner,
     loading_color: props.template.loading_color,
@@ -81,6 +86,17 @@ const breadcrumbs = computed(() => [
                             <YesNoCheckbox v-model="form.loading_status" label="ใช้งานหน้า Loading" />
 
                             <div>
+                                <YesNoCheckbox
+                                    v-model="form.loading_show_logo"
+                                    label="แสดงโลโก้"
+                                    description="แสดงโลโก้ของไซต์ (จากหน้าตั้งค่าระบบ) เหนือตัวหมุน/รูป Loading"
+                                />
+                                <p v-if="form.loading_show_logo === 'Y' && !logoUrl" class="mt-1 text-xs text-amber-600">
+                                    ยังไม่ได้ตั้งค่าโลโก้ในหน้าตั้งค่าระบบ — จะแสดงชื่อเว็บแทน
+                                </p>
+                            </div>
+
+                            <div>
                                 <InputLabel value="ประเภท" />
                                 <SegmentedChoice v-model="form.loading_type" :options="LOADING_TYPES" />
                                 <InputError :message="form.errors.loading_type" />
@@ -115,10 +131,14 @@ const breadcrumbs = computed(() => [
                     <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:col-span-2">
                         <h2 class="text-sm font-semibold text-gray-800">ตัวอย่าง</h2>
                         <div
-                            class="mt-4 flex h-64 items-center justify-center rounded-xl border border-gray-200"
+                            class="mt-4 flex h-64 flex-col items-center justify-center gap-5 rounded-xl border border-gray-200"
                             :class="form.loading_status === 'Y' ? '' : 'opacity-50'"
                             :style="{ backgroundColor: form.loading_background_color }"
                         >
+                            <template v-if="form.loading_show_logo === 'Y'">
+                                <img v-if="logoUrl" :src="logoUrl" alt="" class="max-h-16 max-w-[60%] object-contain" />
+                                <span v-else class="text-lg font-semibold text-gray-700">{{ siteName }}</span>
+                            </template>
                             <template v-if="form.loading_type === 'image'">
                                 <img v-if="imageUrl" :src="imageUrl" alt="" class="max-h-32 max-w-[70%] object-contain" />
                                 <span v-else class="text-sm text-gray-400">ยังไม่ได้เลือกรูปภาพ</span>

@@ -23,6 +23,7 @@ class SysTemplate extends Model
         'custom_js_status',
         'custom_js',
         'loading_status',
+        'loading_show_logo',
         'loading_type',
         'loading_spinner',
         'loading_color',

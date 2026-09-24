@@ -532,6 +532,9 @@ class FrontMenuController extends Controller
             'show_breadcrumb' => $menu->show_breadcrumb,
             'sort_order' => $menu->sort_order,
             'status' => $menu->status,
+            // ชื่อเมนูของภาษาหลัก — ใช้แสดงในรายการ/การเรียงลำดับ/ตัวเลือกพาเรนต์ (ไม่พึ่งลำดับ key ของ `detail`
+            // ซึ่งเรียงตามรหัสภาษาจาก DB ทำให้ en มาก่อน th)
+            'name' => $menu->details->firstWhere('lang', Setting::defaultLanguage())?->name,
             'detail' => $menu->details->keyBy('lang')->map(fn (FrontMenuDetail $d) => [
                 'name' => $d->name,
                 'title' => $d->title,

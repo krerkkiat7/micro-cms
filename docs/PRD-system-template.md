@@ -33,6 +33,7 @@ Migration: `database/migrations/2026_09_30_000001_create_sys_template_tables.php
 | `custom_css_status` / `custom_css` | `char(1)` N / `mediumText` | แท็บ Custom CSS/JS |
 | `custom_js_status` / `custom_js` | `char(1)` N / `text` | |
 | `loading_status` | `char(1)` N | แท็บหน้า Loading |
+| `loading_show_logo` | `char(1)` N | แสดงโลโก้ของไซต์ (`site.logo_id`) เหนือตัวหมุน/รูป — ไม่มีโลโก้แสดงชื่อเว็บแทน (migration `2026_09_30_000002_*`) |
 | `loading_type` | `varchar(20)` `spinner` | `spinner` = ตัวหมุนของระบบ / `image` = รูปจากไฟล์ |
 | `loading_spinner` | `varchar(20)` `ring` | `ring` / `dots` / `bar` |
 | `loading_color` / `loading_background_color` | `varchar(20)` | hex (พื้นหลังเลือก `transparent` ได้) |

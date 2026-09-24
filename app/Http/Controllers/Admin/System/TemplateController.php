@@ -443,12 +443,16 @@ class TemplateController extends Controller
             'template' => [
                 ...$this->summary($model),
                 'loading_status' => $model->loading_status,
+                'loading_show_logo' => $model->loading_show_logo,
                 'loading_type' => $model->loading_type,
                 'loading_spinner' => $model->loading_spinner,
                 'loading_color' => $model->loading_color,
                 'loading_background_color' => $model->loading_background_color,
                 'loading_image' => $model->loadingImage ? $this->fileToArray($model->loadingImage) : null,
             ],
+            // โลโก้จากตั้งค่าระบบ สำหรับตัวอย่าง (null = ยังไม่ได้ตั้งค่าโลโก้)
+            'logoUrl' => AppAsset::logo() ? route('app.logo') : null,
+            'siteName' => Setting::siteName(),
             'can' => [
                 'manage' => $request->user()->hasPermission('system.template.manage'),
             ],

@@ -139,6 +139,7 @@ test('loading tab saves spinner settings', function () {
 
     $this->put(route('admin.system.template.loading.update', $this->template->id), [
         'loading_status' => 'Y',
+        'loading_show_logo' => 'Y',
         'loading_type' => 'spinner',
         'loading_spinner' => 'dots',
         'loading_color' => '#FF0000',
@@ -149,6 +150,7 @@ test('loading tab saves spinner settings', function () {
     $template = $this->template->fresh();
 
     expect($template->loading_status)->toBe('Y')
+        ->and($template->loading_show_logo)->toBe('Y')
         ->and($template->loading_spinner)->toBe('dots')
         ->and($template->loading_background_color)->toBe('transparent');
 });
@@ -158,6 +160,7 @@ test('loading image type requires an image when enabled', function () {
 
     $this->put(route('admin.system.template.loading.update', $this->template->id), [
         'loading_status' => 'Y',
+        'loading_show_logo' => 'Y',
         'loading_type' => 'image',
         'loading_spinner' => 'ring',
         'loading_color' => '#2563EB',

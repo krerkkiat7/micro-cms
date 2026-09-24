@@ -20,6 +20,7 @@ class UpdateTemplateLoadingRequest extends FormRequest
     {
         return [
             'loading_status' => ['required', Rule::in(['Y', 'N'])],
+            'loading_show_logo' => ['required', Rule::in(['Y', 'N'])],
             'loading_type' => ['required', Rule::in(self::TYPES)],
             'loading_spinner' => ['required', Rule::in(self::SPINNERS)],
             'loading_color' => ['required', 'string', 'max:20', 'regex:'.TemplateZone::TEXT_COLOR_REGEX],
