@@ -10,6 +10,7 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 
 ภาพรวมโมดูล/ส่วนจัดการระบบ + roadmap อยู่ที่ `docs/PRD-overview.md`
 รายละเอียดส่วนจัดการระบบ (users, สิทธิ์, เมนู, template, ประวัติ, settings, files) อยู่ที่ `docs/PRD-system.md`
+(โมดูลย่อยที่มีเอกสารแยก: `docs/PRD-system-frontmenu.md`, `docs/PRD-system-template.md`)
 
 ## Tech Stack
 
@@ -338,6 +339,17 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   `system-menu` **seed ไว้รอแล้วตั้งแต่ก่อนโมดูลนี้เริ่มทำ** (`DatabaseSeeder`/`MenuSeeder.php`) แค่สร้างโค้ดให้ตรงชื่อ route
   `admin.system.menu.*` ไม่ต้องแก้ seeder ส่วนสิทธิ์/เมนู — `FrontMenuSeeder` (เรียกหลัง `ArticleSeeder`/`PageSeeder` เพราะอ้าง
   id ตัวอย่างของทั้งคู่) ดูรายละเอียดเต็มที่ `docs/PRD-system-frontmenu.md`
+- **โมดูล "จัดการ Template" (system.template)** — เฉพาะฝั่งจัดการ (ยังไม่ render จริงที่หน้าบ้าน) `sys_template` (ข้อมูลทั่วไป +
+  Custom CSS/JS + หน้า Loading) + ตั้งค่าโซน 1:1 `sys_template_header`/`_body`/`_footer`/`_aside` (PK = `sys_template_id`,
+  migration `2026_09_30_000001_*`) คอลัมน์แบนทั้งหมด — **ทะเบียนฟิลด์ของทุกโซนอยู่ที่เดียว `App\Support\Template\TemplateZone::fields()`**
+  (ค่าเริ่มต้น + rules; เพิ่มคอลัมน์ต้องแก้ migration + `TemplateZone` + interface ใน `resources/js/utils/template.ts` ให้ตรงกัน),
+  แม่แบบตั้งต้นตอนเพิ่มอยู่ที่ `TemplatePreset` (classic/corporate/centered/minimal/dark). **ใช้งานได้ครั้งละ 1 รายการและต้องมี
+  รายการที่ใช้งานอยู่เสมอ** (เปิดรายการใหม่ = ปิดที่เหลือใน transaction; ปิด/ลบรายการที่ใช้งานอยู่ไม่ได้). โลโก้/ชื่อเว็บ/ติดต่อ/social/ภาษา/
+  ลิขสิทธิ์อ่านจาก `sys_setting` ไม่เก็บซ้ำ. แท็บ: ข้อมูลทั่วไป / โครงสร้าง (preview 4 โซน + `ZoneToolbar` เฟือง+ลูกตา, dialog
+  แก้บนสำเนา, บันทึกทีเดียว pattern เดียวกับหน้าโครงสร้างของ page; preview ใช้ข้อมูลจริงจาก `TemplateController::previewData()` +
+  `App\Support\FrontMenuTree`, กดไม่ได้) / Custom CSS/JS / หน้า Loading — component อยู่ `Components/Admin/Template/*`
+  (`VisualPicker.vue` = เปลือกการ์ด SVG, `YesNoCheckbox.vue` = แสดง/ซ่อน Y/N). permission/เมนู seed ไว้ก่อนแล้ว, log module
+  `system.template`, seed ตัวอย่าง `TemplateSeeder` — ดู `docs/PRD-system-template.md`
 
 ## ทดสอบ
 

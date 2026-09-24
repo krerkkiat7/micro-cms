@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\System\FileController;
 use App\Http\Controllers\Admin\System\FileServeController;
 use App\Http\Controllers\Admin\System\FrontMenuController;
 use App\Http\Controllers\Admin\System\SettingController;
+use App\Http\Controllers\Admin\System\TemplateController;
 use App\Http\Controllers\Admin\System\UserController;
 use App\Http\Controllers\Admin\System\UsergroupController;
 use App\Http\Controllers\AppAssetController;
@@ -210,6 +211,23 @@ Route::prefix('admin')->group(function () {
             Route::put('/{menu}', [FrontMenuController::class, 'update'])->name('admin.system.menu.update');
             Route::delete('/{menu}', [FrontMenuController::class, 'destroy'])->name('admin.system.menu.destroy');
             Route::put('/{menu}/status', [FrontMenuController::class, 'toggleStatus'])->name('admin.system.menu.status');
+        });
+
+        // จัดการ Template หน้าบ้าน — ตรวจสอบสิทธิ์ในแต่ละ method ของ TemplateController
+        Route::prefix('system/template')->controller(TemplateController::class)->group(function () {
+            Route::get('/', 'index')->name('admin.system.template.index');
+            Route::get('/add', 'add')->name('admin.system.template.add');
+            Route::post('/', 'store')->name('admin.system.template.store');
+            Route::get('/{template}/edit', 'edit')->name('admin.system.template.edit');
+            Route::put('/{template}', 'update')->name('admin.system.template.update');
+            Route::delete('/{template}', 'destroy')->name('admin.system.template.destroy');
+            Route::put('/{template}/activate', 'activate')->name('admin.system.template.activate');
+            Route::get('/{template}/layout', 'layout')->name('admin.system.template.layout');
+            Route::put('/{template}/layout', 'layoutUpdate')->name('admin.system.template.layout.update');
+            Route::get('/{template}/code', 'code')->name('admin.system.template.code');
+            Route::put('/{template}/code', 'codeUpdate')->name('admin.system.template.code.update');
+            Route::get('/{template}/loading', 'loading')->name('admin.system.template.loading');
+            Route::put('/{template}/loading', 'loadingUpdate')->name('admin.system.template.loading.update');
         });
 
         // ประวัติหลังบ้าน (log_back_*) — ตรวจสอบสิทธิ์ในแต่ละ controller
