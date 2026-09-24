@@ -22,6 +22,8 @@ const tabs = computed(() => [
 // ปุ่มล้างแคชของกลุ่มตั้งค่าระบบเอง (self::OWN_GROUPS ฝั่ง backend) — แยกกล่องจากกลุ่มของโมดูลอื่น
 const systemGroups = [
     { group: 'site', label: 'ล้างแคช - ข้อมูลระบบ' },
+    { group: 'contact', label: 'ล้างแคช - ข้อมูลติดต่อ' },
+    { group: 'social', label: 'ล้างแคช - Social Media' },
     { group: 'smtp', label: 'ล้างแคช - SMTP' },
     { group: 'turnstile', label: 'ล้างแคช - Turnstile' },
     { group: 'login_back', label: 'ล้างแคช - การเข้าสู่ระบบหลังบ้าน' },
