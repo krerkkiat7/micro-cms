@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class Setting
 {
-    public const GROUPS = ['site', 'contact', 'social', 'smtp', 'turnstile', 'login_back', 'article', 'banner'];
+    public const GROUPS = ['site', 'contact', 'social', 'google_analytics', 'smtp', 'turnstile', 'login_back', 'article', 'banner'];
 
     /**
      * ค่าตั้งค่าทั้งกลุ่ม เป็น array แบบ name => value — แคชไว้ 1 วัน
@@ -121,5 +121,14 @@ class Setting
             fn (string $tz) => ['value' => $tz, 'label' => $tz],
             \DateTimeZone::listIdentifiers(),
         );
+    }
+
+    /**
+     * Measurement ID ของ Google Analytics (sys_setting: google_analytics.tracking_id) — null ถ้ายังไม่ได้ตั้งค่า
+     * ใช้ฝัง gtag.js ในหน้าบ้าน (resources/views/app.blade.php) เฉพาะตอนมีค่าเท่านั้น
+     */
+    public static function googleAnalyticsTrackingId(): ?string
+    {
+        return self::get('google_analytics', 'tracking_id');
     }
 }

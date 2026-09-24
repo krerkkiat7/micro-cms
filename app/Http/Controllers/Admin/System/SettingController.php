@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\System;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\System\Setting\TestSmtpSettingRequest;
 use App\Http\Requests\Admin\System\Setting\UpdateContactSettingRequest;
+use App\Http\Requests\Admin\System\Setting\UpdateGoogleAnalyticsSettingRequest;
 use App\Http\Requests\Admin\System\Setting\UpdateLoginBackSettingRequest;
 use App\Http\Requests\Admin\System\Setting\UpdateSiteSettingRequest;
 use App\Http\Requests\Admin\System\Setting\UpdateSmtpSettingRequest;
@@ -35,6 +36,7 @@ class SettingController extends Controller
         'site' => 'ข้อมูลระบบ',
         'contact' => 'ข้อมูลติดต่อ',
         'social' => 'Social Media',
+        'google_analytics' => 'Google Analytics',
         'smtp' => 'SMTP',
         'turnstile' => 'Turnstile',
         'login_back' => 'การเข้าสู่ระบบหลังบ้าน',
@@ -45,7 +47,7 @@ class SettingController extends Controller
      * กลุ่มตั้งค่าที่หน้านี้ (ตั้งค่าระบบ) มีฟอร์มให้แก้ไขเอง — ไม่ใช่ทุกกลุ่มใน Setting::GROUPS เพราะกลุ่มอื่น
      * (เช่น 'article') เป็นของโมดูลนั้น ๆ ที่มีหน้าตั้งค่าแยกของตัวเอง แค่มาลงทะเบียนแคชร่วมทะเบียนเดียวกัน
      */
-    private const OWN_GROUPS = ['site', 'contact', 'social', 'smtp', 'turnstile', 'login_back'];
+    private const OWN_GROUPS = ['site', 'contact', 'social', 'google_analytics', 'smtp', 'turnstile', 'login_back'];
 
     /**
      * หน้าตั้งค่าระบบ — ฟอร์มแยกกลุ่มตาม self::OWN_GROUPS
@@ -113,6 +115,11 @@ class SettingController extends Controller
     public function updateSocial(UpdateSocialSettingRequest $request): RedirectResponse
     {
         return $this->saveGroup($request, 'social');
+    }
+
+    public function updateGoogleAnalytics(UpdateGoogleAnalyticsSettingRequest $request): RedirectResponse
+    {
+        return $this->saveGroup($request, 'google_analytics');
     }
 
     public function updateSmtp(UpdateSmtpSettingRequest $request): RedirectResponse
