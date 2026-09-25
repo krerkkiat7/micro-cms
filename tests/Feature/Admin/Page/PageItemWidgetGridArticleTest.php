@@ -74,6 +74,7 @@ test('the defaults follow the requested spec', function () {
     $d = PageWidgetRegistry::find('gridarticle')->defaults();
 
     expect($d['display_type'])->toBe('card')
+        ->and($d['content_align'])->toBe('top')
         ->and($d['title_lines'])->toBe(1)
         ->and($d['intro_text_lines'])->toBe(2)
         ->and($d['show_intro_text'])->toBe('N')
@@ -233,6 +234,7 @@ test('gridarticle rejects invalid values', function (string $field, mixed $value
     'order sort (articles have no per-item order)' => ['sort_by', 'order_asc'],
     'max items negative' => ['max_items', -1],
     'display type' => ['display_type', 'list'],
+    'content align' => ['content_align', 'middle'],
     'per row pc zero' => ['per_row_pc', 0],
     'per row notebook 7' => ['per_row_notebook', 7],
     'per row tablet text' => ['per_row_tablet', 'x'],
@@ -416,3 +418,12 @@ test('preview sorts by publish date both ways, honours max_items and caps at 10'
 
     $this->getJson(gridPreviewUrl(['article_category_info_id' => $cid, 'sort_by' => 'order_asc']))->assertStatus(422);
 });
+
+test('the row content alignment (top / center / bottom) is saved', function (string $align) {
+    actingAsUserWithPermissions(['page.item.manage']);
+
+    $this->put(route('admin.page.item.layout.update', $this->page->id), gridPayload($this->category->id, ['display_type' => 'row_image', 'content_align' => $align]))
+        ->assertSessionHasNoErrors();
+
+    expect(PageItemWidgetGridArticle::findOrFail(newestGrid()->id)->content_align)->toBe($align);
+})->with(['top', 'center', 'bottom']);

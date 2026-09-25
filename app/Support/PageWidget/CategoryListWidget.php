@@ -28,6 +28,9 @@ abstract class CategoryListWidget extends SettingsWidget
 
     public const TEXT_ALIGNS = ['left', 'center', 'right'];
 
+    /** ตำแหน่งแนวตั้งของส่วนข้อมูลในรูปแบบแถวของ Grid (บน / กึ่งกลาง / ล่าง) */
+    public const CONTENT_ALIGNS = ['top', 'center', 'bottom'];
+
     public const INTERVAL_MIN = 1;
 
     public const INTERVAL_MAX = 60;

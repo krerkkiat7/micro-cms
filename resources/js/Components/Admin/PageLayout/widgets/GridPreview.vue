@@ -4,7 +4,7 @@ import type { CSSProperties } from 'vue';
 import { CalendarDays, Eye, Image as ImageIcon, Laptop, Link2, Monitor, Smartphone, Tablet } from 'lucide-vue-next';
 import ReadAllButton from './ReadAllButton.vue';
 import { PREVIEW_LIMIT, useWidgetPreview } from '@/composables/useWidgetPreview';
-import { SLIDESET_DEVICES, currentDevice, gridConfig } from '@/utils/pageWidget';
+import { SLIDESET_DEVICES, currentDevice, gridConfig, gridContentAlignClasses } from '@/utils/pageWidget';
 import type { GridSetting, SlidesetDevice } from '@/utils/pageWidget';
 import { READ_ALL_DEFAULT_TEXT } from '@/utils/readAllButton';
 import type { LanguageOption } from '@/types';
@@ -70,6 +70,9 @@ const dateBoxStyle = computed<CSSProperties>(() => ({ backgroundColor: props.set
 // ---- ปุ่ม "อ่านทั้งหมด" ----
 const showReadAll = computed(() => props.setting.show_read_all === 'Y');
 const readAllOnTop = computed(() => props.setting.read_all_position?.startsWith('top') ?? false);
+// ตำแหน่งแนวตั้งของส่วนข้อมูลในรูปแบบแถว (บน/กึ่งกลาง/ล่าง — ตัวเดียวกับหน้าบ้าน)
+const contentAlign = computed(() => gridContentAlignClasses(props.setting.content_align));
+
 const READ_ALL_ALIGN = { left: 'justify-start', center: 'justify-center', right: 'justify-end' } as const;
 const readAllAlign = computed(() => READ_ALL_ALIGN[(props.setting.read_all_position?.split('_')[1] ?? 'center') as keyof typeof READ_ALL_ALIGN]);
 const readAllText = computed(() => {
@@ -232,7 +235,7 @@ const linkIcon = 'ml-1 inline size-3 shrink-0 align-baseline opacity-60';
                             </span>
                         </div>
 
-                        <div class="flex min-w-0 flex-1 flex-col justify-center gap-1 py-1">
+                        <div class="flex min-w-0 flex-1 flex-col gap-1 py-1" :class="contentAlign.column">
                             <div v-if="item.title" :class="LINE_CLAMP[setting.title_lines]" class="leading-snug" :style="textCss('title')">
                                 {{ item.title }}<Link2 v-if="setting.title_clickable === 'Y' && item.has_link !== false" :class="linkIcon" />
                             </div>
@@ -244,7 +247,11 @@ const linkIcon = 'ml-1 inline size-3 shrink-0 align-baseline opacity-60';
                             >
                                 {{ item.intro_text }}<Link2 v-if="setting.intro_text_clickable === 'Y' && item.has_link !== false" :class="linkIcon" />
                             </div>
-                            <div v-if="(setting.show_date === 'Y' && item.date) || setting.show_views === 'Y'" class="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                            <div
+                                v-if="(setting.show_date === 'Y' && item.date) || setting.show_views === 'Y'"
+                                class="flex flex-wrap items-center gap-x-3 gap-y-0.5"
+                                :class="contentAlign.meta"
+                            >
                                 <span v-if="setting.show_date === 'Y' && item.date" class="inline-flex items-center gap-1" :style="textCss('date')">
                                     <CalendarDays class="size-3.5 shrink-0" /> {{ formatDate(item.date ?? null) }}
                                 </span>
@@ -262,7 +269,7 @@ const linkIcon = 'ml-1 inline size-3 shrink-0 align-baseline opacity-60';
                             <span class="mt-1 leading-none" :style="textCss('date_month')">{{ dateBox(item.date ?? null).monthYear }}</span>
                         </div>
 
-                        <div class="flex min-w-0 flex-1 flex-col justify-center gap-1 py-1">
+                        <div class="flex min-w-0 flex-1 flex-col gap-1 py-1" :class="contentAlign.column">
                             <div v-if="item.title" :class="LINE_CLAMP[setting.title_lines]" class="leading-snug" :style="textCss('title')">
                                 {{ item.title }}<Link2 v-if="setting.title_clickable === 'Y' && item.has_link !== false" :class="linkIcon" />
                             </div>
@@ -274,7 +281,7 @@ const linkIcon = 'ml-1 inline size-3 shrink-0 align-baseline opacity-60';
                             >
                                 {{ item.intro_text }}<Link2 v-if="setting.intro_text_clickable === 'Y' && item.has_link !== false" :class="linkIcon" />
                             </div>
-                            <div v-if="setting.show_views === 'Y'" class="flex items-center gap-1" :style="textCss('views')">
+                            <div v-if="setting.show_views === 'Y'" class="flex items-center gap-1" :class="contentAlign.meta" :style="textCss('views')">
                                 <Eye class="size-3.5 shrink-0" /> {{ (item.views ?? 0).toLocaleString('th-TH') }}
                             </div>
                         </div>

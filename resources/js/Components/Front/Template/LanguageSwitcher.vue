@@ -51,7 +51,7 @@ function closeAndFocus(): void {
                     :href="lang.url"
                     :hreflang="lang.code"
                     :lang="lang.code"
-                    class="inline-flex items-center gap-1 rounded px-1.5 py-1 text-sm uppercase hover:underline"
+                    class="inline-flex items-center gap-1 rounded px-1.5 py-1 text-sm uppercase"
                     :class="lang.current ? 'font-bold underline underline-offset-4' : 'opacity-80'"
                     :aria-current="lang.current ? 'true' : undefined"
                     :aria-label="lang.label"

@@ -24,6 +24,7 @@ class PageItemWidgetGridArticle extends Model
         'sort_by',
         'max_items',
         'display_type',
+        'content_align',
         'per_row_pc',
         'per_row_notebook',
         'per_row_tablet',

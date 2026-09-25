@@ -383,7 +383,10 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   เป็น `SegmentedChoice` (ผู้ใช้เรียกว่า segmented control) และซ่อนส่วนที่เกี่ยวข้องเมื่อไม่แสดงหัวเรื่อง (ค่าไม่ลบ), หน้าบ้านส่งระดับหัวเรื่องต่อลงชั้นถัดไปเมื่อชั้นบนไม่มีหัวเรื่อง.
   รอบสาม: Slideshow ตำแหน่งข้อความ 9 ตำแหน่ง (`text_align` ค่าแบบ background-position, default `center`) + ตัวหนา `title_bold`/`intro_text_bold`;
   **นับคลิก banner** (Slideshow/Slideset/Grid) → `banner_item_click` + `banner_item_info.click_amount` ผ่าน `ViewCounter` ประเภท `banner`
-  + `POST front.banner.click` (sendBeacon, ยกเว้น CSRF) — ดู `docs/PRD-front.md` §8
+  + `POST front.banner.click` (sendBeacon, ยกเว้น CSRF) — ดู `docs/PRD-front.md` §8.
+  รอบสี่: Grid (article/banner) รูปแบบแถวมี `content_align` (บน/กึ่งกลาง/ล่าง, default บน), ความกว้างรูปกรอกด้วยแถบเลื่อน (`RangeNumberField.vue`),
+  ตัวเลือกสีในกล่องของการ์ด/กล่องวันที่เต็มความกว้าง (`CardBoxFields.vue` ใช้ร่วม Slideset ด้วย), `SegmentedChoice` รองรับ `icon`;
+  **ลิงก์หน้าบ้านไม่มีเส้นใต้ตอน hover** (เหลือแค่ cursor — เส้นใต้ที่เหลือเป็นตัวบอกสถานะ active/ภาษาปัจจุบัน/ลิงก์ในเนื้อหา rich text)
 - **`log_front_access`** (ในไฟล์ log กลาง — เพิ่มหลังจากไฟล์นั้น migrate แล้ว เครื่อง dev ต้องสร้างตารางเอง/`migrate:fresh`) —
   `LogFrontAccess::record()` ทุก controller หน้าบ้าน, keep-alive `useAccessHeartbeat('front.access.ping')` scope token + session_id,
   หน้ารายการหลังบ้าน `admin.system.frontlog.access.index`

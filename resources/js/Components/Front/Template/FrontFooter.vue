@@ -103,7 +103,7 @@ function contentClass(width: Width): string {
                             >
                                 <component :is="line.icon" class="mt-0.5 size-4 shrink-0 opacity-70" aria-hidden="true" />
                                 <span class="sr-only">{{ t(line.key) }}:</span>
-                                <a v-if="line.href" :href="line.href" class="hover:underline">{{ line.value }}</a>
+                                <a v-if="line.href" :href="line.href">{{ line.value }}</a>
                                 <span v-else class="whitespace-pre-line">{{ line.value }}</span>
                             </p>
                         </address>
@@ -114,11 +114,11 @@ function contentClass(width: Width): string {
                         <h2 :style="headingStyle">{{ t('menu') }}</h2>
                         <ul class="space-y-1.5" :style="textStyle">
                             <li v-for="menu in footerMenus" :key="menu.id">
-                                <FrontLink v-if="menu.url" :href="menu.url" :target="menu.target" class="hover:underline">{{ menu.name }}</FrontLink>
+                                <FrontLink v-if="menu.url" :href="menu.url" :target="menu.target">{{ menu.name }}</FrontLink>
                                 <span v-else>{{ menu.name }}</span>
                                 <ul v-if="menu.children.length" class="mt-1 mb-1.5 space-y-1 border-l border-current/20 pl-3 text-[0.9em] opacity-90">
                                     <li v-for="child in menu.children" :key="child.id">
-                                        <FrontLink :href="child.url!" :target="child.target" class="hover:underline">{{ child.name }}</FrontLink>
+                                        <FrontLink :href="child.url!" :target="child.target">{{ child.name }}</FrontLink>
                                     </li>
                                 </ul>
                             </li>

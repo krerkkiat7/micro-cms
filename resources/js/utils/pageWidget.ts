@@ -324,6 +324,30 @@ export type CardListSetting = SlidesetSetting | GridSetting;
 /** รูปแบบการแสดงผลของ Grid — ตรงกับ GridArticleWidget::DISPLAY_TYPES ฝั่ง backend */
 export type GridDisplayType = 'card' | 'row_image' | 'row_date';
 
+/** ตำแหน่งแนวตั้งของส่วนข้อมูลในรูปแบบแถวของ Grid — ตรงกับ CategoryListWidget::CONTENT_ALIGNS */
+export type GridContentAlign = 'top' | 'center' | 'bottom';
+
+export const GRID_CONTENT_ALIGN_OPTIONS: { value: GridContentAlign; label: string }[] = [
+    { value: 'top', label: 'บน' },
+    { value: 'center', label: 'กึ่งกลาง' },
+    { value: 'bottom', label: 'ล่าง' },
+];
+
+/**
+ * class ของคอลัมน์ข้อมูลในรูปแบบแถวของ Grid ตาม content_align (ใช้ทั้งตัวอย่างหลังบ้านและหน้าบ้าน):
+ * `column` = จัดแนวตั้งของทั้งคอลัมน์ (บน/กึ่งกลาง/ล่าง), `meta` = แถววันที่/จำนวนเข้าชม — แบบ "บน" ดันลงล่างสุดเสมอ
+ */
+export function gridContentAlignClasses(align: string | undefined): { column: string; meta: string } {
+    switch (align) {
+        case 'center':
+            return { column: 'justify-center', meta: '' };
+        case 'bottom':
+            return { column: 'justify-end', meta: '' };
+        default:
+            return { column: 'justify-start', meta: 'mt-auto pt-1' };
+    }
+}
+
 /**
  * ค่าตั้งค่าของ Grid (จาก article / จาก banner) — ชื่อฟิลด์ตรงกับคอลัมน์ `page_item_widget_grid<แหล่ง>` (ดู GridArticleWidget/
  * GridBannerWidget ฝั่ง backend) ส่วนของการ์ด/ข้อความ ใช้ชุดฟิลด์เดียวกับ Slideset (ไม่มี carousel เพราะ Grid ไม่เลื่อน)
@@ -336,6 +360,8 @@ export interface GridSetting {
     /** จำนวนที่แสดงสูงสุด (0 = แสดงทั้งหมด) */
     max_items: number;
     display_type: GridDisplayType;
+    /** ตำแหน่งแนวตั้งของส่วนข้อมูล (เฉพาะรูปแบบแถว) */
+    content_align: GridContentAlign;
     /** จำนวนคอลัมน์ต่อแถวตามขนาดหน้าจอ (1 - 6) */
     per_row_pc: number;
     per_row_notebook: number;
@@ -633,6 +659,7 @@ export function defaultGridSetting(type: string, languages: string[] = []): Grid
         sort_by: 'publish_desc',
         max_items: 0,
         display_type: 'card',
+        content_align: 'top',
         per_row_pc: 4,
         per_row_notebook: 3,
         per_row_tablet: 2,

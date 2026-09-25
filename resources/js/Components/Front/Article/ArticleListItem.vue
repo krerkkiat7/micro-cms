@@ -44,7 +44,7 @@ const { front, t } = useFront();
 
         <div class="flex flex-1 flex-col gap-2 p-4">
             <h2 class="text-lg font-semibold leading-snug text-gray-900">
-                <Link :href="article.url" class="hover:text-brand-700 hover:underline">{{ article.title }}</Link>
+                <Link :href="article.url" class="hover:text-brand-700">{{ article.title }}</Link>
             </h2>
             <p v-if="article.intro_text" class="line-clamp-3 whitespace-pre-line text-gray-700">{{ article.intro_text }}</p>
             <div class="mt-auto flex flex-wrap items-center gap-x-4 gap-y-1 pt-2 text-sm text-gray-600">

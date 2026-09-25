@@ -201,6 +201,7 @@ test('gridbanner rejects invalid values', function (string $field, mixed $value)
         ->assertSessionHasErrors("rows.0.columns.0.widgets.0.setting.{$field}");
 })->with([
     'display type row_date not allowed' => ['display_type', 'row_date'],
+    'content align' => ['content_align', 'left'],
     'max items negative' => ['max_items', -1],
     'per row pc zero' => ['per_row_pc', 0],
     'per row notebook 7' => ['per_row_notebook', 7],
@@ -290,3 +291,12 @@ test('preview sorts by publish date and by order in both directions, honours max
 
     expect($titles('publish_desc'))->toHaveCount(10);
 });
+
+test('the row content alignment (top / center / bottom) is saved', function (string $align) {
+    actingAsUserWithPermissions(['page.item.manage']);
+
+    $this->put(route('admin.page.item.layout.update', $this->page->id), gridBannerPayload($this->category->id, ['display_type' => 'row_image', 'content_align' => $align]))
+        ->assertSessionHasNoErrors();
+
+    expect(PageItemWidgetGridBanner::findOrFail(newestGridBanner()->id)->content_align)->toBe($align);
+})->with(['top', 'center', 'bottom']);

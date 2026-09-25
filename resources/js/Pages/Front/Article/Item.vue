@@ -36,7 +36,7 @@ const { front, t } = useFront();
         <article class="mx-auto max-w-4xl space-y-8">
             <header class="space-y-4">
                 <p v-if="category">
-                    <FrontLink :href="category.url" class="text-sm font-medium text-brand-700 hover:underline">{{ category.title }}</FrontLink>
+                    <FrontLink :href="category.url" class="text-sm font-medium text-brand-700">{{ category.title }}</FrontLink>
                 </p>
                 <h1 class="text-3xl font-bold leading-tight text-gray-900 sm:text-4xl">{{ article.title }}</h1>
                 <div class="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-gray-600">
