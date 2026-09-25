@@ -26,6 +26,7 @@ use App\Http\Controllers\AppAssetController;
 use App\Http\Controllers\Front\AccessLogController as FrontAccessLogController;
 use App\Http\Controllers\Front\Article\ArticleCategoryController as FrontArticleCategoryController;
 use App\Http\Controllers\Front\Article\ArticleItemController as FrontArticleItemController;
+use App\Http\Controllers\Front\Banner\BannerItemController as FrontBannerItemController;
 use App\Http\Controllers\Front\FileController as FrontFileController;
 use App\Http\Controllers\Front\Intropage\IntropageController;
 use App\Http\Controllers\Front\Page\PageItemController as FrontPageItemController;
@@ -63,6 +64,11 @@ Route::prefix('file')->controller(FrontFileController::class)->group(function ()
 // keep-alive ของ log_front_access (ยกเว้น CSRF ใน bootstrap/app.php — sendBeacon ตั้ง header ไม่ได้)
 Route::post('/front/access/ping', [FrontAccessLogController::class, 'ping'])
     ->name('front.access.ping')
+    ->middleware('throttle:60,1');
+
+// นับการคลิกลิงก์ banner (sendBeacon — ยกเว้น CSRF ใน bootstrap/app.php เหมือน ping ด้านบน)
+Route::post('/front/banner/click', [FrontBannerItemController::class, 'click'])
+    ->name('front.banner.click')
     ->middleware('throttle:60,1');
 
 // Group ทุก Route ของหน้าบ้านไว้ภายใต้ Prefix ภาษา — {lang} รับเฉพาะภาษาที่เปิดใช้งานจริงตามตั้งค่าระบบ

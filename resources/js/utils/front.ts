@@ -271,6 +271,19 @@ export function positionClasses(position: string): string {
     return `${justify} ${align}`;
 }
 
+/**
+ * เงาใต้ข้อความที่ซ้อนบนภาพของ Slideshow ตามตำแหน่งแนวตั้งของข้อความ (ให้อ่านออกทุกภาพ): บน = ไล่เงาจากขอบบน,
+ * ล่าง = ไล่เงาจากขอบล่าง, กลาง = เงาจางทั้งภาพ — ใช้คู่กับ positionClasses() (ทั้งหน้าบ้านและตัวอย่างในหลังบ้าน)
+ */
+export function slideshowOverlayClass(position: string): string {
+    const parts = (position || 'center').split(' ');
+
+    if (parts.includes('top')) return 'bg-gradient-to-b from-black/70 via-black/25 to-transparent';
+    if (parts.includes('bottom')) return 'bg-gradient-to-t from-black/75 via-black/25 to-transparent';
+
+    return 'bg-black/35';
+}
+
 /** อัตราส่วนภาพ "16:9" → CSS aspect-ratio */
 export function aspectRatio(value: string): string | undefined {
     return /^\d+:\d+$/.test(value) ? value.replace(':', ' / ') : undefined;

@@ -5,6 +5,7 @@ import FrontLink from '@/Components/Front/FrontLink.vue';
 import CarouselControls from '@/Components/Front/PageLayout/CarouselControls.vue';
 import { useCarousel } from '@/composables/useCarousel';
 import { useFront } from '@/composables/useFront';
+import { positionClasses, slideshowOverlayClass } from '@/utils/front';
 import { itemTarget } from '@/utils/frontPage';
 import type { FrontWidgetItem } from '@/utils/frontPage';
 
@@ -56,20 +57,21 @@ function slideStyle(i: number): CSSProperties {
     }
 }
 
-const textBoxClass = computed(() => [
-    props.setting.text_width === 'container' ? 'mx-auto max-w-7xl' : '',
-    ({ left: 'text-left', center: 'text-center', right: 'text-right' } as Record<string, string>)[props.setting.text_align] ?? 'text-left',
-]);
+// ข้อความวางตาม 9 ตำแหน่ง (text_align เป็นค่าแบบ background-position) ภายในกรอบเต็มภาพหรือ container ตาม text_width
+const textBoxClass = computed(() => [positionClasses(String(props.setting.text_align ?? 'center')), props.setting.text_width === 'container' ? 'mx-auto w-full max-w-7xl' : 'w-full']);
+const overlayClass = computed(() => slideshowOverlayClass(String(props.setting.text_align ?? 'center')));
 
 const titleCss = computed<CSSProperties>(() => ({
     fontSize: `${props.setting.title_font_size}px`,
     fontFamily: `'${props.setting.title_font_family}', sans-serif`,
     color: props.setting.title_color,
+    fontWeight: props.setting.title_bold === 'N' ? 400 : 700,
 }));
 const introCss = computed<CSSProperties>(() => ({
     fontSize: `${props.setting.intro_text_font_size}px`,
     fontFamily: `'${props.setting.intro_text_font_family}', sans-serif`,
     color: props.setting.intro_text_color,
+    fontWeight: props.setting.intro_text_bold === 'Y' ? 700 : 400,
 }));
 
 const showText = (item: FrontWidgetItem) => (props.setting.show_title === 'Y' && item.title !== '') || (props.setting.show_intro_text === 'Y' && item.intro_text !== '');
@@ -89,6 +91,7 @@ const linkOf = (item: FrontWidgetItem) => (props.setting.is_clickable === 'Y' &&
             <div
                 v-for="(item, i) in items"
                 :key="item.id"
+                :data-item-id="item.id"
                 class="absolute inset-0"
                 :style="slideStyle(i)"
                 role="group"
@@ -109,12 +112,14 @@ const linkOf = (item: FrontWidgetItem) => (props.setting.is_clickable === 'Y' &&
 
                     <div
                         v-if="showText(item)"
-                        class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-4 pt-12 text-white"
-                        :class="setting.show_dots === 'Y' || carousel.canAutoplay.value ? 'pb-10' : 'pb-5'"
+                        class="absolute inset-0 flex px-4 pt-5 text-white sm:px-8"
+                        :class="[overlayClass, setting.show_dots === 'Y' || carousel.canAutoplay.value ? 'pb-10' : 'pb-5']"
                     >
-                        <div :class="textBoxClass">
-                            <p v-if="setting.show_title === 'Y' && item.title" class="font-semibold leading-snug" :style="titleCss">{{ item.title }}</p>
-                            <p v-if="setting.show_intro_text === 'Y' && item.intro_text" class="mt-0.5 whitespace-pre-line leading-snug" :style="introCss">{{ item.intro_text }}</p>
+                        <div class="flex" :class="textBoxClass">
+                            <div class="max-w-full">
+                                <p v-if="setting.show_title === 'Y' && item.title" class="leading-snug" :style="titleCss">{{ item.title }}</p>
+                                <p v-if="setting.show_intro_text === 'Y' && item.intro_text" class="mt-0.5 whitespace-pre-line leading-snug" :style="introCss">{{ item.intro_text }}</p>
+                            </div>
                         </div>
                     </div>
                 </component>

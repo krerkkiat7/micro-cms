@@ -50,9 +50,11 @@ function slideshowSetting(int $categoryId, array $overrides = []): array
         'title_font_size' => 20,
         'title_font_family' => 'Sarabun',
         'title_color' => '#FFFFFF',
+        'title_bold' => 'Y',
         'intro_text_font_size' => 16,
         'intro_text_font_family' => 'Sarabun',
         'intro_text_color' => '#FFFFFF',
+        'intro_text_bold' => 'N',
     ], $overrides);
 }
 
@@ -97,7 +99,7 @@ test('saving a slideshowbanner widget creates its settings row with the same id 
     $me = actingAsUserWithPermissions(['page.item.manage']);
 
     $this->put(route('admin.page.item.layout.update', $this->page->id), slideshowPayload([
-        slideshowWidget($this->category->id, ['sort_by' => 'order_asc', 'autoplay_interval' => 8, 'transition_effect' => 'fade', 'aspect_ratio' => '21:9', 'show_intro_text' => 'Y', 'text_align' => 'right', 'text_width' => 'full', 'link_target' => '_blank']),
+        slideshowWidget($this->category->id, ['sort_by' => 'order_asc', 'autoplay_interval' => 8, 'transition_effect' => 'fade', 'aspect_ratio' => '21:9', 'show_intro_text' => 'Y', 'text_align' => 'top right', 'text_width' => 'full', 'link_target' => '_blank']),
     ]))->assertSessionHasNoErrors();
 
     $widget = newestWidget('slideshowbanner');
@@ -109,7 +111,7 @@ test('saving a slideshowbanner widget creates its settings row with the same id 
         ->and($setting->transition_effect)->toBe('fade')
         ->and($setting->aspect_ratio)->toBe('21:9')
         ->and($setting->show_intro_text)->toBe('Y')
-        ->and($setting->text_align)->toBe('right')
+        ->and($setting->text_align)->toBe('top right')
         ->and($setting->text_width)->toBe('full')
         ->and($setting->link_target)->toBe('_blank')
         ->and($setting->created_by)->toBe($me->id);
@@ -191,6 +193,9 @@ test('slideshowbanner rejects out-of-range or unknown setting values', function 
     'ratio' => ['aspect_ratio', '3:1'],
     'target' => ['link_target', '_top'],
     'align' => ['text_align', 'justify'],
+    'align middle' => ['text_align', 'middle left'],
+    'title bold' => ['title_bold', 'yes'],
+    'intro bold' => ['intro_text_bold', '1'],
     'width' => ['text_width', 'narrow'],
     'flag' => ['show_arrows', 'yes'],
     'interval low' => ['autoplay_interval', 0],
@@ -381,4 +386,22 @@ test('preview returns at most 10 banners', function () {
     $this->getJson(previewUrl(['banner_category_info_id' => $this->category->id, 'sort_by' => 'publish_desc']))
         ->assertOk()
         ->assertJsonCount(10, 'items');
+});
+
+test('slideshow text position accepts all 9 positions (default center) and saves bold flags', function () {
+    actingAsUserWithPermissions(['page.item.manage', 'page.item.view']);
+    $url = route('admin.page.item.layout.update', $this->page->id);
+
+    foreach (['top left', 'top', 'top right', 'left', 'center', 'right', 'bottom left', 'bottom', 'bottom right'] as $position) {
+        $this->put($url, slideshowPayload([slideshowWidget($this->category->id, ['text_align' => $position])]))->assertSessionHasNoErrors();
+    }
+
+    $this->put($url, slideshowPayload([slideshowWidget($this->category->id, ['title_bold' => 'N', 'intro_text_bold' => 'Y'])]))->assertSessionHasNoErrors();
+
+    $widget = PageItemWidget::whereIn('page_item_column_id', PageItemColumn::whereIn('page_item_row_id', PageItemRow::where('page_item_info_id', $this->page->id)->pluck('id'))->pluck('id'))->firstOrFail();
+    $setting = PageItemWidgetSlideshowBanner::findOrFail($widget->id);
+
+    expect($setting->text_align)->toBe('center')
+        ->and($setting->title_bold)->toBe('N')
+        ->and($setting->intro_text_bold)->toBe('Y');
 });

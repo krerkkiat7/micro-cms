@@ -43,7 +43,7 @@ function dateBox(value: string | null | undefined): { day: string; monthYear: st
         <ReadAllLink v-if="readAllOnTop" :setting="setting" class="mb-3" />
 
         <ul class="front-grid grid gap-4" :style="perRowVars(s)">
-            <li v-for="item in items" :key="item.id" class="min-w-0">
+            <li v-for="item in items" :key="item.id" class="min-w-0" :data-item-id="item.id">
                 <WidgetCard v-if="s.display_type === 'card'" :setting="s" :item="item" :has-meta="hasMeta" :heading-tag="headingTag" />
 
                 <article v-else class="flex h-full items-stretch gap-3 overflow-hidden p-2" :class="s.rounded_corners === 'Y' ? 'rounded-lg' : ''" :style="itemBoxCss(s)">

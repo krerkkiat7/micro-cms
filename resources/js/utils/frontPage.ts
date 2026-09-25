@@ -77,6 +77,26 @@ export function headingTag(level: number): string {
     return `h${Math.min(6, Math.max(2, level))}`;
 }
 
+/**
+ * นับการคลิกลิงก์ของ banner — ยิง sendBeacon ไป front.banner.click (ไม่รอผล ไม่ขวางการเปิดลิงก์; fallback fetch keepalive)
+ * ฝั่งเซิร์ฟเวอร์ข้ามบอทและไม่นับซ้ำใน session เดียวกันเอง (App\Support\Front\ViewCounter)
+ */
+export function trackBannerClick(id: number, lang: string): void {
+    const data = new FormData();
+    data.append('id', String(id));
+    data.append('lang', lang);
+
+    try {
+        const url = route('front.banner.click');
+
+        if (navigator.sendBeacon?.(url, data)) return;
+
+        void fetch(url, { method: 'POST', body: data, keepalive: true, headers: { 'X-Requested-With': 'XMLHttpRequest' } }).catch(() => {});
+    } catch {
+        /* การนับคลิกพลาดได้ ไม่กระทบผู้ใช้ */
+    }
+}
+
 /** ระยะห่างระหว่างคอลัมน์เริ่มต้น (px) — ตรงกับ App\Support\PageSpacing::DEFAULT_GAP (ใช้เมื่อข้อมูลใน cache เก่ายังไม่มีค่า) */
 const DEFAULT_GAP = 24;
 

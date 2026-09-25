@@ -119,6 +119,13 @@
 `user_id`, `lang`, `session_id`, `remote_ip`, `geo_ip`, `action_date`, `status`, audit, timestamps (`created_at` = เวลาเข้าชมจริง), softDeletes,
 index (`*_item_info_id`, `action_date`); `page_item_info.view_amount` (ใหม่)
 
+**การคลิก banner** (Slideshow / Slideset / Grid จาก banner) ใช้กลไกเดียวกัน — `ViewCounter` ประเภท `banner` → ตาราง `banner_item_click`
+(migration `2026_10_03_000004_*`, โครงเดียวกับ `article_item_view` แทนตารางเดิมที่ไม่มี PK) + `banner_item_info.click_amount`
+(`ViewCounter::TYPES[*]['amount']`). หน้าจอ: `PageWidget.vue` ดักคลิกลิงก์ (event delegation, รวมคลิกกลาง) ในกล่องรายการที่มี `data-item-id`
+แล้ว `trackBannerClick()` (`utils/frontPage.ts`) ยิง sendBeacon → `POST front.banner.click` (`Front\Banner\BannerItemController@click`,
+ยกเว้น CSRF + `throttle:60,1`, นับเฉพาะ banner `status = Y` ที่มี URL, ตอบ 204) — ลิงก์ในหน้ายังเป็น URL จริง ไม่ redirect ผ่านเซิร์ฟเวอร์;
+ข้ามบอท + ไม่นับซ้ำใน session เดียวกันภายใน `dedupe_minutes` เหมือนยอดเข้าชม
+
 ## 9. ประวัติการเข้าชมหน้าบ้าน (`log_front_access`)
 
 - โครงเดียวกับ `log_back_access` ทุกคอลัมน์ (ในไฟล์กลาง `2026_09_10_000001_create_log_tables.php`) — model `App\Models\LogFrontAccess`
@@ -161,4 +168,4 @@ index (`*_item_info_id`, `action_date`); `page_item_info.view_amount` (ใหม
 | รอบ | ขอบเขต | สถานะ |
 |-----|--------|-------|
 | 1 — front-init | Intropage, layout จาก template, หน้าเพจ, บทความ, SEO, log_front_access, ยอดเข้าชม, cache | ✅ |
-| ถัดไป | หน้าค้นหา (เปิดปุ่มค้นหาใน header), หน้าแท็ก, sitemap.xml / robots.txt, CSP (nonce), GeoIP, `log_front_action`/`log_front_login` (สมาชิก), ไฟล์เฉพาะสมาชิก (§7), รายงานยอดเข้าชมจาก `*_item_view`, นับคลิก banner (`click_amount`) | 🔴 |
+| ถัดไป | หน้าค้นหา (เปิดปุ่มค้นหาใน header), หน้าแท็ก, sitemap.xml / robots.txt, CSP (nonce), GeoIP, `log_front_action`/`log_front_login` (สมาชิก), ไฟล์เฉพาะสมาชิก (§7), รายงานยอดเข้าชมจาก `*_item_view` / ยอดคลิกจาก `banner_item_click` | 🔴 |

@@ -14,6 +14,13 @@ abstract class SlideshowWidget extends CategoryListWidget
 
     public const TEXT_WIDTHS = ['full', 'container'];
 
+    /** ตำแหน่งข้อความบนภาพ 9 ตำแหน่ง (ค่าแบบ CSS background-position — ชุดเดียวกับ BACKGROUND_POSITION_STYLES ฝั่ง Vue ไม่รวม "ไม่ระบุ") */
+    public const TEXT_POSITIONS = [
+        'top left', 'top', 'top right',
+        'left', 'center', 'right',
+        'bottom left', 'bottom', 'bottom right',
+    ];
+
     protected function fields(): array
     {
         return $this->listFields() + $this->carouselFields() + [
@@ -23,15 +30,17 @@ abstract class SlideshowWidget extends CategoryListWidget
             'link_target' => self::choice('เป้าหมายการเปิดลิงก์', '_self', self::LINK_TARGETS),
             'show_title' => self::flag('การแสดงหัวเรื่อง', 'Y'),
             'show_intro_text' => self::flag('การแสดงข้อความเกริ่นนำ', 'N'),
-            'text_align' => self::choice('ตำแหน่งที่แสดงข้อความ', 'center', self::TEXT_ALIGNS),
+            'text_align' => self::choice('ตำแหน่งที่แสดงข้อความ', 'center', self::TEXT_POSITIONS),
             'text_width' => self::choice('ขอบเขตของข้อความ', 'container', self::TEXT_WIDTHS),
-            // ข้อความบนภาพ: ขนาด/ฟอนต์/สี (default ขาว เพราะซ้อนบนภาพ)
+            // ข้อความบนภาพ: ขนาด/ฟอนต์/สี (default ขาว เพราะซ้อนบนภาพ)/ตัวหนา
             'title_font_size' => self::fontSize('ขนาดตัวอักษรของหัวเรื่อง', 20),
             'title_font_family' => self::fontFamily('ฟอนต์ของหัวเรื่อง'),
             'title_color' => self::color('สีตัวอักษรของหัวเรื่อง', '#FFFFFF'),
+            'title_bold' => self::flag('ตัวหนาของหัวเรื่อง', 'Y'),
             'intro_text_font_size' => self::fontSize('ขนาดตัวอักษรของข้อความเกริ่นนำ', 16),
             'intro_text_font_family' => self::fontFamily('ฟอนต์ของข้อความเกริ่นนำ'),
             'intro_text_color' => self::color('สีตัวอักษรของข้อความเกริ่นนำ', '#FFFFFF'),
+            'intro_text_bold' => self::flag('ตัวหนาของข้อความเกริ่นนำ', 'N'),
         ];
     }
 

@@ -123,15 +123,18 @@ export interface SlideshowCommonSetting {
     link_target: '_self' | '_blank';
     show_title: YesNo;
     show_intro_text: YesNo;
-    text_align: 'left' | 'center' | 'right';
+    /** ตำแหน่งข้อความบนภาพ 9 ตำแหน่ง (ค่าแบบ CSS background-position เช่น `center`, `bottom left`) — ดู SlideshowWidget::TEXT_POSITIONS */
+    text_align: string;
     text_width: 'full' | 'container';
     /** การจัดรูปแบบตัวอักษรของหัวเรื่อง/ข้อความเกริ่นนำที่ซ้อนบนภาพ (ชื่อฟิลด์ตามคอลัมน์ `<part>_font_size` ฯลฯ ของ backend) */
     title_font_size: number;
     title_font_family: string;
     title_color: string;
+    title_bold: YesNo;
     intro_text_font_size: number;
     intro_text_font_family: string;
     intro_text_color: string;
+    intro_text_bold: YesNo;
 }
 
 export interface SlideshowBannerSetting extends SlideshowCommonSetting {
@@ -502,12 +505,6 @@ export const SLIDESHOW_ASPECT_OPTIONS = [
     { value: '1:1', label: '1:1 (จัตุรัส)' },
 ];
 
-export const SLIDESHOW_TEXT_ALIGN_OPTIONS = [
-    { value: 'left', label: 'ชิดซ้าย' },
-    { value: 'center', label: 'กึ่งกลาง' },
-    { value: 'right', label: 'ชิดขวา' },
-];
-
 export const SLIDESHOW_TEXT_WIDTH_OPTIONS = [
     { value: 'full', label: 'เต็มความกว้าง' },
     { value: 'container', label: 'จำกัดตาม container' },
@@ -533,13 +530,15 @@ export function defaultSlideshowSetting(type: string): SlideshowSetting {
         show_intro_text: 'N',
         text_align: 'center',
         text_width: 'container',
-        // ข้อความบนภาพ: ขนาด/ฟอนต์/สี (default ขาว เพราะซ้อนบนภาพ)
+        // ข้อความบนภาพ: ขนาด/ฟอนต์/สี (default ขาว เพราะซ้อนบนภาพ)/ตัวหนา
         title_font_size: 20,
         title_font_family: 'Sarabun',
         title_color: '#FFFFFF',
+        title_bold: 'Y',
         intro_text_font_size: 16,
         intro_text_font_family: 'Sarabun',
         intro_text_color: '#FFFFFF',
+        intro_text_bold: 'N',
     };
 
     return type === 'slideshowarticle' ? { ...common, article_category_info_id: null } : { ...common, banner_category_info_id: null };
