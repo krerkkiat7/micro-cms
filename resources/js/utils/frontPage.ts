@@ -15,6 +15,15 @@ export interface FrontLayoutBlock {
     subtitle_style: FrontTextStyle;
     intro_text_style: FrontTextStyle;
     background: FrontBackground;
+    /** ระยะขอบด้านใน (px) — null = ปิดใช้งาน (ไม่เว้นระยะ) */
+    padding?: FrontPadding | null;
+}
+
+export interface FrontPadding {
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
 }
 
 /** รายการ 1 ชิ้นของ widget ที่ดึงจากหมวดหมู่ (banner / article) */
@@ -46,6 +55,9 @@ export interface FrontColumnData extends FrontLayoutBlock {
 
 export interface FrontRowData extends FrontLayoutBlock {
     use_container: boolean;
+    /** ระยะห่างระหว่างคอลัมน์ แนวนอน / แนวตั้ง (px) */
+    gap_x?: number;
+    gap_y?: number;
     columns: FrontColumnData[];
 }
 
@@ -55,6 +67,21 @@ export interface FrontPageData {
     background: FrontBackground;
     rows: FrontRowData[];
     fontsUrl: string | null;
+}
+
+/** ระยะห่างระหว่างคอลัมน์เริ่มต้น (px) — ตรงกับ App\Support\PageSpacing::DEFAULT_GAP (ใช้เมื่อข้อมูลใน cache เก่ายังไม่มีค่า) */
+const DEFAULT_GAP = 24;
+
+/** style padding ของแถว/คอลัมน์/widget — ปิดใช้งาน/ไม่มีค่า = ไม่เว้นระยะ */
+export function paddingCss(padding: FrontPadding | null | undefined): CSSProperties {
+    if (!padding) return {};
+
+    return { padding: `${padding.top}px ${padding.right}px ${padding.bottom}px ${padding.left}px` };
+}
+
+/** style ระยะห่างระหว่างคอลัมน์ของ grid ในแถว */
+export function gapCss(row: FrontRowData): CSSProperties {
+    return { columnGap: `${row.gap_x ?? DEFAULT_GAP}px`, rowGap: `${row.gap_y ?? DEFAULT_GAP}px` };
 }
 
 /** จำนวนบรรทัด → class line-clamp (ต้องเป็นชื่อเต็มให้ Tailwind สแกนเจอ) */

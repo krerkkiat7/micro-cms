@@ -8,6 +8,7 @@ use App\Models\IntropageItemInfo;
 use App\Models\LogFrontAccess;
 use App\Models\PageItemDetail;
 use App\Models\PageItemInfo;
+use App\Models\PageItemRow;
 use App\Models\SysSetting;
 use App\Support\Front\FrontCache;
 use App\Support\Front\FrontUrl;
@@ -84,6 +85,20 @@ test('page renders with or without slug, including sample (is_temp) data', funct
 
     $this->get("/th/page/item/{$page->id}/".rawurlencode((string) $slug))->assertOk();
     $this->get("/th/page/item/{$page->id}/wrong-slug")->assertOk();
+});
+
+test('page sends padding (null when off) and column gaps from the layout settings', function () {
+    $page = samplePage();
+    $row = PageItemRow::where('page_item_info_id', $page->id)->where('status', 'Y')->orderBy('sort_order')->orderBy('id')->firstOrFail();
+    $row->update(['use_padding' => 'Y', 'padding_top' => 10, 'padding_right' => 20, 'padding_bottom' => 30, 'padding_left' => 40, 'gap_x' => 8, 'gap_y' => 12]);
+
+    $this->get("/th/page/item/{$page->id}")
+        ->assertOk()
+        ->assertInertia(fn (Assert $p) => $p
+            ->where('page.rows.0.padding', ['top' => 10, 'right' => 20, 'bottom' => 30, 'left' => 40])
+            ->where('page.rows.0.gap_x', 8)
+            ->where('page.rows.0.gap_y', 12)
+            ->where('page.rows.0.columns.0.padding', null));
 });
 
 test('unpublished, deleted or missing pages return 404', function () {

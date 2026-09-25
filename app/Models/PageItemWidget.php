@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\FlushesFrontCache;
+use App\Models\Concerns\HasPageSpacing;
 use App\Models\Concerns\HasPageTextStyle;
 use App\Support\PageWidget\PageWidgetRegistry;
 use Illuminate\Database\Eloquent\Model;
@@ -14,8 +15,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class PageItemWidget extends Model
 {
-    use FlushesFrontCache, HasPageTextStyle;
+    use FlushesFrontCache, HasPageSpacing, HasPageTextStyle;
     use SoftDeletes;
+
+    /** ชั้นของโครงสร้าง สำหรับ HasPageSpacing */
+    protected const SPACING_LEVEL = 'widget';
 
     protected $table = 'page_item_widget';
 

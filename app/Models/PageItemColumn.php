@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\FlushesFrontCache;
+use App\Models\Concerns\HasPageSpacing;
 use App\Models\Concerns\HasPageTextStyle;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -12,8 +13,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class PageItemColumn extends Model
 {
-    use FlushesFrontCache, HasPageTextStyle;
+    use FlushesFrontCache, HasPageSpacing, HasPageTextStyle;
     use SoftDeletes;
+
+    /** ชั้นของโครงสร้าง สำหรับ HasPageSpacing */
+    protected const SPACING_LEVEL = 'column';
 
     protected $table = 'page_item_column';
 

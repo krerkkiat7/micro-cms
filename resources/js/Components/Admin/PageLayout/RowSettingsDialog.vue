@@ -3,17 +3,19 @@ import { ref, watch } from 'vue';
 import { Trash2 } from 'lucide-vue-next';
 import LayoutDialog from './LayoutDialog.vue';
 import BackgroundFields from './BackgroundFields.vue';
+import SpacingFields from './SpacingFields.vue';
 import TextFieldsSection from './TextFieldsSection.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
-import { CONTAINER_OPTIONS, SHOW_OPTIONS, cloneDeep, pickBackground, pickTextStyles } from '@/utils/pageLayout';
+import { CONTAINER_OPTIONS, SHOW_OPTIONS, cloneDeep, pickBackground, pickGap, pickPadding, pickTextStyles } from '@/utils/pageLayout';
 import type { RowData, RowSettings } from '@/utils/pageLayout';
 import type { LanguageOption } from '@/types';
 
 /**
- * dialog ตั้งค่าของ "แถว" — หัวเรื่อง/หัวเรื่องรอง/ข้อความเกริ่นนำ (แยกภาษา + จัดรูปแบบตัวอักษร) การแสดงผลและพื้นหลัง
+ * dialog ตั้งค่าของ "แถว" — หัวเรื่อง/หัวเรื่องรอง/ข้อความเกริ่นนำ (แยกภาษา + จัดรูปแบบตัวอักษร) การแสดงผล พื้นหลัง
+ * และระยะห่าง (ระยะขอบด้านใน + ระยะห่างระหว่างคอลัมน์)
  * แก้ไขบนสำเนา (draft) ของค่าที่ dialog นี้จัดการเท่านั้น (ไม่แตะคอลัมน์ข้างใน) แล้วส่ง `save`
  * กลับเมื่อกด "ตกลง" (ยกเลิกแล้วค่าเดิมไม่เปลี่ยน) — ปุ่ม "ลบแถว" อยู่ในนี้ ไม่เพิ่มไอคอนบนแถบจัดการเกินที่กำหนด
  */
@@ -39,7 +41,15 @@ watch(
     (show) => {
         if (show && props.row) {
             const { detail, show_title, use_container } = props.row;
-            draft.value = cloneDeep({ detail, show_title, use_container, ...pickBackground(props.row), ...pickTextStyles(props.row) });
+            draft.value = cloneDeep({
+                detail,
+                show_title,
+                use_container,
+                ...pickBackground(props.row),
+                ...pickTextStyles(props.row),
+                ...pickPadding(props.row),
+                ...pickGap(props.row),
+            });
         }
     },
     { immediate: true },
@@ -87,6 +97,11 @@ function remove() {
             <div class="space-y-4 border-t border-gray-100 pt-5">
                 <h3 class="text-sm font-medium text-gray-600">พื้นหลัง</h3>
                 <BackgroundFields :fields="draft" />
+            </div>
+
+            <div class="space-y-4 border-t border-gray-100 pt-5">
+                <h3 class="text-sm font-medium text-gray-600">ระยะห่าง</h3>
+                <SpacingFields :fields="draft" subject="แถว" gaps />
             </div>
         </div>
 

@@ -372,6 +372,10 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   `App\Support\Front\ViewCounter` (ข้ามบอท + dedupe 30 นาที/session, บันทึกหลังส่ง response ด้วย `defer()`, โหมด redis = คิว Redis +
   `php artisan front:flush-views` ทุกนาที batch insert/update) — **production ต้องตั้ง cron `schedule:run`**; `config/front.php`.
   ใช้ `defer()` ไม่ใช่ `app()->terminating()` (callback ของ terminating สะสมข้าม request ในเทส/Octane)
+- **โมดูล page รอบปรับปรุง (branch `page-edit`)** — ฟอร์มข้อมูลทั่วไปเรียงใหม่: ข้อมูลหน้าเพจ → SEO/AEO/GEO (รวมรูปแทนหน้าในหัวข้อ
+  "การแชร์ไปโซเชียลมีเดีย") → พื้นหลังของทั้งหน้า → สถานะ; ระยะห่างของแถว/คอลัมน์/widget (`use_padding` default `N` + `padding_*` 4 ด้าน px,
+  แถวมี `gap_x`/`gap_y` default 24) migration `2026_10_03_000001_*`, ศูนย์กลาง `App\Support\PageSpacing` + trait `HasPageSpacing`,
+  UI `Components/Admin/PageLayout/SpacingFields.vue`; หน้าบ้านหน้าเพจไม่มีระยะบน/ล่างของตัวหน้าและแถวไม่มี `py-6` ตายตัวแล้ว — ดู `docs/PRD-page.md`
 - **`log_front_access`** (ในไฟล์ log กลาง — เพิ่มหลังจากไฟล์นั้น migrate แล้ว เครื่อง dev ต้องสร้างตารางเอง/`migrate:fresh`) —
   `LogFrontAccess::record()` ทุก controller หน้าบ้าน, keep-alive `useAccessHeartbeat('front.access.ping')` scope token + session_id,
   หน้ารายการหลังบ้าน `admin.system.frontlog.access.index`

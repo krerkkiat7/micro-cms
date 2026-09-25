@@ -333,3 +333,65 @@ test('layout update rejects a malformed widget background colour', function () {
         ]])
         ->assertInvalid(['rows.0.columns.0.widgets.0.background_color']);
 });
+
+// ---------------------------------------------------------------- ระยะขอบด้านใน (padding) / ระยะห่างระหว่างคอลัมน์ (gap)
+
+test('layout page serves the spacing defaults set by the migration (padding off, 24px gaps)', function () {
+    actingAsUserWithPermissions(['page.item.view']);
+
+    $this->get(route('admin.page.item.layout', $this->sample->id))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('rows.0.use_padding', 'N')
+            ->where('rows.0.padding_top', 48)
+            ->where('rows.0.gap_x', 24)
+            ->where('rows.0.gap_y', 24)
+            ->where('rows.0.columns.0.use_padding', 'N')
+            ->where('rows.0.columns.0.padding_left', 16)
+            ->missing('rows.0.columns.0.gap_x')
+            ->where('rows.0.columns.0.widgets.0.use_padding', 'N')
+            ->where('rows.0.columns.0.widgets.0.padding_bottom', 16)
+        );
+});
+
+test('layout update saves padding and gaps on every level', function () {
+    actingAsUserWithPermissions(['page.item.manage']);
+
+    $this->put(route('admin.page.item.layout.update', $this->page->id), ['rows' => [
+        layoutRow([
+            layoutColumn([
+                layoutWidget(layoutSpacing('widget', ['use_padding' => 'Y', 'padding_top' => 5, 'padding_left' => 0])),
+            ], layoutSpacing('column', ['use_padding' => 'Y', 'padding_right' => 30])),
+        ], layoutSpacing('row', ['use_padding' => 'Y', 'padding_bottom' => 80, 'gap_x' => 0, 'gap_y' => 40])),
+    ]])->assertSessionHasNoErrors();
+
+    $row = PageItemRow::where('page_item_info_id', $this->page->id)->firstOrFail();
+    $column = PageItemColumn::where('page_item_row_id', $row->id)->firstOrFail();
+    $widget = PageItemWidget::where('page_item_column_id', $column->id)->firstOrFail();
+
+    expect($row->use_padding)->toBe('Y')
+        ->and($row->padding_bottom)->toBe(80)
+        ->and($row->gap_x)->toBe(0)
+        ->and($row->gap_y)->toBe(40)
+        ->and($column->use_padding)->toBe('Y')
+        ->and($column->padding_right)->toBe(30)
+        ->and($widget->use_padding)->toBe('Y')
+        ->and($widget->padding_top)->toBe(5)
+        ->and($widget->padding_left)->toBe(0);
+});
+
+test('layout update validates padding and gap values', function () {
+    actingAsUserWithPermissions(['page.item.manage']);
+    $url = route('admin.page.item.layout.update', $this->page->id);
+    $back = route('admin.page.item.layout', $this->page->id);
+
+    $this->from($back)->put($url, ['rows' => [layoutRow([], ['use_padding' => 'X'])]])
+        ->assertInvalid(['rows.0.use_padding']);
+
+    $this->from($back)->put($url, ['rows' => [layoutRow([], ['padding_top' => 201, 'gap_x' => 121, 'gap_y' => -1])]])
+        ->assertInvalid(['rows.0.padding_top', 'rows.0.gap_x', 'rows.0.gap_y']);
+
+    $this->from($back)->put($url, ['rows' => [layoutRow([layoutColumn([layoutWidget(['padding_left' => 'abc'])], ['padding_right' => -5])])]])
+        ->assertInvalid(['rows.0.columns.0.padding_right', 'rows.0.columns.0.widgets.0.padding_left']);
+
+    expect(PageItemRow::where('page_item_info_id', $this->page->id)->count())->toBe(0);
+});

@@ -76,9 +76,10 @@ hasMany; `rows()` hasMany เรียง `sort_order`), `App\Models\PageItemDet
 **หน้าจอ** — `Admin/Page/Item/{Index,Add,Edit,Layout}.vue`
 - **Index**: ค้นหาชื่อ, กรองสถานะ, เรียงชื่อ/วันที่สร้าง/สถานะ, paging — คอลัมน์ **ชื่อ, วันที่สร้าง, สถานะ**
   (ชื่อที่แสดงเป็นของภาษาหลักเสมอ)
-- **Add / Edit (ข้อมูลทั่วไป)**: ใช้ข้อมูลจาก `page_item_info` + `page_item_detail` — 3 การ์ดผ่าน component ร่วม
-  `Components/Admin/PageItem/PageItemFormFields.vue`: ข้อมูลทั่วไป (สถานะ, รูปแทนหน้า, พื้นหลังของทั้งหน้า), ข้อมูลหน้าเพจ
-  แยกภาษา (ชื่อ/ข้อความเกริ่นนำ ผ่าน `LangFieldGroup`), SEO / AEO / GEO (slug, meta title/description/keywords, og title/description)
+- **Add / Edit (ข้อมูลทั่วไป)**: ใช้ข้อมูลจาก `page_item_info` + `page_item_detail` — 4 การ์ดผ่าน component ร่วม
+  `Components/Admin/PageItem/PageItemFormFields.vue` เรียงตามลำดับ: (1) **ข้อมูลหน้าเพจ** แยกภาษา (ชื่อ/ข้อความเกริ่นนำ ผ่าน `LangFieldGroup`)
+  (2) **SEO / AEO / GEO** แบ่งหัวข้อย่อย "ลิงก์ของหน้า" (slug) / "การแสดงผลในผลการค้นหา" (meta title/description/keywords) /
+  "การแชร์ไปโซเชียลมีเดีย" (og title/description + **รูปแทนหน้า**) (3) **พื้นหลังของทั้งหน้า** (4) **สถานะ**
   — หลังเพิ่มสำเร็จ redirect ไปหน้าแก้ไข ให้ไปแท็บ "โครงสร้าง" ต่อได้
 
 **Permission code** (seed ไว้แล้วใน `DatabaseSeeder.php`) — `page.item.view`, `page.item.manage`, `page.item.delete`
@@ -122,11 +123,11 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 
 | ตาราง | คอลัมน์หลัก |
 |-------|-------------|
-| `page_item_row` | `page_item_info_id` FK, `sort_order`, `show_title` (`Y`/`N`), `use_container` (`Y` = อยู่ใน container, `N` = เต็มความกว้าง), `background_color`, `background_image_id` + `background_repeat/size/attachment/position` (ชุดเดียวกับหน้า), การจัดรูปแบบตัวอักษร 12 คอลัมน์ (ด้านล่าง), `status` |
+| `page_item_row` | `page_item_info_id` FK, `sort_order`, `show_title` (`Y`/`N`), `use_container` (`Y` = อยู่ใน container, `N` = เต็มความกว้าง), `background_color`, `background_image_id` + `background_repeat/size/attachment/position` (ชุดเดียวกับหน้า), การจัดรูปแบบตัวอักษร 12 คอลัมน์ (ด้านล่าง), ระยะห่าง `use_padding`/`padding_*`/`gap_x`/`gap_y` (ด้านล่าง), `status` |
 | `page_item_row_detail` | `id`, `lang`, `title` `varchar(250)`, `subtitle` `varchar(250)` (หัวเรื่องรอง), `intro_text` `varchar(2000)` |
-| `page_item_column` | `page_item_row_id` FK, `sort_order`, `show_title`, `column_size` (1 - 12), `background_*` (ชุดเดียวกับแถว), การจัดรูปแบบตัวอักษร 12 คอลัมน์, `status` |
+| `page_item_column` | `page_item_row_id` FK, `sort_order`, `show_title`, `column_size` (1 - 12), `background_*` (ชุดเดียวกับแถว), การจัดรูปแบบตัวอักษร 12 คอลัมน์, `use_padding`/`padding_*`, `status` |
 | `page_item_column_detail` | `id`, `lang`, `title`, `subtitle`, `intro_text` |
-| `page_item_widget` | `page_item_column_id` FK, `sort_order`, `show_title`, `widget_type` `varchar(20)` (ตั้งค่าเฉพาะประเภทอยู่ในตาราง `page_item_widget_<ประเภท>` — §3), `background_*` (ชุดเดียวกับแถว/คอลัมน์), การจัดรูปแบบตัวอักษร 12 คอลัมน์, `status` |
+| `page_item_widget` | `page_item_column_id` FK, `sort_order`, `show_title`, `widget_type` `varchar(20)` (ตั้งค่าเฉพาะประเภทอยู่ในตาราง `page_item_widget_<ประเภท>` — §3), `background_*` (ชุดเดียวกับแถว/คอลัมน์), การจัดรูปแบบตัวอักษร 12 คอลัมน์, `use_padding`/`padding_*`, `status` |
 | `page_item_widget_detail` | `id`, `lang`, `title`, `subtitle`, `intro_text` |
 
 ### การจัดรูปแบบตัวอักษร (หัวเรื่อง / หัวเรื่องรอง / ข้อความเกริ่นนำ)
@@ -155,6 +156,22 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
   หัวเรื่องใช้แท็ก **`<h2>` (แถว) / `<h3>` (คอลัมน์) / `<h4>` (widget)** ส่วนหัวเรื่องรองและข้อความเกริ่นนำเป็น `<div>` ธรรมดาเสมอ
   (ตัวอย่างในหน้าโครงสร้างคือ `LayoutTexts.vue`; หน้าบ้านต้อง render ให้ตรงกัน)
 - แถว/คอลัมน์/widget ที่ **เพิ่มใหม่** ตั้ง `background_color = transparent` เป็นค่าเริ่มต้น
+
+### ระยะห่าง (ระยะขอบด้านใน / ระยะห่างระหว่างคอลัมน์)
+
+migration `2026_10_03_000001_add_spacing_to_page_item_layout_tables.php` — แหล่งเดียวของรายการคอลัมน์/ค่าเริ่มต้น/ช่วงค่าคือ
+`App\Support\PageSpacing` (model ใช้ trait `HasPageSpacing` + const `SPACING_LEVEL`, validation `spacingRules()`, `PageLayoutSync`
+ใช้ `PageSpacing::fromInput()`, หน้าบ้านใช้ `PageSpacing::padding()`); ฝั่งหน้าจอ `utils/pageLayout.ts` (`defaultPadding()`, `DEFAULT_GAP` — ต้องตรงกัน)
+
+| คอลัมน์ | ตาราง | ค่าเริ่มต้น / เงื่อนไข |
+|---------|-------|------------------------|
+| `use_padding` `char(1)` | แถว/คอลัมน์/widget | **`N`** (ปิด = ไม่เว้นระยะเลย แม้มีตัวเลขเก็บไว้) |
+| `padding_top/right/bottom/left` `unsigned smallint` (px) | แถว/คอลัมน์/widget | ใช้เมื่อเปิด — แถว 48/16/48/16, คอลัมน์และ widget 16 ทุกด้าน; รับ 0 - 200 |
+| `gap_x` / `gap_y` `unsigned smallint` (px) | แถวเท่านั้น | **24** (1.5rem gutter ที่เว็บส่วนใหญ่ใช้); ระยะห่างแนวนอนระหว่างคอลัมน์ / แนวตั้งเมื่อคอลัมน์ขึ้นบรรทัดใหม่หรือบนมือถือ; รับ 0 - 120 |
+
+- dialog ตั้งค่าแถว/คอลัมน์/widget มีส่วน "ระยะห่าง" (`Components/Admin/PageLayout/SpacingFields.vue`): checkbox "เว้นระยะขอบด้านใน"
+  แล้วแสดงช่องตัวเลข 4 ด้านเป็นแผนภาพกล่องรอบ "เนื้อหา"; แถวมี "ระยะห่างระหว่างคอลัมน์" ซ้าย-ขวา / บน-ล่างเพิ่ม
+- ตัวอย่างในหน้าโครงสร้างแสดงระยะตามค่าจริง (เว้นเพิ่มจากกรอบของหน้าจอแก้ไข)
 
 **Model** — `PageItemRow`/`PageItemColumn`/`PageItemWidget` (+ `*Detail`) ตาม pattern ข้างบน: `rows()`/`columns()`/`widgets()`
 เรียง `sort_order` (แล้ว `id`), `PageItemWidget::allowedTypes()` = รายการ `widget_type` ที่บันทึกได้ (ประเภทในทะเบียน + `placeholder` ประเภทเดิม — validation ใช้ค่านี้)
@@ -474,6 +491,8 @@ PK = id + lang) — migration `2026_09_27_000001_*` (มีทั้ง FK แ�
 ## หน้าบ้าน (สรุป — รายละเอียดเต็มดู [PRD-front.md](PRD-front.md) §4, §8)
 
 - `/{lang}/page/item/{id}/{slug?}` (`front.page.item`) — `status = Y` และไม่ถูกลบ ไม่งั้น 404; หัวเรื่องของหน้าเป็น h1 ที่ซ่อนไว้ (sr-only)
+- ตัวหน้าเพจ**ไม่มีระยะบน/ล่างของตัวเอง** (`FrontLayout` โหมด `fullWidth`) และแถวไม่มี padding ตายตัวแล้ว — ระยะทั้งหมดมาจาก
+  ค่า `padding` (null = ปิด) ของแถว/คอลัมน์/widget และ `gap_x`/`gap_y` ของแถว ที่ `PageLayoutReader` ส่งมา (`paddingCss()`/`gapCss()` ใน `utils/frontPage.ts`)
 - หัวเรื่องหน้าบ้าน: แถว h2 / คอลัมน์ h3 / widget h4 / หัวข้อ part ของ Custom Text และชื่อรายการใน Slideset/Grid h5
 - widget ที่ดึงรายการจากหมวดหมู่: `CategoryListWidget::frontItems($setting, $lang)` (query เดียวกับ preview + ภาษา + ลิงก์จริง);
   `previewQuery()`/`articleQuery()`/`bannerQuery()` รับพารามิเตอร์ `$lang` เพิ่ม (null = ภาษาหลัก — หลังบ้านทำงานเหมือนเดิม)

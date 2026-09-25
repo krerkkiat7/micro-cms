@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { ArrowLeft, Trash2 } from 'lucide-vue-next';
 import LayoutDialog from './LayoutDialog.vue';
 import BackgroundFields from './BackgroundFields.vue';
+import SpacingFields from './SpacingFields.vue';
 import TextFieldsSection from './TextFieldsSection.vue';
 import GridFields from './widgets/GridFields.vue';
 import SlideshowFields from './widgets/SlideshowFields.vue';
@@ -13,7 +14,7 @@ import SearchableSelect from '@/Components/SearchableSelect.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
-import { SHOW_OPTIONS, cloneDeep, pickBackground, pickTextStyles } from '@/utils/pageLayout';
+import { SHOW_OPTIONS, cloneDeep, pickBackground, pickPadding, pickTextStyles } from '@/utils/pageLayout';
 import { gridConfig, slideshowConfig, slidesetConfig, validateSetting, widgetTypeLabel } from '@/utils/pageWidget';
 import type { GridSetting, SlideshowCommonSetting, SlidesetSetting } from '@/utils/pageWidget';
 import { isCustomTextWidget } from '@/utils/pageWidgetCustomText';
@@ -54,7 +55,15 @@ watch(
     (show) => {
         if (show && props.widget) {
             const { detail, show_title, widget_type, setting } = props.widget;
-            draft.value = cloneDeep({ detail, show_title, widget_type, setting, ...pickBackground(props.widget), ...pickTextStyles(props.widget) });
+            draft.value = cloneDeep({
+                detail,
+                show_title,
+                widget_type,
+                setting,
+                ...pickBackground(props.widget),
+                ...pickTextStyles(props.widget),
+                ...pickPadding(props.widget),
+            });
             errors.value = {};
         }
     },
@@ -183,6 +192,11 @@ function remove() {
                 <div class="space-y-4 border-t border-gray-100 pt-5">
                     <h3 class="text-sm font-medium text-gray-600">พื้นหลัง</h3>
                     <BackgroundFields :fields="draft" />
+                </div>
+
+                <div class="space-y-4 border-t border-gray-100 pt-5">
+                    <h3 class="text-sm font-medium text-gray-600">ระยะห่าง</h3>
+                    <SpacingFields :fields="draft" subject="Widget" />
                 </div>
                 </div>
             </section>

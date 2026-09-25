@@ -22,6 +22,27 @@ function layoutTextStyle(int $titleSize = 32, array $overrides = []): array
 }
 
 /**
+ * ค่าระยะขอบด้านใน (+ ระยะห่างระหว่างคอลัมน์ถ้าเป็นแถว) ที่หน้าจอส่งมาเสมอ — ค่าเริ่มต้น = ปิด padding ตามค่า default ของ migration
+ *
+ * @return array<string, mixed>
+ */
+function layoutSpacing(string $level, array $overrides = []): array
+{
+    $padding = $level === 'row' ? [48, 16, 48, 16] : [16, 16, 16, 16];
+    $spacing = ['use_padding' => 'N'];
+
+    foreach (['top', 'right', 'bottom', 'left'] as $index => $side) {
+        $spacing["padding_{$side}"] = $padding[$index];
+    }
+
+    if ($level === 'row') {
+        $spacing += ['gap_x' => 24, 'gap_y' => 24];
+    }
+
+    return array_replace($spacing, $overrides);
+}
+
+/**
  * @return array<string, mixed>
  */
 function layoutWidget(array $overrides = []): array
@@ -33,7 +54,7 @@ function layoutWidget(array $overrides = []): array
         'setting' => [],
         'background_color' => 'transparent',
         'detail' => ['th' => ['title' => 'วิดเจ็ต', 'subtitle' => '', 'intro_text' => ''], 'en' => ['title' => 'Widget', 'subtitle' => '', 'intro_text' => '']],
-    ] + layoutTextStyle(20), $overrides);
+    ] + layoutTextStyle(20) + layoutSpacing('widget'), $overrides);
 }
 
 /**
@@ -49,7 +70,7 @@ function layoutColumn(array $widgets = [], array $overrides = []): array
         'background_color' => 'transparent',
         'detail' => ['th' => ['title' => 'คอลัมน์', 'subtitle' => '', 'intro_text' => ''], 'en' => ['title' => 'Column', 'subtitle' => '', 'intro_text' => '']],
         'widgets' => $widgets,
-    ] + layoutTextStyle(24), $overrides);
+    ] + layoutTextStyle(24) + layoutSpacing('column'), $overrides);
 }
 
 /**
@@ -65,5 +86,5 @@ function layoutRow(array $columns = [], array $overrides = []): array
         'background_color' => 'transparent',
         'detail' => ['th' => ['title' => 'แถว', 'subtitle' => '', 'intro_text' => ''], 'en' => ['title' => 'Row', 'subtitle' => '', 'intro_text' => '']],
         'columns' => $columns,
-    ] + layoutTextStyle(32), $overrides);
+    ] + layoutTextStyle(32) + layoutSpacing('row'), $overrides);
 }

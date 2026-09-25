@@ -6,6 +6,7 @@ use App\Models\PageItemColumn;
 use App\Models\PageItemInfo;
 use App\Models\PageItemRow;
 use App\Models\PageItemWidget;
+use App\Support\PageSpacing;
 use App\Support\PageTextStyle;
 use App\Support\PageWidget\CategoryListWidget;
 use App\Support\PageWidget\CustomTextWidget;
@@ -62,6 +63,8 @@ final class PageLayoutReader
         return [
             'id' => (int) $row->id,
             'use_container' => $row->use_container === 'Y',
+            'gap_x' => (int) $row->gap_x,
+            'gap_y' => (int) $row->gap_y,
             ...$this->common($row),
             'columns' => $row->columns
                 ->map(fn (PageItemColumn $column) => [
@@ -153,7 +156,7 @@ final class PageLayoutReader
     }
 
     /**
-     * ส่วนที่แถว/คอลัมน์/widget มีเหมือนกัน: การแสดงหัวเรื่อง, ข้อความ 3 ส่วน + สไตล์, พื้นหลัง
+     * ส่วนที่แถว/คอลัมน์/widget มีเหมือนกัน: การแสดงหัวเรื่อง, ข้อความ 3 ส่วน + สไตล์, พื้นหลัง, ระยะขอบด้านใน (ปิดใช้งาน = null)
      *
      * @return array<string, mixed>
      */
@@ -184,6 +187,7 @@ final class PageLayoutReader
             'intro_text' => $showTitle ? trim((string) ($detail?->intro_text ?? '')) : '',
             ...$styles,
             'background' => $this->background($model),
+            'padding' => PageSpacing::padding($model),
         ];
     }
 

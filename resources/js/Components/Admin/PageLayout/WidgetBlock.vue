@@ -7,7 +7,7 @@ import SlideshowPreview from './widgets/SlideshowPreview.vue';
 import SlidesetPreview from './widgets/SlidesetPreview.vue';
 import CustomTextPreview from './widgets/CustomTextPreview.vue';
 import { usePageLayoutEditor } from '@/composables/usePageLayoutEditor';
-import { backgroundStyle, displayTitle } from '@/utils/pageLayout';
+import { backgroundStyle, displayTitle, paddingStyle } from '@/utils/pageLayout';
 import { gridConfig, slideshowConfig, slidesetConfig, widgetTypeLabel } from '@/utils/pageWidget';
 import type { GridSetting, SlideshowCommonSetting, SlidesetSetting } from '@/utils/pageWidget';
 import { isCustomTextWidget } from '@/utils/pageWidgetCustomText';
@@ -52,41 +52,44 @@ const customTextSetting = computed(() => props.widget.setting as unknown as Cust
 
         <p class="text-xs font-medium text-amber-700">{{ widgetTypeLabel(widget.widget_type) }}</p>
 
-        <LayoutTexts
-            level="widget"
-            :show="widget.show_title === 'Y'"
-            :detail="widget.detail"
-            :styles="widget"
-            :languages="editor.languages"
-            class="mt-2"
-        />
+        <!-- ระยะขอบด้านในตามที่ตั้งค่า (เว้นเพิ่มจากกรอบของหน้าจอแก้ไข) -->
+        <div :style="paddingStyle(widget)">
+            <LayoutTexts
+                level="widget"
+                :show="widget.show_title === 'Y'"
+                :detail="widget.detail"
+                :styles="widget"
+                :languages="editor.languages"
+                class="mt-2"
+            />
 
-        <SlideshowPreview
-            v-if="slideshowConfig(widget.widget_type)"
-            :widget-type="widget.widget_type"
-            :setting="slideshowSetting"
-            class="mt-3"
-        />
-        <SlidesetPreview
-            v-else-if="slidesetConfig(widget.widget_type)"
-            :widget-type="widget.widget_type"
-            :setting="slidesetSetting"
-            :languages="editor.languages"
-            class="mt-3"
-        />
-        <GridPreview
-            v-else-if="gridConfig(widget.widget_type)"
-            :widget-type="widget.widget_type"
-            :setting="gridSetting"
-            :languages="editor.languages"
-            class="mt-3"
-        />
-        <CustomTextPreview
-            v-else-if="isCustomTextWidget(widget.widget_type)"
-            :widget-type="widget.widget_type"
-            :setting="customTextSetting"
-            :languages="editor.languages"
-            class="mt-3"
-        />
+            <SlideshowPreview
+                v-if="slideshowConfig(widget.widget_type)"
+                :widget-type="widget.widget_type"
+                :setting="slideshowSetting"
+                class="mt-3"
+            />
+            <SlidesetPreview
+                v-else-if="slidesetConfig(widget.widget_type)"
+                :widget-type="widget.widget_type"
+                :setting="slidesetSetting"
+                :languages="editor.languages"
+                class="mt-3"
+            />
+            <GridPreview
+                v-else-if="gridConfig(widget.widget_type)"
+                :widget-type="widget.widget_type"
+                :setting="gridSetting"
+                :languages="editor.languages"
+                class="mt-3"
+            />
+            <CustomTextPreview
+                v-else-if="isCustomTextWidget(widget.widget_type)"
+                :widget-type="widget.widget_type"
+                :setting="customTextSetting"
+                :languages="editor.languages"
+                class="mt-3"
+            />
+        </div>
     </div>
 </template>

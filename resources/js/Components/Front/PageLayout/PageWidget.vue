@@ -6,6 +6,7 @@ import WidgetGrid from '@/Components/Front/PageLayout/widgets/WidgetGrid.vue';
 import WidgetSlideset from '@/Components/Front/PageLayout/widgets/WidgetSlideset.vue';
 import WidgetSlideshow from '@/Components/Front/PageLayout/widgets/WidgetSlideshow.vue';
 import { backgroundCss } from '@/utils/front';
+import { paddingCss } from '@/utils/frontPage';
 import type { FrontWidgetData } from '@/utils/frontPage';
 import { gridConfig, slidesetConfig, slideshowConfig } from '@/utils/pageWidget';
 import { isCustomTextWidget } from '@/utils/pageWidgetCustomText';
@@ -26,7 +27,7 @@ const headingId = computed(() => (props.widget.title ? `widget-${props.widget.id
 </script>
 
 <template>
-    <section v-if="hasContent || hasTitle" class="space-y-4" :style="backgroundCss(widget.background)" :aria-labelledby="headingId">
+    <section v-if="hasContent || hasTitle" class="space-y-4" :style="{ ...backgroundCss(widget.background), ...paddingCss(widget.padding) }" :aria-labelledby="headingId">
         <BlockTexts :block="widget" tag="h4" :heading-id="headingId" />
 
         <WidgetSlideshow v-if="isSlideshow" :setting="widget.setting" :items="widget.items" :label="widget.title" />

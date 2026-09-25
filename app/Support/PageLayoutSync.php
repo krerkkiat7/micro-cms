@@ -59,7 +59,7 @@ class PageLayoutSync
                     'show_title' => $rowData['show_title'],
                     'use_container' => $rowData['use_container'],
                     'status' => $rowData['status'],
-                ] + $this->background($rowData) + PageTextStyle::fromInput($rowData));
+                ] + $this->background($rowData) + PageTextStyle::fromInput($rowData) + PageSpacing::fromInput($rowData, 'row'));
                 $this->keptRowIds[] = $row->id;
                 $this->syncDetails(PageItemRowDetail::class, $row->id, $rowData['detail'] ?? []);
 
@@ -70,7 +70,7 @@ class PageLayoutSync
                         'show_title' => $columnData['show_title'],
                         'column_size' => $columnData['column_size'],
                         'status' => $columnData['status'],
-                    ] + $this->background($columnData) + PageTextStyle::fromInput($columnData));
+                    ] + $this->background($columnData) + PageTextStyle::fromInput($columnData) + PageSpacing::fromInput($columnData, 'column'));
                     $this->keptColumnIds[] = $column->id;
                     $this->syncDetails(PageItemColumnDetail::class, $column->id, $columnData['detail'] ?? []);
 
@@ -81,7 +81,7 @@ class PageLayoutSync
                             'show_title' => $widgetData['show_title'],
                             'widget_type' => $widgetData['widget_type'],
                             'status' => $widgetData['status'],
-                        ] + $this->background($widgetData) + PageTextStyle::fromInput($widgetData));
+                        ] + $this->background($widgetData) + PageTextStyle::fromInput($widgetData) + PageSpacing::fromInput($widgetData, 'widget'));
                         $this->keptWidgetIds[] = $widget->id;
                         $this->syncDetails(PageItemWidgetDetail::class, $widget->id, $widgetData['detail'] ?? []);
                         // ค่าตั้งค่าเฉพาะประเภท (ตารางของประเภทนั้น PK = id ของ widget) — ประเภท legacy ไม่มีตาราง
