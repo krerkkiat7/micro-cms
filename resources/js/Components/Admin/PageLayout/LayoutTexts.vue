@@ -24,7 +24,7 @@ const intro = computed(() => defaultLangText(props.detail, props.languages, 'int
 
 <template>
     <div v-if="show && (title || subtitle || intro)" class="space-y-1">
-        <component :is="HEADING_TAGS[level]" v-if="title" class="font-bold leading-snug" :style="textStyleCss(styles.title_style)">
+        <component :is="HEADING_TAGS[level]" v-if="title" class="leading-snug" :style="textStyleCss(styles.title_style)">
             {{ title }}
         </component>
         <div v-if="subtitle" class="leading-snug" :style="textStyleCss(styles.subtitle_style)">{{ subtitle }}</div>

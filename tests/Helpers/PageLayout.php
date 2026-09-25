@@ -3,7 +3,7 @@
 // helper สร้าง payload โครงสร้างหน้าเพจ (แถว → คอลัมน์ → widget) สำหรับเทสของโมดูล Page — โหลดจาก tests/Pest.php
 
 /**
- * ค่าการจัดรูปแบบตัวอักษรครบ 12 ค่า (หัวเรื่อง/หัวเรื่องรอง/ข้อความเกริ่นนำ) ที่หน้าจอส่งมาเสมอ
+ * ค่าการจัดรูปแบบตัวอักษรครบ 15 ค่า (หัวเรื่อง/หัวเรื่องรอง/ข้อความเกริ่นนำ) ที่หน้าจอส่งมาเสมอ
  *
  * @return array<string, mixed>
  */
@@ -16,6 +16,7 @@ function layoutTextStyle(int $titleSize = 32, array $overrides = []): array
         $style["{$part}_font_family"] = 'Sarabun';
         $style["{$part}_align"] = 'center';
         $style["{$part}_color"] = '#000000';
+        $style["{$part}_bold"] = $part === 'title' ? 'Y' : 'N';
     }
 
     return array_replace($style, $overrides);

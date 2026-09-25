@@ -5,8 +5,8 @@ import LayoutDialog from './LayoutDialog.vue';
 import BackgroundFields from './BackgroundFields.vue';
 import SpacingFields from './SpacingFields.vue';
 import TextFieldsSection from './TextFieldsSection.vue';
+import SegmentedChoice from '@/Components/Admin/Template/SegmentedChoice.vue';
 import InputLabel from '@/Components/InputLabel.vue';
-import SearchableSelect from '@/Components/SearchableSelect.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
 import { CONTAINER_OPTIONS, SHOW_OPTIONS, cloneDeep, pickBackground, pickGap, pickPadding, pickTextStyles } from '@/utils/pageLayout';
@@ -73,26 +73,44 @@ function remove() {
             <div class="grid gap-4 sm:grid-cols-2">
                 <div>
                     <InputLabel value="แสดงหัวเรื่อง" />
-                    <SearchableSelect v-model="draft.show_title" :options="SHOW_OPTIONS" />
-                    <p class="mt-1 text-xs text-gray-500">เปิดแล้วจะแสดงหัวเรื่อง หัวเรื่องรอง และข้อความเกริ่นนำของแถวนี้ (หัวเรื่องใช้แท็ก H2)</p>
+                    <SegmentedChoice v-model="draft.show_title" :options="SHOW_OPTIONS" />
+                    <p class="mt-1 text-xs text-gray-500">เปิดแล้วจะแสดงหัวเรื่อง หัวเรื่องรอง และข้อความเกริ่นนำของแถวนี้</p>
                 </div>
                 <div>
                     <InputLabel value="การแสดงเนื้อหา" />
-                    <SearchableSelect v-model="draft.use_container" :options="CONTAINER_OPTIONS" />
+                    <SegmentedChoice v-model="draft.use_container" :options="CONTAINER_OPTIONS" />
                 </div>
             </div>
 
-            <TextFieldsSection label="หัวเรื่อง" part="title" :languages="languages" :detail="draft.detail" :text-style="draft.title_style" :fonts="fonts" />
-            <TextFieldsSection label="หัวเรื่องรอง" part="subtitle" :languages="languages" :detail="draft.detail" :text-style="draft.subtitle_style" :fonts="fonts" />
             <TextFieldsSection
-                label="ข้อความเกริ่นนำ"
-                part="intro_text"
-                multiline
+                label="หัวเรื่อง"
+                part="title"
                 :languages="languages"
                 :detail="draft.detail"
-                :text-style="draft.intro_text_style"
+                :text-style="draft.title_style"
                 :fonts="fonts"
+                :hide-style="draft.show_title !== 'Y'"
             />
+            <!-- ไม่แสดงหัวเรื่อง = ซ่อนส่วนที่เกี่ยวข้อง แต่ค่ายังเก็บอยู่ใน draft ครบ (กลับมาเปิดแสดงแล้วได้ค่าเดิม) -->
+            <template v-if="draft.show_title === 'Y'">
+                <TextFieldsSection
+                    label="หัวเรื่องรอง"
+                    part="subtitle"
+                    :languages="languages"
+                    :detail="draft.detail"
+                    :text-style="draft.subtitle_style"
+                    :fonts="fonts"
+                />
+                <TextFieldsSection
+                    label="ข้อความเกริ่นนำ"
+                    part="intro_text"
+                    multiline
+                    :languages="languages"
+                    :detail="draft.detail"
+                    :text-style="draft.intro_text_style"
+                    :fonts="fonts"
+                />
+            </template>
 
             <div class="space-y-4 border-t border-gray-100 pt-5">
                 <h3 class="text-sm font-medium text-gray-600">พื้นหลัง</h3>

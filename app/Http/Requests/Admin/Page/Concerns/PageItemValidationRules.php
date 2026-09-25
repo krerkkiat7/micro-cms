@@ -54,7 +54,7 @@ trait PageItemValidationRules
     }
 
     /**
-     * กฎของการจัดรูปแบบตัวอักษรของหัวเรื่อง/หัวเรื่องรอง/ข้อความเกริ่นนำ (ขนาด/ฟอนต์/การจัดตำแหน่ง/สี — 12 ฟิลด์ ดู
+     * กฎของการจัดรูปแบบตัวอักษรของหัวเรื่อง/หัวเรื่องรอง/ข้อความเกริ่นนำ (ขนาด/ฟอนต์/การจัดตำแหน่ง/สี/ตัวหนา — 15 ฟิลด์ ดู
      * App\Support\PageTextStyle) — $prefix ใช้ซ้อนใน rows.*. / columns.*. / widgets.*. สีตัวอักษรเป็น hex เท่านั้น (ไม่มี transparent)
      *
      * @return array<string, ValidationRule|array<mixed>|string>
@@ -68,6 +68,7 @@ trait PageItemValidationRules
             $rules["{$prefix}{$part}_font_family"] = ['required', Rule::in(PageTextStyle::fontNames())];
             $rules["{$prefix}{$part}_align"] = ['required', Rule::in(PageTextStyle::ALIGNS)];
             $rules["{$prefix}{$part}_color"] = ['required', 'string', 'max:20', 'regex:'.self::TEXT_COLOR_REGEX];
+            $rules["{$prefix}{$part}_bold"] = ['required', Rule::in(['Y', 'N'])];
         }
 
         return $rules;

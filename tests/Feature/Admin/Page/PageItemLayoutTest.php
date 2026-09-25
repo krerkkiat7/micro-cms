@@ -395,3 +395,41 @@ test('layout update validates padding and gap values', function () {
 
     expect(PageItemRow::where('page_item_info_id', $this->page->id)->count())->toBe(0);
 });
+
+// ---------------------------------------------------------------- ตัวหนา (bold)
+
+test('layout page serves bold defaults (title bold, subtitle/intro not) and saves bold on every level', function () {
+    $me = actingAsUserWithPermissions(['page.item.view', 'page.item.manage']);
+
+    $this->get(route('admin.page.item.layout', $this->sample->id))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('rows.0.title_bold', 'Y')
+            ->where('rows.0.subtitle_bold', 'N')
+            ->where('rows.0.columns.0.intro_text_bold', 'N')
+            ->where('rows.0.columns.0.widgets.0.title_bold', 'Y')
+        );
+
+    $this->put(route('admin.page.item.layout.update', $this->page->id), ['rows' => [
+        layoutRow([
+            layoutColumn([layoutWidget(layoutTextStyle(20, ['intro_text_bold' => 'Y']))], layoutTextStyle(24, ['subtitle_bold' => 'Y'])),
+        ], layoutTextStyle(32, ['title_bold' => 'N'])),
+    ]])->assertSessionHasNoErrors();
+
+    $row = PageItemRow::where('page_item_info_id', $this->page->id)->firstOrFail();
+    $column = PageItemColumn::where('page_item_row_id', $row->id)->firstOrFail();
+    $widget = PageItemWidget::where('page_item_column_id', $column->id)->firstOrFail();
+
+    expect($row->title_bold)->toBe('N')
+        ->and($column->subtitle_bold)->toBe('Y')
+        ->and($widget->intro_text_bold)->toBe('Y');
+});
+
+test('layout update validates bold values', function () {
+    actingAsUserWithPermissions(['page.item.manage']);
+
+    $this->from(route('admin.page.item.layout', $this->page->id))
+        ->put(route('admin.page.item.layout.update', $this->page->id), ['rows' => [
+            layoutRow([layoutColumn([], layoutTextStyle(24, ['title_bold' => 'yes']))]),
+        ]])
+        ->assertInvalid(['rows.0.columns.0.title_bold']);
+});

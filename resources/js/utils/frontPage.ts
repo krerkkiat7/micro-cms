@@ -69,6 +69,14 @@ export interface FrontPageData {
     fontsUrl: string | null;
 }
 
+/**
+ * แท็กหัวเรื่องตามระดับ (h2 - h6) — หน้าเพจใช้ h1 เป็นชื่อหน้า แถวเริ่มที่ h2 แล้วเลื่อนลงทีละระดับเฉพาะชั้นที่มีหัวเรื่องแสดงจริง
+ * (แถวไม่มีหัวเรื่อง = คอลัมน์ได้ h2 ต่อไปเลย ฯลฯ) ลำดับหัวเรื่องจึงไม่กระโดดข้ามระดับ
+ */
+export function headingTag(level: number): string {
+    return `h${Math.min(6, Math.max(2, level))}`;
+}
+
 /** ระยะห่างระหว่างคอลัมน์เริ่มต้น (px) — ตรงกับ App\Support\PageSpacing::DEFAULT_GAP (ใช้เมื่อข้อมูลใน cache เก่ายังไม่มีค่า) */
 const DEFAULT_GAP = 24;
 

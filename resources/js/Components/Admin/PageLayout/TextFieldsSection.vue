@@ -9,6 +9,7 @@ import type { LanguageOption } from '@/types';
 /**
  * ข้อความ 1 ส่วนของแถว/คอลัมน์/widget ใน dialog ตั้งค่า — ช่องกรอกแยกตามภาษา (หัวเรื่อง/หัวเรื่องรอง = บรรทัดเดียว,
  * ข้อความเกริ่นนำ = หลายบรรทัด) ตามด้วยการจัดรูปแบบตัวอักษรของข้อความส่วนนั้น (`TextStyleFields`)
+ * `hideStyle` = ซ่อนเฉพาะส่วนจัดรูปแบบ (ใช้กับหัวเรื่องเมื่อตั้งไม่แสดงหัวเรื่อง — ค่ายังอยู่ใน draft ครบ)
  */
 defineProps<{
     label: string;
@@ -18,6 +19,7 @@ defineProps<{
     textStyle: TextStyle;
     fonts: string[];
     multiline?: boolean;
+    hideStyle?: boolean;
 }>();
 </script>
 
@@ -30,7 +32,7 @@ defineProps<{
             </template>
         </LangFieldGroup>
 
-        <div class="rounded-xl bg-gray-50 p-4">
+        <div v-if="!hideStyle" class="rounded-xl bg-gray-50 p-4">
             <p class="mb-3 text-xs font-medium text-gray-500">การจัดรูปแบบตัวอักษร — {{ label }}</p>
             <TextStyleFields :text-style="textStyle" :fonts="fonts" />
         </div>

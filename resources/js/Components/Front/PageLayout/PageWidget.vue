@@ -6,16 +6,18 @@ import WidgetGrid from '@/Components/Front/PageLayout/widgets/WidgetGrid.vue';
 import WidgetSlideset from '@/Components/Front/PageLayout/widgets/WidgetSlideset.vue';
 import WidgetSlideshow from '@/Components/Front/PageLayout/widgets/WidgetSlideshow.vue';
 import { backgroundCss } from '@/utils/front';
-import { paddingCss } from '@/utils/frontPage';
+import { headingTag, paddingCss } from '@/utils/frontPage';
 import type { FrontWidgetData } from '@/utils/frontPage';
 import { gridConfig, slidesetConfig, slideshowConfig } from '@/utils/pageWidget';
 import { isCustomTextWidget } from '@/utils/pageWidgetCustomText';
 
 /**
- * widget 1 ตัวของหน้าเพจ — หัวเรื่อง (h4) + เนื้อหาตามประเภท (Slideshow / Slideset / Grid / Custom Text)
+ * widget 1 ตัวของหน้าเพจ — หัวเรื่อง + เนื้อหาตามประเภท (Slideshow / Slideset / Grid / Custom Text)
+ * `level` = ระดับหัวเรื่องที่ได้รับจากคอลัมน์ (ปกติ h4 — เลื่อนขึ้นเมื่อแถว/คอลัมน์ไม่มีหัวเรื่อง); หัวข้อของรายการข้างในใช้ระดับถัดไป
+ * ถ้า widget มีหัวเรื่อง ไม่งั้นใช้ระดับเดียวกัน
  * widget ที่ไม่มีอะไรให้แสดง (ไม่มีรายการที่เผยแพร่ และไม่มีหัวเรื่อง) ไม่ render เลย
  */
-const props = defineProps<{ widget: FrontWidgetData }>();
+const props = defineProps<{ widget: FrontWidgetData; level: number }>();
 
 const slideset = computed(() => slidesetConfig(props.widget.widget_type));
 const grid = computed(() => gridConfig(props.widget.widget_type));
@@ -23,12 +25,13 @@ const isSlideshow = computed(() => !!slideshowConfig(props.widget.widget_type));
 const isCustomText = computed(() => isCustomTextWidget(props.widget.widget_type));
 const hasContent = computed(() => props.widget.items.length > 0 || props.widget.parts.length > 0);
 const hasTitle = computed(() => !!(props.widget.title || props.widget.subtitle || props.widget.intro_text));
+const itemHeadingTag = computed(() => headingTag(props.widget.title ? props.level + 1 : props.level));
 const headingId = computed(() => (props.widget.title ? `widget-${props.widget.id}-title` : undefined));
 </script>
 
 <template>
     <section v-if="hasContent || hasTitle" class="space-y-4" :style="{ ...backgroundCss(widget.background), ...paddingCss(widget.padding) }" :aria-labelledby="headingId">
-        <BlockTexts :block="widget" tag="h4" :heading-id="headingId" />
+        <BlockTexts :block="widget" :tag="headingTag(level)" :heading-id="headingId" />
 
         <WidgetSlideshow v-if="isSlideshow" :setting="widget.setting" :items="widget.items" :label="widget.title" />
         <WidgetSlideset
@@ -37,9 +40,9 @@ const headingId = computed(() => (props.widget.title ? `widget-${props.widget.id
             :items="widget.items"
             :has-meta="slideset.hasMeta"
             :label="widget.title"
-            :heading-tag="widget.title ? 'h5' : 'h4'"
+            :heading-tag="itemHeadingTag"
         />
-        <WidgetGrid v-else-if="grid" :setting="widget.setting" :items="widget.items" :has-meta="grid.hasMeta" :heading-tag="widget.title ? 'h5' : 'h4'" />
-        <PartList v-else-if="isCustomText" :parts="widget.parts" :heading-tag="widget.title ? 'h5' : 'h4'" />
+        <WidgetGrid v-else-if="grid" :setting="widget.setting" :items="widget.items" :has-meta="grid.hasMeta" :heading-tag="itemHeadingTag" />
+        <PartList v-else-if="isCustomText" :parts="widget.parts" :heading-tag="itemHeadingTag" />
     </section>
 </template>

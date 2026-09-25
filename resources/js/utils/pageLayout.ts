@@ -67,6 +67,8 @@ export interface TextStyle {
     align: TextAlign;
     /** รหัสสี hex เท่านั้น (ไม่มี transparent) */
     color: string;
+    /** ตัวหนา — มีเฉพาะข้อความของแถว/คอลัมน์/widget (ที่อื่นที่ใช้ TextStyle ร่วม เช่น หัวข้อ part ของ Custom Text เก็บตัวหนาแยกไว้เอง) */
+    bold?: 'Y' | 'N';
 }
 
 /** ส่วนของข้อความที่จัดรูปแบบได้ — ตรงกับ App\Support\PageTextStyle::PARTS (คอลัมน์ `<part>_font_size` ฯลฯ ฝั่ง backend) */
@@ -124,7 +126,7 @@ export type ColumnSettings = Pick<ColumnData, 'detail' | 'show_title' | 'column_
 export type WidgetSettings = Pick<WidgetData, 'detail' | 'show_title' | 'widget_type' | 'setting'> & BackgroundFields & TextStyles & PaddingFields;
 
 /** รูปแบบข้อมูลที่ backend ส่งมา (PageItemController::rowToArray) — การจัดรูปแบบมาเป็นคอลัมน์แบน `<part>_<ค่า>` */
-type ServerTextStyle = Record<`${TextPart}_${'font_size' | 'font_family' | 'align' | 'color'}`, string | number>;
+type ServerTextStyle = Record<`${TextPart}_${'font_size' | 'font_family' | 'align' | 'color' | 'bold'}`, string | number>;
 
 interface ServerBackground {
     background_color: string | null;
@@ -203,28 +205,37 @@ export type LayoutLevel = keyof typeof DEFAULT_TEXT_SIZES;
 /** ชนิดแท็กของหัวเรื่องแต่ละชั้น (หัวเรื่องรองและข้อความเกริ่นนำเป็น div ธรรมดาเสมอ) */
 export const HEADING_TAGS = { row: 'h2', column: 'h3', widget: 'h4' } as const;
 
-function defaultTextStyle(fontSize: number): TextStyle {
-    return { font_size: fontSize, font_family: DEFAULT_FONT_FAMILY, align: DEFAULT_TEXT_ALIGN, color: DEFAULT_TEXT_COLOR };
+/** ตัวหนาเริ่มต้น: หัวเรื่องหนา อีก 2 ส่วนไม่หนา — ตรงกับ PageTextStyle::DEFAULT_BOLD / migration 2026_10_03_000002 */
+const DEFAULT_BOLD: Record<TextPart, 'Y' | 'N'> = { title: 'Y', subtitle: 'N', intro_text: 'N' };
+
+function defaultTextStyle(fontSize: number, bold: 'Y' | 'N'): TextStyle {
+    return { font_size: fontSize, font_family: DEFAULT_FONT_FAMILY, align: DEFAULT_TEXT_ALIGN, color: DEFAULT_TEXT_COLOR, bold };
 }
 
 export function defaultTextStyles(level: LayoutLevel): TextStyles {
     const [title, subtitle, intro] = DEFAULT_TEXT_SIZES[level];
 
     return {
-        title_style: defaultTextStyle(title),
-        subtitle_style: defaultTextStyle(subtitle),
-        intro_text_style: defaultTextStyle(intro),
+        title_style: defaultTextStyle(title, DEFAULT_BOLD.title),
+        subtitle_style: defaultTextStyle(subtitle, DEFAULT_BOLD.subtitle),
+        intro_text_style: defaultTextStyle(intro, DEFAULT_BOLD.intro_text),
     };
 }
 
 /** สไตล์ CSS ของข้อความ 1 ส่วนตามที่ตั้งค่า — ฟอนต์ตามด้วย sans-serif เป็น fallback */
 export function textStyleCss(style: TextStyle): CSSProperties {
-    return {
+    const css: CSSProperties = {
         fontSize: `${style.font_size}px`,
         fontFamily: `'${style.font_family}', sans-serif`,
         textAlign: style.align,
         color: style.color,
     };
+
+    if (style.bold) {
+        css.fontWeight = style.bold === 'Y' ? 700 : 400;
+    }
+
+    return css;
 }
 
 function textStylesFromServer(server: ServerTextStyle): TextStyles {
@@ -233,6 +244,7 @@ function textStylesFromServer(server: ServerTextStyle): TextStyles {
         font_family: String(server[`${part}_font_family`]),
         align: server[`${part}_align`] as TextAlign,
         color: String(server[`${part}_color`]),
+        bold: server[`${part}_bold`] === 'Y' ? 'Y' : 'N',
     });
 
     return { title_style: one('title'), subtitle_style: one('subtitle'), intro_text_style: one('intro_text') };
@@ -247,6 +259,7 @@ function textStylesToPayload(styles: TextStyles): Record<string, string | number
         payload[`${part}_font_family`] = style.font_family;
         payload[`${part}_align`] = style.align;
         payload[`${part}_color`] = style.color;
+        payload[`${part}_bold`] = style.bold ?? DEFAULT_BOLD[part];
     });
 
     return payload;

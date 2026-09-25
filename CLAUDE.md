@@ -375,7 +375,9 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 - **โมดูล page รอบปรับปรุง (branch `page-edit`)** — ฟอร์มข้อมูลทั่วไปเรียงใหม่: ข้อมูลหน้าเพจ → SEO/AEO/GEO (รวมรูปแทนหน้าในหัวข้อ
   "การแชร์ไปโซเชียลมีเดีย") → พื้นหลังของทั้งหน้า → สถานะ; ระยะห่างของแถว/คอลัมน์/widget (`use_padding` default `N` + `padding_*` 4 ด้าน px,
   แถวมี `gap_x`/`gap_y` default 24) migration `2026_10_03_000001_*`, ศูนย์กลาง `App\Support\PageSpacing` + trait `HasPageSpacing`,
-  UI `Components/Admin/PageLayout/SpacingFields.vue`; หน้าบ้านหน้าเพจไม่มีระยะบน/ล่างของตัวหน้าและแถวไม่มี `py-6` ตายตัวแล้ว — ดู `docs/PRD-page.md`
+  UI `Components/Admin/PageLayout/SpacingFields.vue`; หน้าบ้านหน้าเพจไม่มีระยะบน/ล่างของตัวหน้าและแถวไม่มี `py-6` ตายตัวแล้ว — ดู `docs/PRD-page.md`.
+  รอบสอง: ตัวหนา `*_bold` ในการจัดรูปแบบตัวอักษรของแถว/คอลัมน์/widget (`PageTextStyle::FIELDS` มี `bold` แล้ว = 15 คอลัมน์), "แสดงหัวเรื่อง"/"การแสดงเนื้อหา"
+  เป็น `SegmentedChoice` (ผู้ใช้เรียกว่า segmented control) และซ่อนส่วนที่เกี่ยวข้องเมื่อไม่แสดงหัวเรื่อง (ค่าไม่ลบ), หน้าบ้านส่งระดับหัวเรื่องต่อลงชั้นถัดไปเมื่อชั้นบนไม่มีหัวเรื่อง
 - **`log_front_access`** (ในไฟล์ log กลาง — เพิ่มหลังจากไฟล์นั้น migrate แล้ว เครื่อง dev ต้องสร้างตารางเอง/`migrate:fresh`) —
   `LogFrontAccess::record()` ทุก controller หน้าบ้าน, keep-alive `useAccessHeartbeat('front.access.ping')` scope token + session_id,
   หน้ารายการหลังบ้าน `admin.system.frontlog.access.index`

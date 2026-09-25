@@ -142,6 +142,7 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 | `*_font_family` | `varchar(50)` | **Sarabun**; ต้องอยู่ในรายการฟอนต์ไทย (ด้านล่าง) |
 | `*_align` | `varchar(10)` | **`center`** (กึ่งกลาง); `left` ชิดซ้าย / `center` กึ่งกลาง / `right` ชิดขวา |
 | `*_color` | `varchar(20)` | **`#000000`** (ดำ); รหัส hex เท่านั้น — **ไม่มี transparent** (ต่างจากสีพื้นหลัง) |
+| `*_bold` | `char(1)` | ตัวหนา `Y`/`N` — หัวเรื่อง **`Y`**, หัวเรื่องรอง/ข้อความเกริ่นนำ **`N`** (`PageTextStyle::DEFAULT_BOLD`, migration `2026_10_03_000002_*`) |
 
 - `App\Support\PageTextStyle` เป็นแหล่งเดียวของรายการคอลัมน์/ค่าที่อนุญาต/ฟอนต์ (model ใช้ trait `HasPageTextStyle` เติม `$fillable`,
   validation ใช้ `textStyleRules()`, `PageLayoutSync` ใช้ `PageTextStyle::fromInput()`); หน้าจอสร้างค่าเริ่มต้นใน
@@ -152,6 +153,9 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
   Noto Serif Thai, Pattaya, Pridi, Prompt, Sarabun, Sriracha, Srisakdi, Taviraj, Thasadith, Trirong — หน้าโครงสร้างโหลดสไตล์ชีตของทุกตัวจาก Bunny Fonts (มิเรอร์ Google Fonts ที่ `app.blade.php` ใช้โหลด Sarabun อยู่แล้ว —
   `PageTextStyle::fontsStylesheetUrl()`) เบราว์เซอร์ดาวน์โหลดไฟล์ฟอนต์เฉพาะตัวที่ถูกใช้จริง; เพิ่มฟอนต์ใหม่ที่ `PageTextStyle::FONTS`
   (ต้องเช็กว่ามีน้ำหนักตัวอักษรที่ระบุจริง ไม่งั้นสไตล์ชีตทั้งชุดโหลดไม่ขึ้น)
+- **dialog ตั้งค่า**: "แสดงหัวเรื่อง" (ทุกชั้น) และ "การแสดงเนื้อหา" (แถว) เป็นปุ่มเลือกแบบ segmented control (`Components/Admin/Template/SegmentedChoice.vue`);
+  เลือก "ไม่แสดง" แล้วซ่อนการจัดรูปแบบของหัวเรื่อง + หัวเรื่องรอง + ข้อความเกริ่นนำ (ช่องกรอกหัวเรื่องยังอยู่ เพราะใช้เป็นชื่อบนแถบจัดการ)
+  — ซ่อนเฉพาะหน้าจอ ค่าไม่ถูกลบ เปิดแสดงใหม่แล้วได้ค่าเดิม
 - **การแสดงผล**: เมื่อ `show_title = Y` แสดงหัวเรื่อง + หัวเรื่องรอง + ข้อความเกริ่นนำ (เฉพาะส่วนที่กรอกแล้ว) ตามที่ตั้งค่า —
   หัวเรื่องใช้แท็ก **`<h2>` (แถว) / `<h3>` (คอลัมน์) / `<h4>` (widget)** ส่วนหัวเรื่องรองและข้อความเกริ่นนำเป็น `<div>` ธรรมดาเสมอ
   (ตัวอย่างในหน้าโครงสร้างคือ `LayoutTexts.vue`; หน้าบ้านต้อง render ให้ตรงกัน)
@@ -493,7 +497,8 @@ PK = id + lang) — migration `2026_09_27_000001_*` (มีทั้ง FK แ�
 - `/{lang}/page/item/{id}/{slug?}` (`front.page.item`) — `status = Y` และไม่ถูกลบ ไม่งั้น 404; หัวเรื่องของหน้าเป็น h1 ที่ซ่อนไว้ (sr-only)
 - ตัวหน้าเพจ**ไม่มีระยะบน/ล่างของตัวเอง** (`FrontLayout` โหมด `fullWidth`) และแถวไม่มี padding ตายตัวแล้ว — ระยะทั้งหมดมาจาก
   ค่า `padding` (null = ปิด) ของแถว/คอลัมน์/widget และ `gap_x`/`gap_y` ของแถว ที่ `PageLayoutReader` ส่งมา (`paddingCss()`/`gapCss()` ใน `utils/frontPage.ts`)
-- หัวเรื่องหน้าบ้าน: แถว h2 / คอลัมน์ h3 / widget h4 / หัวข้อ part ของ Custom Text และชื่อรายการใน Slideset/Grid h5
+- หัวเรื่องหน้าบ้าน: แถว h2 → คอลัมน์ h3 → widget h4 → หัวข้อ part ของ Custom Text และชื่อรายการใน Slideset/Grid h5 — **ชั้นที่ไม่มีหัวเรื่องแสดง
+  ส่งระดับของตัวเองต่อให้ชั้นถัดไป** (แถวไม่มีหัวเรื่อง = คอลัมน์ได้ h2, คอลัมน์ไม่มี = widget ได้ระดับของคอลัมน์ ฯลฯ ไม่เกิน h6 — `headingTag()` ใน `utils/frontPage.ts`)
 - widget ที่ดึงรายการจากหมวดหมู่: `CategoryListWidget::frontItems($setting, $lang)` (query เดียวกับ preview + ภาษา + ลิงก์จริง);
   `previewQuery()`/`articleQuery()`/`bannerQuery()` รับพารามิเตอร์ `$lang` เพิ่ม (null = ภาษาหลัก — หลังบ้านทำงานเหมือนเดิม)
 - ยอดเข้าชม: ตาราง `page_item_view` + คอลัมน์ใหม่ `page_item_info.view_amount` (migration `2026_10_01_000001_create_item_view_tables.php`)

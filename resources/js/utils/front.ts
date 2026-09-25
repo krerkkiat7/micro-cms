@@ -22,6 +22,8 @@ export interface FrontTextStyle {
     font_family: string;
     align: 'left' | 'center' | 'right';
     color: string;
+    /** ตัวหนา (ข้อความของแถว/คอลัมน์/widget ในหน้าเพจ) — ไม่ระบุ = ตามแท็ก/คลาสของที่ใช้ */
+    bold?: boolean;
 }
 
 /** โซนของ template — ฟิลด์พื้นหลังเป็น URL แล้ว (App\Support\Front\FrontLayoutData) */
@@ -189,12 +191,18 @@ export function zoneBackgroundCss(zone: { background_color: string | null; backg
 }
 
 export function textStyleCss(style: FrontTextStyle): CSSProperties {
-    return {
+    const css: CSSProperties = {
         fontSize: `${style.font_size}px`,
         fontFamily: `'${style.font_family}', sans-serif`,
         textAlign: style.align,
         color: style.color,
     };
+
+    if (style.bold !== undefined) {
+        css.fontWeight = style.bold ? 700 : 400;
+    }
+
+    return css;
 }
 
 export function fontCss(style: { font_size: number; font_family: string; color: string; bold?: boolean }): CSSProperties {

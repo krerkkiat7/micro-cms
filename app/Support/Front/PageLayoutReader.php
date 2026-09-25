@@ -178,6 +178,7 @@ final class PageLayoutReader
                 'font_family' => $family,
                 'align' => (string) ($model->{"{$part}_align"} ?: PageTextStyle::DEFAULT_ALIGN),
                 'color' => (string) ($model->{"{$part}_color"} ?: PageTextStyle::DEFAULT_COLOR),
+                'bold' => ($model->{"{$part}_bold"} ?? PageTextStyle::DEFAULT_BOLD[$part]) === 'Y',
             ];
         }
 

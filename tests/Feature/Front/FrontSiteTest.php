@@ -98,7 +98,9 @@ test('page sends padding (null when off) and column gaps from the layout setting
             ->where('page.rows.0.padding', ['top' => 10, 'right' => 20, 'bottom' => 30, 'left' => 40])
             ->where('page.rows.0.gap_x', 8)
             ->where('page.rows.0.gap_y', 12)
-            ->where('page.rows.0.columns.0.padding', null));
+            ->where('page.rows.0.columns.0.padding', null)
+            ->where('page.rows.0.title_style.bold', true)
+            ->where('page.rows.0.subtitle_style.bold', false));
 });
 
 test('unpublished, deleted or missing pages return 404', function () {
