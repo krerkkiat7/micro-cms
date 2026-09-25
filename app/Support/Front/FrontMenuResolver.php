@@ -290,7 +290,8 @@ final class FrontMenuResolver
             FrontMenuType::ARTICLE_ITEM => $menu->target_article_item_id && array_key_exists($menu->target_article_item_id, $slugs['article_item'])
                 ? FrontUrl::articleItem($lang, (int) $menu->target_article_item_id, $slugs['article_item'][$menu->target_article_item_id])
                 : null,
-            FrontMenuType::EXTERNAL => FrontUrl::safeExternal($menu->url),
+            // ลิงค์ภายนอกที่เป็น path ภายในแต่ไม่ได้ขึ้นต้นด้วยภาษา (เช่น /news) เติมภาษาของหน้าที่เปิดอยู่ให้ (header/footer/aside/ปุ่มอ่านทั้งหมด)
+            FrontMenuType::EXTERNAL => FrontUrl::withLang(FrontUrl::safeExternal($menu->url), $lang),
             default => null,
         };
 

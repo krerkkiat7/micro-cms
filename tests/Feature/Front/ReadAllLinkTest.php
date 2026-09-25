@@ -8,6 +8,8 @@ use App\Models\PageItemInfo;
 use App\Models\PageItemRow;
 use App\Models\PageItemWidget;
 use App\Models\PageItemWidgetGridArticle;
+use App\Support\Front\FrontCache;
+use App\Support\Front\FrontMenuResolver;
 use App\Support\Front\FrontUrl;
 use App\Support\PageWidget\PageWidgetRegistry;
 use Database\Seeders\DatabaseSeeder;
@@ -84,10 +86,23 @@ test('a menu read-all link follows the menu url and target; hidden menus hide th
         ->and($setting['read_all_link_target'])->toBe($pageMenu->link_target === '_blank' ? '_blank' : '_self');
 
     PageItemWidgetGridArticle::query()->update(['read_all_menu_id' => $external->id]);
-    \App\Support\Front\FrontCache::forgetAll(); // update ผ่าน query builder ไม่ผ่าน model event จึงไม่ล้าง cache หน้าบ้านเอง
+    FrontCache::forgetAll(); // update ผ่าน query builder ไม่ผ่าน model event จึงไม่ล้าง cache หน้าบ้านเอง
     expect(readAllSettingOf($pageId)['read_all_url'])->toBe('/th/promo')
         ->and(readAllSettingOf($pageId)['read_all_link_target'])->toBe('_blank');
 
     $external->update(['status' => 'N']);
     expect(readAllSettingOf($pageId)['read_all_url'])->toBeNull();
+});
+
+test('external menus with an internal path get the language in the header/footer/aside menu tree too', function () {
+    FrontMenuInfo::create(['menu_type' => 'external', 'url' => '/contact', 'status' => 'Y']);
+    FrontMenuInfo::create(['menu_type' => 'external', 'url' => '/en/about', 'status' => 'Y']);
+    FrontMenuInfo::create(['menu_type' => 'external', 'url' => 'https://example.com', 'status' => 'Y']);
+
+    $urls = collect(FrontMenuResolver::tree('en'))->pluck('url');
+
+    expect($urls)->toContain('/en/contact')
+        ->and($urls)->toContain('/en/about')
+        ->and($urls)->toContain('https://example.com')
+        ->and($urls)->not->toContain('/contact');
 });
