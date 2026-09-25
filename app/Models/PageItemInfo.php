@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FlushesFrontCache;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class PageItemInfo extends Model
 {
-    use SoftDeletes;
+    use FlushesFrontCache, SoftDeletes;
 
     protected $table = 'page_item_info';
 
@@ -33,6 +34,8 @@ class PageItemInfo extends Model
 
     protected $casts = [
         'layout_updated_at' => 'datetime',
+        // ยอดเข้าชมรวม — บวกเพิ่มโดย App\Support\Front\ViewCounter เท่านั้น (ไม่อยู่ใน $fillable)
+        'view_amount' => 'integer',
     ];
 
     public function introImage()

@@ -110,6 +110,31 @@ class PageTextStyle
     }
 
     /**
+     * URL สไตล์ชีตที่โหลดเฉพาะฟอนต์ที่ระบุ (ใช้ในหน้าบ้าน — โหลดเฉพาะฟอนต์ที่หน้านั้นใช้จริง ไม่โหลดทั้ง 29 ฟอนต์)
+     * ชื่อที่ไม่อยู่ในรายการ FONTS ถูกตัดทิ้ง; ไม่เหลือฟอนต์เลย = null
+     *
+     * @param  iterable<mixed>  $names
+     */
+    public static function stylesheetUrlFor(iterable $names): ?string
+    {
+        $families = [];
+
+        foreach ($names as $name) {
+            if (is_string($name) && isset(self::FONTS[$name])) {
+                $families[$name] = self::FONTS[$name];
+            }
+        }
+
+        if ($families === []) {
+            return null;
+        }
+
+        ksort($families);
+
+        return 'https://fonts.bunny.net/css?family='.implode('|', $families).'&display=swap';
+    }
+
+    /**
      * ดึงเฉพาะคอลัมน์การจัดรูปแบบ (12 ค่า) ออกจากข้อมูลที่ validate แล้วของแถว/คอลัมน์/widget
      *
      * @param  array<string, mixed>  $data

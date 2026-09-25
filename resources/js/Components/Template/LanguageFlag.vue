@@ -1,10 +1,13 @@
 <script setup lang="ts">
-/** ธงของภาษา (แบบย่อ) สำหรับตัวอย่างตัวเลือกภาษาใน header — ภาษาที่ไม่มีธงแสดงเป็นกล่องสีเทา */
+/**
+ * ธงของภาษา (แบบย่อ) — ใช้ร่วมกันระหว่างตัวอย่าง template หลังบ้าน และตัวเลือกภาษาใน header หน้าบ้าน
+ * (ตกแต่งเท่านั้น aria-hidden — ชื่อภาษาอยู่ที่ข้อความ/aria-label ของปุ่ม) ภาษาที่ไม่มีธงแสดงเป็นกล่องสีเทา
+ */
 defineProps<{ code: string }>();
 </script>
 
 <template>
-    <svg viewBox="0 0 30 20" class="h-3 w-[18px] shrink-0 overflow-hidden rounded-[2px] ring-1 ring-black/10">
+    <svg viewBox="0 0 30 20" class="h-3 w-[18px] shrink-0 overflow-hidden rounded-[2px] ring-1 ring-black/10" aria-hidden="true" focusable="false">
         <template v-if="code === 'th'">
             <rect width="30" height="20" fill="#A51931" />
             <rect y="3.33" width="30" height="13.34" fill="#F4F5F8" />

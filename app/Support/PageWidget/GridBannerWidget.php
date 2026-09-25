@@ -85,9 +85,9 @@ class GridBannerWidget extends CategoryListWidget
         return $values;
     }
 
-    protected function previewQuery(int $categoryId): Builder
+    protected function previewQuery(int $categoryId, ?string $lang = null): Builder
     {
-        return $this->bannerQuery($categoryId);
+        return $this->bannerQuery($categoryId, $lang);
     }
 
     protected function previewRow(object $row): array

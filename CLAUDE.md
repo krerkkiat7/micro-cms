@@ -11,6 +11,7 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 ภาพรวมโมดูล/ส่วนจัดการระบบ + roadmap อยู่ที่ `docs/PRD-overview.md`
 รายละเอียดส่วนจัดการระบบ (users, สิทธิ์, เมนู, template, ประวัติ, settings, files) อยู่ที่ `docs/PRD-system.md`
 (โมดูลย่อยที่มีเอกสารแยก: `docs/PRD-system-frontmenu.md`, `docs/PRD-system-template.md`)
+หน้าบ้าน (front-office) อยู่ที่ `docs/PRD-front.md`
 
 ## Tech Stack
 
@@ -43,6 +44,7 @@ npm install
 # พัฒนา
 npm run dev                   # Vite dev server
 php artisan serve             # หรือ `composer dev` (รัน serve + queue + pail + vite พร้อมกัน)
+php artisan schedule:work     # (dev) scheduler — front:flush-views ทุกนาที (production ใช้ cron `schedule:run`)
 
 # ทดสอบ
 php artisan test              # หรือ `composer test`
@@ -55,10 +57,12 @@ npm run build                 # vue-tsc typecheck + vite build
 
 ## โครงสร้าง Routing (`routes/web.php`)
 
-- `/` → redirect ไป `/th`
-- **Front-office**: prefix `{lang}` โดย `lang` = `th|en`, middleware `['web', 'setLocale']`
+- `/` (`front.root`) และ `/{lang}` (`front.home`) → แสดง Intropage ที่เผยแพร่อยู่ (ไม่มี → redirect ไปหน้าแรกตามเมนู `is_home`)
+- **Front-office**: prefix `{lang}` (ภาษาที่เปิดใช้ใน `sys_setting`), middleware `['web', 'setLocale', FrontSecurityHeaders]` — ดู `docs/PRD-front.md`
   - `SetLocale` middleware อ่าน `lang` จาก route แล้ว `App::setLocale()` (default `th`)
-  - ชื่อ route ขึ้นต้น `front.*` (เช่น `front.home`)
+  - ชื่อ route ขึ้นต้น `front.*`: `front.page.item`, `front.article.category`, `front.article.category.item`, `front.article.item`
+    (`/{lang}/page/item/{id}/{slug?}` ฯลฯ — slug ไม่บังคับ); ไฟล์สาธารณะ `front.file.*` (`/file/get/{hash}`), `front.access.ping`
+  - controller หน้าบ้าน extends `Front\FrontController` (ส่ง prop `front` = layout จาก template + เมนู + ตั้งค่าไซต์, และ `seo`)
 - **Back-office**: prefix `/admin`
   - `routes/auth_admin.php` = auth routes ของ Breeze ที่ย้ายมาไว้ใต้ `/admin` (ชื่อ route ขึ้นต้น `admin.*` เช่น `admin.login`, `admin.password.request`)
   - routes ที่ต้อง login อยู่ใน group `middleware(['auth', 'verified'])` ชื่อขึ้นต้น `admin.*` (เช่น `admin.dashboard`, `admin.profile.edit`)
@@ -351,8 +355,30 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   (`VisualPicker.vue` = เปลือกการ์ด SVG, `YesNoCheckbox.vue` = แสดง/ซ่อน Y/N). permission/เมนู seed ไว้ก่อนแล้ว, log module
   `system.template`, seed ตัวอย่าง `TemplateSeeder` — ดู `docs/PRD-system-template.md`
 
+- **หน้าบ้านรอบแรก (branch `front-init`) — ดู `docs/PRD-front.md`** — Intropage (layout เปล่า `Layouts/Front/IntroLayout.vue`),
+  layout หน้าภายใน `Layouts/Front/FrontLayout.vue` จาก template ที่เปิดใช้งาน (`App\Support\Front\FrontLayoutData`, component
+  `Components/Front/Template/*`, `LanguageFlag`/`SocialIcon` ย้ายไป `Components/Template/` ใช้ร่วม), ส่วนหัว+breadcrumb ตามเมนู
+  (`FrontMenuResolver`), หน้าเพจ (`PageLayoutReader` + `CategoryListWidget::frontItems()` — `previewQuery()`/`articleQuery()`/`bannerQuery()`
+  รับ `$lang` เพิ่ม), หมวดหมู่/รายละเอียดบทความ (`ArticleReader`, part ครบ 7 รูปแบบกลุ่มรูปใน `Components/Front/ContentPart/*`),
+  SEO/AEO/GEO (`SeoMeta` → meta/hreflang/OG/JSON-LD ฝั่ง server ใน `app.blade.php` + `SeoHead.vue`), WCAG (skip link, landmark,
+  เครื่องมือขนาดตัวอักษร/การแสดงสี, carousel หยุดได้, dialog focus trap), security (`HtmlSanitizer` สำหรับ rich text, `FrontUrl::safeExternal()`,
+  `FrontSecurityHeaders`, หน้าบ้านไม่ส่ง `auth.user`/`menu` และ Ziggy ส่งเฉพาะกลุ่ม `front` — `config/ziggy.php`),
+  หน้า error หน้าบ้าน (`FrontErrorPage` ผูกใน `bootstrap/app.php`), ข้อความ UI `lang/{th,en}/front.php`.
+  **ข้อมูล `is_temp='Y'` แสดงที่หน้าบ้านตามปกติ — ห้ามกรอง `is_temp` ใน query หน้าบ้าน**
+- **cache หน้าบ้าน** `App\Support\Front\FrontCache` (key มี version — `forgetAll()` เพิ่ม version แทน `Cache::flush()`), ล้างอัตโนมัติผ่าน
+  trait `App\Models\Concerns\FlushesFrontCache` บนทุก model ที่หน้าบ้านใช้ + `Setting::forget()`; ปุ่ม "ล้าง Cache หน้าบ้าน" ในหน้าล้างแคช.
+  โมดูลใหม่ที่หน้าบ้านแสดงผล ต้องใส่ trait นี้ใน model ด้วย
+- **ยอดเข้าชม** `article_item_view` / `page_item_view` + `page_item_info.view_amount` (migration `2026_10_01_000001_*`) —
+  `App\Support\Front\ViewCounter` (ข้ามบอท + dedupe 30 นาที/session, บันทึกหลังส่ง response ด้วย `defer()`, โหมด redis = คิว Redis +
+  `php artisan front:flush-views` ทุกนาที batch insert/update) — **production ต้องตั้ง cron `schedule:run`**; `config/front.php`.
+  ใช้ `defer()` ไม่ใช่ `app()->terminating()` (callback ของ terminating สะสมข้าม request ในเทส/Octane)
+- **`log_front_access`** (ในไฟล์ log กลาง — เพิ่มหลังจากไฟล์นั้น migrate แล้ว เครื่อง dev ต้องสร้างตารางเอง/`migrate:fresh`) —
+  `LogFrontAccess::record()` ทุก controller หน้าบ้าน, keep-alive `useAccessHeartbeat('front.access.ping')` scope token + session_id,
+  หน้ารายการหลังบ้าน `admin.system.frontlog.access.index`
+
 ## ทดสอบ
 
+- เทสหน้าบ้านอยู่ `tests/Feature/Front/FrontSiteTest.php` (seed `DatabaseSeeder` แล้วใช้ข้อมูลตัวอย่าง)
 - เทสอยู่ใน `tests/Feature/Auth/*` และ `tests/Feature/ProfileTest.php` (มาจาก Breeze, ใช้ Pest) —
   ปรับให้ใช้ prefix `/admin` + route `admin.*` แล้ว ปัจจุบัน **ผ่านทั้งหมด**
 - `tests/Feature/Auth/EmailVerificationTest.php` ถูก `->skip()` ไว้ — `User` ยังไม่ implements

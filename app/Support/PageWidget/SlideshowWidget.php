@@ -35,6 +35,11 @@ abstract class SlideshowWidget extends CategoryListWidget
         ];
     }
 
+    protected function frontImageWidth(): int
+    {
+        return 1920;
+    }
+
     protected function previewRow(object $row): array
     {
         return [

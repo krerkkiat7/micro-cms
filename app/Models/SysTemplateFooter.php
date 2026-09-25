@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FlushesFrontCache;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -10,6 +11,8 @@ use Illuminate\Database\Eloquent\Model;
  */
 class SysTemplateFooter extends Model
 {
+    use FlushesFrontCache;
+
     protected $table = 'sys_template_footer';
 
     protected $primaryKey = 'sys_template_id';

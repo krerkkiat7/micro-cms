@@ -11,6 +11,7 @@ use App\Models\IntropageItemDetail;
 use App\Models\IntropageItemInfo;
 use App\Models\LogBackAccess;
 use App\Models\LogBackAction;
+use App\Support\PageTextStyle;
 use App\Support\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -110,6 +111,8 @@ class IntropageItemController extends Controller
 
         return Inertia::render('Admin/Intropage/Item/Add', [
             'languages' => $this->languageOptions(),
+            'fonts' => PageTextStyle::fontNames(),
+            'fontsUrl' => PageTextStyle::fontsStylesheetUrl(),
         ]);
     }
 
@@ -193,7 +196,12 @@ class IntropageItemController extends Controller
                 'image_file' => $imageFile ? $this->fileToArray($imageFile) : null,
                 'vdo_file' => $vdoFile ? $this->fileToArray($vdoFile) : null,
                 'vdo_url' => $model->vdo_url,
+                'detail_font_family' => $model->detail_font_family,
+                'detail_font_size' => (int) $model->detail_font_size,
+                'detail_color' => $model->detail_color,
                 'show_button' => $model->show_button,
+                'button_font_size' => (int) $model->button_font_size,
+                'button_font_family' => $model->button_font_family,
                 'publish_date' => optional($model->publish_date)->format('Y-m-d H:i:s'),
                 'publish_down' => optional($model->publish_down)->format('Y-m-d H:i:s'),
                 'status' => $model->status,
@@ -203,6 +211,8 @@ class IntropageItemController extends Controller
             ]),
             'buttons' => $buttons->map(fn (IntropageItemButton $button) => $this->buttonToArray($button))->values(),
             'languages' => $this->languageOptions(),
+            'fonts' => PageTextStyle::fontNames(),
+            'fontsUrl' => PageTextStyle::fontsStylesheetUrl(),
             'can' => [
                 'manage' => $request->user()->hasPermission('intropage.item.manage'),
                 'delete' => $request->user()->hasPermission('intropage.item.delete'),
@@ -333,7 +343,12 @@ class IntropageItemController extends Controller
             'image_file_id' => $data['display_type'] === 'image' ? ($data['image_file_id'] ?? null) : null,
             'vdo_file_id' => $data['display_type'] === 'vdo' ? ($data['vdo_file_id'] ?? null) : null,
             'vdo_url' => in_array($data['display_type'], ['vdourl', 'youtubeurl'], true) ? ($data['vdo_url'] ?? null) : null,
+            'detail_font_family' => $data['detail_font_family'],
+            'detail_font_size' => $data['detail_font_size'],
+            'detail_color' => $data['detail_color'],
             'show_button' => $data['show_button'],
+            'button_font_size' => $data['button_font_size'],
+            'button_font_family' => $data['button_font_family'],
             'publish_date' => $data['publish_date'],
             'publish_down' => $data['publish_down'],
             'status' => $data['status'],

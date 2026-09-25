@@ -4,6 +4,8 @@ namespace App\Support\PageWidget;
 
 use App\Models\ArticleCategoryInfo;
 use App\Models\ArticleItemInfo;
+use App\Support\Front\FrontLang;
+use App\Support\Front\FrontUrl;
 use App\Support\Setting;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -61,11 +63,11 @@ trait ReadsArticles
     /**
      * บทความของหมวดหมู่ที่เผยแพร่อยู่ (`status = Y`, ไม่ถูกลบ, อยู่ในช่วงเผยแพร่) พร้อมข้อมูลภาษาหลักเป็น `d` และรูปหน้าปกเป็น `img`
      * `$requireImage` = true → เฉพาะบทความที่มีรูปหน้าปกที่ใช้งานได้ (inner join), false → left join (ไม่มีรูปก็แสดง)
-     * ผู้เรียกต้อง select คอลัมน์เอง
+     * ผู้เรียกต้อง select คอลัมน์เอง (query นี้ addSelect `front_slug`/`front_category_id` ไว้ให้แล้ว สำหรับสร้างลิงก์หน้าบ้าน)
+     * `$lang` = ภาษาของข้อความ (null = ภาษาหลัก) — ภาษาที่ยังไม่ได้แปลใช้ข้อความภาษาหลักแทน (FrontLang::joinDetail)
      */
-    protected function articleQuery(int $categoryId, bool $requireImage): Builder
+    protected function articleQuery(int $categoryId, bool $requireImage, ?string $lang = null): Builder
     {
-        $defaultLang = Setting::defaultLanguage();
         $now = now();
         $imageJoin = function ($join) {
             $join->on('img.id', '=', 'article_item_info.intro_image_id')
@@ -74,9 +76,8 @@ trait ReadsArticles
         };
 
         $query = ArticleItemInfo::query()
-            ->join('article_item_detail as d', function ($join) use ($defaultLang) {
-                $join->on('d.id', '=', 'article_item_info.id')->where('d.lang', $defaultLang);
-            });
+            ->join('article_item_detail as d', fn ($join) => FrontLang::joinDetail($join, 'd', 'article_item_detail', 'article_item_info.id', $lang))
+            ->addSelect(['d.slug as front_slug', 'article_item_info.article_category_info_id as front_category_id']);
 
         $requireImage
             ? $query->join('file_info as img', $imageJoin)
@@ -88,6 +89,21 @@ trait ReadsArticles
             ->where('article_item_info.status', 'Y')
             ->where(fn ($q) => $q->whereNull('article_item_info.publish_date')->orWhere('article_item_info.publish_date', '<=', $now))
             ->where(fn ($q) => $q->whereNull('article_item_info.publish_down')->orWhere('article_item_info.publish_down', '>', $now));
+    }
+
+    /**
+     * ลิงก์หน้าบ้านของบทความ 1 แถว — หน้ารายละเอียดบทความภายใต้หมวดหมู่ (article.category.item)
+     *
+     * @return array{url: string|null, link_target: string}
+     */
+    protected function frontLink(object $row, string $lang): array
+    {
+        return [
+            'url' => $row->front_category_id
+                ? FrontUrl::articleCategoryItem($lang, (int) $row->front_category_id, (int) $row->id, $row->front_slug)
+                : FrontUrl::articleItem($lang, (int) $row->id, $row->front_slug),
+            'link_target' => '_self',
+        ];
     }
 
     protected function orderPreview(Builder $query, string $sortBy): void

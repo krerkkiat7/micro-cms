@@ -32,10 +32,10 @@ class SlideshowArticleWidget extends SlideshowWidget
         return PageItemWidgetSlideshowArticle::class;
     }
 
-    protected function previewQuery(int $categoryId): Builder
+    protected function previewQuery(int $categoryId, ?string $lang = null): Builder
     {
         // ต้องมีรูปหน้าปกที่ใช้งานได้ (ภาพคือตัวเนื้อหาของ slideshow)
-        return $this->articleQuery($categoryId, requireImage: true)
+        return $this->articleQuery($categoryId, requireImage: true, lang: $lang)
             ->selectRaw('article_item_info.id, img.hash_name as image, d.title, d.intro_text, 1 as has_link');
     }
 }

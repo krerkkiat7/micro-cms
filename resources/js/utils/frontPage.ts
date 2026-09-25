@@ -1,0 +1,121 @@
+import type { CSSProperties } from 'vue';
+import type { FrontBackground, FrontPart, FrontTextStyle } from '@/utils/front';
+
+/**
+ * ชนิดข้อมูลโครงสร้างหน้าเพจที่หน้าบ้าน (App\Support\Front\PageLayoutReader) — แถว → คอลัมน์ → widget
+ * ข้อความเป็นภาษาที่แสดงแล้ว, พื้นหลังเป็น URL แล้ว, widget ที่ดึงรายการจากหมวดหมู่มี `items` (ลิงก์จริง), Custom Text มี `parts`
+ */
+
+export interface FrontLayoutBlock {
+    id: number;
+    title: string;
+    subtitle: string;
+    intro_text: string;
+    title_style: FrontTextStyle;
+    subtitle_style: FrontTextStyle;
+    intro_text_style: FrontTextStyle;
+    background: FrontBackground;
+}
+
+/** รายการ 1 ชิ้นของ widget ที่ดึงจากหมวดหมู่ (banner / article) */
+export interface FrontWidgetItem {
+    id: number;
+    title: string;
+    intro_text: string;
+    image_url: string | null;
+    url: string | null;
+    link_target: '_self' | '_blank';
+    /** article: วันที่เผยแพร่ (Y-m-d) + จำนวนเข้าชม */
+    date?: string | null;
+    views?: number;
+}
+
+export interface FrontWidgetData extends FrontLayoutBlock {
+    widget_type: string;
+    // ค่าตั้งค่าของแต่ละประเภท (ดู utils/pageWidget.ts) — ข้อความแยกภาษาถูกแปลงเป็นข้อความของภาษาที่แสดงแล้ว
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setting: Record<string, any>;
+    items: FrontWidgetItem[];
+    parts: FrontPart[];
+}
+
+export interface FrontColumnData extends FrontLayoutBlock {
+    column_size: number;
+    widgets: FrontWidgetData[];
+}
+
+export interface FrontRowData extends FrontLayoutBlock {
+    use_container: boolean;
+    columns: FrontColumnData[];
+}
+
+export interface FrontPageData {
+    id: number;
+    title: string;
+    background: FrontBackground;
+    rows: FrontRowData[];
+    fontsUrl: string | null;
+}
+
+/** จำนวนบรรทัด → class line-clamp (ต้องเป็นชื่อเต็มให้ Tailwind สแกนเจอ) */
+export const LINE_CLAMP: Record<number, string> = { 1: 'line-clamp-1', 2: 'line-clamp-2', 3: 'line-clamp-3' };
+
+export const JUSTIFY_CLASS: Record<string, string> = { left: 'justify-start', center: 'justify-center', right: 'justify-end' };
+
+/**
+ * สไตล์ตัวอักษรของส่วนหนึ่งในการ์ด (title / intro_text / date / views / date_day / date_month) จากคอลัมน์แบน `<part>_font_size` ฯลฯ
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function partCss(setting: Record<string, any>, part: string, withAlign = false): CSSProperties {
+    const css: CSSProperties = {
+        fontSize: `${setting[`${part}_font_size`]}px`,
+        fontFamily: `'${setting[`${part}_font_family`]}', sans-serif`,
+        color: String(setting[`${part}_color`] ?? ''),
+        fontWeight: setting[`${part}_bold`] === 'Y' ? 700 : 400,
+    };
+
+    if (withAlign && setting[`${part}_align`]) {
+        css.textAlign = setting[`${part}_align`];
+    }
+
+    return css;
+}
+
+/** กล่องของการ์ด/แถว: เส้นขอบ + สี / สีพื้นหลังของแต่ละรายการ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function itemBoxCss(setting: Record<string, any>): CSSProperties {
+    return {
+        backgroundColor: setting.item_background,
+        borderWidth: setting.show_border === 'Y' ? '1px' : '0',
+        borderStyle: 'solid',
+        borderColor: setting.border_color,
+    };
+}
+
+/** กรอบรูปของการ์ด: อัตราส่วน + สีพื้นหลัง (เมื่อ contain) */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function imageFrameCss(setting: Record<string, any>): CSSProperties {
+    return {
+        aspectRatio: String(setting.aspect_ratio ?? '16:9').replace(':', ' / '),
+        backgroundColor: setting.image_fit === 'contain' ? setting.image_background : '#F3F4F6',
+    };
+}
+
+/** เป้าหมายการเปิดลิงก์ของรายการ — ตั้งค่า widget หรือของ banner เอง ข้อใดข้อหนึ่งเป็นหน้าต่างใหม่ = เปิดหน้าต่างใหม่ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function itemTarget(setting: Record<string, any>, item: FrontWidgetItem): '_self' | '_blank' {
+    return setting.link_target === '_blank' || item.link_target === '_blank' ? '_blank' : '_self';
+}
+
+/** จำนวนต่อแถวแต่ละขนาดหน้าจอ → CSS variable ของ .front-grid (resources/css/app.css) */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function perRowVars(setting: Record<string, any>): CSSProperties {
+    const clamp = (value: unknown) => Math.max(1, Math.min(6, Number(value) || 1));
+
+    return {
+        '--cols-mobile': clamp(setting.per_row_mobile),
+        '--cols-tablet': clamp(setting.per_row_tablet),
+        '--cols-notebook': clamp(setting.per_row_notebook),
+        '--cols-pc': clamp(setting.per_row_pc),
+    } as CSSProperties;
+}

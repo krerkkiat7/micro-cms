@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ChevronDown, Contrast, Minus, Plus, Search } from 'lucide-vue-next';
-import LanguageFlag from '@/Components/Admin/Template/Preview/LanguageFlag.vue';
-import SocialIcon from '@/Components/Admin/Template/Preview/SocialIcon.vue';
+import LanguageFlag from '@/Components/Template/LanguageFlag.vue';
+import SocialIcon from '@/Components/Template/SocialIcon.vue';
 import { SOCIAL_LABELS } from '@/utils/template';
 import type { HeaderZone, TemplatePreviewData } from '@/utils/template';
 

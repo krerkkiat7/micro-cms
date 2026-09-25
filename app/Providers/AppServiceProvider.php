@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Support\Front\ViewCounter;
+use App\Support\Front\Views\RedisViewBuffer;
 use App\Support\Setting;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Config;
@@ -16,7 +18,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // ตัวนับยอดเข้าชมหน้าบ้าน — โหมด redis พักคิวใน Redis แล้ว flush เป็นชุด / โหมด database บันทึกตรง (ดู config/front.php)
+        $this->app->singleton(ViewCounter::class, function () {
+            $driver = config('front.views.driver', 'auto');
+
+            if ($driver === 'auto') {
+                $driver = config('cache.default') === 'redis' ? 'redis' : 'database';
+            }
+
+            return new ViewCounter($driver === 'redis'
+                ? new RedisViewBuffer((string) config('front.views.redis_connection', 'default'))
+                : null);
+        });
     }
 
     /**

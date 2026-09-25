@@ -9,9 +9,9 @@
 |---|--------|-----------|-------|
 | 1 | จัดการผู้ใช้งาน | `sys_user` | 🟢 list/add/edit/เปลี่ยนรหัสผ่าน เสร็จ (ต้นแบบ §5) |
 | 2 | จัดการกลุ่มผู้ใช้งาน + สิทธิ์ | `sys_usergroup`, `sys_action_group`, `sys_action`, `sys_usergroup_action` | 🟢 list/add/edit + หน้ากำหนดสิทธิ์ (tree) เสร็จ |
-| 3 | จัดการเมนู (หลังบ้าน / หน้าบ้าน) | `sys_menu_group`, `sys_menu` / `sys_front_menu` *(เสนอ)* | 🟡 เมนูหลังบ้าน: ตาราง/model/seed ตัวอย่างมี, ยังไม่ต่อ UI · หน้าบ้าน: 🔴 |
-| 4 | จัดการ template | `sys_template` + `sys_template_header/body/footer/aside` | 🟡 หลังบ้านครบ (list/add/ข้อมูลทั่วไป/โครงสร้าง+preview/Custom CSS/JS/Loading) · render หน้าบ้าน 🔴 — [PRD-system-template.md](PRD-system-template.md) |
-| 5 | ประวัติ login / เข้าชม / การกระทำ | `log_back_access`, `log_back_action`, `log_back_login` (+ `log_front_*`) | 🟡 หลังบ้านครบ 3 ตัว (บันทึก + หน้ารายการ) · `log_front_*` 🔴 |
+| 3 | จัดการเมนู (หลังบ้าน / หน้าบ้าน) | `sys_menu_group`, `sys_menu` / `front_menu_info`+`front_menu_detail` | 🟡 เมนูหลังบ้าน: ตาราง/model/seed ตัวอย่างมี, ยังไม่ต่อ UI · หน้าบ้าน: 🟢 admin CRUD + render หน้าบ้าน ([PRD-front.md](PRD-front.md)) |
+| 4 | จัดการ template | `sys_template` + `sys_template_header/body/footer/aside` | 🟡 หลังบ้านครบ (list/add/ข้อมูลทั่วไป/โครงสร้าง+preview/Custom CSS/JS/Loading) · render หน้าบ้าน 🟢 — [PRD-system-template.md](PRD-system-template.md), [PRD-front.md](PRD-front.md) §3 |
+| 5 | ประวัติ login / เข้าชม / การกระทำ | `log_back_access`, `log_back_action`, `log_back_login` (+ `log_front_*`) | 🟡 หลังบ้านครบ 3 ตัว (บันทึก + หน้ารายการ) · `log_front_access` 🟢 · `log_front_action`/`log_front_login` 🔴 |
 | 6 | ตั้งค่าระบบ/เว็บไซต์ | `sys_setting` | 🟡 ตาราง/model/seed ตัวอย่างมี, ยังไม่มี UI |
 | 7 | profile | `sys_user` | 🟢 |
 | 8 | dashboard | — | 🟡 placeholder |
@@ -299,7 +299,7 @@ level 2 เป็นต้นไปเรียงแนวตั้งไปด
 
 ---
 
-## 4. จัดการ template — 🟡 หลังบ้านเสร็จ · render หน้าบ้าน 🔴
+## 4. จัดการ template — 🟢 หลังบ้านเสร็จ · render หน้าบ้านเสร็จ (ดู [PRD-front.md](PRD-front.md) §3)
 
 **วัตถุประสงค์** — กำหนดหน้าตาส่วนกลางของหน้าบ้าน 4 โซน (header / main body / footer / aside) สร้างได้หลายรายการ ใช้งานได้ครั้งละ 1 รายการ
 
@@ -312,7 +312,7 @@ level 2 เป็นต้นไปเรียงแนวตั้งไปด
 
 ---
 
-## 5. ประวัติ login / เข้าชม / การกระทำ — 🟡 ฝั่งหลังบ้านครบ 3 ตัว (`log_back_access` + `log_back_login` + `log_back_action`) · ฝั่งหน้าบ้าน 🔴
+## 5. ประวัติ login / เข้าชม / การกระทำ — 🟡 ฝั่งหลังบ้านครบ 3 ตัว (`log_back_access` + `log_back_login` + `log_back_action`) · หน้าบ้าน `log_front_access` 🟢
 
 **วัตถุประสงค์** — เก็บ log เพื่อตรวจสอบย้อนหลังและวิเคราะห์การเข้าชม
 
@@ -324,7 +324,7 @@ level 2 เป็นต้นไปเรียงแนวตั้งไปด
 
 | ตาราง | เก็บอะไร | สถานะ |
 |-------|---------|-------|
-| `log_back_access` / `log_front_access` | การเข้าชม/เข้าถึงหน้า (1 request = 1 แถว) | `log_back_access` 🟢 ตาราง/model + บันทึก + keep-alive + หน้ารายการ · `log_front_access` 🔴 |
+| `log_back_access` / `log_front_access` | การเข้าชม/เข้าถึงหน้า (1 request = 1 แถว) | `log_back_access` 🟢 ตาราง/model + บันทึก + keep-alive + หน้ารายการ · `log_front_access` 🟢 ตาราง/model + บันทึก (insert หลังส่ง response) + keep-alive (token + session_id) + หน้ารายการ |
 | `log_back_action` / `log_front_action` | การกระทำบนข้อมูล — `module_code`, `action_type` (`create`/`view`/`update`/`delete`), `value_string` (ชื่อข้อมูล), `ref_id`, `remote_ip` | `log_back_action` 🟢 ตาราง/model + บันทึก (system.user + system.usergroup) + หน้ารายการ · `log_front_action` 🔴 |
 | `log_back_login` / `log_front_login` | การเข้า/ออกระบบ — `log_type` (`login`/`logout`), `result` (`success`/`fail`/`block`), `username`, `note`, `remote_ip` | `log_back_login` 🟢 ตาราง/model + บันทึก + หน้ารายการ · `log_front_login` 🔴 |
 
@@ -436,11 +436,13 @@ paging + per_page + sort default `created_at` desc (`sort=name` leftJoin `sys_us
 ตัวกรอง: ช่องค้นหา (`value_string` / `module_code` / IP) + dropdown **"โมดูล"** และ **"ประเภทการกระทำ"**
 (จาก `SELECT DISTINCT` ของคอลัมน์นั้น ๆ) + ช่วงวันที่. `toDate()` ของ 3 log viewer ย้ายไป base `Controller`
 
-**หน้าจอ log ฝั่งหน้าบ้าน** — 🔴 ยังไม่ทำ
+**หน้าจอ log ฝั่งหน้าบ้าน** — `log_front_access` 🟢 "ประวัติการใช้งาน - หน้าบ้าน" (`admin.system.frontlog.access.index` →
+`Admin\System\FrontLogAccessController` → `Pages/Admin/System/FrontLogAccess/Index.vue`) เหมือนของหลังบ้าน + ตัวกรอง
+ผู้เข้าชม (บุคคล/บอท) + คอลัมน์อุปกรณ์ — การบันทึก/keep-alive ดู [PRD-front.md](PRD-front.md) §9 · `log_front_action`/`log_front_login` 🔴 (รอสมาชิกหน้าบ้าน)
 
 **Permission** — seed ไว้แล้ว: `system.backlog.access`/`.action`/`.login` และ `system.frontlog.access`/`.action`/`.login`
 (เมนู sidebar route_name `admin.system.backlog.*.index` / `admin.system.frontlog.*.index` —
-`backlog.*` ทั้ง 3 มี route จริงแล้ว เมนูคลิกได้; `frontlog.*` ยังไม่มี route เมนูจึง render จาง)
+`backlog.*` ทั้ง 3 และ `frontlog.access` มี route จริงแล้ว เมนูคลิกได้; `frontlog.action`/`.login` ยังไม่มี route เมนูจึง render จาง)
 
 **หมายเหตุ**
 - retention: ลบแบบ hard delete เมื่อเกิน N วัน ผ่าน scheduled command (`routes/console.php`) — คนละชั้นกับ `softDeletes`

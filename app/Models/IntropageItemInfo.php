@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FlushesFrontCache;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class IntropageItemInfo extends Model
 {
-    use SoftDeletes;
+    use FlushesFrontCache, SoftDeletes;
 
     protected $table = 'intropage_item_info';
 
@@ -26,7 +27,12 @@ class IntropageItemInfo extends Model
         'image_file_id',
         'vdo_file_id',
         'vdo_url',
+        'detail_font_family',
+        'detail_font_size',
+        'detail_color',
         'show_button',
+        'button_font_size',
+        'button_font_family',
         'publish_date',
         'publish_down',
         'status',

@@ -39,6 +39,7 @@ class StoreArticleCategoryRequest extends FormRequest
 
         foreach (Setting::selectedLanguages() as $lang) {
             $messages["detail.{$lang}.title.required"] = "กรุณากรอกชื่อ ({$lang})";
+            $messages["detail.{$lang}.slug.not_regex"] = "slug ({$lang}) ต้องไม่เป็นตัวเลขล้วน และห้ามมีเครื่องหมาย /";
         }
 
         return $messages;
@@ -60,7 +61,8 @@ class StoreArticleCategoryRequest extends FormRequest
             $rules["detail.{$lang}.intro_text"] = ['nullable', 'string', 'max:2000'];
             $rules["detail.{$lang}.detail"] = ['nullable', 'string'];
             $rules["detail.{$lang}.slug"] = [
-                'nullable', 'string', 'max:250',
+                // ตัวเลขล้วนจะชนกับ URL หน้าบ้าน /{lang}/article/category/{id}/{article_id} และ / ใช้ใน path ไม่ได้
+                'nullable', 'string', 'max:250', 'not_regex:/^\d+$|\//',
                 Rule::unique('article_category_detail', 'slug')->where(fn ($query) => $query->where('lang', $lang)),
             ];
             $rules["detail.{$lang}.meta_title"] = ['nullable', 'string', 'max:250'];

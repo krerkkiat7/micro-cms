@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /**
- * ไอคอน Social Media (สีตามตัวอักษร `currentColor`) ตามคีย์ของ sys_setting กลุ่ม social —
+ * ไอคอน Social Media (สีตามตัวอักษร `currentColor`) ตามคีย์ของ sys_setting กลุ่ม social — ใช้ร่วมกันระหว่างตัวอย่าง template
+ * หลังบ้านและ header/footer หน้าบ้าน (aria-hidden — ชื่อช่องทางอยู่ที่ aria-label ของลิงก์)
  * facebook / youtube / x / instagram / tiktok / line (คีย์อื่นแสดงเป็นวงกลมพร้อมอักษรตัวแรก)
  */
 import { useId } from 'vue';
@@ -12,7 +13,7 @@ const maskId = `social-line-${useId()}`;
 </script>
 
 <template>
-    <svg viewBox="0 0 24 24" class="size-4 shrink-0" fill="currentColor" aria-hidden="true">
+    <svg viewBox="0 0 24 24" class="size-4 shrink-0" fill="currentColor" aria-hidden="true" focusable="false">
         <path
             v-if="name === 'facebook'"
             d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.413c0-3.026 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.971H15.83c-1.491 0-1.956.93-1.956 1.886v2.264h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"

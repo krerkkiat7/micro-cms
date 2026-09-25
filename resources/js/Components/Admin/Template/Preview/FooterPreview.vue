@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import type { CSSProperties } from 'vue';
 import { Globe, Mail, MapPin, Phone, Printer, Smartphone } from 'lucide-vue-next';
-import SocialIcon from '@/Components/Admin/Template/Preview/SocialIcon.vue';
+import SocialIcon from '@/Components/Template/SocialIcon.vue';
 import { LINK_MENU_TYPES, SOCIAL_LABELS, zoneBackgroundStyle } from '@/utils/template';
 import type { FooterZone, PreviewMenu, TemplatePreviewData, Width } from '@/utils/template';
 
