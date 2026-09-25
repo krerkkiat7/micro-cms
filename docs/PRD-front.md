@@ -105,7 +105,9 @@
 
 ปัญหาระบบเดิม: insert → select count → update ทุก request ทำให้ล็อกแถวเดิมซ้ำ ๆ จนเว็บหน่วงทั้งไซต์ — ออกแบบใหม่ (`App\Support\Front\ViewCounter`):
 
-1. ระหว่าง request ไม่แตะฐานข้อมูล: ข้ามบอท (`UserAgentParser`) + ข้ามการเปิดซ้ำของ session เดิมภายใน 30 นาที (เช็กใน session)
+0. `user_id` ของทุกตารางหน้าบ้าน (`*_item_view`, `banner_item_click`, `log_front_access`) มาจาก `FrontAuth::id()` (guard `front`) —
+   การ login หลังบ้านไม่ถูกนับเป็นผู้ใช้หน้าบ้าน (ตอนนี้หน้าบ้านยังไม่มี login จึงเป็น null)
+1. ระหว่าง request ไม่แตะฐานข้อมูล: ข้ามบอท (`UserAgentParser`) + ข้ามการเปิดซ้ำของ session เดิมภายใน 5 นาที (เช็กใน session, `dedupe_minutes`)
 2. หลังส่ง response (`defer()`): โหมด **redis** `RPUSH front:views:{article|page}`; โหมด **database** insert + update ตรง
 3. `php artisan front:flush-views` (schedule ทุกนาทีใน `routes/console.php`) ดึงคิวทีละ 1,000 (Lua LRANGE+LTRIM atomic) → batch insert ตารางประวัติ
    1 คำสั่ง → `UPDATE … SET view_amount = view_amount + CASE id …` 1 คำสั่งต่อชุด (ไม่ count ตารางประวัติ) — ล้มเหลวใส่คืนคิว; คิวยาวเกิน

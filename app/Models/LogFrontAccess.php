@@ -3,10 +3,10 @@
 namespace App\Models;
 
 use App\Support\ClientIp;
+use App\Support\Front\FrontAuth;
 use App\Support\UserAgentParser;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 use function Illuminate\Support\defer;
@@ -96,7 +96,7 @@ class LogFrontAccess extends Model
         $ua = (string) $request->userAgent();
         $agent = UserAgentParser::parse($ua);
         $token = (string) Str::ulid();
-        $userId = Auth::id();
+        $userId = FrontAuth::id(); // ผู้ใช้หน้าบ้านเท่านั้น — login หลังบ้านไม่นับ (guard แยกกัน)
         $now = now();
 
         $attributes = [

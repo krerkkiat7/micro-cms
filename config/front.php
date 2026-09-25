@@ -32,7 +32,7 @@ return [
     'views' => [
         'driver' => env('FRONT_VIEW_DRIVER', 'auto'),
         'redis_connection' => env('FRONT_VIEW_REDIS_CONNECTION', 'default'),
-        'dedupe_minutes' => (int) env('FRONT_VIEW_DEDUPE_MINUTES', 30),
+        'dedupe_minutes' => (int) env('FRONT_VIEW_DEDUPE_MINUTES', 5),
         'flush_threshold' => (int) env('FRONT_VIEW_FLUSH_THRESHOLD', 1000),
         'batch_size' => 1000,
     ],

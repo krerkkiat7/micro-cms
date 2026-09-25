@@ -5,7 +5,6 @@ namespace App\Support\Front;
 use App\Support\ClientIp;
 use App\Support\Front\Views\ViewBuffer;
 use App\Support\UserAgentParser;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -66,7 +65,7 @@ final class ViewCounter
 
         $row = [
             'id' => $id,
-            'user_id' => Auth::id(),
+            'user_id' => FrontAuth::id(),
             'lang' => $lang,
             'session_id' => $request->hasSession() ? $request->session()->getId() : null,
             'remote_ip' => ClientIp::from($request),
@@ -205,7 +204,7 @@ final class ViewCounter
      */
     private function markSession($session, string $key): bool
     {
-        $window = max(0, (int) config('front.views.dedupe_minutes', 30)) * 60;
+        $window = max(0, (int) config('front.views.dedupe_minutes', 5)) * 60;
         $now = time();
         $viewed = $session->get(self::SESSION_KEY, []);
         $viewed = is_array($viewed) ? array_filter($viewed, fn ($at) => is_int($at) && $now - $at < $window) : [];

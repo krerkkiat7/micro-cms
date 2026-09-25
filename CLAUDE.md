@@ -164,6 +164,9 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 ### การเข้าสู่ระบบหลังบ้าน (auth)
 
 - `sys_user` เดียวเก็บผู้ใช้ทั้ง `back` (หลังบ้าน) และ `front` (หน้าบ้าน) แยกด้วย `user_type`
+- **login หน้าบ้าน/หลังบ้านแยกกันเด็ดขาด** — หลังบ้าน = guard `web`, หน้าบ้าน = guard `front` (`config/auth.php`, session คนละคีย์)
+  โค้ดหน้าบ้านอ่านผู้ใช้ผ่าน `App\Support\Front\FrontAuth::id()` เท่านั้น (คืนเฉพาะ `user_type = front` ใน guard `front`) **ห้ามใช้ `Auth::id()`/
+  `$request->user()` ฝั่งหน้าบ้าน** (= ผู้ใช้หลังบ้าน); ผู้ใช้ `back` ใช้งานหน้าบ้านแบบ login ไม่ได้ — front-office auth ในอนาคตต้อง login ผ่าน guard `front`
 - `LoginRequest::authenticate()` ตรวจ `user_type = 'back'` + `status = 'Y'` เสมอ; รหัสผ่านถูกแต่ `status = 'N'`
   → ข้อความ "บัญชีนี้ถูกระงับการใช้งาน…"; login สำเร็จ/ไม่สำเร็จ อัปเดต `last_login_at` /
   `failed_login_count` / `last_failed_login_at` (สำเร็จ = เคลียร์ตัวนับ)
@@ -369,7 +372,7 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   trait `App\Models\Concerns\FlushesFrontCache` บนทุก model ที่หน้าบ้านใช้ + `Setting::forget()`; ปุ่ม "ล้าง Cache หน้าบ้าน" ในหน้าล้างแคช.
   โมดูลใหม่ที่หน้าบ้านแสดงผล ต้องใส่ trait นี้ใน model ด้วย
 - **ยอดเข้าชม** `article_item_view` / `page_item_view` + `page_item_info.view_amount` (migration `2026_10_01_000001_*`) —
-  `App\Support\Front\ViewCounter` (ข้ามบอท + dedupe 30 นาที/session, บันทึกหลังส่ง response ด้วย `defer()`, โหมด redis = คิว Redis +
+  `App\Support\Front\ViewCounter` (ข้ามบอท + dedupe 5 นาที/session, บันทึกหลังส่ง response ด้วย `defer()`, โหมด redis = คิว Redis +
   `php artisan front:flush-views` ทุกนาที batch insert/update) — **production ต้องตั้ง cron `schedule:run`**; `config/front.php`.
   ใช้ `defer()` ไม่ใช่ `app()->terminating()` (callback ของ terminating สะสมข้าม request ในเทส/Octane)
 - **โมดูล page รอบปรับปรุง (branch `page-edit`)** — ฟอร์มข้อมูลทั่วไปเรียงใหม่: ข้อมูลหน้าเพจ → SEO/AEO/GEO (รวมรูปแทนหน้าในหัวข้อ

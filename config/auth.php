@@ -38,7 +38,15 @@ return [
     */
 
     'guards' => [
+        // หลังบ้าน (ผู้ใช้ user_type = back)
         'web' => [
+            'driver' => 'session',
+            'provider' => 'users',
+        ],
+
+        // หน้าบ้าน (ผู้ใช้ user_type = front — เตรียมไว้สำหรับ front-office auth) แยก session key จาก `web` ทำให้ login หลังบ้าน
+        // ไม่ถูกมองว่า login หน้าบ้าน และกลับกัน — โค้ดหน้าบ้านอ่านผู้ใช้ผ่าน App\Support\Front\FrontAuth
+        'front' => [
             'driver' => 'session',
             'provider' => 'users',
         ],
