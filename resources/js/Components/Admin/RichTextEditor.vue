@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { onBeforeUnmount, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { EditorContent, useEditor } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
+import TextAlign from '@tiptap/extension-text-align';
 import {
     Bold as BoldIcon,
     Italic as ItalicIcon,
@@ -17,17 +18,32 @@ import {
     Link2,
     Undo2,
     Redo2,
+    AlignLeft,
+    AlignCenter,
+    AlignRight,
+    AlignJustify,
+    ArrowUpDown,
+    Check,
 } from 'lucide-vue-next';
+import { DEFAULT_LINE_HEIGHT, LINE_HEIGHTS, LineHeight } from '@/utils/tiptapLineHeight';
 
 /**
  * text editor สำหรับเนื้อหาที่ไม่ต้องการให้แทรกรูปภาพ/วิดีโอ/media — ตั้งใจไม่ใส่ extension รูปภาพ/วิดีโอ
  * ใด ๆ เพื่อบังคับตามที่ออกแบบไว้ (แทรกสื่อผ่าน part ประเภทอื่นแทน — ดู docs/PRD-article.md §0)
+ * จัดข้อความ (ซ้าย/กึ่งกลาง/ขวา/เต็มแนว) และระยะห่างระหว่างบรรทัด (default 1.5) ตั้งต่อย่อหน้า/หัวข้อ เก็บเป็น style บนแท็ก —
+ * หน้าบ้านเก็บไว้เฉพาะ 2 ค่านี้ (App\Support\Front\HtmlSanitizer) สไตล์เนื้อหาอยู่ที่ .rich-text-content ใน app.css (ใช้ร่วมกับตัวอย่าง)
  */
 const model = defineModel<string>({ required: true });
 
 const editor = useEditor({
     content: model.value,
-    extensions: [StarterKit, Underline, Link.configure({ openOnClick: false, autolink: true })],
+    extensions: [
+        StarterKit,
+        Underline,
+        Link.configure({ openOnClick: false, autolink: true }),
+        TextAlign.configure({ types: ['heading', 'paragraph'], alignments: ['left', 'center', 'right', 'justify'] }),
+        LineHeight,
+    ],
     editorProps: {
         attributes: {
             class: 'rich-text-content min-h-[180px] px-4 py-3 text-sm text-gray-800 focus:outline-none',
@@ -47,6 +63,49 @@ watch(model, (value) => {
 });
 
 onBeforeUnmount(() => editor.value?.destroy());
+
+const ALIGNS = [
+    { value: 'left', label: 'ชิดซ้าย', icon: AlignLeft },
+    { value: 'center', label: 'กึ่งกลาง', icon: AlignCenter },
+    { value: 'right', label: 'ชิดขวา', icon: AlignRight },
+    { value: 'justify', label: 'เต็มแนว (justify)', icon: AlignJustify },
+] as const;
+
+// ชิดซ้ายเป็นค่าปกติ (ไม่เขียน style) — ปุ่มชิดซ้ายจึงไฮไลต์เมื่อยังไม่ได้ตั้งตำแหน่งอื่น
+function isAlign(value: string): boolean {
+    if (!editor.value) return false;
+    if (value === 'left') return !ALIGNS.some((a) => a.value !== 'left' && editor.value!.isActive({ textAlign: a.value }));
+
+    return editor.value.isActive({ textAlign: value });
+}
+
+function setAlign(value: string) {
+    if (value === 'left') {
+        editor.value?.chain().focus().unsetTextAlign().run();
+    } else {
+        editor.value?.chain().focus().setTextAlign(value).run();
+    }
+}
+
+// ระยะห่างระหว่างบรรทัด — เมนูเล็ก ๆ บน toolbar (ปุ่มคำสั่งของ editor แบบโปรแกรมพิมพ์เอกสาร ไม่ใช่ช่องฟอร์ม)
+const lineMenuOpen = ref(false);
+const currentLineHeight = computed(() => {
+    if (!editor.value) return DEFAULT_LINE_HEIGHT;
+    const type = editor.value.isActive('heading') ? 'heading' : 'paragraph';
+
+    return (editor.value.getAttributes(type).lineHeight as string | null) || DEFAULT_LINE_HEIGHT;
+});
+
+function setLineHeight(value: string) {
+    editor.value?.chain().focus().setLineHeight(value).run();
+    lineMenuOpen.value = false;
+}
+
+function closeLineMenu(event: FocusEvent) {
+    const container = event.currentTarget as HTMLElement;
+
+    if (!container.contains(event.relatedTarget as Node | null)) lineMenuOpen.value = false;
+}
 
 function setLink() {
     const url = window.prompt('ลิงก์ (URL)');
@@ -82,6 +141,45 @@ function setLink() {
             <button type="button" class="toolbar-btn" :class="{ active: editor.isActive('blockquote') }" title="ข้อความคำพูด" @click="editor.chain().focus().toggleBlockquote().run()"><Quote class="size-4" /></button>
             <button type="button" class="toolbar-btn" :class="{ active: editor.isActive('link') }" title="ลิงก์" @click="setLink"><Link2 class="size-4" /></button>
             <span class="mx-1 h-5 w-px bg-gray-300" aria-hidden="true" />
+            <button
+                v-for="align in ALIGNS"
+                :key="align.value"
+                type="button"
+                class="toolbar-btn"
+                :class="{ active: isAlign(align.value) }"
+                :title="align.label"
+                @click="setAlign(align.value)"
+            >
+                <component :is="align.icon" class="size-4" />
+            </button>
+            <div class="relative" @focusout="closeLineMenu">
+                <button
+                    type="button"
+                    class="toolbar-btn gap-1 text-xs"
+                    :class="{ active: lineMenuOpen }"
+                    title="ระยะห่างระหว่างบรรทัด"
+                    aria-haspopup="menu"
+                    :aria-expanded="lineMenuOpen"
+                    @click="lineMenuOpen = !lineMenuOpen"
+                >
+                    <ArrowUpDown class="size-4" /> {{ currentLineHeight }}
+                </button>
+                <div v-if="lineMenuOpen" class="absolute left-0 top-full z-20 mt-1 w-40 rounded-lg border border-gray-200 bg-white py-1 shadow-lg" role="menu">
+                    <p class="px-3 pb-1 pt-0.5 text-[11px] text-gray-400">ระยะห่างระหว่างบรรทัด</p>
+                    <button
+                        v-for="value in LINE_HEIGHTS"
+                        :key="value"
+                        type="button"
+                        role="menuitem"
+                        class="flex w-full items-center justify-between px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-100"
+                        @click="setLineHeight(value)"
+                    >
+                        <span>{{ value }}<span v-if="value === DEFAULT_LINE_HEIGHT" class="text-xs text-gray-400"> (ค่าเริ่มต้น)</span></span>
+                        <Check v-if="value === currentLineHeight" class="size-4 text-brand-600" />
+                    </button>
+                </div>
+            </div>
+            <span class="mx-1 h-5 w-px bg-gray-300" aria-hidden="true" />
             <button type="button" class="toolbar-btn" title="เลิกทำ" @click="editor.chain().focus().undo().run()"><Undo2 class="size-4" /></button>
             <button type="button" class="toolbar-btn" title="ทำซ้ำ" @click="editor.chain().focus().redo().run()"><Redo2 class="size-4" /></button>
         </div>
@@ -104,39 +202,5 @@ function setLink() {
 .toolbar-btn.active {
     background-color: #dbeafe;
     color: #1d4ed8;
-}
-
-:deep(.rich-text-content h2) {
-    font-size: 1.125rem;
-    font-weight: 600;
-    margin: 0.75rem 0 0.375rem;
-}
-:deep(.rich-text-content h3) {
-    font-size: 1rem;
-    font-weight: 600;
-    margin: 0.625rem 0 0.25rem;
-}
-:deep(.rich-text-content p) {
-    margin: 0.375rem 0;
-}
-:deep(.rich-text-content ul) {
-    list-style: disc;
-    padding-left: 1.5rem;
-    margin: 0.375rem 0;
-}
-:deep(.rich-text-content ol) {
-    list-style: decimal;
-    padding-left: 1.5rem;
-    margin: 0.375rem 0;
-}
-:deep(.rich-text-content blockquote) {
-    border-left: 3px solid #d1d5db;
-    padding-left: 0.75rem;
-    color: #6b7280;
-    margin: 0.5rem 0;
-}
-:deep(.rich-text-content a) {
-    color: #2563eb;
-    text-decoration: underline;
 }
 </style>

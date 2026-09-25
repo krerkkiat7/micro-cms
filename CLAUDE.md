@@ -388,6 +388,9 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   ตัวเลือกสีในกล่องของการ์ด/กล่องวันที่เต็มความกว้าง (`CardBoxFields.vue` ใช้ร่วม Slideset ด้วย), `SegmentedChoice` รองรับ `icon`;
   ปุ่ม "อ่านทั้งหมด": ลิงก์ปลายทางเลือกจากเมนู (`read_all_link_type` default `menu` + `read_all_menu_id`) หรือกำหนดเอง, path ภายในที่ไม่มีภาษาเติม
   `/{lang}` ให้ (`FrontUrl::withLang()`) — ใช้กับเมนูลิงค์ภายนอกทุกจุดด้วย (header/footer/aside ผ่าน `FrontMenuResolver::link()`).
+  **RichTextEditor** (`Components/Admin/RichTextEditor.vue` — ใช้ทุกจุด: part ข้อความของบทความ/Custom Text, รายละเอียดหมวดหมู่บทความ) มีจัดข้อความ
+  ซ้าย/กึ่งกลาง/ขวา/เต็มแนว (`@tiptap/extension-text-align`) + ระยะห่างระหว่างบรรทัด (`utils/tiptapLineHeight.ts`, default 1.5 จาก CSS) เก็บเป็น
+  style บนแท็ก block — `HtmlSanitizer` เก็บไว้เฉพาะ 2 ค่านี้ (รายการ LINE_HEIGHTS ต้องตรงกันสองฝั่ง); CSS เนื้อหา `.rich-text-content` ย้ายไป `app.css`.
   **ลิงก์หน้าบ้านไม่มีเส้นใต้ตอน hover** (เหลือแค่ cursor — เส้นใต้ที่เหลือเป็นตัวบอกสถานะ active/ภาษาปัจจุบัน/ลิงก์ในเนื้อหา rich text)
 - **`log_front_access`** (ในไฟล์ log กลาง — เพิ่มหลังจากไฟล์นั้น migrate แล้ว เครื่อง dev ต้องสร้างตารางเอง/`migrate:fresh`) —
   `LogFrontAccess::record()` ทุก controller หน้าบ้าน, keep-alive `useAccessHeartbeat('front.access.ping')` scope token + session_id,

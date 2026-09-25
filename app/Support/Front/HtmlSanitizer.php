@@ -9,7 +9,8 @@ use DOMNode;
 /**
  * ทำความสะอาด rich text (จาก RichTextEditor ของหลังบ้าน — TipTap StarterKit + Underline + Link) ก่อนแสดงที่หน้าบ้านด้วย v-html
  * แบบ allowlist: เหลือเฉพาะแท็กจัดรูปแบบพื้นฐาน, ลิงก์ที่ปลอดภัย (http/https/mailto/tel/#/path ภายใน) และตัด attribute อื่นทั้งหมด
- * (on*, style, class ฯลฯ) — กัน XSS กรณีข้อมูลในฐานถูกแก้ตรง/ถูกวางมาจากที่อื่น
+ * (on*, class ฯลฯ) — กัน XSS กรณีข้อมูลในฐานถูกแก้ตรง/ถูกวางมาจากที่อื่น; `style` เก็บไว้เฉพาะบนแท็ก block (ย่อหน้า/หัวข้อ/รายการ/คำพูด)
+ * และเหลือแค่ 2 ค่าจาก editor: text-align (ซ้าย/กึ่งกลาง/ขวา/เต็มแนว) และ line-height (ตัวเลขในรายการ LINE_HEIGHTS) ค่าอื่นถูกตัดทิ้ง
  *
  * แท็กอันตราย (script/style/iframe/…) ถูกลบทั้งเนื้อหา; แท็กอื่นที่ไม่อยู่ใน allowlist ถูกถอดออกแต่เก็บข้อความข้างในไว้
  * h1 ถูกลดเป็น h2 (หน้าบ้านมี h1 ของหน้าอยู่แล้ว — ใช้ h1 ได้ครั้งเดียวต่อหน้าเพื่อ SEO/ลำดับหัวเรื่องของ WCAG)
@@ -20,6 +21,14 @@ final class HtmlSanitizer
         'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'strike', 'del', 'code', 'pre', 'blockquote',
         'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'hr', 'a', 'sub', 'sup', 'mark', 'span',
     ];
+
+    /** แท็กที่เก็บ style จัดข้อความ/ระยะบรรทัดไว้ได้ */
+    private const STYLED_BLOCKS = ['p', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'blockquote'];
+
+    private const TEXT_ALIGNS = ['left', 'center', 'right', 'justify'];
+
+    /** ระยะห่างระหว่างบรรทัดที่ RichTextEditor ตั้งได้ — ตรงกับ LINE_HEIGHTS ใน resources/js/utils/tiptapLineHeight.ts */
+    private const LINE_HEIGHTS = ['1', '1.15', '1.5', '1.75', '2', '2.5', '3'];
 
     private const DROP_WITH_CONTENT = [
         'script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'textarea', 'select', 'button',
@@ -104,9 +113,14 @@ final class HtmlSanitizer
     {
         $href = $tag === 'a' ? $element->getAttribute('href') : null;
         $target = $tag === 'a' ? $element->getAttribute('target') : null;
+        $style = in_array($tag, self::STYLED_BLOCKS, true) ? self::safeStyle($element->getAttribute('style')) : '';
 
         foreach (iterator_to_array($element->attributes) as $attribute) {
             $element->removeAttribute($attribute->nodeName);
+        }
+
+        if ($style !== '') {
+            $element->setAttribute('style', $style);
         }
 
         if ($tag !== 'a') {
@@ -125,6 +139,28 @@ final class HtmlSanitizer
             $element->setAttribute('target', '_blank');
             $element->setAttribute('rel', 'noopener noreferrer');
         }
+    }
+
+    /**
+     * เหลือเฉพาะ text-align / line-height ที่อยู่ในรายการที่อนุญาต (ค่าอื่นทั้งหมดตัดทิ้ง) — คืนสตริง style ใหม่ หรือ '' ถ้าไม่เหลืออะไร
+     */
+    private static function safeStyle(string $style): string
+    {
+        $kept = [];
+
+        foreach (explode(';', $style) as $declaration) {
+            [$property, $value] = array_pad(array_map('trim', explode(':', $declaration, 2)), 2, '');
+            $property = strtolower($property);
+            $value = strtolower($value);
+
+            if ($property === 'text-align' && in_array($value, self::TEXT_ALIGNS, true)) {
+                $kept['text-align'] = $value;
+            } elseif ($property === 'line-height' && in_array($value, self::LINE_HEIGHTS, true)) {
+                $kept['line-height'] = $value;
+            }
+        }
+
+        return implode('; ', array_map(fn (string $property, string $value) => "{$property}: {$value}", array_keys($kept), $kept));
     }
 
     private static function rename(DOMElement $element, string $tag): DOMElement
