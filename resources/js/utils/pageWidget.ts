@@ -276,6 +276,8 @@ export interface SlidesetSetting {
     read_all_font_family?: string;
     read_all_color?: string;
     read_all_background?: string;
+    read_all_link_type?: 'menu' | 'custom';
+    read_all_menu_id?: number | null;
     read_all_url?: string;
     read_all_link_target?: '_self' | '_blank';
 }
@@ -428,6 +430,8 @@ export interface GridSetting {
     read_all_font_family?: string;
     read_all_color?: string;
     read_all_background?: string;
+    read_all_link_type?: 'menu' | 'custom';
+    read_all_menu_id?: number | null;
     read_all_url?: string;
     read_all_link_target?: '_self' | '_blank';
 }
@@ -644,6 +648,8 @@ export function defaultSlidesetSetting(type: string, languages: string[] = []): 
         read_all_font_family: 'Sarabun',
         read_all_color: READ_ALL_DEFAULT_COLORS.button,
         read_all_background: READ_ALL_DEFAULT_BACKGROUND,
+        read_all_link_type: 'menu',
+        read_all_menu_id: null,
         read_all_url: '',
         read_all_link_target: '_self',
     };
@@ -729,6 +735,8 @@ export function defaultGridSetting(type: string, languages: string[] = []): Grid
         read_all_font_family: 'Sarabun',
         read_all_color: READ_ALL_DEFAULT_COLORS.button,
         read_all_background: READ_ALL_DEFAULT_BACKGROUND,
+        read_all_link_type: 'menu',
+        read_all_menu_id: null,
         read_all_url: '',
         read_all_link_target: '_self',
     };
@@ -803,7 +811,11 @@ export function validateSetting(type: string, setting: Record<string, unknown>):
         const grid = gridConfig(type);
         const readAll = slideset?.hasReadAll ? slideset : grid?.hasReadAll ? grid : undefined;
 
-        if (readAll && s.show_read_all === 'Y') {
+        if (readAll && s.show_read_all === 'Y' && s.read_all_link_type !== 'custom') {
+            if (!s.read_all_menu_id) {
+                errors.read_all_menu_id = 'กรุณาเลือกเมนูปลายทางของปุ่มอ่านทั้งหมด (ต้องเลือกเมื่อเปิดแสดงปุ่ม)';
+            }
+        } else if (readAll && s.show_read_all === 'Y') {
             const url = String(s.read_all_url ?? '').trim();
 
             if (url === '') {

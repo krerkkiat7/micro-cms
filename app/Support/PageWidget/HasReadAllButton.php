@@ -2,6 +2,9 @@
 
 namespace App\Support\PageWidget;
 
+use App\Support\FrontMenuType;
+use Illuminate\Validation\Rule;
+
 /**
  * ส่วนตั้งค่าปุ่ม "อ่านทั้งหมด" ที่ widget กลุ่ม article ใช้ร่วมกัน (Slideset จาก article, Grid จาก article) — เปิด/ปิด, ตำแหน่ง
  * (บน/ล่าง × ซ้าย/กึ่งกลาง/ขวา — เทียบกับกรอบของ widget เอง), ข้อความแทนแยกภาษา (ตาราง `*_detail`), ไอคอน, รูปแบบ (ปุ่ม/ลิงก์ข้อความ/ปุ่มมนใหญ่),
@@ -25,6 +28,9 @@ trait HasReadAllButton
     public const READ_ALL_BUTTON_TEXT = '#FFFFFF';
 
     public const READ_ALL_BUTTON_BACKGROUND = '#1F2937';
+
+    /** ประเภทลิงก์ปลายทาง: เลือกจากเมนูหน้าบ้าน / กำหนด URL เอง */
+    public const READ_ALL_LINK_TYPES = ['menu', 'custom'];
 
     /** ลิงก์ปลายทางที่รับ: URL เต็ม, path ภายในเว็บ (ขึ้นต้น /), anchor (#), mailto:, tel: */
     private const READ_ALL_URL_REGEX = '/^(https?:\/\/|\/|#|mailto:|tel:)\S*$/i';
@@ -58,10 +64,28 @@ trait HasReadAllButton
             'read_all_font_family' => self::fontFamily('ฟอนต์ของปุ่มอ่านทั้งหมด'),
             'read_all_color' => self::color('สีตัวอักษรของปุ่มอ่านทั้งหมด', self::READ_ALL_BUTTON_TEXT),
             'read_all_background' => self::color('สีพื้นหลังของปุ่มอ่านทั้งหมด', self::READ_ALL_BUTTON_BACKGROUND),
+            // ลิงก์ปลายทาง: เลือกจากเมนูหน้าบ้าน (default) หรือกำหนด URL เอง — ตรวจเฉพาะฟิลด์ของประเภทที่เลือก (exclude_unless)
+            // ค่าของอีกประเภทเก็บไว้ตามเดิม สลับกลับมาแล้วได้ค่าเดิม
+            'read_all_link_type' => self::choice('ประเภทลิงก์ปลายทางของปุ่มอ่านทั้งหมด', 'menu', self::READ_ALL_LINK_TYPES),
+            'read_all_menu_id' => [
+                'label' => 'เมนูปลายทางของปุ่มอ่านทั้งหมด', 'default' => null, 'type' => 'nullint',
+                'rules' => [
+                    'exclude_unless:read_all_link_type,menu', 'nullable', 'integer', 'required_if:show_read_all,Y',
+                    // เมนูที่เปิดใช้งานอยู่ และเป็นประเภทที่มีลิงก์ของตัวเอง (โมดูลเนื้อหา / ลิงค์ภายนอก — ไม่ใช่เมนูหัวข้อ)
+                    Rule::exists('front_menu_info', 'id')->where(fn ($query) => $query
+                        ->where('status', 'Y')
+                        ->whereNull('deleted_at')
+                        ->whereIn('menu_type', FrontMenuType::LINKABLE)),
+                ],
+                'messages' => [
+                    'required_if' => 'กรุณาเลือกเมนูปลายทางของปุ่มอ่านทั้งหมด (ต้องเลือกเมื่อเปิดแสดงปุ่ม)',
+                    'exists' => 'เมนูปลายทางของปุ่มอ่านทั้งหมดต้องเป็นเมนูที่เปิดใช้งานและมีลิงก์ (บทความ / หน้าเพจ / ลิงค์ภายนอก)',
+                ],
+            ],
             'read_all_url' => [
                 'label' => 'ลิงก์ปลายทางของปุ่มอ่านทั้งหมด', 'default' => '', 'type' => 'nullstring',
-                // จำเป็นต้องกรอกเมื่อแสดงปุ่ม (ภายหลังอาจเลือกจากเมนูหน้าบ้านแทนการกรอก URL)
-                'rules' => ['nullable', 'string', 'max:500', 'regex:'.self::READ_ALL_URL_REGEX, 'required_if:show_read_all,Y'],
+                // จำเป็นต้องกรอกเมื่อแสดงปุ่มและเลือกกำหนดเอง
+                'rules' => ['exclude_unless:read_all_link_type,custom', 'nullable', 'string', 'max:500', 'regex:'.self::READ_ALL_URL_REGEX, 'required_if:show_read_all,Y'],
                 'messages' => [
                     'required_if' => 'กรุณากรอกลิงก์ปลายทางของปุ่มอ่านทั้งหมด (ต้องกรอกเมื่อเปิดแสดงปุ่ม)',
                     'regex' => 'ลิงก์ปลายทางของปุ่มอ่านทั้งหมดต้องขึ้นต้นด้วย http://, https:// หรือ / (หรือ #, mailto:, tel:)',
@@ -82,6 +106,9 @@ trait HasReadAllButton
     {
         $url = $values['read_all_url'] ?? null;
         $values['read_all_url'] = is_string($url) && trim($url) !== '' ? trim($url) : null;
+
+        $menuId = $values['read_all_menu_id'] ?? null;
+        $values['read_all_menu_id'] = is_numeric($menuId) && (int) $menuId > 0 ? (int) $menuId : null;
 
         return $values;
     }

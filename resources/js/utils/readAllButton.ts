@@ -78,6 +78,27 @@ export interface ReadAllSettingFields {
     read_all_font_family: string;
     read_all_color: string;
     read_all_background: string;
+    /** ประเภทลิงก์ปลายทาง: เลือกจากเมนูหน้าบ้าน (default) / กำหนด URL เอง */
+    read_all_link_type: ReadAllLinkType;
+    /** เมนูหน้าบ้านที่เลือก (front_menu_info.id) — ใช้เมื่อ read_all_link_type = menu */
+    read_all_menu_id: number | null;
     read_all_url: string;
     read_all_link_target: '_self' | '_blank';
+}
+
+export type ReadAllLinkType = 'menu' | 'custom';
+
+export const READ_ALL_LINK_TYPES: { value: ReadAllLinkType; label: string }[] = [
+    { value: 'menu', label: 'เมนู' },
+    { value: 'custom', label: 'กำหนดเอง' },
+];
+
+/** เมนูหน้าบ้านสำหรับ dropdown เลือกปลายทาง (FrontMenuTree::pickerOptions ฝั่ง backend — แบนตาม tree + ระดับความลึก) */
+export interface FrontMenuPickerOption {
+    id: number;
+    name: string;
+    depth: number;
+    menu_type: string;
+    /** false = เมนูหัวข้อ/ไม่กำหนด (แสดงให้เห็นโครง แต่เลือกไม่ได้) */
+    selectable: boolean;
 }

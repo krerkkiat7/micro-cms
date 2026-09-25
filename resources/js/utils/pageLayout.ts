@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'vue';
 import type { FileItem, LanguageOption } from '@/types';
+import type { FrontMenuPickerOption } from '@/utils/readAllButton';
 import { defaultSetting, settingFromServer } from '@/utils/pageWidget';
 import { customTextSettingToPayload, isCustomTextWidget } from '@/utils/pageWidgetCustomText';
 import type { CustomTextSetting } from '@/utils/pageWidgetCustomText';
@@ -118,6 +119,8 @@ export interface RowData extends BackgroundFields, TextStyles, PaddingFields, Ga
 export interface WidgetOptions {
     banner_categories: { id: number; title: string | null }[];
     article_categories: { id: number; title: string | null }[];
+    /** เมนูหน้าบ้านให้เลือกเป็นปลายทางของปุ่ม "อ่านทั้งหมด" */
+    front_menus: FrontMenuPickerOption[];
 }
 
 /** ค่าที่ dialog ตั้งค่าของแต่ละชั้นแก้ไขได้ (ไม่รวมลูก) — dialog แก้บนสำเนาแล้วส่งกลับเมื่อกด "ตกลง" */

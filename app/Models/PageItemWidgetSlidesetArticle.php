@@ -73,6 +73,8 @@ class PageItemWidgetSlidesetArticle extends Model
         'read_all_icon',
         'read_all_icon_position',
         'read_all_style',
+        'read_all_link_type',
+        'read_all_menu_id',
         'read_all_url',
         'read_all_link_target',
         'read_all_font_size',

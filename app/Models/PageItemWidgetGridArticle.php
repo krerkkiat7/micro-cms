@@ -84,6 +84,8 @@ class PageItemWidgetGridArticle extends Model
         'read_all_font_family',
         'read_all_color',
         'read_all_background',
+        'read_all_link_type',
+        'read_all_menu_id',
         'read_all_url',
         'read_all_link_target',
         'created_by',

@@ -38,6 +38,22 @@ final class FrontMenuResolver
     }
 
     /**
+     * ลิงก์ของเมนู 1 รายการที่แสดงอยู่ (เปิดใช้งาน และพาเรนต์ทุกระดับแสดงอยู่) — null = ไม่มีเมนูนี้/ถูกซ่อน/ปลายทางใช้ไม่ได้
+     *
+     * @return array{url: string, target: string, menu_type: string}|null
+     */
+    public static function linkOf(string $lang, int $menuId): ?array
+    {
+        $node = self::data($lang)['nodes'][$menuId] ?? null;
+
+        if ($node === null || $node['url'] === null) {
+            return null;
+        }
+
+        return ['url' => $node['url'], 'target' => $node['target'], 'menu_type' => $node['menu_type']];
+    }
+
+    /**
      * เมนูที่ชี้ไปยังเนื้อหานี้ (เมนูแรกตามลำดับการแสดง) พร้อมตั้งค่าส่วนหัว + เส้นทาง (breadcrumb) จากระดับบนสุด
      *
      * @param  string  $type  FrontMenuType::PAGE | ARTICLE_CATEGORY | ARTICLE_ITEM

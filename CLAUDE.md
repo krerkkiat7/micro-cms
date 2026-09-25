@@ -386,6 +386,8 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   + `POST front.banner.click` (sendBeacon, ยกเว้น CSRF) — ดู `docs/PRD-front.md` §8.
   รอบสี่: Grid (article/banner) รูปแบบแถวมี `content_align` (บน/กึ่งกลาง/ล่าง, default บน), ความกว้างรูปกรอกด้วยแถบเลื่อน (`RangeNumberField.vue`),
   ตัวเลือกสีในกล่องของการ์ด/กล่องวันที่เต็มความกว้าง (`CardBoxFields.vue` ใช้ร่วม Slideset ด้วย), `SegmentedChoice` รองรับ `icon`;
+  ปุ่ม "อ่านทั้งหมด": ลิงก์ปลายทางเลือกจากเมนู (`read_all_link_type` default `menu` + `read_all_menu_id`) หรือกำหนดเอง, path ภายในที่ไม่มีภาษาเติม
+  `/{lang}` ให้ (`FrontUrl::withLang()`).
   **ลิงก์หน้าบ้านไม่มีเส้นใต้ตอน hover** (เหลือแค่ cursor — เส้นใต้ที่เหลือเป็นตัวบอกสถานะ active/ภาษาปัจจุบัน/ลิงก์ในเนื้อหา rich text)
 - **`log_front_access`** (ในไฟล์ log กลาง — เพิ่มหลังจากไฟล์นั้น migrate แล้ว เครื่อง dev ต้องสร้างตารางเอง/`migrate:fresh`) —
   `LogFrontAccess::record()` ทุก controller หน้าบ้าน, keep-alive `useAccessHeartbeat('front.access.ping')` scope token + session_id,
