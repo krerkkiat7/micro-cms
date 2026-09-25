@@ -15,7 +15,8 @@ import type { PageHeaderData, SeoData } from '@/utils/front';
 /**
  * layout หน้าภายในของหน้าบ้าน — สร้างจาก template ที่เปิดใช้งาน (sys_template: header / aside / body / footer)
  * โซน body: สี/รูปพื้นหลังเต็มความกว้างเสมอ, ส่วนหัว (รูป + หัวเรื่องตามเมนู) + breadcrumb, แล้วเนื้อหา
- * — เนื้อหาอยู่ใน container ยกเว้น `fullWidth` (หน้าเพจ — กำหนดความกว้างต่อแถวเองอยู่แล้ว)
+ * — เนื้อหาอยู่ใน container ยกเว้น `fullWidth` (หน้าเพจ — กำหนดความกว้างต่อแถวเองอยู่แล้ว และไม่มีระยะบน/ล่างของตัวหน้า
+ *   เพราะแต่ละแถวตั้งระยะขอบเองได้ — breadcrumb จึงมีระยะด้านล่างของตัวเองแทน)
  *
  * WCAG: ลิงก์ "ข้ามไปยังเนื้อหาหลัก" เป็นอย่างแรกของหน้า, landmark header/nav/main/footer, <html lang> ตามภาษาของหน้า,
  * เครื่องมือขนาดตัวอักษร/การแสดงสี (useA11yPreferences) — บันทึกการเข้าชม keep-alive (useAccessHeartbeat)
@@ -69,11 +70,11 @@ onMounted(() => {
         <main id="main-content" tabindex="-1" class="flex-1 outline-none" :style="zoneBackgroundCss(template.body)">
             <PageHero v-if="header?.hero" :hero="header.hero" />
 
-            <div v-if="header?.showBreadcrumb" class="mx-auto max-w-7xl px-4 pt-5">
+            <div v-if="header?.showBreadcrumb" class="mx-auto max-w-7xl px-4 pt-5" :class="fullWidth ? 'pb-5' : ''">
                 <Breadcrumbs :items="header.breadcrumb" />
             </div>
 
-            <div v-if="fullWidth" class="pb-10 pt-4">
+            <div v-if="fullWidth">
                 <slot />
             </div>
             <div v-else class="mx-auto max-w-7xl px-4 pb-12 pt-6">

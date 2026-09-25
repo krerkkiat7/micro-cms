@@ -123,15 +123,18 @@ export interface SlideshowCommonSetting {
     link_target: '_self' | '_blank';
     show_title: YesNo;
     show_intro_text: YesNo;
-    text_align: 'left' | 'center' | 'right';
+    /** ตำแหน่งข้อความบนภาพ 9 ตำแหน่ง (ค่าแบบ CSS background-position เช่น `center`, `bottom left`) — ดู SlideshowWidget::TEXT_POSITIONS */
+    text_align: string;
     text_width: 'full' | 'container';
     /** การจัดรูปแบบตัวอักษรของหัวเรื่อง/ข้อความเกริ่นนำที่ซ้อนบนภาพ (ชื่อฟิลด์ตามคอลัมน์ `<part>_font_size` ฯลฯ ของ backend) */
     title_font_size: number;
     title_font_family: string;
     title_color: string;
+    title_bold: YesNo;
     intro_text_font_size: number;
     intro_text_font_family: string;
     intro_text_color: string;
+    intro_text_bold: YesNo;
 }
 
 export interface SlideshowBannerSetting extends SlideshowCommonSetting {
@@ -273,6 +276,8 @@ export interface SlidesetSetting {
     read_all_font_family?: string;
     read_all_color?: string;
     read_all_background?: string;
+    read_all_link_type?: 'menu' | 'custom';
+    read_all_menu_id?: number | null;
     read_all_url?: string;
     read_all_link_target?: '_self' | '_blank';
 }
@@ -321,6 +326,30 @@ export type CardListSetting = SlidesetSetting | GridSetting;
 /** รูปแบบการแสดงผลของ Grid — ตรงกับ GridArticleWidget::DISPLAY_TYPES ฝั่ง backend */
 export type GridDisplayType = 'card' | 'row_image' | 'row_date';
 
+/** ตำแหน่งแนวตั้งของส่วนข้อมูลในรูปแบบแถวของ Grid — ตรงกับ CategoryListWidget::CONTENT_ALIGNS */
+export type GridContentAlign = 'top' | 'center' | 'bottom';
+
+export const GRID_CONTENT_ALIGN_OPTIONS: { value: GridContentAlign; label: string }[] = [
+    { value: 'top', label: 'บน' },
+    { value: 'center', label: 'กึ่งกลาง' },
+    { value: 'bottom', label: 'ล่าง' },
+];
+
+/**
+ * class ของคอลัมน์ข้อมูลในรูปแบบแถวของ Grid ตาม content_align (ใช้ทั้งตัวอย่างหลังบ้านและหน้าบ้าน):
+ * `column` = จัดแนวตั้งของทั้งคอลัมน์ (บน/กึ่งกลาง/ล่าง), `meta` = แถววันที่/จำนวนเข้าชม — แบบ "บน" ดันลงล่างสุดเสมอ
+ */
+export function gridContentAlignClasses(align: string | undefined): { column: string; meta: string } {
+    switch (align) {
+        case 'center':
+            return { column: 'justify-center', meta: '' };
+        case 'bottom':
+            return { column: 'justify-end', meta: '' };
+        default:
+            return { column: 'justify-start', meta: 'mt-auto pt-1' };
+    }
+}
+
 /**
  * ค่าตั้งค่าของ Grid (จาก article / จาก banner) — ชื่อฟิลด์ตรงกับคอลัมน์ `page_item_widget_grid<แหล่ง>` (ดู GridArticleWidget/
  * GridBannerWidget ฝั่ง backend) ส่วนของการ์ด/ข้อความ ใช้ชุดฟิลด์เดียวกับ Slideset (ไม่มี carousel เพราะ Grid ไม่เลื่อน)
@@ -333,6 +362,8 @@ export interface GridSetting {
     /** จำนวนที่แสดงสูงสุด (0 = แสดงทั้งหมด) */
     max_items: number;
     display_type: GridDisplayType;
+    /** ตำแหน่งแนวตั้งของส่วนข้อมูล (เฉพาะรูปแบบแถว) */
+    content_align: GridContentAlign;
     /** จำนวนคอลัมน์ต่อแถวตามขนาดหน้าจอ (1 - 6) */
     per_row_pc: number;
     per_row_notebook: number;
@@ -399,6 +430,8 @@ export interface GridSetting {
     read_all_font_family?: string;
     read_all_color?: string;
     read_all_background?: string;
+    read_all_link_type?: 'menu' | 'custom';
+    read_all_menu_id?: number | null;
     read_all_url?: string;
     read_all_link_target?: '_self' | '_blank';
 }
@@ -502,12 +535,6 @@ export const SLIDESHOW_ASPECT_OPTIONS = [
     { value: '1:1', label: '1:1 (จัตุรัส)' },
 ];
 
-export const SLIDESHOW_TEXT_ALIGN_OPTIONS = [
-    { value: 'left', label: 'ชิดซ้าย' },
-    { value: 'center', label: 'กึ่งกลาง' },
-    { value: 'right', label: 'ชิดขวา' },
-];
-
 export const SLIDESHOW_TEXT_WIDTH_OPTIONS = [
     { value: 'full', label: 'เต็มความกว้าง' },
     { value: 'container', label: 'จำกัดตาม container' },
@@ -533,13 +560,15 @@ export function defaultSlideshowSetting(type: string): SlideshowSetting {
         show_intro_text: 'N',
         text_align: 'center',
         text_width: 'container',
-        // ข้อความบนภาพ: ขนาด/ฟอนต์/สี (default ขาว เพราะซ้อนบนภาพ)
+        // ข้อความบนภาพ: ขนาด/ฟอนต์/สี (default ขาว เพราะซ้อนบนภาพ)/ตัวหนา
         title_font_size: 20,
         title_font_family: 'Sarabun',
         title_color: '#FFFFFF',
+        title_bold: 'Y',
         intro_text_font_size: 16,
         intro_text_font_family: 'Sarabun',
         intro_text_color: '#FFFFFF',
+        intro_text_bold: 'N',
     };
 
     return type === 'slideshowarticle' ? { ...common, article_category_info_id: null } : { ...common, banner_category_info_id: null };
@@ -619,6 +648,8 @@ export function defaultSlidesetSetting(type: string, languages: string[] = []): 
         read_all_font_family: 'Sarabun',
         read_all_color: READ_ALL_DEFAULT_COLORS.button,
         read_all_background: READ_ALL_DEFAULT_BACKGROUND,
+        read_all_link_type: 'menu',
+        read_all_menu_id: null,
         read_all_url: '',
         read_all_link_target: '_self',
     };
@@ -634,6 +665,7 @@ export function defaultGridSetting(type: string, languages: string[] = []): Grid
         sort_by: 'publish_desc',
         max_items: 0,
         display_type: 'card',
+        content_align: 'top',
         per_row_pc: 4,
         per_row_notebook: 3,
         per_row_tablet: 2,
@@ -703,6 +735,8 @@ export function defaultGridSetting(type: string, languages: string[] = []): Grid
         read_all_font_family: 'Sarabun',
         read_all_color: READ_ALL_DEFAULT_COLORS.button,
         read_all_background: READ_ALL_DEFAULT_BACKGROUND,
+        read_all_link_type: 'menu',
+        read_all_menu_id: null,
         read_all_url: '',
         read_all_link_target: '_self',
     };
@@ -777,7 +811,11 @@ export function validateSetting(type: string, setting: Record<string, unknown>):
         const grid = gridConfig(type);
         const readAll = slideset?.hasReadAll ? slideset : grid?.hasReadAll ? grid : undefined;
 
-        if (readAll && s.show_read_all === 'Y') {
+        if (readAll && s.show_read_all === 'Y' && s.read_all_link_type !== 'custom') {
+            if (!s.read_all_menu_id) {
+                errors.read_all_menu_id = 'กรุณาเลือกเมนูปลายทางของปุ่มอ่านทั้งหมด (ต้องเลือกเมื่อเปิดแสดงปุ่ม)';
+            }
+        } else if (readAll && s.show_read_all === 'Y') {
             const url = String(s.read_all_url ?? '').trim();
 
             if (url === '') {

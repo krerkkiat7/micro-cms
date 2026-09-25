@@ -105,7 +105,9 @@
 
 ปัญหาระบบเดิม: insert → select count → update ทุก request ทำให้ล็อกแถวเดิมซ้ำ ๆ จนเว็บหน่วงทั้งไซต์ — ออกแบบใหม่ (`App\Support\Front\ViewCounter`):
 
-1. ระหว่าง request ไม่แตะฐานข้อมูล: ข้ามบอท (`UserAgentParser`) + ข้ามการเปิดซ้ำของ session เดิมภายใน 30 นาที (เช็กใน session)
+0. `user_id` ของทุกตารางหน้าบ้าน (`*_item_view`, `banner_item_click`, `log_front_access`) มาจาก `FrontAuth::id()` (guard `front`) —
+   การ login หลังบ้านไม่ถูกนับเป็นผู้ใช้หน้าบ้าน (ตอนนี้หน้าบ้านยังไม่มี login จึงเป็น null)
+1. ระหว่าง request ไม่แตะฐานข้อมูล: ข้ามบอท (`UserAgentParser`) + ข้ามการเปิดซ้ำของ session เดิมภายใน 5 นาที (เช็กใน session, `dedupe_minutes`)
 2. หลังส่ง response (`defer()`): โหมด **redis** `RPUSH front:views:{article|page}`; โหมด **database** insert + update ตรง
 3. `php artisan front:flush-views` (schedule ทุกนาทีใน `routes/console.php`) ดึงคิวทีละ 1,000 (Lua LRANGE+LTRIM atomic) → batch insert ตารางประวัติ
    1 คำสั่ง → `UPDATE … SET view_amount = view_amount + CASE id …` 1 คำสั่งต่อชุด (ไม่ count ตารางประวัติ) — ล้มเหลวใส่คืนคิว; คิวยาวเกิน
@@ -118,6 +120,13 @@
 ตาราง (migration `2026_10_01_000001_create_item_view_tables.php`): `article_item_view` / `page_item_view` — `*_item_info_id` (ไม่มี FK — insert เร็ว),
 `user_id`, `lang`, `session_id`, `remote_ip`, `geo_ip`, `action_date`, `status`, audit, timestamps (`created_at` = เวลาเข้าชมจริง), softDeletes,
 index (`*_item_info_id`, `action_date`); `page_item_info.view_amount` (ใหม่)
+
+**การคลิก banner** (Slideshow / Slideset / Grid จาก banner) ใช้กลไกเดียวกัน — `ViewCounter` ประเภท `banner` → ตาราง `banner_item_click`
+(migration `2026_10_03_000004_*`, โครงเดียวกับ `article_item_view` แทนตารางเดิมที่ไม่มี PK) + `banner_item_info.click_amount`
+(`ViewCounter::TYPES[*]['amount']`). หน้าจอ: `PageWidget.vue` ดักคลิกลิงก์ (event delegation, รวมคลิกกลาง) ในกล่องรายการที่มี `data-item-id`
+แล้ว `trackBannerClick()` (`utils/frontPage.ts`) ยิง sendBeacon → `POST front.banner.click` (`Front\Banner\BannerItemController@click`,
+ยกเว้น CSRF + `throttle:60,1`, นับเฉพาะ banner `status = Y` ที่มี URL, ตอบ 204) — ลิงก์ในหน้ายังเป็น URL จริง ไม่ redirect ผ่านเซิร์ฟเวอร์;
+ข้ามบอท + ไม่นับซ้ำใน session เดียวกันภายใน `dedupe_minutes` เหมือนยอดเข้าชม
 
 ## 9. ประวัติการเข้าชมหน้าบ้าน (`log_front_access`)
 
@@ -161,4 +170,4 @@ index (`*_item_info_id`, `action_date`); `page_item_info.view_amount` (ใหม
 | รอบ | ขอบเขต | สถานะ |
 |-----|--------|-------|
 | 1 — front-init | Intropage, layout จาก template, หน้าเพจ, บทความ, SEO, log_front_access, ยอดเข้าชม, cache | ✅ |
-| ถัดไป | หน้าค้นหา (เปิดปุ่มค้นหาใน header), หน้าแท็ก, sitemap.xml / robots.txt, CSP (nonce), GeoIP, `log_front_action`/`log_front_login` (สมาชิก), ไฟล์เฉพาะสมาชิก (§7), รายงานยอดเข้าชมจาก `*_item_view`, นับคลิก banner (`click_amount`) | 🔴 |
+| ถัดไป | หน้าค้นหา (เปิดปุ่มค้นหาใน header), หน้าแท็ก, sitemap.xml / robots.txt, CSP (nonce), GeoIP, `log_front_action`/`log_front_login` (สมาชิก), ไฟล์เฉพาะสมาชิก (§7), รายงานยอดเข้าชมจาก `*_item_view` / ยอดคลิกจาก `banner_item_click` | 🔴 |

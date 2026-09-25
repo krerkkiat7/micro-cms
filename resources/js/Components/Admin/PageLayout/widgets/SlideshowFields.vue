@@ -2,6 +2,8 @@
 import { computed } from 'vue';
 import FlagField from './FlagField.vue';
 import TextStyleFields from '../TextStyleFields.vue';
+import PositionPicker from '@/Components/Admin/IntropageBackground/PositionPicker.vue';
+import SegmentedChoice from '@/Components/Admin/Template/SegmentedChoice.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
@@ -13,7 +15,6 @@ import {
     SLIDESHOW_INTERVAL_RANGE,
     SLIDESHOW_MAX_ITEMS_LIMIT,
     SLIDESHOW_SPEED_RANGE,
-    SLIDESHOW_TEXT_ALIGN_OPTIONS,
     SLIDESHOW_TEXT_WIDTH_OPTIONS,
     slideshowConfig,
     settingTextStyle,
@@ -150,23 +151,26 @@ const hasText = computed(() => props.setting.show_title === 'Y' || props.setting
                 <FlagField v-model="setting.show_title" label="แสดงหัวเรื่องบนภาพ" :hint="config.titleHint" />
                 <FlagField v-model="setting.show_intro_text" label="แสดงข้อความเกริ่นนำบนภาพ" />
             </div>
-            <div v-if="hasText" class="grid gap-4 sm:grid-cols-2">
-                <div>
-                    <InputLabel value="ตำแหน่งที่แสดง" />
-                    <SearchableSelect v-model="setting.text_align" :options="SLIDESHOW_TEXT_ALIGN_OPTIONS" />
-                </div>
+            <template v-if="hasText">
                 <div>
                     <InputLabel value="ขอบเขตของข้อความ" />
-                    <SearchableSelect v-model="setting.text_width" :options="SLIDESHOW_TEXT_WIDTH_OPTIONS" />
+                    <SegmentedChoice v-model="setting.text_width" :options="SLIDESHOW_TEXT_WIDTH_OPTIONS" />
+                    <p class="mt-1 text-xs text-gray-500">จำกัดตาม container = ข้อความอยู่ในแนวเดียวกับเนื้อหาส่วนอื่นของหน้า, เต็มความกว้าง = ชิดขอบภาพ</p>
                 </div>
-            </div>
-            <div v-if="setting.show_title === 'Y'" class="space-y-2 rounded-lg border border-gray-200 bg-white p-3">
+                <div>
+                    <InputLabel value="ตำแหน่งที่แสดง" />
+                    <PositionPicker v-model="setting.text_align" :allow-unset="false" />
+                </div>
+            </template>
+            <div v-if="setting.show_title === 'Y'" class="space-y-3 rounded-lg border border-gray-200 bg-white p-3">
                 <h5 class="text-xs font-medium text-gray-600">ตัวอักษรของหัวเรื่อง</h5>
                 <TextStyleFields :text-style="titleStyle" :fonts="fonts" :show-align="false" />
+                <FlagField v-model="setting.title_bold" label="ตัวหนา" />
             </div>
-            <div v-if="setting.show_intro_text === 'Y'" class="space-y-2 rounded-lg border border-gray-200 bg-white p-3">
+            <div v-if="setting.show_intro_text === 'Y'" class="space-y-3 rounded-lg border border-gray-200 bg-white p-3">
                 <h5 class="text-xs font-medium text-gray-600">ตัวอักษรของข้อความเกริ่นนำ</h5>
                 <TextStyleFields :text-style="introStyle" :fonts="fonts" :show-align="false" />
+                <FlagField v-model="setting.intro_text_bold" label="ตัวหนา" />
             </div>
         </div>
     </div>

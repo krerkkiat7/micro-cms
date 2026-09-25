@@ -164,6 +164,9 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 ### การเข้าสู่ระบบหลังบ้าน (auth)
 
 - `sys_user` เดียวเก็บผู้ใช้ทั้ง `back` (หลังบ้าน) และ `front` (หน้าบ้าน) แยกด้วย `user_type`
+- **login หน้าบ้าน/หลังบ้านแยกกันเด็ดขาด** — หลังบ้าน = guard `web`, หน้าบ้าน = guard `front` (`config/auth.php`, session คนละคีย์)
+  โค้ดหน้าบ้านอ่านผู้ใช้ผ่าน `App\Support\Front\FrontAuth::id()` เท่านั้น (คืนเฉพาะ `user_type = front` ใน guard `front`) **ห้ามใช้ `Auth::id()`/
+  `$request->user()` ฝั่งหน้าบ้าน** (= ผู้ใช้หลังบ้าน); ผู้ใช้ `back` ใช้งานหน้าบ้านแบบ login ไม่ได้ — front-office auth ในอนาคตต้อง login ผ่าน guard `front`
 - `LoginRequest::authenticate()` ตรวจ `user_type = 'back'` + `status = 'Y'` เสมอ; รหัสผ่านถูกแต่ `status = 'N'`
   → ข้อความ "บัญชีนี้ถูกระงับการใช้งาน…"; login สำเร็จ/ไม่สำเร็จ อัปเดต `last_login_at` /
   `failed_login_count` / `last_failed_login_at` (สำเร็จ = เคลียร์ตัวนับ)
@@ -369,9 +372,26 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   trait `App\Models\Concerns\FlushesFrontCache` บนทุก model ที่หน้าบ้านใช้ + `Setting::forget()`; ปุ่ม "ล้าง Cache หน้าบ้าน" ในหน้าล้างแคช.
   โมดูลใหม่ที่หน้าบ้านแสดงผล ต้องใส่ trait นี้ใน model ด้วย
 - **ยอดเข้าชม** `article_item_view` / `page_item_view` + `page_item_info.view_amount` (migration `2026_10_01_000001_*`) —
-  `App\Support\Front\ViewCounter` (ข้ามบอท + dedupe 30 นาที/session, บันทึกหลังส่ง response ด้วย `defer()`, โหมด redis = คิว Redis +
+  `App\Support\Front\ViewCounter` (ข้ามบอท + dedupe 5 นาที/session, บันทึกหลังส่ง response ด้วย `defer()`, โหมด redis = คิว Redis +
   `php artisan front:flush-views` ทุกนาที batch insert/update) — **production ต้องตั้ง cron `schedule:run`**; `config/front.php`.
   ใช้ `defer()` ไม่ใช่ `app()->terminating()` (callback ของ terminating สะสมข้าม request ในเทส/Octane)
+- **โมดูล page รอบปรับปรุง (branch `page-edit`)** — ฟอร์มข้อมูลทั่วไปเรียงใหม่: ข้อมูลหน้าเพจ → SEO/AEO/GEO (รวมรูปแทนหน้าในหัวข้อ
+  "การแชร์ไปโซเชียลมีเดีย") → พื้นหลังของทั้งหน้า → สถานะ; ระยะห่างของแถว/คอลัมน์/widget (`use_padding` default `N` + `padding_*` 4 ด้าน px,
+  แถวมี `gap_x`/`gap_y` default 24) migration `2026_10_03_000001_*`, ศูนย์กลาง `App\Support\PageSpacing` + trait `HasPageSpacing`,
+  UI `Components/Admin/PageLayout/SpacingFields.vue`; หน้าบ้านหน้าเพจไม่มีระยะบน/ล่างของตัวหน้าและแถวไม่มี `py-6` ตายตัวแล้ว — ดู `docs/PRD-page.md`.
+  รอบสอง: ตัวหนา `*_bold` ในการจัดรูปแบบตัวอักษรของแถว/คอลัมน์/widget (`PageTextStyle::FIELDS` มี `bold` แล้ว = 15 คอลัมน์), "แสดงหัวเรื่อง"/"การแสดงเนื้อหา"
+  เป็น `SegmentedChoice` (ผู้ใช้เรียกว่า segmented control) และซ่อนส่วนที่เกี่ยวข้องเมื่อไม่แสดงหัวเรื่อง (ค่าไม่ลบ), หน้าบ้านส่งระดับหัวเรื่องต่อลงชั้นถัดไปเมื่อชั้นบนไม่มีหัวเรื่อง.
+  รอบสาม: Slideshow ตำแหน่งข้อความ 9 ตำแหน่ง (`text_align` ค่าแบบ background-position, default `center`) + ตัวหนา `title_bold`/`intro_text_bold`;
+  **นับคลิก banner** (Slideshow/Slideset/Grid) → `banner_item_click` + `banner_item_info.click_amount` ผ่าน `ViewCounter` ประเภท `banner`
+  + `POST front.banner.click` (sendBeacon, ยกเว้น CSRF) — ดู `docs/PRD-front.md` §8.
+  รอบสี่: Grid (article/banner) รูปแบบแถวมี `content_align` (บน/กึ่งกลาง/ล่าง, default บน), ความกว้างรูปกรอกด้วยแถบเลื่อน (`RangeNumberField.vue`),
+  ตัวเลือกสีในกล่องของการ์ด/กล่องวันที่เต็มความกว้าง (`CardBoxFields.vue` ใช้ร่วม Slideset ด้วย), `SegmentedChoice` รองรับ `icon`;
+  ปุ่ม "อ่านทั้งหมด": ลิงก์ปลายทางเลือกจากเมนู (`read_all_link_type` default `menu` + `read_all_menu_id`) หรือกำหนดเอง, path ภายในที่ไม่มีภาษาเติม
+  `/{lang}` ให้ (`FrontUrl::withLang()`) — ใช้กับเมนูลิงค์ภายนอกทุกจุดด้วย (header/footer/aside ผ่าน `FrontMenuResolver::link()`).
+  **RichTextEditor** (`Components/Admin/RichTextEditor.vue` — ใช้ทุกจุด: part ข้อความของบทความ/Custom Text, รายละเอียดหมวดหมู่บทความ) มีจัดข้อความ
+  ซ้าย/กึ่งกลาง/ขวา/เต็มแนว (`@tiptap/extension-text-align`) + ระยะห่างระหว่างบรรทัด (`utils/tiptapLineHeight.ts`, default 1.5 จาก CSS) เก็บเป็น
+  style บนแท็ก block — `HtmlSanitizer` เก็บไว้เฉพาะ 2 ค่านี้ (รายการ LINE_HEIGHTS ต้องตรงกันสองฝั่ง); CSS เนื้อหา `.rich-text-content` ย้ายไป `app.css`.
+  **ลิงก์หน้าบ้านไม่มีเส้นใต้ตอน hover** (เหลือแค่ cursor — เส้นใต้ที่เหลือเป็นตัวบอกสถานะ active/ภาษาปัจจุบัน/ลิงก์ในเนื้อหา rich text)
 - **`log_front_access`** (ในไฟล์ log กลาง — เพิ่มหลังจากไฟล์นั้น migrate แล้ว เครื่อง dev ต้องสร้างตารางเอง/`migrate:fresh`) —
   `LogFrontAccess::record()` ทุก controller หน้าบ้าน, keep-alive `useAccessHeartbeat('front.access.ping')` scope token + session_id,
   หน้ารายการหลังบ้าน `admin.system.frontlog.access.index`

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin\Page\Concerns;
 
 use App\Models\PageItemWidget;
+use App\Support\PageSpacing;
 use App\Support\PageTextStyle;
 use App\Support\Setting;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -53,7 +54,7 @@ trait PageItemValidationRules
     }
 
     /**
-     * กฎของการจัดรูปแบบตัวอักษรของหัวเรื่อง/หัวเรื่องรอง/ข้อความเกริ่นนำ (ขนาด/ฟอนต์/การจัดตำแหน่ง/สี — 12 ฟิลด์ ดู
+     * กฎของการจัดรูปแบบตัวอักษรของหัวเรื่อง/หัวเรื่องรอง/ข้อความเกริ่นนำ (ขนาด/ฟอนต์/การจัดตำแหน่ง/สี/ตัวหนา — 15 ฟิลด์ ดู
      * App\Support\PageTextStyle) — $prefix ใช้ซ้อนใน rows.*. / columns.*. / widgets.*. สีตัวอักษรเป็น hex เท่านั้น (ไม่มี transparent)
      *
      * @return array<string, ValidationRule|array<mixed>|string>
@@ -67,6 +68,29 @@ trait PageItemValidationRules
             $rules["{$prefix}{$part}_font_family"] = ['required', Rule::in(PageTextStyle::fontNames())];
             $rules["{$prefix}{$part}_align"] = ['required', Rule::in(PageTextStyle::ALIGNS)];
             $rules["{$prefix}{$part}_color"] = ['required', 'string', 'max:20', 'regex:'.self::TEXT_COLOR_REGEX];
+            $rules["{$prefix}{$part}_bold"] = ['required', Rule::in(['Y', 'N'])];
+        }
+
+        return $rules;
+    }
+
+    /**
+     * กฎของระยะขอบด้านใน (use_padding + padding 4 ด้าน) และระยะห่างระหว่างคอลัมน์ (gap_x/gap_y เฉพาะแถว) — ดู App\Support\PageSpacing
+     *
+     * @return array<string, ValidationRule|array<mixed>|string>
+     */
+    protected function spacingRules(string $prefix, string $level): array
+    {
+        $rules = ["{$prefix}use_padding" => ['required', Rule::in(['Y', 'N'])]];
+
+        foreach (PageSpacing::SIDES as $side) {
+            $rules["{$prefix}padding_{$side}"] = ['required', 'integer', 'between:'.PageSpacing::PADDING_MIN.','.PageSpacing::PADDING_MAX];
+        }
+
+        if ($level === 'row') {
+            foreach (['gap_x', 'gap_y'] as $field) {
+                $rules["{$prefix}{$field}"] = ['required', 'integer', 'between:'.PageSpacing::GAP_MIN.','.PageSpacing::GAP_MAX];
+            }
         }
 
         return $rules;
@@ -155,7 +179,10 @@ trait PageItemValidationRules
             + $this->backgroundRules('rows.*.columns.*.widgets.*.')
             + $this->textStyleRules('rows.*.')
             + $this->textStyleRules('rows.*.columns.*.')
-            + $this->textStyleRules('rows.*.columns.*.widgets.*.');
+            + $this->textStyleRules('rows.*.columns.*.widgets.*.')
+            + $this->spacingRules('rows.*.', 'row')
+            + $this->spacingRules('rows.*.columns.*.', 'column')
+            + $this->spacingRules('rows.*.columns.*.widgets.*.', 'widget');
 
         foreach (Setting::selectedLanguages() as $lang) {
             foreach (['rows.*.', 'rows.*.columns.*.', 'rows.*.columns.*.widgets.*.'] as $prefix) {

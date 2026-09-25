@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { AlignCenter, AlignLeft, AlignRight } from 'lucide-vue-next';
 import ColorPickerInput from '@/Components/Admin/ColorPickerInput.vue';
+import FlagField from './widgets/FlagField.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import { FONT_SIZE_OPTIONS, TEXT_ALIGN_OPTIONS } from '@/utils/pageLayout';
@@ -9,7 +10,8 @@ import type { TextAlign, TextStyle } from '@/utils/pageLayout';
 
 /**
  * ชุดตั้งค่าการจัดรูปแบบตัวอักษรของข้อความ 1 ส่วน (หัวเรื่อง / หัวเรื่องรอง / ข้อความเกริ่นนำ) ของแถว/คอลัมน์/widget —
- * ขนาดตัวอักษร, ฟอนต์ (รายการฟอนต์ไทยจาก backend), การจัดตำแหน่ง (ชิดซ้าย/กึ่งกลาง/ชิดขวา) และสี (ไม่มีตัวเลือกโปร่งใส)
+ * ขนาดตัวอักษร, ฟอนต์ (รายการฟอนต์ไทยจาก backend), การจัดตำแหน่ง (ชิดซ้าย/กึ่งกลาง/ชิดขวา), สี (ไม่มีตัวเลือกโปร่งใส)
+ * และตัวหนา (แสดงเฉพาะเมื่อ `textStyle` มีค่า `bold` — ที่อื่นที่เก็บตัวหนาแยกไว้เองจะไม่เห็นช่องนี้)
  * `textStyle` = object ที่เก็บค่า (แก้ property ภายในตรง ๆ) — ห้ามตั้งชื่อ prop นี้ว่า `style` เพราะ Vue ถือเป็น attribute พิเศษ
  * และคัดลอก object ให้ก่อนส่งเข้า component ทำให้ค่าที่แก้ไม่ถึง object เดิม
  */
@@ -75,6 +77,9 @@ const size = computed({
         <div :class="showAlign ? 'sm:col-span-3' : 'sm:col-span-2'">
             <InputLabel value="สีตัวอักษร" />
             <ColorPickerInput v-model="textStyle.color" />
+        </div>
+        <div v-if="textStyle.bold !== undefined" :class="showAlign ? 'sm:col-span-3' : 'sm:col-span-2'">
+            <FlagField :model-value="textStyle.bold" label="ตัวหนา" @update:model-value="textStyle.bold = $event" />
         </div>
     </div>
 </template>

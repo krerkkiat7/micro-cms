@@ -76,9 +76,10 @@ hasMany; `rows()` hasMany เรียง `sort_order`), `App\Models\PageItemDet
 **หน้าจอ** — `Admin/Page/Item/{Index,Add,Edit,Layout}.vue`
 - **Index**: ค้นหาชื่อ, กรองสถานะ, เรียงชื่อ/วันที่สร้าง/สถานะ, paging — คอลัมน์ **ชื่อ, วันที่สร้าง, สถานะ**
   (ชื่อที่แสดงเป็นของภาษาหลักเสมอ)
-- **Add / Edit (ข้อมูลทั่วไป)**: ใช้ข้อมูลจาก `page_item_info` + `page_item_detail` — 3 การ์ดผ่าน component ร่วม
-  `Components/Admin/PageItem/PageItemFormFields.vue`: ข้อมูลทั่วไป (สถานะ, รูปแทนหน้า, พื้นหลังของทั้งหน้า), ข้อมูลหน้าเพจ
-  แยกภาษา (ชื่อ/ข้อความเกริ่นนำ ผ่าน `LangFieldGroup`), SEO / AEO / GEO (slug, meta title/description/keywords, og title/description)
+- **Add / Edit (ข้อมูลทั่วไป)**: ใช้ข้อมูลจาก `page_item_info` + `page_item_detail` — 4 การ์ดผ่าน component ร่วม
+  `Components/Admin/PageItem/PageItemFormFields.vue` เรียงตามลำดับ: (1) **ข้อมูลหน้าเพจ** แยกภาษา (ชื่อ/ข้อความเกริ่นนำ ผ่าน `LangFieldGroup`)
+  (2) **SEO / AEO / GEO** แบ่งหัวข้อย่อย "ลิงก์ของหน้า" (slug) / "การแสดงผลในผลการค้นหา" (meta title/description/keywords) /
+  "การแชร์ไปโซเชียลมีเดีย" (og title/description + **รูปแทนหน้า**) (3) **พื้นหลังของทั้งหน้า** (4) **สถานะ**
   — หลังเพิ่มสำเร็จ redirect ไปหน้าแก้ไข ให้ไปแท็บ "โครงสร้าง" ต่อได้
 
 **Permission code** (seed ไว้แล้วใน `DatabaseSeeder.php`) — `page.item.view`, `page.item.manage`, `page.item.delete`
@@ -122,11 +123,11 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 
 | ตาราง | คอลัมน์หลัก |
 |-------|-------------|
-| `page_item_row` | `page_item_info_id` FK, `sort_order`, `show_title` (`Y`/`N`), `use_container` (`Y` = อยู่ใน container, `N` = เต็มความกว้าง), `background_color`, `background_image_id` + `background_repeat/size/attachment/position` (ชุดเดียวกับหน้า), การจัดรูปแบบตัวอักษร 12 คอลัมน์ (ด้านล่าง), `status` |
+| `page_item_row` | `page_item_info_id` FK, `sort_order`, `show_title` (`Y`/`N`), `use_container` (`Y` = อยู่ใน container, `N` = เต็มความกว้าง), `background_color`, `background_image_id` + `background_repeat/size/attachment/position` (ชุดเดียวกับหน้า), การจัดรูปแบบตัวอักษร 12 คอลัมน์ (ด้านล่าง), ระยะห่าง `use_padding`/`padding_*`/`gap_x`/`gap_y` (ด้านล่าง), `status` |
 | `page_item_row_detail` | `id`, `lang`, `title` `varchar(250)`, `subtitle` `varchar(250)` (หัวเรื่องรอง), `intro_text` `varchar(2000)` |
-| `page_item_column` | `page_item_row_id` FK, `sort_order`, `show_title`, `column_size` (1 - 12), `background_*` (ชุดเดียวกับแถว), การจัดรูปแบบตัวอักษร 12 คอลัมน์, `status` |
+| `page_item_column` | `page_item_row_id` FK, `sort_order`, `show_title`, `column_size` (1 - 12), `background_*` (ชุดเดียวกับแถว), การจัดรูปแบบตัวอักษร 12 คอลัมน์, `use_padding`/`padding_*`, `status` |
 | `page_item_column_detail` | `id`, `lang`, `title`, `subtitle`, `intro_text` |
-| `page_item_widget` | `page_item_column_id` FK, `sort_order`, `show_title`, `widget_type` `varchar(20)` (ตั้งค่าเฉพาะประเภทอยู่ในตาราง `page_item_widget_<ประเภท>` — §3), `background_*` (ชุดเดียวกับแถว/คอลัมน์), การจัดรูปแบบตัวอักษร 12 คอลัมน์, `status` |
+| `page_item_widget` | `page_item_column_id` FK, `sort_order`, `show_title`, `widget_type` `varchar(20)` (ตั้งค่าเฉพาะประเภทอยู่ในตาราง `page_item_widget_<ประเภท>` — §3), `background_*` (ชุดเดียวกับแถว/คอลัมน์), การจัดรูปแบบตัวอักษร 12 คอลัมน์, `use_padding`/`padding_*`, `status` |
 | `page_item_widget_detail` | `id`, `lang`, `title`, `subtitle`, `intro_text` |
 
 ### การจัดรูปแบบตัวอักษร (หัวเรื่อง / หัวเรื่องรอง / ข้อความเกริ่นนำ)
@@ -141,6 +142,7 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 | `*_font_family` | `varchar(50)` | **Sarabun**; ต้องอยู่ในรายการฟอนต์ไทย (ด้านล่าง) |
 | `*_align` | `varchar(10)` | **`center`** (กึ่งกลาง); `left` ชิดซ้าย / `center` กึ่งกลาง / `right` ชิดขวา |
 | `*_color` | `varchar(20)` | **`#000000`** (ดำ); รหัส hex เท่านั้น — **ไม่มี transparent** (ต่างจากสีพื้นหลัง) |
+| `*_bold` | `char(1)` | ตัวหนา `Y`/`N` — หัวเรื่อง **`Y`**, หัวเรื่องรอง/ข้อความเกริ่นนำ **`N`** (`PageTextStyle::DEFAULT_BOLD`, migration `2026_10_03_000002_*`) |
 
 - `App\Support\PageTextStyle` เป็นแหล่งเดียวของรายการคอลัมน์/ค่าที่อนุญาต/ฟอนต์ (model ใช้ trait `HasPageTextStyle` เติม `$fillable`,
   validation ใช้ `textStyleRules()`, `PageLayoutSync` ใช้ `PageTextStyle::fromInput()`); หน้าจอสร้างค่าเริ่มต้นใน
@@ -151,10 +153,29 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
   Noto Serif Thai, Pattaya, Pridi, Prompt, Sarabun, Sriracha, Srisakdi, Taviraj, Thasadith, Trirong — หน้าโครงสร้างโหลดสไตล์ชีตของทุกตัวจาก Bunny Fonts (มิเรอร์ Google Fonts ที่ `app.blade.php` ใช้โหลด Sarabun อยู่แล้ว —
   `PageTextStyle::fontsStylesheetUrl()`) เบราว์เซอร์ดาวน์โหลดไฟล์ฟอนต์เฉพาะตัวที่ถูกใช้จริง; เพิ่มฟอนต์ใหม่ที่ `PageTextStyle::FONTS`
   (ต้องเช็กว่ามีน้ำหนักตัวอักษรที่ระบุจริง ไม่งั้นสไตล์ชีตทั้งชุดโหลดไม่ขึ้น)
+- **dialog ตั้งค่า**: "แสดงหัวเรื่อง" (ทุกชั้น) และ "การแสดงเนื้อหา" (แถว) เป็นปุ่มเลือกแบบ segmented control (`Components/Admin/Template/SegmentedChoice.vue`);
+  เลือก "ไม่แสดง" แล้วซ่อนการจัดรูปแบบของหัวเรื่อง + หัวเรื่องรอง + ข้อความเกริ่นนำ (ช่องกรอกหัวเรื่องยังอยู่ เพราะใช้เป็นชื่อบนแถบจัดการ)
+  — ซ่อนเฉพาะหน้าจอ ค่าไม่ถูกลบ เปิดแสดงใหม่แล้วได้ค่าเดิม
 - **การแสดงผล**: เมื่อ `show_title = Y` แสดงหัวเรื่อง + หัวเรื่องรอง + ข้อความเกริ่นนำ (เฉพาะส่วนที่กรอกแล้ว) ตามที่ตั้งค่า —
   หัวเรื่องใช้แท็ก **`<h2>` (แถว) / `<h3>` (คอลัมน์) / `<h4>` (widget)** ส่วนหัวเรื่องรองและข้อความเกริ่นนำเป็น `<div>` ธรรมดาเสมอ
   (ตัวอย่างในหน้าโครงสร้างคือ `LayoutTexts.vue`; หน้าบ้านต้อง render ให้ตรงกัน)
 - แถว/คอลัมน์/widget ที่ **เพิ่มใหม่** ตั้ง `background_color = transparent` เป็นค่าเริ่มต้น
+
+### ระยะห่าง (ระยะขอบด้านใน / ระยะห่างระหว่างคอลัมน์)
+
+migration `2026_10_03_000001_add_spacing_to_page_item_layout_tables.php` — แหล่งเดียวของรายการคอลัมน์/ค่าเริ่มต้น/ช่วงค่าคือ
+`App\Support\PageSpacing` (model ใช้ trait `HasPageSpacing` + const `SPACING_LEVEL`, validation `spacingRules()`, `PageLayoutSync`
+ใช้ `PageSpacing::fromInput()`, หน้าบ้านใช้ `PageSpacing::padding()`); ฝั่งหน้าจอ `utils/pageLayout.ts` (`defaultPadding()`, `DEFAULT_GAP` — ต้องตรงกัน)
+
+| คอลัมน์ | ตาราง | ค่าเริ่มต้น / เงื่อนไข |
+|---------|-------|------------------------|
+| `use_padding` `char(1)` | แถว/คอลัมน์/widget | **`N`** (ปิด = ไม่เว้นระยะเลย แม้มีตัวเลขเก็บไว้) |
+| `padding_top/right/bottom/left` `unsigned smallint` (px) | แถว/คอลัมน์/widget | ใช้เมื่อเปิด — แถว 48/16/48/16, คอลัมน์และ widget 16 ทุกด้าน; รับ 0 - 200 |
+| `gap_x` / `gap_y` `unsigned smallint` (px) | แถวเท่านั้น | **24** (1.5rem gutter ที่เว็บส่วนใหญ่ใช้); ระยะห่างแนวนอนระหว่างคอลัมน์ / แนวตั้งเมื่อคอลัมน์ขึ้นบรรทัดใหม่หรือบนมือถือ; รับ 0 - 120 |
+
+- dialog ตั้งค่าแถว/คอลัมน์/widget มีส่วน "ระยะห่าง" (`Components/Admin/PageLayout/SpacingFields.vue`): checkbox "เว้นระยะขอบด้านใน"
+  แล้วแสดงช่องตัวเลข 4 ด้านเป็นแผนภาพกล่องรอบ "เนื้อหา"; แถวมี "ระยะห่างระหว่างคอลัมน์" ซ้าย-ขวา / บน-ล่างเพิ่ม
+- ตัวอย่างในหน้าโครงสร้างแสดงระยะตามค่าจริง (เว้นเพิ่มจากกรอบของหน้าจอแก้ไข)
 
 **Model** — `PageItemRow`/`PageItemColumn`/`PageItemWidget` (+ `*Detail`) ตาม pattern ข้างบน: `rows()`/`columns()`/`widgets()`
 เรียง `sort_order` (แล้ว `id`), `PageItemWidget::allowedTypes()` = รายการ `widget_type` ที่บันทึกได้ (ประเภทในทะเบียน + `placeholder` ประเภทเดิม — validation ใช้ค่านี้)
@@ -269,7 +290,8 @@ slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero
 | `aspect_ratio` | `16:9` (default) / `21:9` / `4:3` / `1:1` — ภาพครอปแบบ cover ให้เต็มกรอบ (คอลัมน์นี้เพิ่มนอกเหนือจากที่ผู้ใช้ระบุ เพื่อให้กรอบไม่กระโดดเวลาเลื่อน) |
 | `is_clickable` / `link_target` | กดลิงก์ของ banner ได้ (banner ที่ไม่มีลิงก์กดไม่ได้) · `_self` / `_blank` |
 | `show_title` / `show_intro_text` | แสดงหัวเรื่อง/ข้อความเกริ่นนำของ **banner แต่ละใบ**ซ้อนบนภาพ (`<div>` ไม่ใช้ h1/h2, ตัวอักษรขาวบนเฉดดำด้านล่าง) — คนละอย่างกับ "แสดงหัวเรื่อง" ของ widget เอง (H4 เหนือ widget) |
-| `text_align` / `text_width` | `left`/`center`/`right` · `full` เต็มความกว้าง / `container` จำกัดตาม container (`max-w-5xl` เหมือนแถวที่ใช้ container) |
+| `text_width` / `text_align` | `full` เต็มความกว้าง / `container` จำกัดตาม container (segmented control, อยู่ก่อนตำแหน่ง) · ตำแหน่งข้อความบนภาพ **9 ตำแหน่ง** ค่าแบบ CSS background-position (`top left` … `bottom right`, **default `center`**, `SlideshowWidget::TEXT_POSITIONS`) เลือกด้วย `PositionPicker.vue` (`:allow-unset="false"`) — migration `2026_10_03_000003_*` แปลงค่าเดิม `left/center/right` เป็น `bottom left/bottom/bottom right` (หน้าตาเดิม); เงาใต้ข้อความตามแนวตั้ง `slideshowOverlayClass()` + `positionClasses()` ใน `utils/front.ts` |
+| `title_bold` / `intro_text_bold` | ตัวหนาของหัวเรื่อง (default `Y`) / ข้อความเกริ่นนำ (default `N`) บนภาพ |
 | `title_font_size` / `title_font_family` / `title_color` | ตัวอักษรของหัวเรื่องบนภาพ: ขนาด px (8 - 120, default 20) · ฟอนต์ (ชุดเดียวกับหัวเรื่องของแถว/คอลัมน์ `PageTextStyle::fontNames()`, default Sarabun) · สี hex (**default ขาว `#FFFFFF`**, ไม่มี transparent) — ตั้งชื่อคอลัมน์ตาม `PageTextStyle` (`<part>_font_size` ฯลฯ) |
 | `intro_text_font_size` / `intro_text_font_family` / `intro_text_color` | เหมือนกันสำหรับข้อความเกริ่นนำบนภาพ (default 16 / Sarabun / ขาว) — ไม่มีการจัดตำแหน่งรายส่วน ใช้ `text_align` ร่วมกัน; ฟอร์มแสดงชุดตั้งค่าของแต่ละส่วนเมื่อเปิดแสดงส่วนนั้นเท่านั้น (`TextStyleFields.vue` ซ่อนตัวเลือกจัดตำแหน่งด้วย `show-align=false`) |
 
@@ -325,7 +347,9 @@ class `SlidesetArticleWidget extends CategoryListWidget` (ใช้ trait `Reads
 | `read_all_font_size` / `read_all_font_family` / `read_all_color` | ตัวอักษรของปุ่ม (ทุกรูปแบบ): ขนาด (14 px) / ฟอนต์ (Sarabun) / สี (`#FFFFFF`) — ใช้ `TextStyleFields` ชุดเดียวกับข้อความส่วนอื่น (ไม่มีจัดตำแหน่ง) |
 | `read_all_background` | สีพื้นหลังปุ่ม `#1F2937` (เทาเข้ม) — **ใช้เฉพาะรูปแบบปุ่ม / ปุ่มมนใหญ่** (ฟอร์มซ่อนช่องนี้เมื่อเลือกลิงก์ข้อความ); ไม่มีตัวเลือกโปร่งใส |
 | _สีตัวอักษรตามรูปแบบ_ | ค่าเริ่มต้นของสีตัวอักษรต่างกันตามรูปแบบ (ปุ่ม = ขาว, ลิงก์ = น้ำเงิน `#2563EB` — `READ_ALL_DEFAULT_COLORS`) เปลี่ยนรูปแบบในฟอร์มแล้วถ้าสียังเป็นค่าเริ่มต้นของแบบเดิมจะสลับให้ตามแบบใหม่ (สีที่ผู้ใช้ตั้งเองไม่ถูกแตะ); migration ปรับแถวเดิมที่เป็นลิงก์ข้อความให้เป็นสีน้ำเงิน |
-| `read_all_url` | ลิงก์ปลายทาง `varchar(500)` — **จำเป็นต้องกรอกเมื่อแสดงปุ่ม** รับ `http(s)://…`, `/path`, `#anchor`, `mailto:`, `tel:` (ภายหลังอาจเลือกจากเมนูหน้าบ้านแทนการกรอก URL) |
+| `read_all_link_type` | ประเภทลิงก์ปลายทาง `menu` (**default** — เลือกจากเมนูหน้าบ้าน) / `custom` (กรอก URL เอง) — segmented control (migration `2026_10_04_000002_*`; ข้อมูลเดิมที่มี URL ตั้งเป็น `custom`) |
+| `read_all_menu_id` | เมนูปลายทาง (`front_menu_info.id`, FK nullOnDelete) — **จำเป็นเมื่อแสดงปุ่มและเลือก `menu`**; dropdown แสดงเมนูที่เปิดใช้งานทั้งหมดเยื้องตามระดับ (`FrontMenuTree::pickerOptions()` → `widgetOptions.front_menus`) แต่เลือกได้เฉพาะ `FrontMenuType::LINKABLE` (บทความ / หน้าเพจ / ลิงค์ภายนอก) — หน้าบ้านใช้ URL + เป้าหมายการเปิดของเมนู (`FrontMenuResolver::linkOf()`) เมนูถูกซ่อน/ลบ = ไม่แสดงปุ่ม |
+| `read_all_url` | ลิงก์ปลายทาง `varchar(500)` — **จำเป็นเมื่อแสดงปุ่มและเลือก `custom`** รับ `http(s)://…`, `/path`, `#anchor`, `mailto:`, `tel:`; ตรวจเฉพาะประเภทที่เลือก (`exclude_unless`) ค่าของอีกประเภทเก็บไว้ตามเดิม. หน้าบ้าน: path ภายในที่ไม่ได้ขึ้นต้นด้วยภาษา (ทั้งกำหนดเองและเมนูลิงค์ภายนอก — เมนูเติมให้ที่ `FrontMenuResolver` จึงมีผลกับเมนูใน header/footer/aside ด้วย) เติม `/{lang}` ของหน้าปัจจุบัน (`FrontUrl::withLang()` — ยกเว้น `/file`, `/apps`, `/front`, `/admin`) |
 | `read_all_link_target` | `_self` / `_blank` (แยกจาก `link_target` ของรูป/หัวเรื่อง/เกริ่นนำ) |
 | **ข้อความแทน** | **แยกภาษา** เก็บในตาราง `page_item_widget_slidesetarticle_detail` (PK = `id` + `lang`, คอลัมน์ `read_all_text` ≤ 100 ตัวอักษร) — ว่าง = ใช้ข้อความมาตรฐาน "อ่านทั้งหมด"; ใน setting เป็น map `read_all_text: {th, en}` |
 
@@ -373,7 +397,9 @@ migration `2026_09_25_000003_*`; FK หมวดหมู่ตั้งชื�
 | `row_image` | แถวแนวนอน 2 ส่วน: รูป (กว้างเป็น % ของการ์ด) ซ้าย + ข้อมูลขวา | **บังคับแสดงหัวเรื่องเสมอ** (ฟอร์มซ่อนช่องติ๊ก, backend บังคับ `show_title = 'Y'` ตอนบันทึกด้วย) |
 | `row_date` | แถวแนวนอน 2 ส่วน: กล่องวันที่ (เลขวันที่บรรทัดใหญ่ + เดือนย่อ/ปี บรรทัดเล็ก) แทนรูป ซ้าย + ข้อมูลขวา | **บังคับแสดงหัวเรื่องและวันที่เผยแพร่เสมอ** (เหตุผลเดียวกับ `row_image` — backend บังคับทั้ง `show_title`/`show_date`) — เฉพาะ `gridarticle` เท่านั้น `gridbanner` ไม่มีตัวเลือกนี้เลย |
 
-`image_width_percent` (5 - 50%, default 20) ใช้เฉพาะ `row_image` — ปิด "แสดงรูปภาพ" ในรูปแบบนี้แล้วพื้นที่รูปจะหายไป ส่วนข้อมูลขยายเต็มแทน;
+`content_align` (`top` default / `center` / `bottom`, migration `2026_10_04_000001_*`) ใช้เฉพาะรูปแบบแถว — ตำแหน่งแนวตั้งของส่วนข้อมูล
+(segmented control มีไอคอนในกล่อง "กล่องของการ์ด"); article แบบ `top` วันที่/จำนวนเข้าชมถูกดันลงล่างสุดเสมอ (`gridContentAlignClasses()` ใน `utils/pageWidget.ts`).
+`image_width_percent` (5 - 50%, default 20 — กรอกด้วยแถบเลื่อน + ช่องตัวเลข `RangeNumberField.vue`) ใช้เฉพาะ `row_image` — ปิด "แสดงรูปภาพ" ในรูปแบบนี้แล้วพื้นที่รูปจะหายไป ส่วนข้อมูลขยายเต็มแทน;
 `row_date` ไม่มีส่วนรูปภาพเลย (ฟอร์มซ่อนกล่อง "รูปภาพ" ทั้งหมดเมื่อเลือกรูปแบบนี้) และซ่อนกล่อง "วันที่เผยแพร่" (สไตล์วันที่บรรทัดเดียวที่ใช้กับ
 `card`/`row_image`) ไปด้วย เพราะ `row_date` ไม่ได้ใช้สไตล์ชุดนั้นเลย (ใช้ "กล่องวันที่เผยแพร่" ด้านล่างแทนทั้งหมด) — ค่า `show_date`/`date_font_size`
 ฯลฯ ยังถูกบังคับ/เก็บไว้เหมือนเดิมที่ backend (ไม่กระทบข้อมูล) แค่ไม่มีช่องให้แก้ในฟอร์มเมื่ออยู่ในรูปแบบนี้
@@ -474,7 +500,10 @@ PK = id + lang) — migration `2026_09_27_000001_*` (มีทั้ง FK แ�
 ## หน้าบ้าน (สรุป — รายละเอียดเต็มดู [PRD-front.md](PRD-front.md) §4, §8)
 
 - `/{lang}/page/item/{id}/{slug?}` (`front.page.item`) — `status = Y` และไม่ถูกลบ ไม่งั้น 404; หัวเรื่องของหน้าเป็น h1 ที่ซ่อนไว้ (sr-only)
-- หัวเรื่องหน้าบ้าน: แถว h2 / คอลัมน์ h3 / widget h4 / หัวข้อ part ของ Custom Text และชื่อรายการใน Slideset/Grid h5
+- ตัวหน้าเพจ**ไม่มีระยะบน/ล่างของตัวเอง** (`FrontLayout` โหมด `fullWidth`) และแถวไม่มี padding ตายตัวแล้ว — ระยะทั้งหมดมาจาก
+  ค่า `padding` (null = ปิด) ของแถว/คอลัมน์/widget และ `gap_x`/`gap_y` ของแถว ที่ `PageLayoutReader` ส่งมา (`paddingCss()`/`gapCss()` ใน `utils/frontPage.ts`)
+- หัวเรื่องหน้าบ้าน: แถว h2 → คอลัมน์ h3 → widget h4 → หัวข้อ part ของ Custom Text และชื่อรายการใน Slideset/Grid h5 — **ชั้นที่ไม่มีหัวเรื่องแสดง
+  ส่งระดับของตัวเองต่อให้ชั้นถัดไป** (แถวไม่มีหัวเรื่อง = คอลัมน์ได้ h2, คอลัมน์ไม่มี = widget ได้ระดับของคอลัมน์ ฯลฯ ไม่เกิน h6 — `headingTag()` ใน `utils/frontPage.ts`)
 - widget ที่ดึงรายการจากหมวดหมู่: `CategoryListWidget::frontItems($setting, $lang)` (query เดียวกับ preview + ภาษา + ลิงก์จริง);
   `previewQuery()`/`articleQuery()`/`bannerQuery()` รับพารามิเตอร์ `$lang` เพิ่ม (null = ภาษาหลัก — หลังบ้านทำงานเหมือนเดิม)
 - ยอดเข้าชม: ตาราง `page_item_view` + คอลัมน์ใหม่ `page_item_info.view_amount` (migration `2026_10_01_000001_create_item_view_tables.php`)

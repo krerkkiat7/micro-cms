@@ -4,6 +4,7 @@ use App\Models\ArticleCategoryInfo;
 use App\Models\ArticleItemDetail;
 use App\Models\ArticleItemInfo;
 use App\Models\FileInfo;
+use App\Models\FrontMenuInfo;
 use App\Models\PageItemDetail;
 use App\Models\PageItemInfo;
 use App\Models\PageItemWidget;
@@ -74,6 +75,7 @@ test('the defaults follow the requested spec', function () {
     $d = PageWidgetRegistry::find('gridarticle')->defaults();
 
     expect($d['display_type'])->toBe('card')
+        ->and($d['content_align'])->toBe('top')
         ->and($d['title_lines'])->toBe(1)
         ->and($d['intro_text_lines'])->toBe(2)
         ->and($d['show_intro_text'])->toBe('N')
@@ -227,12 +229,13 @@ test('gridarticle requires an existing, enabled article category', function () {
 test('gridarticle rejects invalid values', function (string $field, mixed $value) {
     actingAsUserWithPermissions(['page.item.manage']);
 
-    $this->put(route('admin.page.item.layout.update', $this->page->id), gridPayload($this->category->id, [$field => $value]))
+    $this->put(route('admin.page.item.layout.update', $this->page->id), gridPayload($this->category->id, [$field => $value] + ($field === 'read_all_url' ? ['read_all_link_type' => 'custom'] : [])))
         ->assertSessionHasErrors("rows.0.columns.0.widgets.0.setting.{$field}");
 })->with([
     'order sort (articles have no per-item order)' => ['sort_by', 'order_asc'],
     'max items negative' => ['max_items', -1],
     'display type' => ['display_type', 'list'],
+    'content align' => ['content_align', 'middle'],
     'per row pc zero' => ['per_row_pc', 0],
     'per row notebook 7' => ['per_row_notebook', 7],
     'per row tablet text' => ['per_row_tablet', 'x'],
@@ -305,7 +308,7 @@ test('the read-all button settings are saved with a per-language text in the det
 
     $this->put(route('admin.page.item.layout.update', $this->page->id), gridPayload($this->category->id, [
         'show_read_all' => 'Y', 'read_all_position' => 'top_right', 'read_all_icon' => 'plus_circle', 'read_all_icon_position' => 'before',
-        'read_all_style' => 'pill', 'read_all_url' => 'https://example.com/news', 'read_all_link_target' => '_blank',
+        'read_all_style' => 'pill', 'read_all_link_type' => 'custom', 'read_all_url' => 'https://example.com/news', 'read_all_link_target' => '_blank',
         'read_all_font_size' => 18, 'read_all_font_family' => 'Kanit', 'read_all_color' => '#ffeecc', 'read_all_background' => '#123456',
         'read_all_text' => ['th' => '  ดูข่าวทั้งหมด  ', 'en' => 'View all news'],
     ]))->assertSessionHasNoErrors();
@@ -325,7 +328,7 @@ test('the read-all button settings are saved with a per-language text in the det
 
     // แก้ข้อความซ้ำ = update แถวเดิม (composite key) ไม่สร้างซ้ำ; ล้างข้อความ = null
     $this->put(route('admin.page.item.layout.update', $this->page->id), gridPayload($this->category->id, [
-        'show_read_all' => 'Y', 'read_all_url' => '/th/news', 'read_all_text' => ['th' => '', 'en' => 'All']],
+        'show_read_all' => 'Y', 'read_all_link_type' => 'custom', 'read_all_url' => '/th/news', 'read_all_text' => ['th' => '', 'en' => 'All']],
         ['id' => $widget->id],
     ))->assertSessionHasNoErrors();
 
@@ -338,16 +341,16 @@ test('the read-all url is required only when the button is shown; an empty url i
     actingAsUserWithPermissions(['page.item.manage']);
     $url = route('admin.page.item.layout.update', $this->page->id);
 
-    $this->put($url, gridPayload($this->category->id, ['show_read_all' => 'Y', 'read_all_url' => '']))
+    $this->put($url, gridPayload($this->category->id, ['show_read_all' => 'Y', 'read_all_link_type' => 'custom', 'read_all_url' => '']))
         ->assertSessionHasErrors('rows.0.columns.0.widgets.0.setting.read_all_url');
-    $this->put($url, gridPayload($this->category->id, ['show_read_all' => 'Y', 'read_all_url' => null]))
+    $this->put($url, gridPayload($this->category->id, ['show_read_all' => 'Y', 'read_all_link_type' => 'custom', 'read_all_url' => null]))
         ->assertSessionHasErrors('rows.0.columns.0.widgets.0.setting.read_all_url');
 
     foreach (['/th/news', '#top', 'mailto:a@b.com', 'tel:0812345678', 'HTTP://EXAMPLE.COM'] as $ok) {
-        $this->put($url, gridPayload($this->category->id, ['show_read_all' => 'Y', 'read_all_url' => $ok]))->assertSessionHasNoErrors();
+        $this->put($url, gridPayload($this->category->id, ['show_read_all' => 'Y', 'read_all_link_type' => 'custom', 'read_all_url' => $ok]))->assertSessionHasNoErrors();
     }
 
-    $this->put($url, gridPayload($this->category->id, ['show_read_all' => 'N', 'read_all_url' => '']))->assertSessionHasNoErrors();
+    $this->put($url, gridPayload($this->category->id, ['show_read_all' => 'N', 'read_all_link_type' => 'custom', 'read_all_url' => '']))->assertSessionHasNoErrors();
     expect(PageItemWidgetGridArticle::findOrFail(newestGrid()->id)->read_all_url)->toBeNull();
 });
 
@@ -415,4 +418,46 @@ test('preview sorts by publish date both ways, honours max_items and caps at 10'
         ->and($titles(['max_items' => 50]))->toHaveCount(10);
 
     $this->getJson(gridPreviewUrl(['article_category_info_id' => $cid, 'sort_by' => 'order_asc']))->assertStatus(422);
+});
+
+test('the row content alignment (top / center / bottom) is saved', function (string $align) {
+    actingAsUserWithPermissions(['page.item.manage']);
+
+    $this->put(route('admin.page.item.layout.update', $this->page->id), gridPayload($this->category->id, ['display_type' => 'row_image', 'content_align' => $align]))
+        ->assertSessionHasNoErrors();
+
+    expect(PageItemWidgetGridArticle::findOrFail(newestGrid()->id)->content_align)->toBe($align);
+})->with(['top', 'center', 'bottom']);
+
+// ---------------------------------------------------------------- ปุ่มอ่านทั้งหมด: ลิงก์ปลายทางจากเมนู
+
+test('gridarticle read-all defaults to a menu link and needs a linkable, enabled menu when shown', function () {
+    actingAsUserWithPermissions(['page.item.manage']);
+    $url = route('admin.page.item.layout.update', $this->page->id);
+    $defaults = PageWidgetRegistry::find('gridarticle')->defaults();
+
+    expect($defaults['read_all_link_type'])->toBe('menu')->and($defaults['read_all_menu_id'])->toBeNull();
+
+    $linkable = FrontMenuInfo::create(['menu_type' => 'page', 'status' => 'Y']);
+    $heading = FrontMenuInfo::create(['menu_type' => 'heading', 'status' => 'Y']);
+    $hidden = FrontMenuInfo::create(['menu_type' => 'external', 'url' => 'https://x.test', 'status' => 'N']);
+
+    $this->put($url, gridPayload($this->category->id, ['show_read_all' => 'Y', 'read_all_menu_id' => null]))
+        ->assertSessionHasErrors('rows.0.columns.0.widgets.0.setting.read_all_menu_id');
+
+    foreach ([$heading->id, $hidden->id, 999999] as $bad) {
+        $this->put($url, gridPayload($this->category->id, ['show_read_all' => 'Y', 'read_all_menu_id' => $bad]))
+            ->assertSessionHasErrors('rows.0.columns.0.widgets.0.setting.read_all_menu_id');
+    }
+
+    // เลือกเมนู = ไม่ตรวจ URL (เก็บค่าเดิมไว้ได้)
+    $this->put($url, gridPayload($this->category->id, ['show_read_all' => 'Y', 'read_all_menu_id' => $linkable->id, 'read_all_url' => 'not a url']))
+        ->assertSessionHasNoErrors();
+
+    $row = PageItemWidgetGridArticle::findOrFail(newestGrid()->id);
+    expect($row->read_all_link_type)->toBe('menu')->and($row->read_all_menu_id)->toBe($linkable->id);
+
+    // กำหนดเอง = ไม่ตรวจเมนู
+    $this->put($url, gridPayload($this->category->id, ['show_read_all' => 'Y', 'read_all_link_type' => 'custom', 'read_all_url' => '/news', 'read_all_menu_id' => $heading->id]))
+        ->assertSessionHasNoErrors();
 });

@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'vue';
 import type { FileItem, LanguageOption } from '@/types';
+import type { FrontMenuPickerOption } from '@/utils/readAllButton';
 import { defaultSetting, settingFromServer } from '@/utils/pageWidget';
 import { customTextSettingToPayload, isCustomTextWidget } from '@/utils/pageWidgetCustomText';
 import type { CustomTextSetting } from '@/utils/pageWidgetCustomText';
@@ -29,6 +30,34 @@ export interface BackgroundFields {
     background_position: string;
 }
 
+/** ระยะขอบด้านใน (padding) ของแถว/คอลัมน์/widget — ตรงกับ App\Support\PageSpacing ฝั่ง backend (หน่วย px) */
+export interface PaddingFields {
+    /** Y = เว้นระยะขอบด้านในตามค่า 4 ด้าน, N = ไม่เว้น (ค่าเริ่มต้น) */
+    use_padding: 'Y' | 'N';
+    padding_top: number;
+    padding_right: number;
+    padding_bottom: number;
+    padding_left: number;
+}
+
+/** ระยะห่างระหว่างคอลัมน์ในแถว (px) — เฉพาะแถว */
+export interface GapFields {
+    /** แนวนอน: ระหว่างคอลัมน์ที่อยู่ข้างกัน */
+    gap_x: number;
+    /** แนวตั้ง: เมื่อคอลัมน์ขึ้นบรรทัดใหม่ หรือแสดงบนมือถือ */
+    gap_y: number;
+}
+
+export const PADDING_SIDES = ['top', 'right', 'bottom', 'left'] as const;
+export type PaddingSide = (typeof PADDING_SIDES)[number];
+
+/** ช่วงค่าที่ backend รับ (PageSpacing::PADDING_MIN/MAX, GAP_MIN/MAX) */
+export const PADDING_MAX = 200;
+export const GAP_MAX = 120;
+
+/** ระยะห่างระหว่างคอลัมน์เริ่มต้น 24px (= 1.5rem ที่เว็บส่วนใหญ่ใช้) — ตรงกับ PageSpacing::DEFAULT_GAP */
+export const DEFAULT_GAP = 24;
+
 export type TextAlign = 'left' | 'center' | 'right';
 
 /** การจัดรูปแบบตัวอักษรของข้อความ 1 ส่วน (หัวเรื่อง / หัวเรื่องรอง / ข้อความเกริ่นนำ) */
@@ -39,6 +68,8 @@ export interface TextStyle {
     align: TextAlign;
     /** รหัสสี hex เท่านั้น (ไม่มี transparent) */
     color: string;
+    /** ตัวหนา — มีเฉพาะข้อความของแถว/คอลัมน์/widget (ที่อื่นที่ใช้ TextStyle ร่วม เช่น หัวข้อ part ของ Custom Text เก็บตัวหนาแยกไว้เอง) */
+    bold?: 'Y' | 'N';
 }
 
 /** ส่วนของข้อความที่จัดรูปแบบได้ — ตรงกับ App\Support\PageTextStyle::PARTS (คอลัมน์ `<part>_font_size` ฯลฯ ฝั่ง backend) */
@@ -52,7 +83,7 @@ export interface TextStyles {
     intro_text_style: TextStyle;
 }
 
-export interface WidgetData extends BackgroundFields, TextStyles {
+export interface WidgetData extends BackgroundFields, TextStyles, PaddingFields {
     _key: string;
     id: number | null;
     status: 'Y' | 'N';
@@ -62,7 +93,7 @@ export interface WidgetData extends BackgroundFields, TextStyles {
     detail: LayoutDetailMap;
 }
 
-export interface ColumnData extends BackgroundFields, TextStyles {
+export interface ColumnData extends BackgroundFields, TextStyles, PaddingFields {
     _key: string;
     id: number | null;
     status: 'Y' | 'N';
@@ -73,7 +104,7 @@ export interface ColumnData extends BackgroundFields, TextStyles {
     widgets: WidgetData[];
 }
 
-export interface RowData extends BackgroundFields, TextStyles {
+export interface RowData extends BackgroundFields, TextStyles, PaddingFields, GapFields {
     _key: string;
     id: number | null;
     status: 'Y' | 'N';
@@ -88,15 +119,17 @@ export interface RowData extends BackgroundFields, TextStyles {
 export interface WidgetOptions {
     banner_categories: { id: number; title: string | null }[];
     article_categories: { id: number; title: string | null }[];
+    /** เมนูหน้าบ้านให้เลือกเป็นปลายทางของปุ่ม "อ่านทั้งหมด" */
+    front_menus: FrontMenuPickerOption[];
 }
 
 /** ค่าที่ dialog ตั้งค่าของแต่ละชั้นแก้ไขได้ (ไม่รวมลูก) — dialog แก้บนสำเนาแล้วส่งกลับเมื่อกด "ตกลง" */
-export type RowSettings = Pick<RowData, 'detail' | 'show_title' | 'use_container'> & BackgroundFields & TextStyles;
-export type ColumnSettings = Pick<ColumnData, 'detail' | 'show_title' | 'column_size'> & BackgroundFields & TextStyles;
-export type WidgetSettings = Pick<WidgetData, 'detail' | 'show_title' | 'widget_type' | 'setting'> & BackgroundFields & TextStyles;
+export type RowSettings = Pick<RowData, 'detail' | 'show_title' | 'use_container'> & BackgroundFields & TextStyles & PaddingFields & GapFields;
+export type ColumnSettings = Pick<ColumnData, 'detail' | 'show_title' | 'column_size'> & BackgroundFields & TextStyles & PaddingFields;
+export type WidgetSettings = Pick<WidgetData, 'detail' | 'show_title' | 'widget_type' | 'setting'> & BackgroundFields & TextStyles & PaddingFields;
 
 /** รูปแบบข้อมูลที่ backend ส่งมา (PageItemController::rowToArray) — การจัดรูปแบบมาเป็นคอลัมน์แบน `<part>_<ค่า>` */
-type ServerTextStyle = Record<`${TextPart}_${'font_size' | 'font_family' | 'align' | 'color'}`, string | number>;
+type ServerTextStyle = Record<`${TextPart}_${'font_size' | 'font_family' | 'align' | 'color' | 'bold'}`, string | number>;
 
 interface ServerBackground {
     background_color: string | null;
@@ -107,7 +140,7 @@ interface ServerBackground {
     background_position: string | null;
 }
 
-interface ServerWidget extends ServerBackground, ServerTextStyle {
+interface ServerWidget extends ServerBackground, ServerTextStyle, PaddingFields {
     id: number;
     status: 'Y' | 'N';
     show_title: 'Y' | 'N';
@@ -116,7 +149,7 @@ interface ServerWidget extends ServerBackground, ServerTextStyle {
     detail: LayoutDetailMap;
 }
 
-interface ServerColumn extends ServerBackground, ServerTextStyle {
+interface ServerColumn extends ServerBackground, ServerTextStyle, PaddingFields {
     id: number;
     status: 'Y' | 'N';
     show_title: 'Y' | 'N';
@@ -125,7 +158,7 @@ interface ServerColumn extends ServerBackground, ServerTextStyle {
     widgets: ServerWidget[];
 }
 
-export interface ServerRow extends ServerBackground, ServerTextStyle {
+export interface ServerRow extends ServerBackground, ServerTextStyle, PaddingFields, GapFields {
     id: number;
     status: 'Y' | 'N';
     show_title: 'Y' | 'N';
@@ -175,28 +208,37 @@ export type LayoutLevel = keyof typeof DEFAULT_TEXT_SIZES;
 /** ชนิดแท็กของหัวเรื่องแต่ละชั้น (หัวเรื่องรองและข้อความเกริ่นนำเป็น div ธรรมดาเสมอ) */
 export const HEADING_TAGS = { row: 'h2', column: 'h3', widget: 'h4' } as const;
 
-function defaultTextStyle(fontSize: number): TextStyle {
-    return { font_size: fontSize, font_family: DEFAULT_FONT_FAMILY, align: DEFAULT_TEXT_ALIGN, color: DEFAULT_TEXT_COLOR };
+/** ตัวหนาเริ่มต้น: หัวเรื่องหนา อีก 2 ส่วนไม่หนา — ตรงกับ PageTextStyle::DEFAULT_BOLD / migration 2026_10_03_000002 */
+const DEFAULT_BOLD: Record<TextPart, 'Y' | 'N'> = { title: 'Y', subtitle: 'N', intro_text: 'N' };
+
+function defaultTextStyle(fontSize: number, bold: 'Y' | 'N'): TextStyle {
+    return { font_size: fontSize, font_family: DEFAULT_FONT_FAMILY, align: DEFAULT_TEXT_ALIGN, color: DEFAULT_TEXT_COLOR, bold };
 }
 
 export function defaultTextStyles(level: LayoutLevel): TextStyles {
     const [title, subtitle, intro] = DEFAULT_TEXT_SIZES[level];
 
     return {
-        title_style: defaultTextStyle(title),
-        subtitle_style: defaultTextStyle(subtitle),
-        intro_text_style: defaultTextStyle(intro),
+        title_style: defaultTextStyle(title, DEFAULT_BOLD.title),
+        subtitle_style: defaultTextStyle(subtitle, DEFAULT_BOLD.subtitle),
+        intro_text_style: defaultTextStyle(intro, DEFAULT_BOLD.intro_text),
     };
 }
 
 /** สไตล์ CSS ของข้อความ 1 ส่วนตามที่ตั้งค่า — ฟอนต์ตามด้วย sans-serif เป็น fallback */
 export function textStyleCss(style: TextStyle): CSSProperties {
-    return {
+    const css: CSSProperties = {
         fontSize: `${style.font_size}px`,
         fontFamily: `'${style.font_family}', sans-serif`,
         textAlign: style.align,
         color: style.color,
     };
+
+    if (style.bold) {
+        css.fontWeight = style.bold === 'Y' ? 700 : 400;
+    }
+
+    return css;
 }
 
 function textStylesFromServer(server: ServerTextStyle): TextStyles {
@@ -205,6 +247,7 @@ function textStylesFromServer(server: ServerTextStyle): TextStyles {
         font_family: String(server[`${part}_font_family`]),
         align: server[`${part}_align`] as TextAlign,
         color: String(server[`${part}_color`]),
+        bold: server[`${part}_bold`] === 'Y' ? 'Y' : 'N',
     });
 
     return { title_style: one('title'), subtitle_style: one('subtitle'), intro_text_style: one('intro_text') };
@@ -219,9 +262,54 @@ function textStylesToPayload(styles: TextStyles): Record<string, string | number
         payload[`${part}_font_family`] = style.font_family;
         payload[`${part}_align`] = style.align;
         payload[`${part}_color`] = style.color;
+        payload[`${part}_bold`] = style.bold ?? DEFAULT_BOLD[part];
     });
 
     return payload;
+}
+
+// ---- ระยะขอบด้านใน / ระยะห่าง ----
+
+/** padding เริ่มต้น [บน, ขวา, ล่าง, ซ้าย] (px) ที่ใช้เมื่อเปิด — ต้องตรงกับ PageSpacing::DEFAULT_PADDING / migration 2026_10_03_000001 */
+const DEFAULT_PADDING: Record<LayoutLevel, [number, number, number, number]> = {
+    row: [48, 16, 48, 16],
+    column: [16, 16, 16, 16],
+    widget: [16, 16, 16, 16],
+};
+
+export function defaultPadding(level: LayoutLevel): PaddingFields {
+    const [top, right, bottom, left] = DEFAULT_PADDING[level];
+
+    return { use_padding: 'N', padding_top: top, padding_right: right, padding_bottom: bottom, padding_left: left };
+}
+
+/** สำเนาเฉพาะฟิลด์ padding — ใช้สร้าง draft ใน dialog ตั้งค่า และแปลงข้อมูลจาก/ไป backend */
+export function pickPadding(source: PaddingFields): PaddingFields {
+    return {
+        use_padding: source.use_padding,
+        padding_top: Number(source.padding_top),
+        padding_right: Number(source.padding_right),
+        padding_bottom: Number(source.padding_bottom),
+        padding_left: Number(source.padding_left),
+    };
+}
+
+export function pickGap(source: GapFields): GapFields {
+    return { gap_x: Number(source.gap_x), gap_y: Number(source.gap_y) };
+}
+
+/** สไตล์ padding สำหรับตัวอย่างในหน้าโครงสร้าง — ปิดอยู่ = ไม่เว้นระยะ */
+export function paddingStyle(source: PaddingFields): CSSProperties {
+    if (source.use_padding !== 'Y') {
+        return {};
+    }
+
+    return { padding: `${source.padding_top}px ${source.padding_right}px ${source.padding_bottom}px ${source.padding_left}px` };
+}
+
+/** สไตล์ระยะห่างระหว่างคอลัมน์ของแถว สำหรับตัวอย่างในหน้าโครงสร้าง */
+export function gapStyle(source: GapFields): CSSProperties {
+    return { columnGap: `${source.gap_x}px`, rowGap: `${source.gap_y}px` };
 }
 
 let keySeed = 0;
@@ -270,6 +358,7 @@ export function createWidget(languages: LanguageOption[], widgetType: string): W
         detail: emptyDetailMap(languages),
         ...newBackground(),
         ...defaultTextStyles('widget'),
+        ...defaultPadding('widget'),
     };
 }
 
@@ -288,6 +377,7 @@ export function createColumn(languages: LanguageOption[], existing: ColumnData[]
         widgets: [],
         ...newBackground(),
         ...defaultTextStyles('column'),
+        ...defaultPadding('column'),
     };
 }
 
@@ -303,6 +393,9 @@ export function createRow(languages: LanguageOption[]): RowData {
         columns: [createColumn(languages)],
         ...newBackground(),
         ...defaultTextStyles('row'),
+        ...defaultPadding('row'),
+        gap_x: DEFAULT_GAP,
+        gap_y: DEFAULT_GAP,
     };
 }
 
@@ -327,6 +420,8 @@ export function layoutFromServer(rows: ServerRow[]): RowData[] {
         detail: cloneDeep(row.detail),
         ...backgroundFromServer(row),
         ...textStylesFromServer(row),
+        ...pickPadding(row),
+        ...pickGap(row),
         columns: row.columns.map((column) => ({
             _key: nextKey('column'),
             id: column.id,
@@ -336,6 +431,7 @@ export function layoutFromServer(rows: ServerRow[]): RowData[] {
             detail: cloneDeep(column.detail),
             ...backgroundFromServer(column),
             ...textStylesFromServer(column),
+            ...pickPadding(column),
             widgets: column.widgets.map((widget) => ({
                 _key: nextKey('widget'),
                 id: widget.id,
@@ -347,6 +443,7 @@ export function layoutFromServer(rows: ServerRow[]): RowData[] {
                 detail: cloneDeep(widget.detail),
                 ...backgroundFromServer(widget),
                 ...textStylesFromServer(widget),
+                ...pickPadding(widget),
             })),
         })),
     }));
@@ -373,6 +470,8 @@ export function layoutToPayload(rows: RowData[]) {
         detail: row.detail,
         ...backgroundToPayload(row),
         ...textStylesToPayload(row),
+        ...pickPadding(row),
+        ...pickGap(row),
         columns: row.columns.map((column) => ({
             id: column.id,
             status: column.status,
@@ -381,6 +480,7 @@ export function layoutToPayload(rows: RowData[]) {
             detail: column.detail,
             ...backgroundToPayload(column),
             ...textStylesToPayload(column),
+            ...pickPadding(column),
             widgets: column.widgets.map((widget) => ({
                 id: widget.id,
                 status: widget.status,
@@ -391,6 +491,7 @@ export function layoutToPayload(rows: RowData[]) {
                 detail: widget.detail,
                 ...backgroundToPayload(widget),
                 ...textStylesToPayload(widget),
+                ...pickPadding(widget),
             })),
         })),
     }));

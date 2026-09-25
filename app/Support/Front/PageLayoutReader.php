@@ -6,6 +6,7 @@ use App\Models\PageItemColumn;
 use App\Models\PageItemInfo;
 use App\Models\PageItemRow;
 use App\Models\PageItemWidget;
+use App\Support\PageSpacing;
 use App\Support\PageTextStyle;
 use App\Support\PageWidget\CategoryListWidget;
 use App\Support\PageWidget\CustomTextWidget;
@@ -62,6 +63,8 @@ final class PageLayoutReader
         return [
             'id' => (int) $row->id,
             'use_container' => $row->use_container === 'Y',
+            'gap_x' => (int) $row->gap_x,
+            'gap_y' => (int) $row->gap_y,
             ...$this->common($row),
             'columns' => $row->columns
                 ->map(fn (PageItemColumn $column) => [
@@ -146,14 +149,37 @@ final class PageLayoutReader
         }
 
         if (array_key_exists('read_all_url', $setting)) {
-            $setting['read_all_url'] = FrontUrl::safeExternal($setting['read_all_url']);
+            $setting = $this->readAllLink($setting);
         }
 
         return $setting;
     }
 
     /**
-     * ส่วนที่แถว/คอลัมน์/widget มีเหมือนกัน: การแสดงหัวเรื่อง, ข้อความ 3 ส่วน + สไตล์, พื้นหลัง
+     * ลิงก์จริงของปุ่ม "อ่านทั้งหมด" → `read_all_url` + `read_all_link_target` (null = ไม่แสดงปุ่ม):
+     * - เลือกจากเมนู: URL/เป้าหมายตามเมนู (เมนูถูกซ่อน/ลบ/ปลายทางใช้ไม่ได้ = null) — FrontMenuResolver เติมภาษาให้ลิงค์ภายนอกที่เป็น path ภายในแล้ว
+     * - กำหนดเอง: ผ่านตัวกรองลิงก์ปลอดภัย แล้วเติมภาษาให้ path ภายในที่ยังไม่มี (เช่น /news → /th/news)
+     *
+     * @param  array<string, mixed>  $setting
+     * @return array<string, mixed>
+     */
+    private function readAllLink(array $setting): array
+    {
+        if (($setting['read_all_link_type'] ?? 'custom') === 'menu') {
+            $link = $setting['read_all_menu_id'] ? FrontMenuResolver::linkOf($this->lang, (int) $setting['read_all_menu_id']) : null;
+            $setting['read_all_url'] = $link['url'] ?? null;
+            $setting['read_all_link_target'] = $link['target'] ?? '_self';
+        } else {
+            $setting['read_all_url'] = FrontUrl::withLang(FrontUrl::safeExternal($setting['read_all_url']), $this->lang);
+        }
+
+        unset($setting['read_all_menu_id'], $setting['read_all_link_type']);
+
+        return $setting;
+    }
+
+    /**
+     * ส่วนที่แถว/คอลัมน์/widget มีเหมือนกัน: การแสดงหัวเรื่อง, ข้อความ 3 ส่วน + สไตล์, พื้นหลัง, ระยะขอบด้านใน (ปิดใช้งาน = null)
      *
      * @return array<string, mixed>
      */
@@ -175,6 +201,7 @@ final class PageLayoutReader
                 'font_family' => $family,
                 'align' => (string) ($model->{"{$part}_align"} ?: PageTextStyle::DEFAULT_ALIGN),
                 'color' => (string) ($model->{"{$part}_color"} ?: PageTextStyle::DEFAULT_COLOR),
+                'bold' => ($model->{"{$part}_bold"} ?? PageTextStyle::DEFAULT_BOLD[$part]) === 'Y',
             ];
         }
 
@@ -184,6 +211,7 @@ final class PageLayoutReader
             'intro_text' => $showTitle ? trim((string) ($detail?->intro_text ?? '')) : '',
             ...$styles,
             'background' => $this->background($model),
+            'padding' => PageSpacing::padding($model),
         ];
     }
 

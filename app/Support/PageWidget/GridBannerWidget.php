@@ -53,6 +53,8 @@ class GridBannerWidget extends CategoryListWidget
         return $this->listFields()
             + [
                 'display_type' => self::choice('รูปแบบการแสดงผล', 'card', self::DISPLAY_TYPES),
+                // ตำแหน่งแนวตั้งของส่วนข้อมูล (หัวเรื่อง/ข้อความเกริ่นนำ …) — ใช้เฉพาะรูปแบบแถว (การ์ดไม่ใช้)
+                'content_align' => self::choice('ตำแหน่งของข้อมูล', 'top', self::CONTENT_ALIGNS),
 
                 'per_row_pc' => $perRow('PC', 4),
                 'per_row_notebook' => $perRow('Notebook', 3),

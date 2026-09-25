@@ -2,6 +2,8 @@
 
 namespace App\Support\PageWidget;
 
+use App\Support\FrontMenuTree;
+
 /**
  * ทะเบียนประเภท widget ของโมดูล Page — จุดเดียวที่ต้องเพิ่มเมื่อมีประเภทใหม่ (ควบคู่กับ utils/pageWidget.ts ฝั่งหน้าจอ)
  */
@@ -69,6 +71,9 @@ class PageWidgetRegistry
         foreach (self::all() as $type) {
             $options += $type->options();
         }
+
+        // เมนูหน้าบ้านให้เลือกเป็นลิงก์ปลายทางของปุ่ม "อ่านทั้งหมด" (ใช้ร่วมทุกประเภทที่มีปุ่มนี้ — ดู HasReadAllButton)
+        $options['front_menus'] = FrontMenuTree::pickerOptions();
 
         return $options;
     }

@@ -6,6 +6,7 @@ use App\Http\Requests\Admin\Page\Concerns\PageItemValidationRules;
 use App\Models\PageItemColumn;
 use App\Models\PageItemRow;
 use App\Models\PageItemWidget;
+use App\Support\PageSpacing;
 use App\Support\PageWidget\PageWidgetRegistry;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -107,7 +108,23 @@ class UpdatePageItemLayoutRequest extends FormRequest
      */
     public function messages(): array
     {
-        return [
+        $padding = 'ระยะขอบด้านในต้องเป็นตัวเลข '.PageSpacing::PADDING_MIN.' - '.PageSpacing::PADDING_MAX.' px';
+        $gap = 'ระยะห่างระหว่างคอลัมน์ต้องเป็นตัวเลข '.PageSpacing::GAP_MIN.' - '.PageSpacing::GAP_MAX.' px';
+        $spacing = [];
+
+        foreach (['rows.*.', 'rows.*.columns.*.', 'rows.*.columns.*.widgets.*.'] as $prefix) {
+            foreach (PageSpacing::SIDES as $side) {
+                $spacing["{$prefix}padding_{$side}.integer"] = $padding;
+                $spacing["{$prefix}padding_{$side}.between"] = $padding;
+            }
+        }
+
+        foreach (['gap_x', 'gap_y'] as $field) {
+            $spacing["rows.*.{$field}.integer"] = $gap;
+            $spacing["rows.*.{$field}.between"] = $gap;
+        }
+
+        return $spacing + [
             'rows.*.background_color.regex' => 'รูปแบบสีพื้นหลังของแถวไม่ถูกต้อง',
             'rows.*.columns.*.background_color.regex' => 'รูปแบบสีพื้นหลังของคอลัมน์ไม่ถูกต้อง',
             'rows.*.columns.*.widgets.*.background_color.regex' => 'รูปแบบสีพื้นหลังของ widget ไม่ถูกต้อง',

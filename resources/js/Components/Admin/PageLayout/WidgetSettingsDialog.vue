@@ -3,17 +3,18 @@ import { computed, ref, watch } from 'vue';
 import { ArrowLeft, Trash2 } from 'lucide-vue-next';
 import LayoutDialog from './LayoutDialog.vue';
 import BackgroundFields from './BackgroundFields.vue';
+import SpacingFields from './SpacingFields.vue';
 import TextFieldsSection from './TextFieldsSection.vue';
+import SegmentedChoice from '@/Components/Admin/Template/SegmentedChoice.vue';
 import GridFields from './widgets/GridFields.vue';
 import SlideshowFields from './widgets/SlideshowFields.vue';
 import SlidesetFields from './widgets/SlidesetFields.vue';
 import CustomTextFields from './widgets/CustomTextFields.vue';
 import InputLabel from '@/Components/InputLabel.vue';
-import SearchableSelect from '@/Components/SearchableSelect.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
-import { SHOW_OPTIONS, cloneDeep, pickBackground, pickTextStyles } from '@/utils/pageLayout';
+import { SHOW_OPTIONS, cloneDeep, pickBackground, pickPadding, pickTextStyles } from '@/utils/pageLayout';
 import { gridConfig, slideshowConfig, slidesetConfig, validateSetting, widgetTypeLabel } from '@/utils/pageWidget';
 import type { GridSetting, SlideshowCommonSetting, SlidesetSetting } from '@/utils/pageWidget';
 import { isCustomTextWidget } from '@/utils/pageWidgetCustomText';
@@ -54,7 +55,15 @@ watch(
     (show) => {
         if (show && props.widget) {
             const { detail, show_title, widget_type, setting } = props.widget;
-            draft.value = cloneDeep({ detail, show_title, widget_type, setting, ...pickBackground(props.widget), ...pickTextStyles(props.widget) });
+            draft.value = cloneDeep({
+                detail,
+                show_title,
+                widget_type,
+                setting,
+                ...pickBackground(props.widget),
+                ...pickTextStyles(props.widget),
+                ...pickPadding(props.widget),
+            });
             errors.value = {};
         }
     },
@@ -164,25 +173,48 @@ function remove() {
                 <div class="space-y-5">
                 <div>
                     <InputLabel value="แสดงหัวเรื่อง" />
-                    <SearchableSelect v-model="draft.show_title" :options="SHOW_OPTIONS" />
-                    <p class="mt-1 text-xs text-gray-500">เปิดแล้วจะแสดงหัวเรื่อง หัวเรื่องรอง และข้อความเกริ่นนำของ Widget นี้เหนือตัว Widget (หัวเรื่องใช้แท็ก H4)</p>
+                    <SegmentedChoice v-model="draft.show_title" :options="SHOW_OPTIONS" />
+                    <p class="mt-1 text-xs text-gray-500">เปิดแล้วจะแสดงหัวเรื่อง หัวเรื่องรอง และข้อความเกริ่นนำของ Widget นี้</p>
                 </div>
 
-                <TextFieldsSection label="หัวเรื่อง" part="title" :languages="languages" :detail="draft.detail" :text-style="draft.title_style" :fonts="fonts" />
-                <TextFieldsSection label="หัวเรื่องรอง" part="subtitle" :languages="languages" :detail="draft.detail" :text-style="draft.subtitle_style" :fonts="fonts" />
                 <TextFieldsSection
-                    label="ข้อความเกริ่นนำ"
-                    part="intro_text"
-                    multiline
+                    label="หัวเรื่อง"
+                    part="title"
                     :languages="languages"
                     :detail="draft.detail"
-                    :text-style="draft.intro_text_style"
+                    :text-style="draft.title_style"
                     :fonts="fonts"
+                    :hide-style="draft.show_title !== 'Y'"
                 />
+                <!-- ไม่แสดงหัวเรื่อง = ซ่อนส่วนที่เกี่ยวข้อง แต่ค่ายังเก็บอยู่ใน draft ครบ (กลับมาเปิดแสดงแล้วได้ค่าเดิม) -->
+                <template v-if="draft.show_title === 'Y'">
+                    <TextFieldsSection
+                        label="หัวเรื่องรอง"
+                        part="subtitle"
+                        :languages="languages"
+                        :detail="draft.detail"
+                        :text-style="draft.subtitle_style"
+                        :fonts="fonts"
+                    />
+                    <TextFieldsSection
+                        label="ข้อความเกริ่นนำ"
+                        part="intro_text"
+                        multiline
+                        :languages="languages"
+                        :detail="draft.detail"
+                        :text-style="draft.intro_text_style"
+                        :fonts="fonts"
+                    />
+                </template>
 
                 <div class="space-y-4 border-t border-gray-100 pt-5">
                     <h3 class="text-sm font-medium text-gray-600">พื้นหลัง</h3>
                     <BackgroundFields :fields="draft" />
+                </div>
+
+                <div class="space-y-4 border-t border-gray-100 pt-5">
+                    <h3 class="text-sm font-medium text-gray-600">ระยะห่าง</h3>
+                    <SpacingFields :fields="draft" subject="Widget" />
                 </div>
                 </div>
             </section>

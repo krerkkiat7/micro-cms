@@ -32,6 +32,9 @@ class FrontMenuType
         self::PAGE => 'หน้าเพจ',
     ];
 
+    /** ประเภทที่มีลิงก์ปลายทางของตัวเอง (โมดูลเนื้อหา + ลิงค์ภายนอก) — เลือกเป็นปลายทางของปุ่ม "อ่านทั้งหมด" ได้ */
+    public const LINKABLE = [self::EXTERNAL, self::ARTICLE_CATEGORY, self::ARTICLE_ITEM, self::PAGE];
+
     /**
      * @return list<string>
      */

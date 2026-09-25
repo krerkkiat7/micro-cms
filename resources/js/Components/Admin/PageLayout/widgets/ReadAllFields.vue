@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue';
+import { usePage } from '@inertiajs/vue3';
+import { Link2, ListTree } from 'lucide-vue-next';
 import OptionCardPicker from './OptionCardPicker.vue';
 import ReadAllButton from './ReadAllButton.vue';
 import SettingSection from './SettingSection.vue';
 import TextStyleFields from '../TextStyleFields.vue';
 import ColorPickerInput from '@/Components/Admin/ColorPickerInput.vue';
+import SegmentedChoice from '@/Components/Admin/Template/SegmentedChoice.vue';
 import LangFieldGroup from '@/Components/Admin/LangFieldGroup.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
@@ -16,11 +19,13 @@ import {
     READ_ALL_DEFAULT_TEXT,
     READ_ALL_ICONS,
     READ_ALL_ICON_POSITIONS,
+    READ_ALL_LINK_TYPES,
     READ_ALL_POSITIONS,
     READ_ALL_STYLES,
     readAllIconComponent,
 } from '@/utils/readAllButton';
-import type { ReadAllSettingFields } from '@/utils/readAllButton';
+import type { FrontMenuPickerOption, ReadAllSettingFields } from '@/utils/readAllButton';
+import type { WidgetOptions } from '@/utils/pageLayout';
 import type { LanguageOption } from '@/types';
 
 /**
@@ -35,6 +40,29 @@ const props = defineProps<{
     languages: LanguageOption[];
     errors: Record<string, string>;
 }>();
+
+// ลิงก์ปลายทาง: เลือกจากเมนูหน้าบ้าน (รายการจาก prop widgetOptions ของหน้าโครงสร้าง) หรือกำหนด URL เอง
+const LINK_TYPE_ICONS = { menu: ListTree, custom: Link2 };
+const linkTypeOptions = READ_ALL_LINK_TYPES.map((option) => ({ ...option, icon: LINK_TYPE_ICONS[option.value] }));
+
+const page = usePage();
+const menus = computed<FrontMenuPickerOption[]>(() => (page.props.widgetOptions as WidgetOptions | undefined)?.front_menus ?? []);
+
+// แสดงเมนูทั้งหมดที่เปิดใช้งาน เยื้องตามระดับ — เมนูหัวข้อ/ไม่กำหนดเลือกไม่ได้ (ไม่มีลิงก์ของตัวเอง)
+const menuOptions = computed(() =>
+    menus.value.map((menu) => ({
+        value: String(menu.id),
+        label: `${'\u00A0\u00A0\u00A0'.repeat(menu.depth)}${menu.depth > 0 ? '└ ' : ''}${menu.name || `เมนู #${menu.id}`}${menu.selectable ? '' : ' (หัวข้อ)'}`,
+        disabled: !menu.selectable,
+    })),
+);
+
+const menuId = computed({
+    get: () => (props.setting.read_all_menu_id ? String(props.setting.read_all_menu_id) : ''),
+    set: (value: string) => {
+        props.setting.read_all_menu_id = value === '' ? null : Number(value);
+    },
+});
 
 // ตัวอย่างข้อความปุ่มในการ์ดเลือก = ข้อความของภาษาหลักที่กรอก (ถ้าว่างใช้ข้อความมาตรฐาน)
 const sampleText = computed(() => {
@@ -139,15 +167,34 @@ const POSITION_BAR: Record<string, string> = {
 
         <div class="grid gap-4 sm:grid-cols-2">
             <div class="sm:col-span-2">
-                <InputLabel value="ลิงก์ URL ปลายทาง" :required="true" />
-                <TextInput v-model="setting.read_all_url" placeholder="https://example.com/news หรือ /th/news" maxlength="500" />
-                <p class="mt-1 text-xs text-gray-500">ขึ้นต้นด้วย http://, https:// หรือ / (ภายหลังจะเลือกจากเมนูของหน้าบ้านได้)</p>
-                <InputError :message="errors.read_all_url" />
+                <InputLabel value="ประเภทลิงก์ปลายทาง" />
+                <SegmentedChoice v-model="setting.read_all_link_type" :options="linkTypeOptions" />
             </div>
-            <div>
-                <InputLabel value="เป้าหมายการเปิดลิงก์" />
-                <SearchableSelect v-model="setting.read_all_link_target" :options="LINK_TARGET_OPTIONS" />
-            </div>
+            <template v-if="setting.read_all_link_type !== 'custom'">
+                <div class="sm:col-span-2">
+                    <InputLabel value="เมนูปลายทาง" :required="true" />
+                    <SearchableSelect v-model="menuId" :options="menuOptions" placeholder="เลือกเมนู" />
+                    <p class="mt-1 text-xs text-gray-500">
+                        เลือกได้เฉพาะเมนูที่ลิงก์ไปยังบทความ หน้าเพจ หรือลิงค์ภายนอก (เมนูหัวข้อเลือกไม่ได้) — เปิดลิงก์ตามที่ตั้งไว้ในเมนูนั้น
+                    </p>
+                    <p v-if="menus.length === 0" class="mt-1 text-xs text-amber-600">ยังไม่มีเมนูหน้าบ้านที่เปิดใช้งาน — สร้างที่ "จัดการเมนูหน้าบ้าน" ก่อน</p>
+                    <InputError :message="errors.read_all_menu_id" />
+                </div>
+            </template>
+            <template v-else>
+                <div class="sm:col-span-2">
+                    <InputLabel value="ลิงก์ URL ปลายทาง" :required="true" />
+                    <TextInput v-model="setting.read_all_url" placeholder="https://example.com/news หรือ /news" maxlength="500" />
+                    <p class="mt-1 text-xs text-gray-500">
+                        ขึ้นต้นด้วย http://, https:// หรือ / — ลิงก์ภายในเว็บที่ไม่ได้ขึ้นต้นด้วยภาษา (เช่น /news) จะเติมภาษาของหน้าที่เปิดอยู่ให้อัตโนมัติ
+                    </p>
+                    <InputError :message="errors.read_all_url" />
+                </div>
+                <div>
+                    <InputLabel value="เป้าหมายการเปิดลิงก์" />
+                    <SearchableSelect v-model="setting.read_all_link_target" :options="LINK_TARGET_OPTIONS" />
+                </div>
+            </template>
         </div>
     </SettingSection>
 </template>

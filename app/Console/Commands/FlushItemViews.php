@@ -6,12 +6,12 @@ use App\Support\Front\ViewCounter;
 use Illuminate\Console\Command;
 
 /**
- * บันทึกคิวการเข้าชม (Redis) ลง article_item_view / page_item_view แบบ batch + บวก view_amount — schedule ทุกนาทีใน routes/console.php
+ * บันทึกคิวการเข้าชม (Redis) ลง article_item_view / page_item_view / banner_item_click แบบ batch + บวก view_amount / click_amount — schedule ทุกนาทีใน routes/console.php
  * (ต้องมี cron `* * * * * php artisan schedule:run` ที่ server) โหมด database ไม่มีคิว คำสั่งนี้ไม่ทำอะไร
  */
 class FlushItemViews extends Command
 {
-    protected $signature = 'front:flush-views {--type= : article หรือ page (ว่าง = ทุกประเภท)}';
+    protected $signature = 'front:flush-views {--type= : article, page หรือ banner (ว่าง = ทุกประเภท)}';
 
     protected $description = 'บันทึกคิวยอดเข้าชมบทความ/หน้าเพจลงฐานข้อมูลเป็นชุด';
 

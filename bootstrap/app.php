@@ -33,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'admin/system/backlog/access/ping',
             'front/access/ping',
+            'front/banner/click',
         ]);
 
         // Breeze ถูกย้ายมาไว้ใต้ /admin — ชี้ redirect ของ middleware auth/guest ไป route admin.*

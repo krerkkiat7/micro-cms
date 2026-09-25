@@ -2,6 +2,8 @@
 
 namespace App\Support\Front;
 
+use App\Support\Setting;
+
 /**
  * ตัวสร้าง URL หน้าบ้าน — slug ไม่บังคับ (มีก็ใส่ ไม่มีก็ตัดท้ายทิ้ง) ถ้า slug มี "/" จะใช้ไม่ได้ใน path (route param ไม่รับ /)
  * จึงตัดทิ้งให้เหลือ URL ที่มีแต่ id (ยังเปิดได้)
@@ -45,6 +47,28 @@ final class FrontUrl
         }
 
         return preg_match('~^(https?://|/(?!/)|#|mailto:|tel:)~i', $url) ? $url : null;
+    }
+
+    /** path ภายในที่ไม่ได้อยู่ใต้ภาษา (ไฟล์สาธารณะ, รูปโลโก้/favicon, endpoint หน้าบ้าน, หลังบ้าน) — ไม่เติมภาษาให้ */
+    private const UNLOCALIZED_PREFIXES = ['file', 'apps', 'front', 'admin'];
+
+    /**
+     * path ภายในเว็บแบบ relative ("/..." ไม่ใช่ "//") ที่ยังไม่ขึ้นต้นด้วยภาษาที่เปิดใช้ → เติม "/{lang}" ของหน้าปัจจุบันข้างหน้า
+     * (เช่น /news → /th/news, / → /th) URL เต็ม / anchor / mailto: / tel: / path ที่มีภาษาอยู่แล้ว / path ที่ไม่อยู่ใต้ภาษา คืนตามเดิม
+     */
+    public static function withLang(?string $url, string $lang): ?string
+    {
+        if ($url === null || ! preg_match('~^/(?!/)~', $url)) {
+            return $url;
+        }
+
+        $first = strtolower((string) strtok(ltrim($url, '/'), '/?#'));
+
+        if (in_array($first, Setting::selectedLanguages(), true) || in_array($first, self::UNLOCALIZED_PREFIXES, true)) {
+            return $url;
+        }
+
+        return '/'.$lang.($url === '/' ? '' : $url);
     }
 
     /**

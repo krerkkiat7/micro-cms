@@ -48,9 +48,11 @@ function articleSlideshowSetting(int $categoryId, array $overrides = []): array
         'title_font_size' => 20,
         'title_font_family' => 'Sarabun',
         'title_color' => '#FFFFFF',
+        'title_bold' => 'Y',
         'intro_text_font_size' => 16,
         'intro_text_font_family' => 'Sarabun',
         'intro_text_color' => '#FFFFFF',
+        'intro_text_bold' => 'N',
     ], $overrides);
 }
 
@@ -97,7 +99,7 @@ test('saving a slideshowarticle widget creates its settings row with the same id
 
     $this->put(route('admin.page.item.layout.update', $this->page->id), articleSlideshowPayload($this->category->id, [
         'sort_by' => 'publish_asc', 'autoplay_interval' => 8, 'transition_effect' => 'zoom', 'aspect_ratio' => '4:3',
-        'show_intro_text' => 'Y', 'text_align' => 'left', 'text_width' => 'full', 'link_target' => '_blank',
+        'show_intro_text' => 'Y', 'text_align' => 'bottom left', 'text_width' => 'full', 'link_target' => '_blank',
     ]))->assertSessionHasNoErrors();
 
     $widget = newestArticleSlideshow();
@@ -109,7 +111,7 @@ test('saving a slideshowarticle widget creates its settings row with the same id
         ->and($setting->transition_effect)->toBe('zoom')
         ->and($setting->aspect_ratio)->toBe('4:3')
         ->and($setting->show_intro_text)->toBe('Y')
-        ->and($setting->text_align)->toBe('left')
+        ->and($setting->text_align)->toBe('bottom left')
         ->and($setting->text_width)->toBe('full')
         ->and($setting->link_target)->toBe('_blank')
         ->and($setting->created_by)->toBe($me->id);

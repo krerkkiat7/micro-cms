@@ -68,7 +68,8 @@ return new class extends Migration
 
         foreach (array_keys(self::DEFAULT_SIZES) as $tableName) {
             Schema::table($tableName, function (Blueprint $table) {
-                $table->dropColumn(PageTextStyle::columns());
+                // เฉพาะคอลัมน์ที่ migration นี้สร้าง (ตัวหนา *_bold มาทีหลังใน 2026_10_03_000002 และถูกลบไปก่อนแล้วตอน rollback)
+                $table->dropColumn(array_values(array_filter(PageTextStyle::columns(), fn (string $column) => ! str_ends_with($column, '_bold'))));
             });
         }
     }

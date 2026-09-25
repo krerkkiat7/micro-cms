@@ -5,7 +5,6 @@ namespace App\Support\Front;
 use App\Support\ClientIp;
 use App\Support\Front\Views\ViewBuffer;
 use App\Support\UserAgentParser;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -14,7 +13,7 @@ use Throwable;
 use function Illuminate\Support\defer;
 
 /**
- * นับยอดเข้าชมรายละเอียดบทความ / หน้าเพจ — ออกแบบให้ "ไม่ทำให้หน้าเว็บช้า" แม้มีผู้เข้าชมหน้าเดิมพร้อมกันจำนวนมาก
+ * นับยอดเข้าชมรายละเอียดบทความ / หน้าเพจ และยอดคลิกลิงก์ banner — ออกแบบให้ "ไม่ทำให้หน้าเว็บช้า" แม้มีผู้เข้าชมหน้าเดิมพร้อมกันจำนวนมาก
  * (ระบบเดิม insert → select count → update ทุก request ทำให้ล็อกแถวเดิมซ้ำ ๆ จนหน่วงทั้งไซต์)
  *
  * ขั้นตอน:
@@ -27,10 +26,11 @@ use function Illuminate\Support\defer;
  */
 final class ViewCounter
 {
-    /** ประเภท → ตารางประวัติ, คอลัมน์ FK, ตาราง info */
+    /** ประเภท → ตารางประวัติ, คอลัมน์ FK, ตาราง info, คอลัมน์ยอดรวมบนตาราง info (banner = ยอดคลิกลิงก์ ใช้กลไกเดียวกัน) */
     public const TYPES = [
-        'article' => ['table' => 'article_item_view', 'fk' => 'article_item_info_id', 'info' => 'article_item_info'],
-        'page' => ['table' => 'page_item_view', 'fk' => 'page_item_info_id', 'info' => 'page_item_info'],
+        'article' => ['table' => 'article_item_view', 'fk' => 'article_item_info_id', 'info' => 'article_item_info', 'amount' => 'view_amount'],
+        'page' => ['table' => 'page_item_view', 'fk' => 'page_item_info_id', 'info' => 'page_item_info', 'amount' => 'view_amount'],
+        'banner' => ['table' => 'banner_item_click', 'fk' => 'banner_item_info_id', 'info' => 'banner_item_info', 'amount' => 'click_amount'],
     ];
 
     private const SESSION_KEY = 'front_viewed';
@@ -65,7 +65,7 @@ final class ViewCounter
 
         $row = [
             'id' => $id,
-            'user_id' => Auth::id(),
+            'user_id' => FrontAuth::id(),
             'lang' => $lang,
             'session_id' => $request->hasSession() ? $request->session()->getId() : null,
             'remote_ip' => ClientIp::from($request),
@@ -145,7 +145,7 @@ final class ViewCounter
     public function write(string $type, array $rows): void
     {
         self::assertType($type);
-        ['table' => $table, 'fk' => $fk, 'info' => $info] = self::TYPES[$type];
+        ['table' => $table, 'fk' => $fk, 'info' => $info, 'amount' => $amount] = self::TYPES[$type];
 
         $records = [];
         $counts = [];
@@ -178,7 +178,7 @@ final class ViewCounter
             return;
         }
 
-        DB::transaction(function () use ($table, $info, $records, $counts) {
+        DB::transaction(function () use ($table, $info, $amount, $records, $counts) {
             foreach (array_chunk($records, 500) as $chunk) {
                 DB::table($table)->insert($chunk);
             }
@@ -193,7 +193,7 @@ final class ViewCounter
 
             $ids = array_keys($counts);
             DB::update(
-                "update {$info} set view_amount = view_amount + (case id ".implode(' ', $cases).' else 0 end) where id in ('.implode(',', array_fill(0, count($ids), '?')).')',
+                "update {$info} set {$amount} = {$amount} + (case id ".implode(' ', $cases).' else 0 end) where id in ('.implode(',', array_fill(0, count($ids), '?')).')',
                 [...$bindings, ...$ids],
             );
         });
@@ -204,7 +204,7 @@ final class ViewCounter
      */
     private function markSession($session, string $key): bool
     {
-        $window = max(0, (int) config('front.views.dedupe_minutes', 30)) * 60;
+        $window = max(0, (int) config('front.views.dedupe_minutes', 5)) * 60;
         $now = time();
         $viewed = $session->get(self::SESSION_KEY, []);
         $viewed = is_array($viewed) ? array_filter($viewed, fn ($at) => is_int($at) && $now - $at < $window) : [];

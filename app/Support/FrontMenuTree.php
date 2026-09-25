@@ -45,4 +45,30 @@ final class FrontMenuTree
 
         return $build(0);
     }
+
+    /**
+     * เมนูที่เปิดใช้งานทั้งหมดเรียงตาม tree แบบแบน (ชื่อภาษาหลัก + ระดับความลึก) สำหรับ dropdown เลือกเมนูเป็นลิงก์ปลายทาง —
+     * `selectable` = ประเภทที่มีลิงก์ของตัวเอง (FrontMenuType::LINKABLE) เมนูหัวข้อ/ไม่กำหนดแสดงไว้ให้เห็นโครงแต่เลือกไม่ได้
+     *
+     * @return list<array{id: int, name: string, depth: int, menu_type: string, selectable: bool}>
+     */
+    public static function pickerOptions(): array
+    {
+        $flat = [];
+        $walk = function (array $nodes, int $depth) use (&$walk, &$flat): void {
+            foreach ($nodes as $node) {
+                $flat[] = [
+                    'id' => (int) $node['id'],
+                    'name' => $node['name'],
+                    'depth' => $depth,
+                    'menu_type' => $node['menu_type'],
+                    'selectable' => in_array($node['menu_type'], FrontMenuType::LINKABLE, true),
+                ];
+                $walk($node['children'], $depth + 1);
+            }
+        };
+        $walk(self::forLanguage(), 0);
+
+        return $flat;
+    }
 }

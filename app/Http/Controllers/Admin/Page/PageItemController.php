@@ -15,6 +15,7 @@ use App\Models\PageItemInfo;
 use App\Models\PageItemRow;
 use App\Models\PageItemWidget;
 use App\Support\PageLayoutSync;
+use App\Support\PageSpacing;
 use App\Support\PageTextStyle;
 use App\Support\PageWidget\PageWidgetRegistry;
 use App\Support\Setting;
@@ -579,6 +580,7 @@ class PageItemController extends Controller
             'use_container' => $row->use_container,
             ...$this->backgroundToArray($row),
             ...$this->textStyleToArray($row),
+            ...$row->only(PageSpacing::columns('row')),
             'detail' => $this->layoutDetailToArray($row->details, $languages),
             'columns' => $row->columns->map(fn (PageItemColumn $column) => [
                 'id' => $column->id,
@@ -587,6 +589,7 @@ class PageItemController extends Controller
                 'column_size' => $column->column_size,
                 ...$this->backgroundToArray($column),
                 ...$this->textStyleToArray($column),
+                ...$column->only(PageSpacing::columns('column')),
                 'detail' => $this->layoutDetailToArray($column->details, $languages),
                 'widgets' => $column->widgets->map(fn (PageItemWidget $widget) => [
                     'id' => $widget->id,
@@ -596,6 +599,7 @@ class PageItemController extends Controller
                     'setting' => $this->widgetSettingToArray($widget),
                     ...$this->backgroundToArray($widget),
                     ...$this->textStyleToArray($widget),
+                    ...$widget->only(PageSpacing::columns('widget')),
                     'detail' => $this->layoutDetailToArray($widget->details, $languages),
                 ])->values(),
             ])->values(),

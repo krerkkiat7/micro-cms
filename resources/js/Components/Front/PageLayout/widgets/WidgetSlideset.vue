@@ -67,6 +67,7 @@ const readAllOnTop = computed(() => String(props.setting.read_all_position ?? ''
                     <li
                         v-for="(item, i) in items"
                         :key="item.id"
+                        :data-item-id="item.id"
                         class="px-2"
                         :style="slotStyle"
                         :aria-hidden="canSlide && !visible(i) ? 'true' : undefined"

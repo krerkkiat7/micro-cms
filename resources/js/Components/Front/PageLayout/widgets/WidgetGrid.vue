@@ -8,6 +8,7 @@ import { useFront } from '@/composables/useFront';
 import { formatNumber, formatShortDate, intlLocale } from '@/utils/front';
 import { LINE_CLAMP, imageFrameCss, itemBoxCss, itemTarget, partCss, perRowVars } from '@/utils/frontPage';
 import type { FrontWidgetItem } from '@/utils/frontPage';
+import { gridContentAlignClasses } from '@/utils/pageWidget';
 
 /**
  * widget Grid (จาก article / จาก banner) ที่หน้าบ้าน — กล่องเรียงต่อเนื่องหลายคอลัมน์ ไม่เลื่อน (จำนวนคอลัมน์ต่อขนาดหน้าจอผ่าน CSS
@@ -24,6 +25,8 @@ const props = defineProps<{
 const { front, t } = useFront();
 
 const s = computed(() => props.setting);
+// ตำแหน่งแนวตั้งของส่วนข้อมูลในรูปแบบแถว — แบบ "บน" วันที่/จำนวนเข้าชมถูกดันลงล่างสุด
+const contentAlign = computed(() => gridContentAlignClasses(s.value.content_align));
 const readAllOnTop = computed(() => String(s.value.read_all_position ?? '').startsWith('top'));
 
 /** กล่องวันที่: เลขวันตัวใหญ่ + เดือนย่อ/ปีตัวเล็ก (ไทยใช้ พ.ศ. 2 หลักท้าย) */
@@ -43,7 +46,7 @@ function dateBox(value: string | null | undefined): { day: string; monthYear: st
         <ReadAllLink v-if="readAllOnTop" :setting="setting" class="mb-3" />
 
         <ul class="front-grid grid gap-4" :style="perRowVars(s)">
-            <li v-for="item in items" :key="item.id" class="min-w-0">
+            <li v-for="item in items" :key="item.id" class="min-w-0" :data-item-id="item.id">
                 <WidgetCard v-if="s.display_type === 'card'" :setting="s" :item="item" :has-meta="hasMeta" :heading-tag="headingTag" />
 
                 <article v-else class="flex h-full items-stretch gap-3 overflow-hidden p-2" :class="s.rounded_corners === 'Y' ? 'rounded-lg' : ''" :style="itemBoxCss(s)">
@@ -76,9 +79,9 @@ function dateBox(value: string | null | undefined): { day: string; monthYear: st
                         </time>
                     </div>
 
-                    <div class="flex min-w-0 flex-1 flex-col justify-center gap-1 py-1">
+                    <div class="flex min-w-0 flex-1 flex-col gap-1 py-1" :class="contentAlign.column">
                         <component :is="headingTag" v-if="item.title" :class="LINE_CLAMP[s.title_lines]" class="leading-snug" :style="partCss(s, 'title', true)">
-                            <FrontLink v-if="s.title_clickable === 'Y' && item.url" :href="item.url" :target="itemTarget(s, item)" class="hover:underline">{{ item.title }}</FrontLink>
+                            <FrontLink v-if="s.title_clickable === 'Y' && item.url" :href="item.url" :target="itemTarget(s, item)">{{ item.title }}</FrontLink>
                             <template v-else>{{ item.title }}</template>
                         </component>
                         <p v-if="s.show_intro_text === 'Y' && item.intro_text" :class="LINE_CLAMP[s.intro_text_lines]" class="whitespace-pre-line leading-snug" :style="partCss(s, 'intro_text', true)">
@@ -87,6 +90,7 @@ function dateBox(value: string | null | undefined): { day: string; monthYear: st
                         <div
                             v-if="hasMeta && ((s.display_type === 'row_image' && s.show_date === 'Y' && item.date) || s.show_views === 'Y')"
                             class="flex flex-wrap items-center gap-x-3 gap-y-0.5"
+                            :class="contentAlign.meta"
                         >
                             <span v-if="s.display_type === 'row_image' && s.show_date === 'Y' && item.date" :style="partCss(s, 'date')">
                                 <time :datetime="item.date">{{ formatShortDate(item.date, front.lang) }}</time>

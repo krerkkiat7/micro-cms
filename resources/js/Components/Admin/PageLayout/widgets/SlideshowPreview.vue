@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import type { CSSProperties } from 'vue';
 import { ChevronLeft, ChevronRight, Link2 } from 'lucide-vue-next';
 import { PREVIEW_LIMIT, useWidgetPreview } from '@/composables/useWidgetPreview';
+import { positionClasses, slideshowOverlayClass } from '@/utils/front';
 import { slideshowConfig } from '@/utils/pageWidget';
 import type { SlideshowCommonSetting } from '@/utils/pageWidget';
 
@@ -88,21 +89,21 @@ function slideStyle(i: number): CSSProperties {
     }
 }
 
-const textBoxClass = computed(() => [
-    props.setting.text_width === 'container' ? 'mx-auto max-w-5xl' : '',
-    { left: 'text-left', center: 'text-center', right: 'text-right' }[props.setting.text_align],
-]);
+// ข้อความวางตาม 9 ตำแหน่ง (positionClasses — ตัวเดียวกับหน้าบ้าน) ภายในกรอบเต็มภาพหรือ container ตาม text_width
+const textBoxClass = computed(() => [positionClasses(props.setting.text_align), props.setting.text_width === 'container' ? 'mx-auto w-full max-w-5xl' : 'w-full']);
 
 // ตัวอักษรของหัวเรื่อง/ข้อความเกริ่นนำบนภาพ ตามที่ตั้งไว้ (default ขาว)
 const titleCss = computed<CSSProperties>(() => ({
     fontSize: `${props.setting.title_font_size}px`,
     fontFamily: `'${props.setting.title_font_family}', sans-serif`,
     color: props.setting.title_color,
+    fontWeight: props.setting.title_bold === 'Y' ? 700 : 400,
 }));
 const introCss = computed<CSSProperties>(() => ({
     fontSize: `${props.setting.intro_text_font_size}px`,
     fontFamily: `'${props.setting.intro_text_font_family}', sans-serif`,
     color: props.setting.intro_text_color,
+    fontWeight: props.setting.intro_text_bold === 'Y' ? 700 : 400,
 }));
 
 // ตัวอย่างแสดงไม่เกิน PREVIEW_LIMIT ใบ — บอกผู้ใช้เมื่อจำนวนจริงที่จะแสดง (ตามจำนวนสูงสุดที่ตั้งไว้) อาจมากกว่านี้
@@ -137,14 +138,16 @@ const showText = (i: number) =>
                 <!-- ข้อความของ banner ซ้อนบนภาพ (div ธรรมดา ไม่ใช้ h1/h2) -->
                 <div
                     v-if="showText(i)"
-                    class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-4 pt-10 text-white"
-                    :class="setting.show_dots === 'Y' ? 'pb-8' : 'pb-4'"
+                    class="absolute inset-0 flex px-4 pt-4 text-white"
+                    :class="[slideshowOverlayClass(setting.text_align), setting.show_dots === 'Y' ? 'pb-8' : 'pb-4']"
                 >
-                    <div :class="textBoxClass">
-                        <div v-if="setting.show_title === 'Y' && item.title" class="font-semibold leading-snug" :style="titleCss">{{ item.title }}</div>
-                        <!-- whitespace-pre-line: ขึ้นบรรทัดใหม่ตามที่พิมพ์ในข้อความเกริ่นนำ -->
-                        <div v-if="setting.show_intro_text === 'Y' && item.intro_text" class="mt-0.5 whitespace-pre-line leading-snug" :style="introCss">
-                            {{ item.intro_text }}
+                    <div class="flex" :class="textBoxClass">
+                        <div>
+                            <div v-if="setting.show_title === 'Y' && item.title" class="leading-snug" :style="titleCss">{{ item.title }}</div>
+                            <!-- whitespace-pre-line: ขึ้นบรรทัดใหม่ตามที่พิมพ์ในข้อความเกริ่นนำ -->
+                            <div v-if="setting.show_intro_text === 'Y' && item.intro_text" class="mt-0.5 whitespace-pre-line leading-snug" :style="introCss">
+                                {{ item.intro_text }}
+                            </div>
                         </div>
                     </div>
                 </div>

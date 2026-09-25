@@ -1,18 +1,21 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue';
-import { Laptop, Monitor, Smartphone, Tablet } from 'lucide-vue-next';
+import { AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, AlignVerticalJustifyStart, Laptop, Monitor, Smartphone, Tablet } from 'lucide-vue-next';
 import CardBoxFields from './CardBoxFields.vue';
 import FlagField from './FlagField.vue';
 import OptionCardPicker from './OptionCardPicker.vue';
+import RangeNumberField from './RangeNumberField.vue';
 import ReadAllFields from './ReadAllFields.vue';
 import SettingSection from './SettingSection.vue';
 import SlidesetTextFields from './SlidesetTextFields.vue';
 import ColorPickerInput from '@/Components/Admin/ColorPickerInput.vue';
+import SegmentedChoice from '@/Components/Admin/Template/SegmentedChoice.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import TextInput from '@/Components/TextInput.vue';
 import {
+    GRID_CONTENT_ALIGN_OPTIONS,
     GRID_IMAGE_WIDTH_RANGE,
     LINK_TARGET_OPTIONS,
     SLIDESET_DEVICES,
@@ -22,7 +25,7 @@ import {
     SLIDESHOW_MAX_ITEMS_LIMIT,
     gridConfig,
 } from '@/utils/pageWidget';
-import type { GridSetting } from '@/utils/pageWidget';
+import type { GridContentAlign, GridSetting } from '@/utils/pageWidget';
 import type { LanguageOption } from '@/types';
 
 /**
@@ -72,12 +75,27 @@ const maxItems = computed({
     },
 });
 
-const imageWidthPercent = computed({
-    get: () => String(props.setting.image_width_percent),
-    set: (value: string) => {
-        const parsed = Number.parseInt(value, 10);
-        props.setting.image_width_percent = Number.isNaN(parsed) ? 0 : parsed;
-    },
+// ตำแหน่งของข้อมูล (รูปแบบแถว) — ไอคอนสื่อความหมายคู่ข้อความ; article แบบ "บน" วันที่/จำนวนเข้าชมอยู่ล่างเสมอ
+const CONTENT_ALIGN_ICONS: Record<GridContentAlign, typeof AlignVerticalJustifyStart> = {
+    top: AlignVerticalJustifyStart,
+    center: AlignVerticalJustifyCenter,
+    bottom: AlignVerticalJustifyEnd,
+};
+const contentAlignOptions = GRID_CONTENT_ALIGN_OPTIONS.map((option) => ({ ...option, icon: CONTENT_ALIGN_ICONS[option.value] }));
+const contentAlignHint = computed(() => {
+    const hints: Record<string, string> = config.value.hasMeta
+        ? {
+              top: 'หัวเรื่องและข้อความเกริ่นนำชิดด้านบน ส่วนวันที่และจำนวนเข้าชมอยู่ด้านล่างเสมอ',
+              center: 'หัวเรื่อง ข้อความเกริ่นนำ วันที่และจำนวนเข้าชม อยู่กึ่งกลางแนวตั้ง',
+              bottom: 'หัวเรื่อง ข้อความเกริ่นนำ วันที่และจำนวนเข้าชม ชิดด้านล่าง',
+          }
+        : {
+              top: 'หัวเรื่องและข้อความเกริ่นนำชิดด้านบน',
+              center: 'หัวเรื่องและข้อความเกริ่นนำอยู่กึ่งกลางแนวตั้ง',
+              bottom: 'หัวเรื่องและข้อความเกริ่นนำชิดด้านล่าง',
+          };
+
+    return hints[props.setting.content_align] ?? hints.top;
 });
 
 // รูปแบบแถว (row_image / row_date) บังคับแสดงหัวเรื่องเสมอ, แถวที่แสดงวันที่แทนรูปภาพบังคับแสดงวันที่เสมอ — สอดคล้องกับที่ backend บังคับตอนบันทึก
@@ -204,14 +222,21 @@ const perRowModels = Object.fromEntries(SLIDESET_DEVICES.map((d) => [d.key, perR
         </SettingSection>
 
         <SettingSection title="กล่องของการ์ด" description="เส้นขอบ สี และมุมของกล่องที่ครอบแต่ละรายการ">
-            <CardBoxFields :setting="setting" :errors="errors" />
+            <CardBoxFields :setting="setting" :errors="errors">
+                <div v-if="setting.display_type !== 'card'">
+                    <InputLabel value="ตำแหน่งของข้อมูล" />
+                    <SegmentedChoice v-model="setting.content_align" :options="contentAlignOptions" />
+                    <p class="mt-1 text-xs text-gray-500">{{ contentAlignHint }}</p>
+                </div>
+            </CardBoxFields>
         </SettingSection>
 
         <SettingSection v-if="setting.display_type !== 'row_date'" v-model:enabled="setting.show_image" toggleable title="รูปภาพ">
             <p v-if="setting.display_type === 'row_image'" class="text-xs text-gray-500">ถ้าปิด พื้นที่รูปภาพจะหายไปและส่วนข้อมูลขยายเต็มแทน</p>
             <div v-if="setting.display_type === 'row_image'">
                 <InputLabel value="ความกว้างของพื้นที่แสดงรูปภาพ (%)" />
-                <TextInput v-model="imageWidthPercent" type="number" :min="GRID_IMAGE_WIDTH_RANGE.min" :max="GRID_IMAGE_WIDTH_RANGE.max" />
+                <RangeNumberField v-model="setting.image_width_percent" :min="GRID_IMAGE_WIDTH_RANGE.min" :max="GRID_IMAGE_WIDTH_RANGE.max" unit="%" />
+                <p class="mt-1 text-xs text-gray-500">สัดส่วนความกว้างของรูปเทียบกับทั้งแถว ที่เหลือเป็นพื้นที่ข้อความ — แนะนำ 20 - 35% (น้อยไปรูปจะเล็กมาก มากไปข้อความจะเบียด)</p>
                 <InputError :message="errors.image_width_percent" />
             </div>
             <div class="grid gap-4 sm:grid-cols-2">
@@ -269,7 +294,7 @@ const perRowModels = Object.fromEntries(SLIDESET_DEVICES.map((d) => [d.key, perR
                 <p class="text-sm font-medium text-gray-700">เดือน/ปี</p>
                 <SlidesetTextFields :setting="setting" part="date_month" :fonts="fonts" />
             </div>
-            <div class="sm:max-w-40">
+            <div>
                 <InputLabel value="สีพื้นหลังกล่อง" />
                 <ColorPickerInput v-model="setting.date_box_background" transparent />
                 <InputError :message="errors.date_box_background" />

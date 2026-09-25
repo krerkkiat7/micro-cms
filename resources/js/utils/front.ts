@@ -22,6 +22,8 @@ export interface FrontTextStyle {
     font_family: string;
     align: 'left' | 'center' | 'right';
     color: string;
+    /** ตัวหนา (ข้อความของแถว/คอลัมน์/widget ในหน้าเพจ) — ไม่ระบุ = ตามแท็ก/คลาสของที่ใช้ */
+    bold?: boolean;
 }
 
 /** โซนของ template — ฟิลด์พื้นหลังเป็น URL แล้ว (App\Support\Front\FrontLayoutData) */
@@ -189,12 +191,18 @@ export function zoneBackgroundCss(zone: { background_color: string | null; backg
 }
 
 export function textStyleCss(style: FrontTextStyle): CSSProperties {
-    return {
+    const css: CSSProperties = {
         fontSize: `${style.font_size}px`,
         fontFamily: `'${style.font_family}', sans-serif`,
         textAlign: style.align,
         color: style.color,
     };
+
+    if (style.bold !== undefined) {
+        css.fontWeight = style.bold ? 700 : 400;
+    }
+
+    return css;
 }
 
 export function fontCss(style: { font_size: number; font_family: string; color: string; bold?: boolean }): CSSProperties {
@@ -261,6 +269,19 @@ export function positionClasses(position: string): string {
     const align = { top: 'items-start', center: 'items-center', bottom: 'items-end' }[vertical as 'top'];
 
     return `${justify} ${align}`;
+}
+
+/**
+ * เงาใต้ข้อความที่ซ้อนบนภาพของ Slideshow ตามตำแหน่งแนวตั้งของข้อความ (ให้อ่านออกทุกภาพ): บน = ไล่เงาจากขอบบน,
+ * ล่าง = ไล่เงาจากขอบล่าง, กลาง = เงาจางทั้งภาพ — ใช้คู่กับ positionClasses() (ทั้งหน้าบ้านและตัวอย่างในหลังบ้าน)
+ */
+export function slideshowOverlayClass(position: string): string {
+    const parts = (position || 'center').split(' ');
+
+    if (parts.includes('top')) return 'bg-gradient-to-b from-black/70 via-black/25 to-transparent';
+    if (parts.includes('bottom')) return 'bg-gradient-to-t from-black/75 via-black/25 to-transparent';
+
+    return 'bg-black/35';
 }
 
 /** อัตราส่วนภาพ "16:9" → CSS aspect-ratio */

@@ -38,6 +38,22 @@ final class FrontMenuResolver
     }
 
     /**
+     * ลิงก์ของเมนู 1 รายการที่แสดงอยู่ (เปิดใช้งาน และพาเรนต์ทุกระดับแสดงอยู่) — null = ไม่มีเมนูนี้/ถูกซ่อน/ปลายทางใช้ไม่ได้
+     *
+     * @return array{url: string, target: string, menu_type: string}|null
+     */
+    public static function linkOf(string $lang, int $menuId): ?array
+    {
+        $node = self::data($lang)['nodes'][$menuId] ?? null;
+
+        if ($node === null || $node['url'] === null) {
+            return null;
+        }
+
+        return ['url' => $node['url'], 'target' => $node['target'], 'menu_type' => $node['menu_type']];
+    }
+
+    /**
      * เมนูที่ชี้ไปยังเนื้อหานี้ (เมนูแรกตามลำดับการแสดง) พร้อมตั้งค่าส่วนหัว + เส้นทาง (breadcrumb) จากระดับบนสุด
      *
      * @param  string  $type  FrontMenuType::PAGE | ARTICLE_CATEGORY | ARTICLE_ITEM
@@ -274,7 +290,8 @@ final class FrontMenuResolver
             FrontMenuType::ARTICLE_ITEM => $menu->target_article_item_id && array_key_exists($menu->target_article_item_id, $slugs['article_item'])
                 ? FrontUrl::articleItem($lang, (int) $menu->target_article_item_id, $slugs['article_item'][$menu->target_article_item_id])
                 : null,
-            FrontMenuType::EXTERNAL => FrontUrl::safeExternal($menu->url),
+            // ลิงค์ภายนอกที่เป็น path ภายในแต่ไม่ได้ขึ้นต้นด้วยภาษา (เช่น /news) เติมภาษาของหน้าที่เปิดอยู่ให้ (header/footer/aside/ปุ่มอ่านทั้งหมด)
+            FrontMenuType::EXTERNAL => FrontUrl::withLang(FrontUrl::safeExternal($menu->url), $lang),
             default => null,
         };
 

@@ -61,12 +61,12 @@ const hasBody = computed(
 
         <div v-if="hasBody" class="flex flex-1 flex-col gap-1 p-3">
             <component :is="headingTag" v-if="s.show_title === 'Y' && item.title" :class="LINE_CLAMP[s.title_lines]" class="leading-snug" :style="partCss(s, 'title', true)">
-                <FrontLink v-if="titleLinked" :href="item.url!" :target="target" class="hover:underline">{{ item.title }}</FrontLink>
+                <FrontLink v-if="titleLinked" :href="item.url!" :target="target">{{ item.title }}</FrontLink>
                 <template v-else>{{ item.title }}</template>
             </component>
 
             <p v-if="s.show_intro_text === 'Y' && item.intro_text" :class="LINE_CLAMP[s.intro_text_lines]" class="whitespace-pre-line leading-snug" :style="partCss(s, 'intro_text', true)">
-                <FrontLink v-if="introLinked" :href="item.url!" :target="target" :tabindex="titleLinked ? -1 : undefined" class="hover:underline">{{ item.intro_text }}</FrontLink>
+                <FrontLink v-if="introLinked" :href="item.url!" :target="target" :tabindex="titleLinked ? -1 : undefined">{{ item.intro_text }}</FrontLink>
                 <template v-else>{{ item.intro_text }}</template>
             </p>
 

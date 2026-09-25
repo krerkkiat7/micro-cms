@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed, useId } from 'vue';
 import { BACKGROUND_POSITION_STYLES } from '@/utils/intropageBackground';
 
 /**
@@ -8,6 +9,19 @@ import { BACKGROUND_POSITION_STYLES } from '@/utils/intropageBackground';
  * ตำแหน่งจริงบนกรอบ อ่านง่ายกว่า dropdown รายชื่อธรรมดา
  */
 const model = defineModel<string>({ required: true });
+
+const props = withDefaults(
+    defineProps<{
+        /** false = ไม่มีตัวเลือก "ไม่ระบุ" (เหลือ 9 ตำแหน่ง — เช่น ตำแหน่งข้อความบน Slideshow ที่ต้องเลือกเสมอ) */
+        allowUnset?: boolean;
+    }>(),
+    { allowUnset: true },
+);
+
+const options = computed(() => (props.allowUnset ? BACKGROUND_POSITION_STYLES : BACKGROUND_POSITION_STYLES.filter((opt) => opt.value !== '')));
+
+/** ชื่อกลุ่ม radio ต่อ instance — หน้าเดียวมีตัวเลือกนี้หลายชุดได้ */
+const groupName = `position-${useId()}`;
 
 const DOT: Record<string, { x: number; y: number }> = {
     'top left': { x: 20, y: 18 },
@@ -25,12 +39,12 @@ const DOT: Record<string, { x: number; y: number }> = {
 <template>
     <div class="grid gap-3 sm:grid-cols-3">
         <label
-            v-for="opt in BACKGROUND_POSITION_STYLES"
+            v-for="opt in options"
             :key="opt.value"
             class="flex cursor-pointer flex-col rounded-xl border p-3 transition-colors"
             :class="model === opt.value ? 'border-brand-500 bg-brand-50/60 ring-1 ring-brand-500' : 'border-gray-200 bg-white hover:border-gray-300'"
         >
-            <input v-model="model" type="radio" name="background_position" :value="opt.value" class="sr-only" />
+            <input v-model="model" type="radio" :name="groupName" :value="opt.value" class="sr-only" />
 
             <svg viewBox="0 0 120 80" class="h-20 w-full text-gray-300">
                 <rect x="8" y="10" width="104" height="60" rx="4" class="fill-gray-50 stroke-gray-300" stroke-width="2" />

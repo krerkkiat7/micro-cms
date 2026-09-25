@@ -15,8 +15,11 @@ class PageTextStyle
     /** ข้อความ 3 ส่วนที่จัดรูปแบบได้ (ตรงกับคอลัมน์ในตาราง *_detail: title, subtitle, intro_text) */
     public const PARTS = ['title', 'subtitle', 'intro_text'];
 
-    /** ค่าที่ตั้งได้ของแต่ละข้อความ */
-    public const FIELDS = ['font_size', 'font_family', 'align', 'color'];
+    /** ค่าที่ตั้งได้ของแต่ละข้อความ (bold = ตัวหนา Y/N เพิ่มใน migration 2026_10_03_000002) */
+    public const FIELDS = ['font_size', 'font_family', 'align', 'color', 'bold'];
+
+    /** ตัวหนาเริ่มต้น — หัวเรื่องหนา (เหมือนที่แสดงมาก่อนมีตัวเลือกนี้) หัวเรื่องรอง/ข้อความเกริ่นนำไม่หนา */
+    public const DEFAULT_BOLD = ['title' => 'Y', 'subtitle' => 'N', 'intro_text' => 'N'];
 
     public const ALIGNS = ['left', 'center', 'right'];
 
@@ -70,7 +73,7 @@ class PageTextStyle
     ];
 
     /**
-     * ชื่อคอลัมน์ทั้งหมดของการจัดรูปแบบ (3 ข้อความ x 4 ค่า = 12 คอลัมน์)
+     * ชื่อคอลัมน์ทั้งหมดของการจัดรูปแบบ (3 ข้อความ x 5 ค่า = 15 คอลัมน์)
      *
      * @return list<string>
      */
@@ -135,7 +138,7 @@ class PageTextStyle
     }
 
     /**
-     * ดึงเฉพาะคอลัมน์การจัดรูปแบบ (12 ค่า) ออกจากข้อมูลที่ validate แล้วของแถว/คอลัมน์/widget
+     * ดึงเฉพาะคอลัมน์การจัดรูปแบบ (15 ค่า) ออกจากข้อมูลที่ validate แล้วของแถว/คอลัมน์/widget
      *
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>

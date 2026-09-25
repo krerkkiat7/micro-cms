@@ -3,17 +3,18 @@ import { ref, watch } from 'vue';
 import { Trash2 } from 'lucide-vue-next';
 import LayoutDialog from './LayoutDialog.vue';
 import BackgroundFields from './BackgroundFields.vue';
+import SpacingFields from './SpacingFields.vue';
 import TextFieldsSection from './TextFieldsSection.vue';
+import SegmentedChoice from '@/Components/Admin/Template/SegmentedChoice.vue';
 import InputLabel from '@/Components/InputLabel.vue';
-import SearchableSelect from '@/Components/SearchableSelect.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
-import { SHOW_OPTIONS, cloneDeep, pickBackground, pickTextStyles } from '@/utils/pageLayout';
+import { SHOW_OPTIONS, cloneDeep, pickBackground, pickPadding, pickTextStyles } from '@/utils/pageLayout';
 import type { ColumnData, ColumnSettings } from '@/utils/pageLayout';
 import type { LanguageOption } from '@/types';
 
 /**
- * dialog ตั้งค่าของ "คอลัมน์" — ความกว้าง หัวเรื่อง/หัวเรื่องรอง/ข้อความเกริ่นนำ (แยกภาษา + จัดรูปแบบตัวอักษร) และพื้นหลัง
+ * dialog ตั้งค่าของ "คอลัมน์" — ความกว้าง หัวเรื่อง/หัวเรื่องรอง/ข้อความเกริ่นนำ (แยกภาษา + จัดรูปแบบตัวอักษร) พื้นหลัง และระยะขอบด้านใน
  * แก้ไขบนสำเนา (draft) แล้วส่ง `save` กลับเมื่อกด "ตกลง" (ไม่แตะ widget ข้างใน)
  * ความกว้าง 1 - 12 เลือกจากปุ่มตัวเลขพร้อมแถบแสดงสัดส่วนเทียบทั้งแถว (grid 12)
  */
@@ -41,7 +42,14 @@ watch(
     (show) => {
         if (show && props.column) {
             const { detail, show_title, column_size } = props.column;
-            draft.value = cloneDeep({ detail, show_title, column_size, ...pickBackground(props.column), ...pickTextStyles(props.column) });
+            draft.value = cloneDeep({
+                detail,
+                show_title,
+                column_size,
+                ...pickBackground(props.column),
+                ...pickTextStyles(props.column),
+                ...pickPadding(props.column),
+            });
         }
     },
     { immediate: true },
@@ -93,26 +101,49 @@ function remove() {
             <div class="grid gap-4 sm:grid-cols-2">
                 <div>
                     <InputLabel value="แสดงหัวเรื่อง" />
-                    <SearchableSelect v-model="draft.show_title" :options="SHOW_OPTIONS" />
-                    <p class="mt-1 text-xs text-gray-500">เปิดแล้วจะแสดงหัวเรื่อง หัวเรื่องรอง และข้อความเกริ่นนำของคอลัมน์นี้ (หัวเรื่องใช้แท็ก H3)</p>
+                    <SegmentedChoice v-model="draft.show_title" :options="SHOW_OPTIONS" />
+                    <p class="mt-1 text-xs text-gray-500">เปิดแล้วจะแสดงหัวเรื่อง หัวเรื่องรอง และข้อความเกริ่นนำของคอลัมน์นี้</p>
                 </div>
             </div>
 
-            <TextFieldsSection label="หัวเรื่อง" part="title" :languages="languages" :detail="draft.detail" :text-style="draft.title_style" :fonts="fonts" />
-            <TextFieldsSection label="หัวเรื่องรอง" part="subtitle" :languages="languages" :detail="draft.detail" :text-style="draft.subtitle_style" :fonts="fonts" />
             <TextFieldsSection
-                label="ข้อความเกริ่นนำ"
-                part="intro_text"
-                multiline
+                label="หัวเรื่อง"
+                part="title"
                 :languages="languages"
                 :detail="draft.detail"
-                :text-style="draft.intro_text_style"
+                :text-style="draft.title_style"
                 :fonts="fonts"
+                :hide-style="draft.show_title !== 'Y'"
             />
+            <!-- ไม่แสดงหัวเรื่อง = ซ่อนส่วนที่เกี่ยวข้อง แต่ค่ายังเก็บอยู่ใน draft ครบ (กลับมาเปิดแสดงแล้วได้ค่าเดิม) -->
+            <template v-if="draft.show_title === 'Y'">
+                <TextFieldsSection
+                    label="หัวเรื่องรอง"
+                    part="subtitle"
+                    :languages="languages"
+                    :detail="draft.detail"
+                    :text-style="draft.subtitle_style"
+                    :fonts="fonts"
+                />
+                <TextFieldsSection
+                    label="ข้อความเกริ่นนำ"
+                    part="intro_text"
+                    multiline
+                    :languages="languages"
+                    :detail="draft.detail"
+                    :text-style="draft.intro_text_style"
+                    :fonts="fonts"
+                />
+            </template>
 
             <div class="space-y-4 border-t border-gray-100 pt-5">
                 <h3 class="text-sm font-medium text-gray-600">พื้นหลัง</h3>
                 <BackgroundFields :fields="draft" />
+            </div>
+
+            <div class="space-y-4 border-t border-gray-100 pt-5">
+                <h3 class="text-sm font-medium text-gray-600">ระยะห่าง</h3>
+                <SpacingFields :fields="draft" subject="คอลัมน์" />
             </div>
         </div>
 

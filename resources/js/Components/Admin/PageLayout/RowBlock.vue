@@ -4,12 +4,13 @@ import LayoutToolbar from './LayoutToolbar.vue';
 import ColumnBlock from './ColumnBlock.vue';
 import LayoutTexts from './LayoutTexts.vue';
 import { usePageLayoutEditor } from '@/composables/usePageLayoutEditor';
-import { backgroundStyle, displayTitle } from '@/utils/pageLayout';
+import { backgroundStyle, displayTitle, gapStyle, paddingStyle } from '@/utils/pageLayout';
 import type { RowData } from '@/utils/pageLayout';
 
 /**
  * แถวในหน้าเพจ — กรอบเส้นปะให้เห็นขอบเขต + พื้นหลังตามการตั้งค่า; คอลัมน์ข้างในเรียงเป็น grid 12 ตามความกว้างของแต่ละคอลัมน์
  * (เรียงลำดับ/ย้ายคอลัมน์ข้ามแถวผ่าน dialog "เรียงลำดับคอลัมน์" เท่านั้น ไม่มีการลากสลับตรงในหน้าจอนี้อีกแล้ว — ดู ColumnReorderDialog.vue);
+ * ระยะขอบด้านในและระยะห่างระหว่างคอลัมน์แสดงตามที่ตั้งค่า (ตัวเลขจริงเป็น px เหมือนหน้าบ้าน)
  * เมื่อเปิด "แสดงหัวเรื่อง" จะแสดงหัวเรื่อง (h2) / หัวเรื่องรอง / ข้อความเกริ่นนำเหนือคอลัมน์ตามที่ตั้งค่าไว้ (เมื่อ "ใช้ container" จะจำกัดความกว้างเนื้อหาไว้ตรงกลางเหมือนที่หน้าบ้านจะแสดง)
  */
 const props = defineProps<{
@@ -54,7 +55,7 @@ function span(size: number): { gridColumn: string } {
             ผลรวมความกว้าง {{ columnTotal }}/12 — คอลัมน์ที่เกินจะขึ้นบรรทัดใหม่
         </span>
 
-        <div class="px-2 pb-2">
+        <div class="px-2 pb-2" :style="paddingStyle(row)">
             <div :class="row.use_container === 'Y' ? 'mx-auto max-w-5xl' : ''">
                 <LayoutTexts
                     level="row"
@@ -65,7 +66,7 @@ function span(size: number): { gridColumn: string } {
                     class="px-2 pb-3 pt-1"
                 />
 
-                <div class="grid grid-cols-12 gap-3">
+                <div class="grid grid-cols-12" :style="gapStyle(row)">
                     <div v-for="(column, columnIndex) in row.columns" :key="column._key" class="min-w-0" :style="span(column.column_size)">
                         <ColumnBlock :column="column" :row="row" :index="columnIndex" />
                     </div>
