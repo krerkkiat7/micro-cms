@@ -2,6 +2,7 @@
 
 use App\Models\LogBackAction;
 use App\Models\SysSetting;
+use App\Support\ArticleSetting;
 use App\Support\Setting;
 use Database\Seeders\ArticleSeeder;
 use Database\Seeders\DatabaseSeeder;
@@ -19,10 +20,7 @@ beforeEach(function () {
  */
 function validArticleSettingPayload(array $overrides = []): array
 {
-    return array_merge([
-        'list_per_page' => '10',
-        'list_display_mode' => 'card',
-    ], $overrides);
+    return array_merge(ArticleSetting::defaults(), $overrides);
 }
 
 // ---------------------------------------------------------------- index
@@ -107,6 +105,41 @@ test('update persists the settings, invalidates the cache, and logs the action',
     expect(LogBackAction::where('module_code', 'article.setting')
         ->where('action_type', 'update')
         ->exists())->toBeTrue();
+});
+
+test('index fills keys that were never saved with their defaults', function () {
+    actingAsUserWithPermissions(['article.setting.manage']);
+    SysSetting::query()->where('group', 'article')->where('name', 'detail_share_position')->forceDelete();
+    Setting::forget('article');
+
+    $this->get(route('admin.article.setting.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('settings.detail_share_position', 'bottom')
+            ->where('settings.list_show_category_intro', 'N')
+            ->where('settings.list_default_sort', 'newest')
+            ->where('settings.card_image_background', '#F3F4F6')
+        );
+});
+
+test('update validates the list and detail display options', function () {
+    actingAsUserWithPermissions(['article.setting.manage']);
+
+    $this->put(route('admin.article.setting.update'), validArticleSettingPayload([
+        'list_default_sort' => 'random',
+        'card_aspect_ratio' => 'natural',
+        'row_title_lines' => '4',
+        'row_image_background' => 'red',
+        'detail_share_position' => 'left',
+        'detail_show_print' => 'yes',
+    ]))->assertInvalid([
+        'list_default_sort', 'card_aspect_ratio', 'row_title_lines', 'row_image_background', 'detail_share_position', 'detail_show_print',
+    ]);
+
+    // natural ใช้ได้เฉพาะมุมมองแถว
+    $this->put(route('admin.article.setting.update'), validArticleSettingPayload(['row_aspect_ratio' => 'natural']))
+        ->assertValid();
+
+    $this->assertDatabaseHas('sys_setting', ['group' => 'article', 'name' => 'row_aspect_ratio', 'value' => 'natural']);
 });
 
 // ---------------------------------------------------------------- clear cache
