@@ -414,7 +414,7 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   ทะเบียนตั้งค่า `App\Support\PopupSetting` (`display_order` — รายการแรกอยู่บนสุดเมื่อซ้อนกัน), ฟอร์ม `Components/Admin/PopupForm/*`;
   เมนูที่ระบุเลือกได้เฉพาะเมนูโมดูลเนื้อหา (`PopupItemInfo::MENU_TYPES`) ผ่าน `FrontMenuTree::adminCheckTree()`; ต้องมี part ที่แสดงอย่างน้อย 1 รายการ.
   หน้าบ้าน: `FrontController::render()` ส่ง prop `popups` (`App\Support\Front\PopupResolver::forPage()` — กรองตามเมนูสุดท้ายของ `activeMenuIds`,
-  Intropage/หน้า error ไม่มี) → `Components/Front/Popup/PopupStack.vue` ใน `FrontLayout.vue`; "ไม่แสดงวันนี้อีก" = localStorage, "ปิด" = sessionStorage
+  Intropage/หน้า error ไม่มี) → `Components/Front/Popup/PopupStack.vue` ใน `FrontLayout.vue`; "ไม่แสดงวันนี้อีก" = localStorage, "ปิด" = ปิดเฉพาะหน้านี้ไม่จำ (หน้าถัดไปที่เข้าเงื่อนไขแสดงอีก); Floating = รูปภาพอย่างเดียว
 
 ## ทดสอบ
 

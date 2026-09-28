@@ -78,7 +78,9 @@ final class PopupResolver
             'menu_mode' => $popup->menu_mode,
             'menu_ids' => $popup->menus->pluck('id')->map(fn ($id) => (int) $id)->all(),
             'parts' => $popup->parts
-                ->map(fn (PopupItemPart $part) => self::partToArray($part, $lang))
+                // แบบ floating แสดงเฉพาะรูปภาพ (ข้อมูลเก่าที่เป็นข้อความถูกตัด)
+                ->filter(fn (PopupItemPart $part) => $popup->display_type !== 'floating' || $part->hasImage())
+                ->map(fn (PopupItemPart $part) => self::partToArray($part, $lang, $popup->display_type === 'floating'))
                 ->filter()
                 ->values()
                 ->all(),
@@ -90,10 +92,10 @@ final class PopupResolver
      *
      * @return array<string, mixed>|null
      */
-    private static function partToArray(PopupItemPart $part, string $lang): ?array
+    private static function partToArray(PopupItemPart $part, string $lang, bool $imageOnly = false): ?array
     {
         $image = $part->hasImage() ? FrontFile::fromFileInfo($part->image, 1280) : null;
-        $html = $part->hasText() ? self::pickText($part, $lang) : null;
+        $html = $part->hasText() && ! $imageOnly ? self::pickText($part, $lang) : null;
 
         // ขาดส่วนที่รูปแบบนั้นบังคับ (เช่น รูปถูกลบไปแล้ว) — แบบรูปภาพ + ข้อความ ยังแสดงส่วนที่เหลือได้
         if ($image === null && $html === null) {

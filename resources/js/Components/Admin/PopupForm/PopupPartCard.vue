@@ -23,6 +23,8 @@ const props = defineProps<{
     index: number;
     languages: LanguageOption[];
     formErrors: Record<string, string | undefined>;
+    /** popup แบบ floating — ซ่อนตัวเลือกรูปแบบ (รูปภาพอย่างเดียว) */
+    imageOnly?: boolean;
 }>();
 
 defineEmits<{ remove: []; reorder: [] }>();
@@ -63,7 +65,7 @@ function toggleStatus() {
         </div>
 
         <div class="space-y-4" :class="part.status === 'N' ? 'opacity-60' : ''">
-            <div>
+            <div v-if="!imageOnly">
                 <InputLabel value="รูปแบบ" required />
                 <PopupPartTypePicker v-model="part.part_type" :name="`popup_part_type_${part._key}`" />
                 <InputError :message="error('part_type')" />

@@ -44,7 +44,8 @@ trait PopupItemValidationRules
             'status' => $yesNo,
 
             'parts' => ['required', 'array', 'min:1'],
-            'parts.*.part_type' => ['required', Rule::in(PopupItemPart::TYPES)],
+            // แบบ floating แสดงได้เฉพาะรูปภาพ
+            'parts.*.part_type' => ['required', Rule::in($this->input('display_type') === 'floating' ? ['image'] : PopupItemPart::TYPES)],
             'parts.*.image_id' => [
                 'nullable', 'integer', 'required_unless:parts.*.part_type,text',
                 Rule::exists('file_info', 'id')->where(fn ($query) => $query
@@ -118,6 +119,7 @@ trait PopupItemValidationRules
             'menu_ids.*.exists' => 'เมนูที่เลือกไม่ถูกต้อง',
             'parts.required' => 'ต้องมีข้อมูลอย่างน้อย 1 รายการ',
             'parts.min' => 'ต้องมีข้อมูลอย่างน้อย 1 รายการ',
+            'parts.*.part_type.in' => 'Popup แบบ Floating ใช้ได้เฉพาะรูปภาพ',
             'parts.*.image_id.required_unless' => 'กรุณาเลือกรูปภาพ',
             'parts.*.image_id.exists' => 'รูปภาพที่เลือกไม่ถูกต้อง',
             'slide_interval.min' => 'เวลาที่ค้างต้องอย่างน้อย 1 วินาที',

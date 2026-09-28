@@ -28,12 +28,13 @@ const model = defineModel<string>({ required: true });
                     <rect x="68" y="50" width="12" height="5" rx="1.5" class="fill-brand-500" />
                 </template>
                 <template v-else>
-                    <rect x="37" y="14" width="48" height="44" rx="3" class="fill-gray-900/15" />
-                    <rect x="36" y="12" width="48" height="44" rx="3" class="fill-white stroke-gray-300" stroke-width="1" />
-                    <circle cx="79" cy="16" r="2.5" class="fill-gray-400" />
-                    <rect x="40" y="20" width="40" height="22" rx="2" class="fill-brand-300" />
-                    <rect x="40" y="46" width="34" height="2.5" rx="1" class="fill-gray-400" />
-                    <rect x="48" y="51" width="24" height="2" rx="1" class="fill-brand-400" />
+                    <!-- รูปภาพลอยอย่างเดียว + แถบ "ไม่แสดงวันนี้อีก" และปุ่มปิดใต้รูป -->
+                    <rect x="39" y="10" width="44" height="40" rx="3" class="fill-gray-900/20" />
+                    <rect x="38" y="8" width="44" height="40" rx="3" class="fill-brand-300" />
+                    <circle cx="48" cy="18" r="4" class="fill-white/80" />
+                    <path d="M40 46 L56 28 L66 38 L72 32 L80 46 Z" class="fill-brand-500" />
+                    <rect x="44" y="54" width="24" height="6" rx="3" class="fill-gray-700" />
+                    <circle cx="74" cy="57" r="3.5" class="fill-gray-700" />
                 </template>
             </svg>
         </template>

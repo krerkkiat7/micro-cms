@@ -15,12 +15,18 @@ import type { PopupPart } from '@/utils/popupForm';
 const props = defineProps<{
     languages: LanguageOption[];
     formErrors: Record<string, string | undefined>;
+    /** popup แบบ floating — part เป็นรูปภาพได้อย่างเดียว */
+    imageOnly?: boolean;
 }>();
 
 const parts = defineModel<PopupPart[]>({ required: true });
 
 function addPart() {
-    parts.value.push(createPopupPart(props.languages));
+    const part = createPopupPart(props.languages);
+
+    if (props.imageOnly) part.part_type = 'image';
+
+    parts.value.push(part);
 }
 
 const pendingRemove = ref<number | null>(null);
@@ -51,6 +57,7 @@ const partsError = computed(() => props.formErrors.parts);
             :index="index"
             :languages="languages"
             :form-errors="formErrors"
+            :image-only="imageOnly"
             @remove="pendingRemove = index"
             @reorder="showReorder = true"
         />

@@ -159,6 +159,20 @@ test('store requires an image for image parts and default-language text for text
     ]]))->assertSessionHasErrors(['parts.0.image_id', 'parts.1.detail.th']);
 });
 
+test('a floating popup accepts image parts only', function () {
+    actingAsUserWithPermissions(['popup.item.view', 'popup.item.manage']);
+    $imageId = FileInfo::query()->where('hash_name', 'popup-hash.jpg')->value('id');
+    $imagePart = ['part_type' => 'image', 'image_id' => $imageId, 'image_size' => 'medium', 'link_target' => '_blank', 'status' => 'Y'];
+
+    $this->post(route('admin.popup.item.store'), validPopupPayload(['display_type' => 'floating', 'parts' => [$imagePart, textPart()]]))
+        ->assertSessionHasErrors('parts.1.part_type');
+
+    $this->post(route('admin.popup.item.store'), validPopupPayload(['display_type' => 'floating', 'parts' => [$imagePart]]))
+        ->assertSessionHasNoErrors();
+
+    expect(PopupItemInfo::query()->value('display_type'))->toBe('floating');
+});
+
 test('store requires menus when showing on selected menus, and only content menus are accepted', function () {
     actingAsUserWithPermissions(['popup.item.view', 'popup.item.manage']);
 
@@ -216,13 +230,13 @@ test('update replaces parts and records updated_by', function () {
 
     $this->put(route('admin.popup.item.update', $popup->id), validPopupPayload([
         'name' => 'ชื่อใหม่',
-        'display_type' => 'floating',
+        'show_arrows' => 'N',
         'parts' => [textPart(), textPart(['detail' => ['th' => '<p>ที่สอง</p>']])],
     ]))->assertRedirect(route('admin.popup.item.edit', $popup->id));
 
     $popup->refresh();
     expect($popup->name)->toBe('ชื่อใหม่')
-        ->and($popup->display_type)->toBe('floating')
+        ->and($popup->show_arrows)->toBe('N')
         ->and($popup->updated_by)->toBe($user->id)
         ->and($popup->parts()->count())->toBe(2)
         ->and(PopupItemPart::withTrashed()->find($oldPartId)->trashed())->toBeTrue();

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import DateTimeInput from '@/Components/Admin/DateTimeInput.vue';
 import SegmentedChoice from '@/Components/Admin/Template/SegmentedChoice.vue';
 import YesNoCheckbox from '@/Components/Admin/Template/YesNoCheckbox.vue';
@@ -34,6 +34,17 @@ const hasSelectable = computed(() => {
     const walk = (nodes: PopupMenuNode[]): boolean => nodes.some((node) => node.selectable || walk(node.children));
     return walk(props.menuTree);
 });
+
+// แบบ floating แสดงได้เฉพาะรูปภาพ — เปลี่ยนมาเป็น floating แล้วปรับทุก part เป็นรูปภาพ (ข้อความที่กรอกไว้ไม่ถูกบันทึก)
+watch(
+    () => props.form.display_type,
+    (type) => {
+        if (type === 'floating') {
+            props.form.parts.forEach((part) => (part.part_type = 'image'));
+        }
+    },
+    { immediate: true },
+);
 </script>
 
 <template>
@@ -96,10 +107,11 @@ const hasSelectable = computed(() => {
             <h2 class="text-base font-semibold text-gray-800">ข้อมูลที่แสดง</h2>
             <p class="mt-1 text-sm text-gray-500">
                 แต่ละรายการแสดงเป็น 1 สไลด์ใน Popup — ต้องมีรายการที่แสดง (ไม่ได้ซ่อน) อย่างน้อย 1 รายการ
+                <template v-if="form.display_type === 'floating'"><br />แบบ Floating แสดงได้เฉพาะรูปภาพ (รูปจะย่อให้สูงไม่เกินหน้าจอ)</template>
             </p>
 
             <div class="mt-5">
-                <PopupPartList v-model="form.parts" :languages="languages" :form-errors="errors" />
+                <PopupPartList v-model="form.parts" :languages="languages" :form-errors="errors" :image-only="form.display_type === 'floating'" />
             </div>
         </div>
 

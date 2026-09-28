@@ -63,7 +63,7 @@ export interface PopupMenuNode {
 
 export const POPUP_DISPLAY_TYPE_OPTIONS = [
     { value: 'modal', label: 'Modal', description: 'แสดงกลางจอพร้อมพื้นหลังทึบ ต้องปิดก่อนใช้งานหน้าเว็บต่อ' },
-    { value: 'floating', label: 'Floating (ลอย)', description: 'ลอยกลางจอ ไม่มีพื้นหลัง ยังใช้งานหน้าเว็บด้านหลังได้' },
+    { value: 'floating', label: 'Floating (ลอย)', description: 'รูปภาพอย่างเดียวลอยกลางจอ ไม่มีพื้นหลัง ยังใช้งานหน้าเว็บด้านหลังได้' },
 ];
 
 export const POPUP_PART_TYPE_OPTIONS: { value: PopupPartType; label: string }[] = [

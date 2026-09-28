@@ -64,7 +64,7 @@ function makePopup(array $attributes = [], ?array $parts = null, array $menuIds 
 
 test('a published popup set to all pages is sent with its settings and sanitized parts', function () {
     $image = FileInfo::create(['name' => 'p.jpg', 'hash_name' => 'p-hash.jpg', 'extension' => 'jpg', 'path' => 'x', 'status' => 'Y']);
-    $popup = makePopup(['display_type' => 'floating', 'slide_interval' => 7], [
+    $popup = makePopup(['display_type' => 'modal', 'slide_interval' => 7], [
         ['part_type' => 'image_text', 'image_id' => $image->id, 'text' => '<p>hi<script>alert(1)</script></p>', 'url' => '/page/item/1'],
         ['part_type' => 'image', 'image_id' => $image->id, 'url' => 'javascript:alert(1)'],
     ]);
@@ -75,7 +75,7 @@ test('a published popup set to all pages is sent with its settings and sanitized
             ->component('Front/Page/Item')
             ->has('popups', 1)
             ->where('popups.0.id', $popup->id)
-            ->where('popups.0.display_type', 'floating')
+            ->where('popups.0.display_type', 'modal')
             ->where('popups.0.slide_interval', 7)
             ->has('popups.0.parts', 2)
             ->where('popups.0.parts.0.html', fn ($html) => ! str_contains($html, 'script') && str_contains($html, 'hi'))
@@ -84,6 +84,20 @@ test('a published popup set to all pages is sent with its settings and sanitized
             ->where('popups.0.parts.1.url', null)
             ->missing('popups.0.menu_ids')
         );
+});
+
+test('a floating popup sends images only — text parts and text of image parts are dropped', function () {
+    $image = FileInfo::create(['name' => 'f.jpg', 'hash_name' => 'f-hash.jpg', 'extension' => 'jpg', 'path' => 'x', 'status' => 'Y']);
+    makePopup(['display_type' => 'floating'], [
+        ['part_type' => 'text', 'text' => '<p>text only</p>'],
+        ['part_type' => 'image_text', 'image_id' => $image->id, 'text' => '<p>caption</p>'],
+    ]);
+
+    $this->get($this->pageUrl)->assertInertia(fn (Assert $page) => $page
+        ->where('popups.0.display_type', 'floating')
+        ->has('popups.0.parts', 1)
+        ->where('popups.0.parts.0.html', null)
+        ->where('popups.0.parts.0.image.url', fn ($url) => str_contains($url, 'f-hash.jpg')));
 });
 
 test('a popup for selected menus shows only on pages of those menus', function () {

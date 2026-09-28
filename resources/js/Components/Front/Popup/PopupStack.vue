@@ -9,11 +9,10 @@ import type { FrontPopup } from '@/utils/front';
  *
  * การปิด (เก็บฝั่งเบราว์เซอร์ ห่อ try/catch เพราะบางเบราว์เซอร์/โหมดส่วนตัวใช้ storage ไม่ได้):
  * - "ไม่แสดงวันนี้อีก" → localStorage `front.popup.dismiss.{id}` = วันที่วันนี้ (เวลาเครื่องผู้ชม) — วันถัดไปแสดงใหม่
- * - "ปิด" → sessionStorage `front.popup.closed.{id}` — ไม่เด้งซ้ำทุกครั้งที่เปลี่ยนหน้าในการเข้าชมครั้งเดียวกัน
+ * - "ปิด" → ปิดเฉพาะในหน้านี้ ไม่จำ — เปิดหน้าใหม่ที่เข้าเงื่อนไขก็แสดงอีก (ไม่อยากเห็นอีกให้กด "ไม่แสดงวันนี้อีก")
  * มี modal อย่างน้อย 1 รายการ = พื้นหลังทึบ 1 ชั้น + ล็อกการเลื่อนหน้า; floating ไม่มีพื้นหลังและไม่ล็อกหน้า
  */
 const DISMISS_PREFIX = 'front.popup.dismiss.';
-const CLOSED_PREFIX = 'front.popup.closed.';
 const BASE_Z = 51; // เหนือ aside (z-50) — skip link z-60 / lightbox z-70
 
 const page = usePage();
@@ -34,7 +33,7 @@ function readHidden(): Set<number> {
 
     for (const popup of popups.value) {
         try {
-            if (window.localStorage.getItem(DISMISS_PREFIX + popup.id) === today() || window.sessionStorage.getItem(CLOSED_PREFIX + popup.id) === '1') {
+            if (window.localStorage.getItem(DISMISS_PREFIX + popup.id) === today()) {
                 set.add(popup.id);
             }
         } catch {
@@ -48,18 +47,19 @@ function readHidden(): Set<number> {
 const visible = computed(() => (hidden.value === null ? [] : popups.value.filter((popup) => !hidden.value!.has(popup.id))));
 const hasModal = computed(() => visible.value.some((popup) => popup.display_type === 'modal'));
 
-function hide(popup: FrontPopup, storageKey: string, value: string, storage: 'local' | 'session'): void {
+function close(popup: FrontPopup): void {
+    hidden.value = new Set([...(hidden.value ?? []), popup.id]);
+}
+
+function dismissToday(popup: FrontPopup): void {
     try {
-        (storage === 'local' ? window.localStorage : window.sessionStorage).setItem(storageKey, value);
+        window.localStorage.setItem(DISMISS_PREFIX + popup.id, today());
     } catch {
         // เก็บไม่ได้ก็ยังปิดในหน้านี้
     }
 
-    hidden.value = new Set([...(hidden.value ?? []), popup.id]);
+    close(popup);
 }
-
-const close = (popup: FrontPopup) => hide(popup, CLOSED_PREFIX + popup.id, '1', 'session');
-const dismissToday = (popup: FrontPopup) => hide(popup, DISMISS_PREFIX + popup.id, today(), 'local');
 
 // คืนโฟกัสเดิมเมื่อ modal ปิดหมด / ย้ายโฟกัสไปรายการบนสุดถัดไปที่เป็น modal
 let returnFocus: HTMLElement | null = null;
