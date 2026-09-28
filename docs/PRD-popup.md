@@ -9,7 +9,7 @@
 |---|--------|-----------|-------|
 | 1 | Popup (หลังบ้าน) | `popup_item_info`, `popup_item_menu`, `popup_item_part`, `popup_item_part_detail` | 🟢 schema + controller/route/UI (list, add, edit) |
 | 2 | ตั้งค่าโมดูล + ล้างแคช | `sys_setting` (group = `popup`) | 🟢 ลำดับการแสดงผล + หน้าล้างแคช |
-| 3 | แสดงผลที่หน้าบ้าน | — | 🔴 ยังไม่มี |
+| 3 | แสดงผลที่หน้าบ้าน | — | 🟢 modal / floating, สไลด์, กรองตามเมนูของหน้า, ไม่แสดงวันนี้อีก |
 
 ---
 
@@ -140,11 +140,36 @@
 
 ## 3. แสดงผลที่หน้าบ้าน
 
-🔴 ยังไม่มี — จะเพิ่มในรอบถัดไป
+**ข้อมูล:** `App\Support\Front\PopupResolver`
+- `forLanguage($lang)` — popup ที่ `status = Y`, `menu_mode != none`, `publish_date <= now` และ `publish_down` ว่างหรือ `> now`
+  เรียงตาม `PopupSetting::orderBy()` (+ id ใหม่ก่อน) พร้อม part ที่ **แสดงเท่านั้น** — cache ต่อภาษาด้วย `FrontCache` (TTL สั้น
+  `front.cache.popup_ttl` = 60 วินาที เพราะขึ้นกับเวลา; บันทึก popup/part/ตั้งค่า ล้าง cache ทันทีผ่าน `FlushesFrontCache`/`Setting::forget()`)
+- part: รูปผ่าน `FrontFile::fromFileInfo()` (รูปถูกลบ/ปิด = ไม่มีรูป), ข้อความผ่าน `HtmlSanitizer::clean()` (ภาษาที่ขอยังไม่กรอก → ภาษาหลัก),
+  ลิงก์ผ่าน `FrontUrl::safeExternal()` + `withLang()` (path ภายในที่ไม่มีภาษาเติม `/{lang}`) — part ที่ไม่เหลืออะไรให้แสดงถูกตัด, popup ที่ไม่เหลือ part ถูกตัด
+- `forPage($lang, $menuId)` — popup แบบ `all` ทุกหน้า + แบบ `selected` ที่มี `$menuId` อยู่ในเมนูที่เลือก
+- `FrontController::render()` ส่ง prop **`popups`** ให้ทุกหน้าที่ใช้ FrontLayout (หน้าเพจ/หมวดหมู่/รายละเอียด/แท็กบทความ) — เมนูของหน้า =
+  ตัวสุดท้ายของ `header.activeMenuIds` (บทความที่ไม่มีเมนูของตัวเองใช้เมนูของหมวดหมู่ → เลือกเมนูหมวดหมู่ = แสดงในบทความของหมวดนั้นด้วย,
+  หน้าแท็กไม่มีเมนู = เฉพาะ popup แบบทุกหน้า) — **Intropage และหน้า error ไม่มี popup**
+
+**หน้าจอ:** `Components/Front/Popup/` — `PopupStack.vue` (วางใน `Layouts/Front/FrontLayout.vue` ผ่าน Teleport) → `PopupDialog.vue` → `PopupPart.vue`
+- ซ้อนกันตามลำดับ: รายการแรก z-index สูงสุด (อยู่บนสุด) เริ่มที่ 51 (เหนือ aside z-50)
+- **modal**: พื้นหลังทึบชั้นเดียวเมื่อมี modal อย่างน้อย 1 รายการ + ล็อกการเลื่อนหน้า, `role="dialog" aria-modal="true"`, กักโฟกัส/Esc เฉพาะรายการบนสุด,
+  คืนโฟกัสเดิมเมื่อปิดหมด; ปุ่มล่าง "ปิด และไม่แสดงวันนี้อีก" (ถ้าเปิดใช้) ก่อน "ปิด"
+- **floating**: กล่องลอยกลางจอ ไม่มีพื้นหลัง (ชั้นนอก `pointer-events-none` — หน้าเว็บด้านหลังคลิก/เลื่อนได้), dialog แบบไม่ modal ไม่ดึงโฟกัส,
+  ปุ่มปิด (X) มุมขวาบน + ลิงก์ "ไม่แสดงวันนี้อีก" ด้านล่าง (ถ้าเปิดใช้)
+- สไลด์: `useCarousel` (ค้าง `slide_interval` วินาที + เวลาเลื่อน) + `CarouselControls` (ลูกศรซ้อนบนเนื้อหา, จุด + ปุ่มหยุด/เล่นด้านล่าง),
+  เลื่อนแนวนอนด้วยความเร็ว `slide_speed` ms, สไลด์ซ้อนใน grid ช่องเดียว (ความสูงกล่อง = สไลด์ที่สูงที่สุด), สไลด์ที่ไม่แสดง `inert`;
+  prefers-reduced-motion = ไม่เลื่อนเองและไม่มี animation; มีรายการเดียวไม่แสดงตัวควบคุม
+- part: รูปกว้างตามขนาด (เต็ม / 75% / 50% / 33% กึ่งกลาง) — มีลิงก์ = รูปเป็นลิงก์, part ข้อความอย่างเดียวมีลิงก์ "อ่านต่อ"
+  (ไม่ครอบ rich text ด้วยลิงก์); คลิกลิงก์ = ปิด popup นั้น
+- **การปิด** (เก็บในเบราว์เซอร์ ห่อ try/catch): "ไม่แสดงวันนี้อีก" → `localStorage` `front.popup.dismiss.{id}` = วันที่วันนี้ (เวลาเครื่องผู้ชม, วันถัดไปแสดงใหม่);
+  "ปิด" → `sessionStorage` `front.popup.closed.{id}` (ไม่เด้งซ้ำทุกครั้งที่เปลี่ยนหน้าในการเข้าชมครั้งเดียวกัน — ปิดเบราว์เซอร์/แท็บแล้วเปิดใหม่แสดงอีก)
+- ข้อความ UI: `lang/{th,en}/front.php` คีย์ `popup` / `dont_show_today` / `close_and_dont_show_today` (+ `close`, `read_more` เดิม)
+
+**เทส:** `tests/Feature/Front/PopupTest.php`
 
 ---
 
 ## Roadmap
 
-- แสดงผลที่หน้าบ้าน (§3)
 - สถิติการแสดง/คลิก Popup (ยังไม่มีแผน)

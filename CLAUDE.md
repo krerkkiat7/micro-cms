@@ -412,7 +412,9 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   `popup_item_part`/`_part_detail` (migration `2026_10_05_000001_*`), `Admin\Popup\PopupItemController` (`admin.popup.item.*`, log `popup.item`,
   part บันทึกแบบลบแล้วสร้างใหม่ทั้งชุด), `PopupSettingController` (`admin.popup.setting.*` + หน้าล้างแคช, log `popup.setting`),
   ทะเบียนตั้งค่า `App\Support\PopupSetting` (`display_order` — รายการแรกอยู่บนสุดเมื่อซ้อนกัน), ฟอร์ม `Components/Admin/PopupForm/*`;
-  เมนูที่ระบุเลือกได้เฉพาะเมนูโมดูลเนื้อหา (`PopupItemInfo::MENU_TYPES`) ผ่าน `FrontMenuTree::adminCheckTree()`; ต้องมี part ที่แสดงอย่างน้อย 1 รายการ
+  เมนูที่ระบุเลือกได้เฉพาะเมนูโมดูลเนื้อหา (`PopupItemInfo::MENU_TYPES`) ผ่าน `FrontMenuTree::adminCheckTree()`; ต้องมี part ที่แสดงอย่างน้อย 1 รายการ.
+  หน้าบ้าน: `FrontController::render()` ส่ง prop `popups` (`App\Support\Front\PopupResolver::forPage()` — กรองตามเมนูสุดท้ายของ `activeMenuIds`,
+  Intropage/หน้า error ไม่มี) → `Components/Front/Popup/PopupStack.vue` ใน `FrontLayout.vue`; "ไม่แสดงวันนี้อีก" = localStorage, "ปิด" = sessionStorage
 
 ## ทดสอบ
 

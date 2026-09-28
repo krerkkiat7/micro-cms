@@ -17,6 +17,7 @@ return [
         'shared_ttl' => (int) env('FRONT_CACHE_SHARED_TTL', 3600),
         'content_ttl' => (int) env('FRONT_CACHE_CONTENT_TTL', 300),
         'intropage_ttl' => (int) env('FRONT_CACHE_INTROPAGE_TTL', 60),
+        'popup_ttl' => (int) env('FRONT_CACHE_POPUP_TTL', 60),
     ],
 
     /*

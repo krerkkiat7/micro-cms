@@ -101,4 +101,8 @@ return [
         503 => 'Sorry for the inconvenience. Please check back later.',
     ],
     'back_to_home' => 'Back to home',
+    // popup
+    'popup' => 'Popup',
+    'dont_show_today' => "Don't show again today",
+    'close_and_dont_show_today' => "Close and don't show again today",
 ];

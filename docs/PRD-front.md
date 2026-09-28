@@ -149,10 +149,16 @@ index (`*_item_info_id`, `action_date`); `page_item_info.view_amount` (ใหม
   `Pages/Admin/System/FrontLogAccess/Index.vue`) — เหมือนของหลังบ้าน + ตัวกรองผู้เข้าชม (บุคคล/บอท) + คอลัมน์อุปกรณ์;
   permission `system.frontlog.access` และเมนู seed ไว้แล้ว
 
+## 9.1 Popup
+
+prop `popups` ทุกหน้าที่ใช้ FrontLayout (ไม่รวม Intropage/หน้า error) กรองตามเมนูของหน้า (ตัวสุดท้ายของ `header.activeMenuIds`) —
+`App\Support\Front\PopupResolver` (cache ต่อภาษา `popup.{lang}`, TTL `front.cache.popup_ttl`) + `Components/Front/Popup/*`
+(modal/floating ซ้อนกันรายการแรกอยู่บนสุด, สไลด์, ไม่แสดงวันนี้อีก = localStorage) รายละเอียดดู [PRD-popup.md](PRD-popup.md) §3
+
 ## 10. Cache (`App\Support\Front\FrontCache`)
 
 - key `front.v{version}.*` — ล้างทั้งหมดด้วยการเพิ่ม version (ไม่ `Cache::flush()`); TTL ใน `config/front.php`
-  (shared 1 ชม. / เนื้อหา 5 นาที / intropage 60 วินาที — TTL เนื้อหาเป็นตัวกำหนดว่ารายการที่ถึง/หมดช่วงเผยแพร่ตามเวลาจะปรากฏ/หายช้าสุดกี่วินาที)
+  (shared 1 ชม. / เนื้อหา 5 นาที / intropage และ popup 60 วินาที — TTL เนื้อหาเป็นตัวกำหนดว่ารายการที่ถึง/หมดช่วงเผยแพร่ตามเวลาจะปรากฏ/หายช้าสุดกี่วินาที)
 - cache: layout ต่อภาษา, เมนูต่อภาษา, assets ของ template, intropage, โครงหน้าเพจ (+ รายการ widget), รายการหมวดหมู่ต่อหน้า, รายละเอียดบทความ
   (การเช็กสถานะเผยแพร่ของบทความ/หน้า/หมวดหมู่ query สดทุกครั้ง)
 - ล้างอัตโนมัติ: model ที่หน้าบ้านใช้ทั้งหมดใช้ trait `App\Models\Concerns\FlushesFrontCache` (saved/deleted/restored) + `Setting::forget()`
@@ -162,14 +168,14 @@ index (`*_item_info_id`, `action_date`); `page_item_info.view_amount` (ใหม
 
 - ลิงก์ "ข้ามไปยังเนื้อหาหลัก", landmark ครบ, `<html lang>` ตามภาษา (สลับภาษาโหลดหน้าเต็ม + ตั้ง lang ตอน mount), h1 หน้าละ 1 และลำดับหัวเรื่องต่อเนื่อง
 - ทุกปุ่มไอคอนมี `aria-label`, ลิงก์เปิดหน้าต่างใหม่มีข้อความแจ้ง, รูปมี alt (ตกแต่ง = `alt=""`), โฟกัสมองเห็นชัด (`:focus-visible`)
-- carousel ตาม ARIA carousel pattern + ปุ่มหยุด (2.2.2), dialog (aside/lightbox) มี focus trap/Esc/คืนโฟกัส, ลิงก์ซ้ำในการ์ดไม่อยู่ในลำดับ Tab
+- carousel ตาม ARIA carousel pattern + ปุ่มหยุด (2.2.2), dialog (aside/lightbox/popup แบบ modal) มี focus trap/Esc/คืนโฟกัส, ลิงก์ซ้ำในการ์ดไม่อยู่ในลำดับ Tab
 - prefers-reduced-motion: ปิดการเล่นอัตโนมัติ/ลด animation; ขนาดตัวอักษร + โหมดสีช่วยผู้มีปัญหาการมองเห็น
 
 ## 12. Security
 
 - rich text ผ่าน `App\Support\Front\HtmlSanitizer` (allowlist ด้วย DOMDocument — ตัด script/iframe/on*/style, ลิงก์เฉพาะ http(s)/mailto/tel/#/path,
   `_blank` ใส่ `rel="noopener noreferrer"`, h1 → h2) ก่อนส่งให้ `v-html`
-- URL ภายนอก (เมนู/banner/ปุ่ม intropage/อ่านทั้งหมด/social) ผ่าน `FrontUrl::safeExternal()` (กัน `javascript:` ฯลฯ)
+- URL ภายนอก (เมนู/banner/ปุ่ม intropage/อ่านทั้งหมด/social/popup) ผ่าน `FrontUrl::safeExternal()` (กัน `javascript:` ฯลฯ)
 - header `FrontSecurityHeaders` (nosniff, SAMEORIGIN, Referrer-Policy, Permissions-Policy) — ยังไม่ใส่ CSP (ดู roadmap)
 - หน้าบ้านไม่ส่งข้อมูลผู้ใช้/สิทธิ์/เมนูหลังบ้าน (`HandleInertiaRequests` ส่งเฉพาะ `/admin/*`) และ Ziggy ส่งเฉพาะกลุ่ม route `front`
   (`config/ziggy.php`) — ไม่เปิดเผยรายชื่อ URL หลังบ้าน
@@ -180,4 +186,5 @@ index (`*_item_info_id`, `action_date`); `page_item_info.view_amount` (ใหม
 | รอบ | ขอบเขต | สถานะ |
 |-----|--------|-------|
 | 1 — front-init | Intropage, layout จาก template, หน้าเพจ, บทความ, SEO, log_front_access, ยอดเข้าชม, cache | ✅ |
+| popup-init | Popup (modal/floating, สไลด์, ตามเมนู, ไม่แสดงวันนี้อีก) | ✅ |
 | ถัดไป | หน้าค้นหา (เปิดปุ่มค้นหาใน header), หน้าแท็ก, sitemap.xml / robots.txt, CSP (nonce), GeoIP, `log_front_action`/`log_front_login` (สมาชิก), ไฟล์เฉพาะสมาชิก (§7), รายงานยอดเข้าชมจาก `*_item_view` / ยอดคลิกจาก `banner_item_click` | 🔴 |

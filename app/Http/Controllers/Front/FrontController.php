@@ -7,6 +7,7 @@ use App\Support\ArticleSetting;
 use App\Support\Front\FrontLayoutData;
 use App\Support\Front\FrontMenuResolver;
 use App\Support\Front\FrontUrl;
+use App\Support\Front\PopupResolver;
 use App\Support\Setting;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -28,7 +29,19 @@ abstract class FrontController extends Controller
             ...$props,
             'front' => FrontLayoutData::forLanguage($lang),
             'seo' => $seo,
+            // popup ของหน้านี้ — เมนูของหน้าปัจจุบัน = ตัวสุดท้ายของ activeMenuIds (หน้าที่ไม่มีเมนูได้เฉพาะ popup แบบทุกหน้า)
+            'popups' => PopupResolver::forPage($lang, $this->currentMenuId($props)),
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $props
+     */
+    private function currentMenuId(array $props): ?int
+    {
+        $ids = $props['header']['activeMenuIds'] ?? [];
+
+        return $ids !== [] ? (int) end($ids) : null;
     }
 
     /**
