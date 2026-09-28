@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import AdminLayout from '@/Layouts/Admin/AdminLayout.vue';
+import SystemInfoCard from '@/Components/Admin/SystemInfoCard.vue';
+import type { SystemAudit } from '@/Components/Admin/SystemInfoCard.vue';
 import PageHeader from '@/Components/Admin/PageHeader.vue';
 import IntropageFormFields from '@/Components/Admin/IntropageForm/IntropageFormFields.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -59,6 +61,7 @@ const props = defineProps<{
     languages: LanguageOption[];
     fonts: string[];
     fontsUrl: string;
+    systemInfo: SystemAudit;
     can: { manage: boolean; delete: boolean };
 }>();
 
@@ -134,6 +137,8 @@ const breadcrumbs = computed(() => [
                 :initial-image-file="item.image_file"
                 :initial-vdo-file="item.vdo_file"
             />
+
+            <SystemInfoCard :audit="systemInfo" />
 
             <div v-if="can.manage || can.delete" class="flex flex-wrap items-center gap-3">
                 <PrimaryButton v-if="can.manage" type="submit" :disabled="form.processing">

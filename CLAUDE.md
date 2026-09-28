@@ -399,6 +399,10 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   และรายละเอียดบทความ (รูปหน้าปก/ปุ่มพิมพ์/ตำแหน่งแชร์). หน้าบ้าน: ค้นหา `?q=` + เรียง `?sort=` (`ArticleReader::paginateList()`/`applySort()`),
   `Components/Front/Article/ArticleListView.vue` ใช้ร่วมหน้าหมวดหมู่/แท็ก, หน้ารายละเอียดเรียงใหม่ + `ShareButtons.vue` + แท็กเป็นลิงก์,
   **หน้าใหม่ `front.article.tag` (`/{lang}/article/tag/{tag}` — ชื่อแท็ก)** ดู `docs/PRD-article.md` §3 / `docs/PRD-front.md` §5
+- **การ์ด "ข้อมูลระบบ" ในหน้าแก้ไข** (หมวดหมู่/บทความ/แท็กบทความ, หน้าเพจ, intropage, template, dialog แก้ไขเมนูหน้าบ้าน, กลุ่มผู้ใช้งาน
+  ใช้หัวข้อ "ข้อมูลกลุ่ม") — backend `App\Support\SystemInfo::audit($model, $extra)` คืนวันเวลา + ชื่อผู้สร้าง/ผู้ปรับปรุงจาก `created_by`/`updated_by`
+  (ผู้ใช้ถูกลบแสดงชื่อ + "(ถูกลบแล้ว)"; `$extra` เช่น `layout_updated_*` ของ page/template), หน้าจอ `Components/Admin/SystemInfoCard.vue`
+  (`prepend`/`append` = จำนวนบทความ/ผู้เข้าชม ฯลฯ, `bare` = ใน dialog) — หน้าแก้ไขใหม่ให้ส่ง prop `systemInfo` แล้ววางการ์ดก่อนแถวปุ่ม
 - **`log_front_access`** (ในไฟล์ log กลาง — เพิ่มหลังจากไฟล์นั้น migrate แล้ว เครื่อง dev ต้องสร้างตารางเอง/`migrate:fresh`) —
   `LogFrontAccess::record()` ทุก controller หน้าบ้าน, keep-alive `useAccessHeartbeat('front.access.ping')` scope token + session_id,
   หน้ารายการหลังบ้าน `admin.system.frontlog.access.index`

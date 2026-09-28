@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import AdminLayout from '@/Layouts/Admin/AdminLayout.vue';
+import SystemInfoCard from '@/Components/Admin/SystemInfoCard.vue';
+import type { SystemAudit } from '@/Components/Admin/SystemInfoCard.vue';
 import PageHeader from '@/Components/Admin/PageHeader.vue';
 import LangFieldGroup from '@/Components/Admin/LangFieldGroup.vue';
 import InputLabel from '@/Components/InputLabel.vue';
@@ -29,6 +31,8 @@ const props = defineProps<{
     tag: EditTag;
     details: Record<string, DetailFields>;
     languages: LanguageOption[];
+    systemInfo: SystemAudit;
+    articleCount: number;
     can: { manage: boolean; delete: boolean };
 }>();
 
@@ -94,6 +98,8 @@ const breadcrumbs = computed(() => [
                     </div>
                 </div>
             </div>
+
+            <SystemInfoCard :audit="systemInfo" :append="[{ label: 'จำนวนบทความ', value: articleCount }]" />
 
             <div v-if="can.manage || can.delete" class="flex flex-wrap items-center gap-3">
                 <PrimaryButton v-if="can.manage" type="submit" :disabled="form.processing">

@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import AdminLayout from '@/Layouts/Admin/AdminLayout.vue';
+import SystemInfoCard from '@/Components/Admin/SystemInfoCard.vue';
+import type { SystemAudit } from '@/Components/Admin/SystemInfoCard.vue';
 import PageHeader from '@/Components/Admin/PageHeader.vue';
 import ArticleCategoryFormFields from '@/Components/Admin/ArticleForm/ArticleCategoryFormFields.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -22,6 +24,8 @@ const props = defineProps<{
     category: EditCategory;
     details: Record<string, ArticleCategoryDetail>;
     languages: LanguageOption[];
+    systemInfo: SystemAudit;
+    articleCount: number;
     can: { manage: boolean; delete: boolean };
 }>();
 
@@ -73,6 +77,8 @@ const breadcrumbs = computed(() => [
 
         <form class="space-y-6" @submit.prevent="submit">
             <ArticleCategoryFormFields v-model:intro-image="introImage" :form="form" :languages="languages" />
+
+            <SystemInfoCard :audit="systemInfo" :append="[{ label: 'จำนวนบทความ', value: articleCount }]" />
 
             <div v-if="can.manage || can.delete" class="flex flex-wrap items-center gap-3">
                 <PrimaryButton v-if="can.manage" type="submit" :disabled="form.processing">

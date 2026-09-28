@@ -12,6 +12,7 @@ import LayoutDialog from '@/Components/Admin/PageLayout/LayoutDialog.vue';
 import SettingSection from '@/Components/Admin/PageLayout/widgets/SettingSection.vue';
 import PositionPicker from '@/Components/Admin/IntropageBackground/PositionPicker.vue';
 import FilePickerField from '@/Components/Admin/FileManager/FilePickerField.vue';
+import SystemInfoCard from '@/Components/Admin/SystemInfoCard.vue';
 import ArticleItemPickerDialog from './ArticleItemPickerDialog.vue';
 import PageItemPickerDialog from './PageItemPickerDialog.vue';
 import { categoryBadgeClass } from '@/utils/categoryBadge';
@@ -404,6 +405,11 @@ const dialogTitle = computed(() => (props.menu ? `แก้ไขเมนู: $
             <div class="border-t border-gray-100 pt-5">
                 <InputLabel value="สถานะ" />
                 <SearchableSelect v-model="form.status" :options="STATUS_OPTIONS" />
+            </div>
+
+            <!-- ข้อมูลระบบ — เฉพาะตอนแก้ไขเมนูที่มีอยู่แล้ว -->
+            <div v-if="menu?.system_info" class="border-t border-gray-100 pt-5">
+                <SystemInfoCard :audit="menu.system_info" bare />
             </div>
         </div>
     </LayoutDialog>

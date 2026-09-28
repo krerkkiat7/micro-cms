@@ -19,6 +19,7 @@ use App\Support\PageSpacing;
 use App\Support\PageTextStyle;
 use App\Support\PageWidget\PageWidgetRegistry;
 use App\Support\Setting;
+use App\Support\SystemInfo;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
@@ -200,6 +201,8 @@ class PageItemController extends Controller
                 $lang['code'] => $this->detailToArray($details->get($lang['code'])),
             ]),
             'languages' => $this->languageOptions(),
+            'systemInfo' => SystemInfo::audit($model, ['layout_updated' => ['layout_updated_at', 'layout_updated_by']]),
+            'viewCount' => (int) $model->view_amount,
             'can' => [
                 'manage' => $request->user()->hasPermission('page.item.manage'),
                 'delete' => $request->user()->hasPermission('page.item.delete'),

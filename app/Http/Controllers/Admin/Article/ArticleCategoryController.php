@@ -7,9 +7,11 @@ use App\Http\Requests\Admin\Article\StoreArticleCategoryRequest;
 use App\Http\Requests\Admin\Article\UpdateArticleCategoryRequest;
 use App\Models\ArticleCategoryDetail;
 use App\Models\ArticleCategoryInfo;
+use App\Models\ArticleItemInfo;
 use App\Models\LogBackAccess;
 use App\Models\LogBackAction;
 use App\Support\Setting;
+use App\Support\SystemInfo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -200,6 +202,8 @@ class ArticleCategoryController extends Controller
                 ]];
             }),
             'languages' => $this->languageOptions(),
+            'systemInfo' => SystemInfo::audit($model),
+            'articleCount' => ArticleItemInfo::query()->where('article_category_info_id', $model->id)->count(),
             'can' => [
                 'manage' => $request->user()->hasPermission('article.category.manage'),
                 'delete' => $request->user()->hasPermission('article.category.delete'),
