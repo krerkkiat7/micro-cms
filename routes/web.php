@@ -26,6 +26,7 @@ use App\Http\Controllers\AppAssetController;
 use App\Http\Controllers\Front\AccessLogController as FrontAccessLogController;
 use App\Http\Controllers\Front\Article\ArticleCategoryController as FrontArticleCategoryController;
 use App\Http\Controllers\Front\Article\ArticleItemController as FrontArticleItemController;
+use App\Http\Controllers\Front\Article\ArticleTagController as FrontArticleTagController;
 use App\Http\Controllers\Front\Banner\BannerItemController as FrontBannerItemController;
 use App\Http\Controllers\Front\FileController as FrontFileController;
 use App\Http\Controllers\Front\Intropage\IntropageController;
@@ -102,6 +103,11 @@ Route::group([
     Route::get('/article/item/{id}/{slug?}', [FrontArticleItemController::class, 'show'])
         ->whereNumber('id')
         ->name('front.article.item');
+
+    // รายการบทความตามแท็ก — {tag} = ชื่อแท็ก (ภาษาใดก็ได้) ไม่พบแท็ก/ไม่มีบทความ = แสดง "ไม่พบข้อมูล" (ไม่ใช่ 404)
+    Route::get('/article/tag/{tag}', [FrontArticleTagController::class, 'show'])
+        ->where('tag', '.+')
+        ->name('front.article.tag');
 });
 
 /*

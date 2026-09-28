@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Front;
 
 use App\Http\Controllers\Controller;
+use App\Support\ArticleSetting;
 use App\Support\Front\FrontLayoutData;
 use App\Support\Front\FrontMenuResolver;
 use App\Support\Front\FrontUrl;
 use App\Support\Setting;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -97,5 +99,23 @@ abstract class FrontController extends Controller
         $crumbs[$last]['url'] ??= $url;
 
         return $crumbs;
+    }
+
+    /**
+     * ค่า ?view / ?sort / ?page ของหน้ารายการบทความ (หมวดหมู่ / แท็ก) — ค่าที่ไม่รู้จักใช้ค่าเริ่มต้นจากตั้งค่าบทความ
+     *
+     * @param  array<string, mixed>  $listSetting  ArticleSetting::listSetting()
+     * @return array{view: string, sort: string, page: int}
+     */
+    protected function listQuery(Request $request, array $listSetting): array
+    {
+        $view = $request->query('view');
+        $sort = $request->query('sort');
+
+        return [
+            'view' => in_array($view, ['card', 'row'], true) ? $view : $listSetting['display_mode'],
+            'sort' => in_array($sort, ArticleSetting::SORTS, true) ? $sort : $listSetting['default_sort'],
+            'page' => max(1, (int) $request->query('page', 1)),
+        ];
     }
 }

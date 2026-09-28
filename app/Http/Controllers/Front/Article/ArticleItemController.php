@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Front\Article;
 use App\Http\Controllers\Front\FrontController;
 use App\Models\LogFrontAccess;
 use App\Support\AppAsset;
+use App\Support\ArticleSetting;
 use App\Support\Front\ArticleReader;
 use App\Support\Front\FrontCache;
 use App\Support\Front\FrontMenuResolver;
@@ -22,6 +23,7 @@ use Inertia\Response;
  * - ตรง /{lang}/article/item/{id}/{slug?} (front.article.item)
  * บทความต้องเผยแพร่ (status = Y, อยู่ในช่วงเผยแพร่) และไม่ถูกลบ ไม่งั้น 404 — ชื่อบทความเป็น h1, หัวข้อ part เป็น h2
  * canonical ของทั้ง 2 ทางชี้ URL เดียวกัน (ผ่านหมวดหมู่ของบทความ ถ้าหมวดหมู่เผยแพร่อยู่) กันเนื้อหาซ้ำ
+ * การแสดงรูปหน้าปก / ปุ่มพิมพ์ / ตำแหน่งปุ่มแชร์ ตามตั้งค่าบทความ (ArticleSetting::detailSetting()) — แชร์ด้วย canonical URL
  */
 class ArticleItemController extends FrontController
 {
@@ -78,10 +80,12 @@ class ArticleItemController extends FrontController
             : FrontUrl::articleItem($code, $articleId, $articleSlug);
         $canonical = $urlFor($lang, $article['slug']);
 
+        $tagNames = array_column($article['tags'], 'name');
+
         $seo = SeoMeta::make($lang, [
             'title' => $article['meta']['title'] ?: $article['title'],
             'description' => $article['meta']['description'] ?: $article['intro_text'],
-            'keywords' => $article['meta']['keywords'] ?: (implode(', ', $article['tags']) ?: null),
+            'keywords' => $article['meta']['keywords'] ?: (implode(', ', $tagNames) ?: null),
             'og_title' => $article['meta']['og_title'],
             'og_description' => $article['meta']['og_description'],
             'image' => $article['image']['url'] ?? null,
@@ -99,7 +103,7 @@ class ArticleItemController extends FrontController
                 'inLanguage' => $lang,
                 'mainEntityOfPage' => $canonical,
                 'articleSection' => $category['title'] ?? null,
-                'keywords' => $article['tags'] ?: null,
+                'keywords' => $tagNames ?: null,
                 'author' => ['@type' => 'Organization', 'name' => Setting::get('site', 'copyright_owner') ?? Setting::siteName()],
                 'publisher' => array_filter([
                     '@type' => 'Organization',
@@ -115,12 +119,9 @@ class ArticleItemController extends FrontController
         ]);
 
         return $this->render('Front/Article/Item', $lang, [
-            'article' => collect($article)->except(['meta', 'slugs', 'publish_down'])->all(),
-            'category' => $category ? [
-                'id' => $category['id'],
-                'title' => $category['title'],
-                'url' => FrontUrl::articleCategory($lang, $category['id'], $category['slug']),
-            ] : null,
+            'article' => collect($article)->except(['meta', 'slugs', 'publish_down', 'intro_text'])->all(),
+            'detailSetting' => ArticleSetting::detailSetting(),
+            'shareUrl' => $canonical,
             'header' => $header,
         ], $seo);
     }

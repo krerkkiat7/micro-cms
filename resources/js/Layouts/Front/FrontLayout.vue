@@ -57,6 +57,7 @@ onMounted(() => {
 
         <FrontHeader
             v-if="template.header.status === 'Y'"
+            class="print:hidden"
             :zone="template.header"
             :aside="template.aside"
             :active-ids="activeIds"
@@ -68,9 +69,9 @@ onMounted(() => {
         <FrontAside v-model:open="asideOpen" :zone="template.aside" :header="template.header" :active-ids="activeIds" :seo="seo" />
 
         <main id="main-content" tabindex="-1" class="flex-1 outline-none" :style="zoneBackgroundCss(template.body)">
-            <PageHero v-if="header?.hero" :hero="header.hero" />
+            <PageHero v-if="header?.hero" class="print:hidden" :hero="header.hero" />
 
-            <div v-if="header?.showBreadcrumb" class="mx-auto max-w-7xl px-4 pt-5" :class="fullWidth ? 'pb-5' : ''">
+            <div v-if="header?.showBreadcrumb" class="mx-auto max-w-7xl px-4 pt-5 print:hidden" :class="fullWidth ? 'pb-5' : ''">
                 <Breadcrumbs :items="header.breadcrumb" />
             </div>
 
@@ -82,6 +83,6 @@ onMounted(() => {
             </div>
         </main>
 
-        <FrontFooter v-if="template.footer.status === 'Y'" :zone="template.footer" />
+        <FrontFooter v-if="template.footer.status === 'Y'" class="print:hidden" :zone="template.footer" />
     </div>
 </template>
