@@ -9,7 +9,7 @@
 |---|--------|-----------|-------|
 | 1 | หมวดหมู่ป้ายโฆษณา | `banner_category_info`, `banner_category_detail` | 🟢 schema + controller/route/UI (list, add, edit) เสร็จครบ |
 | 2 | ป้ายโฆษณา | `banner_item_info`, `banner_item_detail` | 🟢 schema + controller/route/UI (list, add, edit) เสร็จครบ |
-| 3 | ตั้งค่าโมดูลป้ายโฆษณา | `sys_setting` (group = `banner`, ยังไม่มีแถวข้อมูล) | 🔴 หน้า placeholder เท่านั้น ยังไม่มีฟิลด์ตั้งค่าจริง |
+| 3 | ตั้งค่าโมดูลป้ายโฆษณา | `sys_setting` (group = `banner`, ยังไม่มีแถวข้อมูล) | 🟢 หน้าล้างแคช (ยังไม่มีฟิลด์ตั้งค่าจริง) |
 
 ---
 
@@ -166,25 +166,25 @@
 
 ## 3. ตั้งค่าโมดูลป้ายโฆษณา
 
-**สถานะ**: 🔴 **placeholder เท่านั้น** — ยังไม่มีฟิลด์ตั้งค่าจริง (ยืนยันกับผู้ใช้แล้วว่าทำ placeholder ก่อน
-เพราะยังไม่มีฟีเจอร์ฝั่งหน้าบ้านที่ต้องใช้ค่าตั้งค่านี้)
+**สถานะ**: 🟢 **หน้าล้างแคช** — ยังไม่มีฟิลด์ตั้งค่าจริง หน้าตั้งค่า (`admin.banner.setting.index`) จึงเป็นหน้าล้างแคชของโมดูลโดยตรง
+(ไม่มี `TabNav` ตั้งค่า/ล้างแคชแบบบทความ)
 
-**Controller** — `Admin\Banner\BannerSettingController` มีแค่ `index()` เช็กสิทธิ์ `banner.setting.manage` +
-`LogBackAccess::record()` แล้ว render หน้าเปล่า ๆ — **ไม่มี** `update()`/`clearcache*()` และไม่มี
-`UpdateBannerSettingRequest`
+**Controller** — `Admin\Banner\BannerSettingController`: `index()` (render หน้าล้างแคช), `clearCacheSetting()` (`Setting::forget('banner')`),
+`clearCacheFront()` (`FrontCache::forgetAll()` — ป้ายโฆษณาที่แสดงผ่าน widget Slideshow/Slideset/Grid ของหน้าเพจ), `clearCacheAll()`
+(`Setting::forget('banner')` ซึ่งล้างแคชหน้าบ้านให้ด้วย) — ทุก action เช็ก `banner.setting.manage`, log action module_code `banner.setting.cache`
 
-**หน้าจอ** — `Pages/Admin/Banner/Setting/Index.vue` แสดงข้อความ "ยังไม่มีการตั้งค่าสำหรับโมดูลนี้ในขณะนี้"
-ไม่มีฟอร์ม/`TabNav`
+**หน้าจอ** — `Pages/Admin/Banner/Setting/Index.vue` รูปแบบเดียวกับแท็บล้างแคชของตั้งค่าบทความ: กล่อง "ล้างแคชรายรายการ"
+(ตั้งค่าป้ายโฆษณา / ป้ายโฆษณาที่แสดงหน้าบ้าน) + กล่อง "ล้างแคชทั้งหมดของป้ายโฆษณา"
 
 **Permission code** (seed ไว้แล้ว) — `banner.setting.manage`
 
-**Route** — `admin.banner.setting.index` เท่านั้น (ไม่มี `update`/`clearcache*` เหมือน `article.setting`)
+**Route** — `admin.banner.setting.index` + `admin.banner.setting.clearcache.{setting,front,all}` (POST)
 
 **การลงทะเบียนแคชร่วมกับตั้งค่าระบบ** — เพิ่ม `'banner'` เข้า `App\Support\Setting::GROUPS` แล้ว (ไม่ได้เพิ่มเข้า
 `Admin\System\SettingController::OWN_GROUPS` เหมือนที่ `'article'` เองก็ไม่ได้อยู่ในนั้น) ทำให้หน้า "ล้างแคช" ของ
 ตั้งค่าระบบมีปุ่มล้างแคชกลุ่ม `banner` เพิ่มมาด้วยล่วงหน้า (ตอนนี้เป็น no-op เพราะยังไม่มีแถว `sys_setting` กลุ่มนี้)
 
-**เมื่อจะออกแบบฟิลด์ตั้งค่าจริงในอนาคต** — ให้ทำตาม pattern `Admin\Article\ArticleSettingController` ทุกจุด
+**เมื่อจะออกแบบฟิลด์ตั้งค่าจริงในอนาคต** — แยกหน้าตั้งค่า + ย้ายหน้าล้างแคชไปเป็นแท็บ ตาม pattern `Admin\Article\ArticleSettingController` ทุกจุด
 (`update()`/`clearcache()`/`clearCacheSetting()`/`clearCacheAll()`, `UpdateBannerSettingRequest`,
 `SysSetting::where('group','banner')->forceDelete()` แล้ว insert ใหม่, `Setting::forget('banner')`,
 module_code `banner.setting` / `banner.setting.cache`)
@@ -199,4 +199,5 @@ module_code `banner.setting` / `banner.setting.cache`)
 | 1 — CRUD หมวดหมู่ | controller/route/หน้า Vue list+form ตามต้นแบบ `article.category` | ✅ เสร็จ |
 | 2 — schema ป้ายโฆษณา | `banner_item_info`/`banner_item_detail` | ✅ เสร็จ |
 | 3 — CRUD ป้ายโฆษณา | controller/route/หน้า Vue list+add+edit (รูปภาพ+ลิงก์+ช่วงเวลาเผยแพร่+ลำดับ) | ✅ เสร็จ |
-| **4 — ตั้งค่าโมดูลป้ายโฆษณา** *(รอบนี้)* | หน้า `admin.banner.setting.index` แบบ placeholder + ลงทะเบียนกลุ่มแคช | 🔴 placeholder — ยังไม่มีฟิลด์ตั้งค่าจริง |
+| 4 — ตั้งค่าโมดูลป้ายโฆษณา | หน้า `admin.banner.setting.index` แบบ placeholder + ลงทะเบียนกลุ่มแคช | ✅ |
+| **5 — ปรับปรุงป้ายโฆษณา** *(รอบนี้)* | ฟอร์มหมวดหมู่/ป้ายโฆษณาจัดการ์ดใหม่ (component ร่วม `Components/Admin/BannerForm/*`), การ์ด "ข้อมูลระบบ" ในหน้าแก้ไข (จำนวนป้ายโฆษณา / จำนวนคลิก), หน้าตั้งค่า = หน้าล้างแคช | ✅ |

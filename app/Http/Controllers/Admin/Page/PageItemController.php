@@ -62,7 +62,7 @@ class PageItemController extends Controller
         ];
 
         // เรียงจากชื่อ (ภาษาหลัก) น้อยไปมากเป็นค่าเริ่มต้น
-        $sortable = ['title', 'created_at', 'status'];
+        $sortable = ['title', 'view_amount', 'created_at', 'status'];
         $sort = in_array($request->query('sort'), $sortable, true) ? $request->query('sort') : 'title';
         $direction = $request->query('direction') === 'desc' ? 'desc' : 'asc';
 
@@ -86,6 +86,7 @@ class PageItemController extends Controller
             ->through(fn (PageItemInfo $item) => [
                 'id' => $item->id,
                 'title' => $item->title,
+                'view_amount' => (int) $item->view_amount,
                 'created_at' => optional($item->created_at)->format('Y-m-d H:i:s'),
                 'status' => $item->status,
             ]);

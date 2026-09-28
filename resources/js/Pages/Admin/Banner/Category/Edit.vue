@@ -1,25 +1,17 @@
 <script setup lang="ts">
 import AdminLayout from '@/Layouts/Admin/AdminLayout.vue';
 import PageHeader from '@/Components/Admin/PageHeader.vue';
-import LangFieldGroup from '@/Components/Admin/LangFieldGroup.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import InputError from '@/Components/InputError.vue';
-import TextInput from '@/Components/TextInput.vue';
-import Textarea from '@/Components/Textarea.vue';
-import SearchableSelect from '@/Components/SearchableSelect.vue';
+import BannerCategoryFormFields from '@/Components/Admin/BannerForm/BannerCategoryFormFields.vue';
+import SystemInfoCard from '@/Components/Admin/SystemInfoCard.vue';
+import type { SystemAudit } from '@/Components/Admin/SystemInfoCard.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { Save, Trash2 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
-import { STATUS_OPTIONS } from '@/utils/options';
+import type { BannerCategoryFormData, BannerDetail } from '@/utils/bannerForm';
 import type { LanguageOption } from '@/types';
-
-interface DetailFields {
-    title: string;
-    intro_text: string;
-}
 
 interface EditCategory {
     id: number;
@@ -28,19 +20,17 @@ interface EditCategory {
 
 const props = defineProps<{
     category: EditCategory;
-    details: Record<string, DetailFields>;
+    details: Record<string, BannerDetail>;
     languages: LanguageOption[];
+    systemInfo: SystemAudit;
+    bannerCount: number;
     can: { manage: boolean; delete: boolean };
 }>();
 
-const form = useForm({
+const form = useForm<BannerCategoryFormData>({
     status: props.category.status,
-    detail: { ...props.details } as Record<string, DetailFields>,
+    detail: { ...props.details },
 });
-
-function detailError(lang: string, field: string): string | undefined {
-    return (form.errors as Record<string, string>)[`detail.${lang}.${field}`];
-}
 
 function submit() {
     form.put(route('admin.banner.category.update', props.category.id));
@@ -76,37 +66,9 @@ const breadcrumbs = computed(() => [
         </template>
 
         <form class="space-y-6" @submit.prevent="submit">
-            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8">
-                <h2 class="text-base font-semibold text-gray-800">ข้อมูลทั่วไป</h2>
+            <BannerCategoryFormFields :form="form" :languages="languages" />
 
-                <div class="mt-5 grid gap-4 sm:grid-cols-6">
-                    <div class="sm:col-span-3">
-                        <InputLabel value="สถานะ" required />
-                        <SearchableSelect v-model="form.status" :options="STATUS_OPTIONS" />
-                        <InputError :message="form.errors.status" />
-                    </div>
-                </div>
-            </div>
-
-            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8">
-                <h2 class="text-base font-semibold text-gray-800">ข้อมูลหมวดหมู่</h2>
-
-                <div class="mt-5 space-y-4">
-                    <LangFieldGroup label="ชื่อ" :languages="languages" required>
-                        <template #default="{ lang }">
-                            <TextInput v-model="form.detail[lang.code].title" type="text" />
-                            <InputError :message="detailError(lang.code, 'title')" />
-                        </template>
-                    </LangFieldGroup>
-
-                    <LangFieldGroup label="ข้อความเกริ่นนำ" :languages="languages">
-                        <template #default="{ lang }">
-                            <Textarea v-model="form.detail[lang.code].intro_text" rows="3" />
-                            <InputError :message="detailError(lang.code, 'intro_text')" />
-                        </template>
-                    </LangFieldGroup>
-                </div>
-            </div>
+            <SystemInfoCard :audit="systemInfo" :append="[{ label: 'จำนวนป้ายโฆษณา', value: bannerCount }]" />
 
             <div v-if="can.manage || can.delete" class="flex flex-wrap items-center gap-3">
                 <PrimaryButton v-if="can.manage" type="submit" :disabled="form.processing">

@@ -199,9 +199,12 @@ Route::prefix('admin')->group(function () {
             Route::delete('/{item}', [BannerItemController::class, 'destroy'])->name('admin.banner.item.destroy');
         });
 
-        // ตั้งค่าโมดูลป้ายโฆษณา — placeholder เฉพาะ index (ยังไม่มีฟิลด์ให้บันทึก/ล้างแคชจริง)
+        // ตั้งค่าโมดูลป้ายโฆษณา — ยังไม่มีฟิลด์ตั้งค่า หน้า index จึงเป็นหน้าล้างแคช (banner.setting.manage)
         Route::prefix('banner/setting')->group(function () {
             Route::get('/', [BannerSettingController::class, 'index'])->name('admin.banner.setting.index');
+            Route::post('/clearcache/setting', [BannerSettingController::class, 'clearCacheSetting'])->name('admin.banner.setting.clearcache.setting');
+            Route::post('/clearcache/front', [BannerSettingController::class, 'clearCacheFront'])->name('admin.banner.setting.clearcache.front');
+            Route::post('/clearcache-all', [BannerSettingController::class, 'clearCacheAll'])->name('admin.banner.setting.clearcache.all');
         });
 
         // Intropage (หน้าคั่นก่อนเข้าเว็บ) — ตรวจสอบสิทธิ์ในแต่ละ method ของ IntropageItemController
