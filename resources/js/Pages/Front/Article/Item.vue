@@ -5,13 +5,13 @@ import PartList from '@/Components/Front/ContentPart/PartList.vue';
 import FrontLink from '@/Components/Front/FrontLink.vue';
 import FrontLayout from '@/Layouts/Front/FrontLayout.vue';
 import { useFront } from '@/composables/useFront';
-import { formatDate, formatNumber } from '@/utils/front';
+import { formatDateTime, formatNumber } from '@/utils/front';
 import type { ArticleDetailSetting } from '@/utils/articleSetting';
 import type { FrontFileData, FrontPart, PageHeaderData, SeoData } from '@/utils/front';
 
 /**
  * รายละเอียดบทความ (front.article.item / front.article.category.item) — ชื่อบทความเป็น h1, หัวข้อของแต่ละ part เป็น h2
- * ลำดับ: หัวเรื่อง → วันที่เผยแพร่ + จำนวนเข้าชม + ปุ่มพิมพ์ → รูปหน้าปก → แชร์ (บน) → เนื้อหา → แชร์ (ล่าง) → แท็ก
+ * ลำดับ: หัวเรื่อง → วันที่และเวลาเผยแพร่ + จำนวนเข้าชม + ปุ่มพิมพ์ (แสดงเป็นข้อความเหมือนรายการอื่นในแถว) → รูปหน้าปก → แชร์ (บน) → เนื้อหา → แชร์ (ล่าง) → แท็ก
  * ปุ่มพิมพ์ / รูปหน้าปก / ตำแหน่งแชร์ ตามตั้งค่าบทความ (detailSetting); แท็กลิงก์ไปหน้ารายการบทความตามแท็ก
  * วันที่เผยแพร่ใช้ <time datetime> (อ่านได้ทั้งคนและเครื่อง — SEO/AEO)
  */
@@ -51,7 +51,7 @@ function print(): void {
                     <span v-if="article.published_at" class="inline-flex items-center gap-1.5">
                         <CalendarDays class="size-4" aria-hidden="true" />
                         {{ t('published_on') }}
-                        <time :datetime="article.published_at">{{ formatDate(article.published_at, front.lang) }}</time>
+                        <time :datetime="article.published_at">{{ formatDateTime(article.published_at, front.lang, t('time_format')) }}</time>
                     </span>
                     <span class="inline-flex items-center gap-1.5">
                         <Eye class="size-4" aria-hidden="true" />
@@ -60,7 +60,7 @@ function print(): void {
                     <button
                         v-if="detailSetting.show_print"
                         type="button"
-                        class="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-gray-700 transition-colors hover:bg-gray-50 print:hidden"
+                        class="inline-flex cursor-pointer items-center gap-1.5 text-gray-600 transition-colors hover:text-brand-700 print:hidden"
                         @click="print"
                     >
                         <Printer class="size-4" aria-hidden="true" />

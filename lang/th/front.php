@@ -51,6 +51,7 @@ return [
     'view_row' => 'แถว',
     'no_articles' => 'ยังไม่มีบทความในหมวดหมู่นี้',
     'published_on' => 'เผยแพร่เมื่อ',
+    'time_format' => 'เวลา :time น.',
     'updated_on' => 'ปรับปรุงล่าสุด',
     'views' => 'เข้าชม',
     'views_count' => 'เข้าชม :count ครั้ง',

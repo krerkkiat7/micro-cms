@@ -71,7 +71,7 @@ onBeforeUnmount(() => clearTimeout(timer));
         </a>
         <button
             type="button"
-            class="inline-flex h-9 items-center gap-1.5 rounded-full border border-gray-300 bg-white px-3 text-sm text-gray-700 transition-colors hover:bg-gray-50"
+            class="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full border border-gray-300 bg-white px-3 text-sm text-gray-700 transition-colors hover:bg-gray-50"
             @click="copyLink"
         >
             <component :is="copied ? Check : Link2" class="size-4" :class="copied ? 'text-green-600' : ''" aria-hidden="true" />

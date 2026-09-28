@@ -50,6 +50,7 @@ return [
     'view_row' => 'Rows',
     'no_articles' => 'There are no articles in this category yet',
     'published_on' => 'Published',
+    'time_format' => ':time',
     'updated_on' => 'Last updated',
     'views' => 'Views',
     'views_count' => ':count views',
