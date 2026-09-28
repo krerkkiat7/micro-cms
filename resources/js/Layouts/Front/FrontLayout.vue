@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import Breadcrumbs from '@/Components/Front/Breadcrumbs.vue';
 import PageHero from '@/Components/Front/PageHero.vue';
+import PopupStack from '@/Components/Front/Popup/PopupStack.vue';
 import SeoHead from '@/Components/Front/SeoHead.vue';
 import FrontAside from '@/Components/Front/Template/FrontAside.vue';
 import FrontFooter from '@/Components/Front/Template/FrontFooter.vue';
@@ -84,5 +85,8 @@ onMounted(() => {
         </main>
 
         <FrontFooter v-if="template.footer.status === 'Y'" class="print:hidden" :zone="template.footer" />
+
+        <!-- popup ของหน้านี้ (prop `popups` ตามเมนูของหน้า — ดู docs/PRD-popup.md §3) -->
+        <PopupStack />
     </div>
 </template>

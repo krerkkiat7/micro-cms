@@ -117,6 +117,33 @@ export interface PageHeaderData {
     activeMenuIds: number[];
 }
 
+/** ข้อมูล 1 รายการ (1 สไลด์) ของ popup — App\Support\Front\PopupResolver */
+export interface FrontPopupPart {
+    id: number;
+    part_type: 'image_text' | 'image' | 'text';
+    image: FrontFileData | null;
+    image_size: 'full' | 'large' | 'medium' | 'small';
+    /** rich text ที่ผ่าน HtmlSanitizer แล้ว */
+    html: string | null;
+    url: string | null;
+    link_target: '_self' | '_blank';
+}
+
+/** popup ที่แสดงในหน้านี้ (prop `popups`) เรียงแล้ว — รายการแรกอยู่บนสุด */
+export interface FrontPopup {
+    id: number;
+    display_type: 'modal' | 'floating';
+    show_dismiss_today: boolean;
+    show_arrows: boolean;
+    show_dots: boolean;
+    autoplay: boolean;
+    /** เวลาที่ค้าง (วินาที) */
+    slide_interval: number;
+    /** ความเร็วการสไลด์ (มิลลิวินาที) */
+    slide_speed: number;
+    parts: FrontPopupPart[];
+}
+
 /** ไฟล์ 1 รายการ (App\Support\Front\FrontFile::fromFileInfo) */
 export interface FrontFileData {
     name: string;

@@ -47,6 +47,46 @@ final class FrontMenuTree
     }
 
     /**
+     * tree ของเมนูทั้งหมดที่ยังไม่ถูกลบ (รวมเมนูที่ปิดใช้งาน — ส่ง status ไปให้หน้าจอแสดงป้ายกำกับ) ชื่อภาษาหลัก
+     * สำหรับ checkbox tree ในหลังบ้าน (เช่น เลือกเมนูที่แสดง popup) — `selectable` = ประเภทที่อยู่ใน $selectableTypes
+     * เมนูที่พาเรนต์ถูกลบไปแล้วขึ้นเป็นระดับบนสุดแทน (ไม่หายทั้งกิ่งเหมือน forLanguage())
+     *
+     * @param  list<string>  $selectableTypes
+     * @return list<array{id: int, name: string, menu_type: string, status: string, selectable: bool, children: list<array<string, mixed>>}>
+     */
+    public static function adminCheckTree(array $selectableTypes): array
+    {
+        $menus = FrontMenuInfo::query()
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get(['id', 'parent_id', 'menu_type', 'status']);
+
+        $names = FrontMenuDetail::query()
+            ->whereIn('id', $menus->pluck('id'))
+            ->where('lang', Setting::defaultLanguage())
+            ->pluck('name', 'id');
+
+        $ids = $menus->pluck('id')->flip();
+        $byParent = $menus->groupBy(fn (FrontMenuInfo $menu) => $menu->parent_id !== null && $ids->has($menu->parent_id) ? $menu->parent_id : 0);
+
+        $build = function (int $parentId) use (&$build, $byParent, $names, $selectableTypes): array {
+            return ($byParent->get($parentId) ?? collect())
+                ->map(fn (FrontMenuInfo $menu) => [
+                    'id' => $menu->id,
+                    'name' => (string) ($names->get($menu->id) ?? ''),
+                    'menu_type' => $menu->menu_type,
+                    'status' => $menu->status,
+                    'selectable' => in_array($menu->menu_type, $selectableTypes, true),
+                    'children' => $build($menu->id),
+                ])
+                ->values()
+                ->all();
+        };
+
+        return $build(0);
+    }
+
+    /**
      * เมนูที่เปิดใช้งานทั้งหมดเรียงตาม tree แบบแบน (ชื่อภาษาหลัก + ระดับความลึก) สำหรับ dropdown เลือกเมนูเป็นลิงก์ปลายทาง —
      * `selectable` = ประเภทที่มีลิงก์ของตัวเอง (FrontMenuType::LINKABLE) เมนูหัวข้อ/ไม่กำหนดแสดงไว้ให้เห็นโครงแต่เลือกไม่ได้
      *

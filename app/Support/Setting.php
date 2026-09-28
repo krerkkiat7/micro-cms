@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class Setting
 {
-    public const GROUPS = ['site', 'contact', 'social', 'google_analytics', 'smtp', 'turnstile', 'login_back', 'article', 'banner'];
+    public const GROUPS = ['site', 'contact', 'social', 'google_analytics', 'smtp', 'turnstile', 'login_back', 'article', 'banner', 'popup'];
 
     /**
      * ค่าตั้งค่าทั้งกลุ่ม เป็น array แบบ name => value — แคชไว้ 1 วัน

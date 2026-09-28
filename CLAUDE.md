@@ -11,6 +11,7 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 ภาพรวมโมดูล/ส่วนจัดการระบบ + roadmap อยู่ที่ `docs/PRD-overview.md`
 รายละเอียดส่วนจัดการระบบ (users, สิทธิ์, เมนู, template, ประวัติ, settings, files) อยู่ที่ `docs/PRD-system.md`
 (โมดูลย่อยที่มีเอกสารแยก: `docs/PRD-system-frontmenu.md`, `docs/PRD-system-template.md`)
+โมดูล popup อยู่ที่ `docs/PRD-popup.md`
 หน้าบ้าน (front-office) อยู่ที่ `docs/PRD-front.md`
 
 ## Tech Stack
@@ -406,6 +407,14 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 - **`log_front_access`** (ในไฟล์ log กลาง — เพิ่มหลังจากไฟล์นั้น migrate แล้ว เครื่อง dev ต้องสร้างตารางเอง/`migrate:fresh`) —
   `LogFrontAccess::record()` ทุก controller หน้าบ้าน, keep-alive `useAccessHeartbeat('front.access.ping')` scope token + session_id,
   หน้ารายการหลังบ้าน `admin.system.frontlog.access.index`
+
+- **โมดูล Popup (branch `popup-init`) — ดู `docs/PRD-popup.md`** — `popup_item_info` + `popup_item_menu` (pivot เมนูหน้าบ้าน) +
+  `popup_item_part`/`_part_detail` (migration `2026_10_05_000001_*`), `Admin\Popup\PopupItemController` (`admin.popup.item.*`, log `popup.item`,
+  part บันทึกแบบลบแล้วสร้างใหม่ทั้งชุด), `PopupSettingController` (`admin.popup.setting.*` + หน้าล้างแคช, log `popup.setting`),
+  ทะเบียนตั้งค่า `App\Support\PopupSetting` (`display_order` — รายการแรกอยู่บนสุดเมื่อซ้อนกัน), ฟอร์ม `Components/Admin/PopupForm/*`;
+  เมนูที่ระบุเลือกได้เฉพาะเมนูโมดูลเนื้อหา (`PopupItemInfo::MENU_TYPES`) ผ่าน `FrontMenuTree::adminCheckTree()`; ต้องมี part ที่แสดงอย่างน้อย 1 รายการ.
+  หน้าบ้าน: `FrontController::render()` ส่ง prop `popups` (`App\Support\Front\PopupResolver::forPage()` — กรองตามเมนูสุดท้ายของ `activeMenuIds`,
+  Intropage/หน้า error ไม่มี) → `Components/Front/Popup/PopupStack.vue` ใน `FrontLayout.vue`; "ไม่แสดงวันนี้อีก" = localStorage, "ปิด" = ปิดเฉพาะหน้านี้ไม่จำ (หน้าถัดไปที่เข้าเงื่อนไขแสดงอีก); Floating = รูปภาพอย่างเดียว
 
 ## ทดสอบ
 

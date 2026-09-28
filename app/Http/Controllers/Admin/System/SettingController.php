@@ -42,6 +42,8 @@ class SettingController extends Controller
         'turnstile' => 'Turnstile',
         'login_back' => 'การเข้าสู่ระบบหลังบ้าน',
         'article' => 'โมดูลบทความ',
+        'banner' => 'โมดูลป้ายโฆษณา',
+        'popup' => 'โมดูล Popup',
     ];
 
     /**
