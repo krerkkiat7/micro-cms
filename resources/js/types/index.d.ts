@@ -152,6 +152,13 @@ export interface FrontMenuNode {
     detail: Record<string, FrontMenuDetailFields>;
     target_label: string | null;
     target_article_item_category: string | null;
+    /** วันเวลา/ผู้สร้าง-ปรับปรุง (App\Support\SystemInfo::audit) แสดงใน dialog แก้ไข */
+    system_info: {
+        created_at: string | null;
+        created_by: string | null;
+        updated_at: string | null;
+        updated_by: string | null;
+    };
     children: FrontMenuNode[];
 }
 

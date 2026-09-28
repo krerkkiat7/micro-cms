@@ -14,9 +14,10 @@
 | `/` | `front.root` | `Front\Intropage\IntropageController@root` | Intropage ของภาษาหลัก (ไม่ redirect ก่อน — canonical ชี้ `/{lang}`) |
 | `/{lang}` | `front.home` | `…IntropageController@index` | Intropage ที่เผยแพร่อยู่ — ไม่มี → redirect ไปหน้าแรกตามเมนู (`front_menu_info.is_home = Y`) ไม่มีเมนูหน้าแรก → 404 |
 | `/{lang}/page/item/{id}/{slug?}` | `front.page.item` | `Front\Page\PageItemController@show` | |
-| `/{lang}/article/category/{id}/{slug?}` | `front.article.category` | `Front\Article\ArticleCategoryController@show` | `?view=card\|row`, `?page=n` |
+| `/{lang}/article/category/{id}/{slug?}` | `front.article.category` | `Front\Article\ArticleCategoryController@show` | `?q=`, `?sort=`, `?view=card\|row`, `?page=n` |
 | `/{lang}/article/category/{id}/{article_id}/{slug?}` | `front.article.category.item` | `Front\Article\ArticleItemController@showInCategory` | ลงทะเบียนก่อน route หมวดหมู่ |
 | `/{lang}/article/item/{id}/{slug?}` | `front.article.item` | `…ArticleItemController@show` | |
+| `/{lang}/article/tag/{tag}` | `front.article.tag` | `Front\Article\ArticleTagController@show` | `{tag}` = ชื่อแท็ก (`where .+`), `?sort=`, `?view=`, `?page=` |
 | `/file/get/{hash}` · `/file/type/download/get/{hash}` · `/file/type/thumbnail/size/{size}/get/{hash}` | `front.file.*` | `Front\FileController` | ดู §7 |
 | `POST /front/access/ping` | `front.access.ping` | `Front\AccessLogController@ping` | keep-alive ของ `log_front_access` (ยกเว้น CSRF, throttle 60/นาที) |
 
@@ -73,10 +74,19 @@
 
 ## 5. บทความ
 
-- หมวดหมู่ (`Pages/Front/Article/Category.vue`): h1 ชื่อหมวดหมู่ + intro + รายละเอียด (rich text), สลับการ์ด/แถว (ค่าเริ่มต้น `sys_setting` article
-  `list_display_mode`), จำนวนต่อหน้า `list_per_page`, เรียงวันที่เผยแพร่ล่าสุด, pagination เป็นลิงก์จริง (`?page=n`, crawler ตามได้)
-- รายละเอียด (`Pages/Front/Article/Item.vue`): h1 ชื่อบทความ, วันที่ `<time datetime>`, ยอดเข้าชม, part (`Components/Front/ContentPart/PartList.vue`
-  — หัวข้อ part เป็น h2), แท็ก
+- ตั้งค่าที่หน้าบ้านใช้: `App\Support\ArticleSetting::listSetting()` / `detailSetting()` (ดู PRD-article.md §3) — prop `listSetting` / `detailSetting`
+- หมวดหมู่ (`Pages/Front/Article/Category.vue`): h1 ชื่อหมวดหมู่ + intro/รายละเอียด (เฉพาะเมื่อเปิดในตั้งค่า — ค่าเริ่มต้นซ่อน, server ส่งค่าว่างถ้าปิด)
+  แล้วต่อด้วย `Components/Front/Article/ArticleListView.vue` (ใช้ร่วมกับหน้าแท็ก): **แถวเครื่องมือเดียว** = ช่องค้นหาจากชื่อ (`?q=`, LIKE escape `%`/`_`)
+  + เรียงลำดับ (`SearchableSelect`, `?sort=` ใหม่สุด/เก่าสุด/ก–ฮ/ฮ–ก/เข้าชมมาก/น้อย) + สลับการ์ด/แถว; แถวล่าง = จำนวนทั้งหมด + หน้า x จาก y
+  + pagination (ลิงก์จริง `?page=n`). ค่าเท่าค่าเริ่มต้นของตั้งค่าไม่ใส่ใน URL; canonical ไม่รวม q/sort/view; cache key รวม sort + md5(q)
+  `ArticleListItem.vue` แสดงรูป (อัตราส่วน/cover-contain/สีพื้น/`natural` เฉพาะแถว) + จำนวนบรรทัดหัวเรื่อง/เกริ่นนำ + วันที่/ยอดเข้าชม ตามตั้งค่าของมุมมองนั้น
+- แท็ก (`Pages/Front/Article/Tag.vue`): h1 `แท็ก "ชื่อแท็ก"` (`front.tag_title`), ไม่มี intro/รายละเอียด/ค้นหา; `ArticleReader::tagIdsByName()`
+  (แท็ก status Y ที่ชื่อตรงในภาษาใดก็ได้) → `listForTags()` (เฉพาะบทความที่หมวดหมู่เผยแพร่อยู่) ไม่พบ = "ไม่พบข้อมูล" สถานะ 200
+- รายการทั้งสองแบบ query ผ่าน `ArticleReader::paginateList()` + `applySort()` ตัวเดียวกัน ลิงก์รายการไปหน้ารายละเอียดผ่านหมวดหมู่ (= canonical)
+- รายละเอียด (`Pages/Front/Article/Item.vue`) ลำดับ: h1 ชื่อบทความ → วันที่ `<time datetime>` + ยอดเข้าชม + ปุ่มพิมพ์ (`window.print()`, ถ้าเปิด)
+  → รูปหน้าปก (ถ้าเปิด) → แชร์ (บน) → part (`Components/Front/ContentPart/PartList.vue` — หัวข้อ part เป็น h2) → แชร์ (ล่าง) → แท็กเป็นลิงก์ไป `front.article.tag`
+  (hover เปลี่ยนสี). **ไม่แสดงหมวดหมู่และข้อความเกริ่นนำ** (เกริ่นนำยังใช้เป็น meta description). แชร์ = `ShareButtons.vue` (Facebook / X / LINE /
+  คัดลอกลิงก์ ด้วย canonical URL ที่ server ส่งมาเป็น `shareUrl`). ตอนพิมพ์ซ่อน header/hero/breadcrumb/footer ของ layout + ปุ่มแชร์/พิมพ์ (`print:hidden`)
 - part: ข้อความ (rich text ผ่าน `HtmlSanitizer`), รูปเดี่ยว (alignment/size/caption), กลุ่มรูป **ครบ 7 รูปแบบ** (`PartImages.vue` — thumbnail carousel,
   multi-item carousel, grid + lightbox, full-width slider, masonry, justified, stacked cards; `Lightbox.vue` = modal dialog + คีย์บอร์ด), วิดีโอ
   (ไฟล์ / YouTube youtube-nocookie), เอกสาร (ดาวน์โหลด + ขนาด + ตัวอย่าง PDF) — ไม่เพิ่ม library

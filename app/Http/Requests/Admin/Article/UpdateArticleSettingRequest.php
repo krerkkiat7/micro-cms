@@ -2,21 +2,19 @@
 
 namespace App\Http\Requests\Admin\Article;
 
+use App\Support\ArticleSetting;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdateArticleSettingRequest extends FormRequest
 {
     /**
+     * ทะเบียนคีย์/rules อยู่ที่ ArticleSetting (คีย์ที่ไม่อยู่ในนี้จะหายตอนบันทึก เพราะ controller ลบทั้งกลุ่มแล้ว insert ใหม่)
+     *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
-        return [
-            // กลุ่ม "รายการบทความ"
-            'list_per_page' => ['required', 'integer', 'min:1', 'max:100'],
-            'list_display_mode' => ['required', Rule::in(['card', 'row'])],
-        ];
+        return ArticleSetting::rules();
     }
 }

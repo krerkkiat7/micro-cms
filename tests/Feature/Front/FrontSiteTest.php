@@ -2,7 +2,9 @@
 
 use App\Models\ArticleCategoryDetail;
 use App\Models\ArticleCategoryInfo;
+use App\Models\ArticleItemDetail;
 use App\Models\ArticleItemInfo;
+use App\Models\ArticleTagDetail;
 use App\Models\FrontMenuInfo;
 use App\Models\IntropageItemInfo;
 use App\Models\LogFrontAccess;
@@ -175,13 +177,77 @@ test('article detail works through its category and directly', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('Front/Article/Item')
             ->where('article.id', $article->id)
-            ->where('category.id', $categoryId));
+            ->where('shareUrl', fn (string $url) => str_contains($url, "/th/article/category/{$categoryId}/{$article->id}"))
+            ->has('detailSetting')
+            ->missing('category'));
 
     $this->get("/th/article/item/{$article->id}/any-slug")->assertOk();
 
     // บทความต้องอยู่ในหมวดหมู่ที่ถูกต้อง
     $otherCategory = ArticleCategoryInfo::query()->where('id', '!=', $categoryId)->value('id');
     $this->get("/th/article/category/{$otherCategory}/{$article->id}")->assertNotFound();
+});
+
+test('article category list searches by title and sorts', function () {
+    $article = sampleArticle();
+    $categoryId = $article->article_category_info_id;
+    $title = ArticleItemDetail::where('id', $article->id)->where('lang', 'th')->value('title');
+
+    $this->get("/th/article/category/{$categoryId}?q=".urlencode($title))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('q', $title)
+            ->where('articles.data', fn ($items) => collect($items)->pluck('id')->contains($article->id)));
+
+    $this->get("/th/article/category/{$categoryId}?q=".urlencode('ไม่มีบทความชื่อนี้แน่นอน'))
+        ->assertInertia(fn (Assert $page) => $page->where('articles.total', 0));
+
+    // ค่าเริ่มต้นตามตั้งค่า / ค่าที่ไม่รู้จักใช้ค่าเริ่มต้น
+    $this->get("/th/article/category/{$categoryId}")
+        ->assertInertia(fn (Assert $page) => $page->where('sort', 'newest')->has('listSetting.card'));
+
+    $this->get("/th/article/category/{$categoryId}?sort=bogus")
+        ->assertInertia(fn (Assert $page) => $page->where('sort', 'newest'));
+
+    // ทุกรายการอยู่หน้าเดียว — ก ถึง ฮ กลับด้านต้องได้ ฮ ถึง ก (ลำดับตาม collation ของฐานข้อมูล ไม่เทียบกับ PHP)
+    SysSetting::where('group', 'article')->where('name', 'list_per_page')->update(['value' => '100']);
+    Setting::forget('article');
+
+    $titles = fn (string $sort) => collect($this->get("/th/article/category/{$categoryId}?sort={$sort}")
+        ->viewData('page')['props']['articles']['data'])->pluck('title')->all();
+
+    $asc = $titles('title_asc');
+    expect($asc)->not->toBeEmpty()
+        ->and($titles('title_desc'))->toBe(array_reverse($asc));
+});
+
+test('category intro and detail are only sent when enabled in the article settings', function () {
+    $categoryId = sampleArticle()->article_category_info_id;
+
+    $this->get("/th/article/category/{$categoryId}")
+        ->assertInertia(fn (Assert $page) => $page->where('category.intro_text', '')->where('category.detail_html', ''));
+});
+
+test('article tag page lists articles with that tag and shows no data for unknown tags', function () {
+    $article = ArticleItemInfo::query()->whereHas('tags')->whereNotNull('article_category_info_id')->orderBy('id')->firstOrFail();
+    $tag = $article->tags()->firstOrFail();
+    $name = ArticleTagDetail::where('id', $tag->id)->where('lang', 'th')->value('name');
+
+    $this->get(route('front.article.tag', ['lang' => 'th', 'tag' => $name]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Front/Article/Tag')
+            ->where('tag', $name)
+            ->where('articles.data', fn ($items) => collect($items)->pluck('id')->contains($article->id)));
+
+    $this->get('/th/article/tag/'.rawurlencode('แท็กที่ไม่มีอยู่จริง'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('articles.total', 0));
+
+    // หน้ารายละเอียดส่งแท็กเป็นลิงก์ไปหน้านี้
+    $this->get("/th/article/item/{$article->id}")
+        ->assertInertia(fn (Assert $page) => $page->where('article.tags', fn ($tags) => collect($tags)->contains(fn ($t) => $t['name'] === $name
+            && $t['url'] === route('front.article.tag', ['lang' => 'th', 'tag' => $name]))));
 });
 
 test('unpublished articles return 404', function () {

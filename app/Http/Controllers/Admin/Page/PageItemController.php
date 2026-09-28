@@ -19,6 +19,7 @@ use App\Support\PageSpacing;
 use App\Support\PageTextStyle;
 use App\Support\PageWidget\PageWidgetRegistry;
 use App\Support\Setting;
+use App\Support\SystemInfo;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
@@ -61,7 +62,7 @@ class PageItemController extends Controller
         ];
 
         // เรียงจากชื่อ (ภาษาหลัก) น้อยไปมากเป็นค่าเริ่มต้น
-        $sortable = ['title', 'created_at', 'status'];
+        $sortable = ['title', 'view_amount', 'created_at', 'status'];
         $sort = in_array($request->query('sort'), $sortable, true) ? $request->query('sort') : 'title';
         $direction = $request->query('direction') === 'desc' ? 'desc' : 'asc';
 
@@ -85,6 +86,7 @@ class PageItemController extends Controller
             ->through(fn (PageItemInfo $item) => [
                 'id' => $item->id,
                 'title' => $item->title,
+                'view_amount' => (int) $item->view_amount,
                 'created_at' => optional($item->created_at)->format('Y-m-d H:i:s'),
                 'status' => $item->status,
             ]);
@@ -200,6 +202,8 @@ class PageItemController extends Controller
                 $lang['code'] => $this->detailToArray($details->get($lang['code'])),
             ]),
             'languages' => $this->languageOptions(),
+            'systemInfo' => SystemInfo::audit($model, ['layout_updated' => ['layout_updated_at', 'layout_updated_by']]),
+            'viewCount' => (int) $model->view_amount,
             'can' => [
                 'manage' => $request->user()->hasPermission('page.item.manage'),
                 'delete' => $request->user()->hasPermission('page.item.delete'),

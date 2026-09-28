@@ -15,6 +15,7 @@ use App\Models\FileInfo;
 use App\Models\LogBackAccess;
 use App\Models\LogBackAction;
 use App\Support\Setting;
+use App\Support\SystemInfo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -214,6 +215,8 @@ class ArticleItemController extends Controller
             'tags' => $this->attachedTagChips($model),
             'languages' => $this->languageOptions(),
             'categories' => $this->categoryOptions(),
+            'systemInfo' => SystemInfo::audit($model),
+            'viewCount' => (int) $model->view_amount,
             'can' => [
                 'manage' => $request->user()->hasPermission('article.item.manage'),
                 'delete' => $request->user()->hasPermission('article.item.delete'),

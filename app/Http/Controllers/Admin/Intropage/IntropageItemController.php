@@ -13,6 +13,7 @@ use App\Models\LogBackAccess;
 use App\Models\LogBackAction;
 use App\Support\PageTextStyle;
 use App\Support\Setting;
+use App\Support\SystemInfo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -213,6 +214,7 @@ class IntropageItemController extends Controller
             'languages' => $this->languageOptions(),
             'fonts' => PageTextStyle::fontNames(),
             'fontsUrl' => PageTextStyle::fontsStylesheetUrl(),
+            'systemInfo' => SystemInfo::audit($model),
             'can' => [
                 'manage' => $request->user()->hasPermission('intropage.item.manage'),
                 'delete' => $request->user()->hasPermission('intropage.item.delete'),

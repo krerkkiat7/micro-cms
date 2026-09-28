@@ -10,6 +10,7 @@ use App\Models\ArticleItemPart;
 use App\Models\ArticleItemPartDetail;
 use App\Models\ArticleTagDetail;
 use App\Models\ArticleTagInfo;
+use App\Support\ArticleSetting;
 use App\Support\Setting;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -37,10 +38,11 @@ class ArticleSeeder extends Seeder
         // ใช้ DB::table()->upsert() ตรง ๆ ไม่ใช่ SysSetting::updateOrCreate() — sys_setting มี primary key
         // แบบ composite (group, name) ไม่มีคอลัมน์ id เอง Eloquent ที่ไม่รู้จัก key นี้จะพัง (WHERE id = ...)
         // ทันทีที่ต้อง UPDATE แถวที่มีอยู่แล้วจริง ๆ (ต่างจากตอน insert ใหม่ที่ไม่มีปัญหา จึงไม่เคยเจอตอนเทส)
-        $settings = [
-            ['group' => 'article', 'name' => 'list_per_page', 'value' => '10'],
-            ['group' => 'article', 'name' => 'list_display_mode', 'value' => 'card'],
-        ];
+        // ค่าเริ่มต้นทุกคีย์มาจาก ArticleSetting::defaults() (ทะเบียนเดียวกับฟอร์มตั้งค่า/หน้าบ้าน)
+        $settings = [];
+        foreach (ArticleSetting::defaults() as $name => $value) {
+            $settings[] = ['group' => 'article', 'name' => $name, 'value' => $value];
+        }
 
         DB::table('sys_setting')->upsert(
             array_map(fn (array $s) => $s + ['created_at' => now(), 'updated_at' => now()], $settings),

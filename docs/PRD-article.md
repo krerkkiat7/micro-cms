@@ -72,6 +72,15 @@ part ที่เกี่ยวกับรูปภาพ/เอกสาร/�
 
 ---
 
+### ลำดับการ์ดในฟอร์มเพิ่ม/แก้ไข
+
+หน้าเพิ่ม/แก้ไขใช้ component ร่วมกัน (pattern เดียวกับ `PageItemFormFields.vue` ของโมดูล page) — `useForm` อยู่ในหน้า, รูปหน้าปกผูก `v-model:intro-image`
+- หมวดหมู่ `Components/Admin/ArticleForm/ArticleCategoryFormFields.vue`: ข้อมูลหมวดหมู่ (ชื่อ + ข้อความเกริ่นนำ + รายละเอียด) → รูปภาพหน้าปกและลำดับ
+  → SEO / AEO / GEO → สถานะ
+- บทความ `Components/Admin/ArticleForm/ArticleItemFormFields.vue`: ข้อมูลบทความ (ชื่อ + ข้อความเกริ่นนำ) → การจัดกลุ่ม (แท็ก + หมวดหมู่) → รูปภาพหน้าปก
+  → เนื้อหา → SEO / AEO / GEO → การเผยแพร่ (วันที่เผยแพร่ + วันที่ปิดการเผยแพร่) → สถานะ
+- การ์ด SEO ใช้ร่วม `ArticleSeoFields.vue` แบ่งหัวข้อย่อย ลิงก์ของหน้า / การแสดงผลในผลการค้นหา / การแชร์ไปโซเชียลมีเดีย; type ฟอร์มอยู่ `utils/articleForm.ts`
+
 ## 1. หมวดหมู่บทความ
 
 **วัตถุประสงค์** — จัดกลุ่มบทความให้เลือกได้ตอนสร้าง/แก้ไขบทความ 1 ระดับ (ไม่มีหมวดหมู่ย่อย)
@@ -320,12 +329,38 @@ log action module_code = `article.tag`
 
 **Permission code** — `article.setting.manage` ตัวเดียว ใช้ทั้งตรวจสอบสิทธิ์เข้าหน้าและบันทึก (ไม่มี `.view` แยก)
 
-**กลุ่ม "รายการบทความ"** (ตอนนี้มีกลุ่มเดียว เพิ่มกลุ่มอื่นได้ในอนาคต):
+**ทะเบียนคีย์ที่เดียว** — `App\Support\ArticleSetting` (`defaults()` / `rules()` / `all()` = ค่าที่บันทึกไว้ทับค่าเริ่มต้น,
+ค่าที่ไม่ผ่าน rules ใช้ค่าเริ่มต้น / `listSetting()` + `detailSetting()` = รูปแบบที่หน้าบ้านใช้) — `UpdateArticleSettingRequest`,
+`ArticleSettingController@index` และ `ArticleSeeder` อ่านจากที่นี่ทั้งหมด; ตัวเลือกฝั่งหน้าจออยู่ `resources/js/utils/articleSetting.ts`
+(ค่าต้องตรงกัน). เพิ่มคีย์ใหม่ = `defaults()` + `rules()` + ฟอร์ม `Setting/Index.vue`
+(controller ลบทั้งกลุ่มแล้ว insert ใหม่ คีย์ที่ไม่อยู่ใน rules จะหาย)
+
+**กลุ่ม "รายการบทความ"** (ใช้ทั้งหน้ารายการของหมวดหมู่และของแท็ก):
 
 | ชื่อ (sys_setting.name) | ชนิด | ค่าเริ่มต้น | หมายเหตุ |
 |--------------------------|------|-------------|----------|
+| `list_show_category_intro` | `Y` \| `N` | `N` | แสดงข้อความเกริ่นนำของหมวดหมู่ (ปิด = server ไม่ส่งค่าไปหน้าบ้าน) |
+| `list_show_category_detail` | `Y` \| `N` | `N` | แสดงรายละเอียด (rich text) ของหมวดหมู่ |
 | `list_per_page` | integer (1–100) | `10` | จำนวนรายการบทความที่แสดงต่อหน้า (หน้าบ้าน) |
-| `list_display_mode` | `card` \| `row` | `card` | รูปแบบการแสดงผลรายการบทความ — การ์ด/แถว |
+| `list_display_mode` | `card` \| `row` | `card` | รูปแบบการแสดงผลตั้งต้น — การ์ด/แถว (ผู้ชมสลับได้) |
+| `list_default_sort` | `newest` \| `oldest` \| `title_asc` \| `title_desc` \| `views_desc` \| `views_asc` | `newest` | การเรียงลำดับตั้งต้น (ผู้ชมเปลี่ยนได้) |
+| `list_show_date` / `list_show_views` | `Y` \| `N` | `Y` | แสดงวันที่เผยแพร่ / จำนวนเข้าชม ในแต่ละรายการ |
+| `card_aspect_ratio` / `row_aspect_ratio` | `16:9` \| `21:9` \| `4:3` \| `1:1` (แถวเพิ่ม `natural` = ตามขนาดของรูป) | `16:9` | อัตราส่วนรูปภาพ — `natural` ไม่ครอป ไม่มีประเภทการแสดงรูป/สีพื้นหลัง |
+| `card_image_fit` / `row_image_fit` | `cover` \| `contain` | `cover` | ประเภทการแสดงรูปภาพ |
+| `card_image_background` / `row_image_background` | สี hex / `transparent` | `#F3F4F6` | สีพื้นหลังของรูป (แสดงในฟอร์มเฉพาะเมื่อ contain) |
+| `card_title_lines` / `row_title_lines` | 1–3 | `1` | จำนวนบรรทัดที่แสดงหัวเรื่อง |
+| `card_intro_lines` / `row_intro_lines` | 1–3 | `2` | จำนวนบรรทัดที่แสดงข้อความเกริ่นนำ |
+
+**กลุ่ม "รายละเอียดบทความ"** (อยู่ใน group `article` เดียวกัน):
+
+| ชื่อ (sys_setting.name) | ชนิด | ค่าเริ่มต้น | หมายเหตุ |
+|--------------------------|------|-------------|----------|
+| `detail_show_cover` | `Y` \| `N` | `N` | แสดงรูปภาพหน้าปกก่อนเนื้อหา |
+| `detail_show_print` | `Y` \| `N` | `N` | แสดงปุ่มพิมพ์ (ต่อจากวันที่เผยแพร่ + จำนวนเข้าชม) |
+| `detail_share_position` | `top` \| `bottom` \| `both` \| `none` | `bottom` | ตำแหน่งปุ่มแชร์ Facebook / X / LINE / คัดลอกลิงก์ |
+
+หน้าฟอร์ม: แสดง/ซ่อน = checkbox (`YesNoCheckbox`), การเรียงลำดับ = `SearchableSelect`, รูปแบบตั้งต้น/ตำแหน่งแชร์ = `SegmentedChoice`,
+กลุ่มย่อย "ส่วนหัวของหมวดหมู่" / "รายการ" / "การแสดงแบบการ์ด" / "การแสดงแบบแถว" เป็นหัวข้อ h3 ในกล่องเดียวกัน
 
 **Controller** — `Admin\Article\ArticleSettingController` (`index`/`update`/`clearcache`/`clearCacheSetting`/
 `clearCacheAll`) log action module_code = `article.setting` (บันทึก) / `article.setting.cache` (ล้างแคช)
@@ -366,12 +401,15 @@ log action module_code = `article.tag`
 | 1 — CRUD หมวดหมู่ | controller/route/หน้า Vue list+form ตามต้นแบบ `system.user` (ดู `docs/PRD-system.md` §1) | ✅ เสร็จ |
 | 2 — schema บทความ + content part + แท็ก | `article_item_*` + ตาราง part (ข้อความ/รูปภาพ/วิดีโอ/เอกสาร) + `article_tag_*` + `ArticleSeeder` ตัวอย่าง | ✅ เสร็จ |
 | 3 — CRUD บทความ | controller/route/หน้า Vue list+add+edit พร้อม part editor (ลากสลับลำดับรูป/เอกสารในกลุ่มตรง ๆ, สลับลำดับ part ผ่าน dialog), `TagPicker.vue` เลือก/สร้างแท็กแบบ autocomplete, แสดง/ซ่อน part + ตัวเลือกแสดงหัวเรื่อง | ✅ เสร็จ |
-| **4 — ตั้งค่าโมดูลบทความ** *(รอบนี้)* | หน้า `admin.article.setting.index` + ล้างแคช (`sys_setting` group `article`) + ลงทะเบียนร่วมกับล้างแคชของตั้งค่าระบบ | ✅ เสร็จ |
+| 4 — ตั้งค่าโมดูลบทความ | หน้า `admin.article.setting.index` + ล้างแคช (`sys_setting` group `article`) + ลงทะเบียนร่วมกับล้างแคชของตั้งค่าระบบ | ✅ เสร็จ |
+| **5 — ปรับปรุงบทความ (branch `article-edit`)** *(รอบนี้)* | จัดฟอร์มหมวดหมู่/บทความใหม่เป็นการ์ดตามลำดับ (component ร่วม `Components/Admin/ArticleForm/*`), ตั้งค่ารายการ/รายละเอียดเพิ่ม, หน้าบ้าน: ค้นหา + เรียงลำดับ, รายละเอียดเรียงใหม่ + พิมพ์ + แชร์ + แท็กเป็นลิงก์, หน้ารายการตามแท็ก | ✅ เสร็จ |
 
 ## หน้าบ้าน (สรุป — รายละเอียดเต็มดู [PRD-front.md](PRD-front.md) §5, §8)
 
 - หมวดหมู่: `/{lang}/article/category/{id}/{slug?}` (`front.article.category`) — h1 ชื่อหมวดหมู่, การ์ด/แถวตาม `list_display_mode`
-  (ผู้ชมสลับได้ `?view=`), จำนวนต่อหน้าตาม `list_per_page`
+  (ผู้ชมสลับได้ `?view=`), จำนวนต่อหน้าตาม `list_per_page`, ค้นหาจากชื่อ `?q=`, เรียงลำดับ `?sort=` (ตั้งต้นตาม `list_default_sort`)
+- แท็ก: `/{lang}/article/tag/{tag}` (`front.article.tag`, `{tag}` = ชื่อแท็กภาษาใดก็ได้) — ตั้งค่าชุดเดียวกับรายการของหมวดหมู่
+  ไม่มีเกริ่นนำ/รายละเอียด/ช่องค้นหา, ไม่พบ = "ไม่พบข้อมูล" (200)
 - รายละเอียด: `/{lang}/article/category/{id}/{article_id}/{slug?}` (`front.article.category.item` — บทความต้องอยู่ในหมวดหมู่นั้น) และ
   `/{lang}/article/item/{id}/{slug?}` (`front.article.item`) — h1 ชื่อบทความ, หัวข้อ part h2, canonical ของทั้งสองทางชี้ URL เดียวกัน
 - slug หมวดหมู่ห้ามเป็นตัวเลขล้วน/มี `/` (validation `not_regex` ใน Store/UpdateArticleCategoryRequest) — กันชนกับ `{article_id}`

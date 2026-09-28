@@ -392,6 +392,17 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   ซ้าย/กึ่งกลาง/ขวา/เต็มแนว (`@tiptap/extension-text-align`) + ระยะห่างระหว่างบรรทัด (`utils/tiptapLineHeight.ts`, default 1.5 จาก CSS) เก็บเป็น
   style บนแท็ก block — `HtmlSanitizer` เก็บไว้เฉพาะ 2 ค่านี้ (รายการ LINE_HEIGHTS ต้องตรงกันสองฝั่ง); CSS เนื้อหา `.rich-text-content` ย้ายไป `app.css`.
   **ลิงก์หน้าบ้านไม่มีเส้นใต้ตอน hover** (เหลือแค่ cursor — เส้นใต้ที่เหลือเป็นตัวบอกสถานะ active/ภาษาปัจจุบัน/ลิงก์ในเนื้อหา rich text)
+- **โมดูลบทความรอบปรับปรุง (branch `article-edit`)** — ฟอร์มหลังบ้านหมวดหมู่/บทความเป็น component ร่วม Add/Edit
+  `Components/Admin/ArticleForm/{ArticleCategoryFormFields,ArticleItemFormFields,ArticleSeoFields}.vue` (+ `utils/articleForm.ts`) เรียงการ์ดใหม่;
+  **ตั้งค่าบทความมีทะเบียนเดียว `App\Support\ArticleSetting`** (defaults/rules/`listSetting()`/`detailSetting()` — request/controller/seeder/หน้าบ้านอ่านจากนี่,
+  ตัวเลือกฝั่งจอ `utils/articleSetting.ts`) เพิ่มแสดง/ซ่อนเกริ่นนำ-รายละเอียดหมวดหมู่, การเรียงตั้งต้น, วันที่/ยอดเข้าชม, กลุ่มการ์ด/แถว (อัตราส่วน/fit/สี/บรรทัด)
+  และรายละเอียดบทความ (รูปหน้าปก/ปุ่มพิมพ์/ตำแหน่งแชร์). หน้าบ้าน: ค้นหา `?q=` + เรียง `?sort=` (`ArticleReader::paginateList()`/`applySort()`),
+  `Components/Front/Article/ArticleListView.vue` ใช้ร่วมหน้าหมวดหมู่/แท็ก, หน้ารายละเอียดเรียงใหม่ + `ShareButtons.vue` + แท็กเป็นลิงก์,
+  **หน้าใหม่ `front.article.tag` (`/{lang}/article/tag/{tag}` — ชื่อแท็ก)** ดู `docs/PRD-article.md` §3 / `docs/PRD-front.md` §5
+- **การ์ด "ข้อมูลระบบ" ในหน้าแก้ไข** (หมวดหมู่/บทความ/แท็กบทความ, หน้าเพจ, intropage, template, dialog แก้ไขเมนูหน้าบ้าน, กลุ่มผู้ใช้งาน
+  ใช้หัวข้อ "ข้อมูลกลุ่ม") — backend `App\Support\SystemInfo::audit($model, $extra)` คืนวันเวลา + ชื่อผู้สร้าง/ผู้ปรับปรุงจาก `created_by`/`updated_by`
+  (ผู้ใช้ถูกลบแสดงชื่อ + "(ถูกลบแล้ว)"; `$extra` เช่น `layout_updated_*` ของ page/template), หน้าจอ `Components/Admin/SystemInfoCard.vue`
+  (`prepend`/`append` = จำนวนบทความ/ผู้เข้าชม ฯลฯ, `bare` = ใน dialog) — หน้าแก้ไขใหม่ให้ส่ง prop `systemInfo` แล้ววางการ์ดก่อนแถวปุ่ม
 - **`log_front_access`** (ในไฟล์ log กลาง — เพิ่มหลังจากไฟล์นั้น migrate แล้ว เครื่อง dev ต้องสร้างตารางเอง/`migrate:fresh`) —
   `LogFrontAccess::record()` ทุก controller หน้าบ้าน, keep-alive `useAccessHeartbeat('front.access.ping')` scope token + session_id,
   หน้ารายการหลังบ้าน `admin.system.frontlog.access.index`

@@ -47,11 +47,66 @@ final class ArticleReader
     }
 
     /**
-     * รายการบทความในหมวดหมู่ (แบ่งหน้า) — เรียงตามวันที่เผยแพร่ล่าสุด
+     * รายการบทความในหมวดหมู่ (แบ่งหน้า) — เรียงตาม $sort (ArticleSetting::SORTS), $search = ค้นหาจากชื่อบทความ (ว่าง = ไม่กรอง)
      *
      * @return array{data: list<array<string, mixed>>, current_page: int, last_page: int, per_page: int, total: int}
      */
-    public static function listForCategory(int $categoryId, string $lang, int $perPage, int $page): array
+    public static function listForCategory(int $categoryId, string $lang, int $perPage, int $page, string $sort = 'newest', string $search = ''): array
+    {
+        return self::paginateList(
+            fn (Builder $query) => $query->where('article_item_info.article_category_info_id', $categoryId),
+            $lang, $perPage, $page, $sort, $search,
+        );
+    }
+
+    /**
+     * id ของแท็กที่เปิดใช้งาน (status = Y, ไม่ถูกลบ) ที่มีชื่อตรงกับ $name ในภาษาใดก็ได้ — หน้ารายการตามแท็กใช้ชื่อแท็กใน URL
+     *
+     * @return list<int>
+     */
+    public static function tagIdsByName(string $name): array
+    {
+        $name = trim($name);
+
+        if ($name === '') {
+            return [];
+        }
+
+        return ArticleTagInfo::query()
+            ->where('status', 'Y')
+            ->whereHas('details', fn ($query) => $query->where('name', $name))
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    /**
+     * รายการบทความที่ติดแท็กใด ๆ ใน $tagIds (แบ่งหน้า) — เฉพาะบทความที่หมวดหมู่เผยแพร่อยู่ (ลิงก์ไปหน้ารายละเอียดผ่านหมวดหมู่ได้)
+     *
+     * @param  list<int>  $tagIds
+     * @return array{data: list<array<string, mixed>>, current_page: int, last_page: int, per_page: int, total: int}
+     */
+    public static function listForTags(array $tagIds, string $lang, int $perPage, int $page, string $sort = 'newest'): array
+    {
+        return self::paginateList(
+            fn (Builder $query) => $query
+                ->whereIn('article_item_info.id', fn ($sub) => $sub->select('article_item_info_id')->from('article_item_tag')->whereIn('article_tag_info_id', $tagIds ?: [0]))
+                ->whereExists(fn ($sub) => $sub->selectRaw('1')->from('article_category_info as c')
+                    ->whereColumn('c.id', 'article_item_info.article_category_info_id')
+                    ->where('c.status', 'Y')
+                    ->whereNull('c.deleted_at')),
+            $lang, $perPage, $page, $sort, '',
+        );
+    }
+
+    /**
+     * query รายการบทความที่เผยแพร่อยู่ + แบ่งหน้า ใช้ร่วมกันระหว่างรายการตามหมวดหมู่/แท็ก — $filter กำหนดขอบเขตรายการ
+     * ลิงก์ของแต่ละรายการไปหน้ารายละเอียดผ่านหมวดหมู่ของบทความ (URL เดียวกับ canonical ของหน้ารายละเอียด)
+     *
+     * @param  callable(Builder): mixed  $filter
+     * @return array{data: list<array<string, mixed>>, current_page: int, last_page: int, per_page: int, total: int}
+     */
+    private static function paginateList(callable $filter, string $lang, int $perPage, int $page, string $sort, string $search): array
     {
         $query = self::published(ArticleItemInfo::query())
             ->join('article_item_detail as d', fn ($join) => FrontLang::joinDetail($join, 'd', 'article_item_detail', 'article_item_info.id', $lang))
@@ -59,17 +114,24 @@ final class ArticleReader
                 $join->on('img.id', '=', 'article_item_info.intro_image_id')->where('img.status', 'Y')->whereNull('img.deleted_at');
             })
             ->whereNull('d.deleted_at')
-            ->where('article_item_info.article_category_info_id', $categoryId)
-            ->orderByRaw('COALESCE(article_item_info.publish_date, article_item_info.created_at) desc')
-            ->orderByDesc('article_item_info.id')
             ->select([
                 'article_item_info.id',
+                'article_item_info.article_category_info_id',
                 'article_item_info.publish_date',
                 'article_item_info.created_at',
                 'article_item_info.view_amount',
                 'd.title', 'd.intro_text', 'd.slug',
                 'img.hash_name as image',
             ]);
+
+        $filter($query);
+
+        $search = trim($search);
+        if ($search !== '') {
+            $query->where('d.title', 'like', '%'.addcslashes($search, '%_\\').'%');
+        }
+
+        self::applySort($query, $sort);
 
         /** @var LengthAwarePaginator $paginator */
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
@@ -79,7 +141,9 @@ final class ArticleReader
                 'id' => (int) $row->id,
                 'title' => (string) $row->title,
                 'intro_text' => (string) ($row->intro_text ?? ''),
-                'url' => FrontUrl::articleCategoryItem($lang, $categoryId, (int) $row->id, $row->slug),
+                'url' => $row->article_category_info_id !== null
+                    ? FrontUrl::articleCategoryItem($lang, (int) $row->article_category_info_id, (int) $row->id, $row->slug)
+                    : FrontUrl::articleItem($lang, (int) $row->id, $row->slug),
                 'image_url' => FrontFile::thumbnail($row->image, 640),
                 'date' => optional($row->publish_date ?? $row->created_at)->format('Y-m-d\TH:i:sP'),
                 'views' => (int) $row->view_amount,
@@ -89,6 +153,23 @@ final class ArticleReader
             'per_page' => $paginator->perPage(),
             'total' => $paginator->total(),
         ];
+    }
+
+    /**
+     * การเรียงลำดับตาม ArticleSetting::SORTS — ค่าที่ไม่รู้จัก = ใหม่สุด; ปิดท้ายด้วย id เสมอให้ลำดับคงที่ระหว่างหน้า
+     */
+    private static function applySort(Builder $query, string $sort): void
+    {
+        $published = 'COALESCE(article_item_info.publish_date, article_item_info.created_at)';
+
+        match ($sort) {
+            'oldest' => $query->orderByRaw("{$published} asc")->orderBy('article_item_info.id'),
+            'title_asc' => $query->orderBy('d.title')->orderByDesc('article_item_info.id'),
+            'title_desc' => $query->orderByDesc('d.title')->orderByDesc('article_item_info.id'),
+            'views_desc' => $query->orderByDesc('article_item_info.view_amount')->orderByRaw("{$published} desc")->orderByDesc('article_item_info.id'),
+            'views_asc' => $query->orderBy('article_item_info.view_amount')->orderByRaw("{$published} desc")->orderByDesc('article_item_info.id'),
+            default => $query->orderByRaw("{$published} desc")->orderByDesc('article_item_info.id'),
+        };
     }
 
     /**
@@ -121,9 +202,12 @@ final class ArticleReader
             'publish_down' => optional($article->publish_down)->format('Y-m-d H:i:s'),
             'views' => (int) $article->view_amount,
             'parts' => FrontParts::map($article->parts, $lang),
+            // แท็กลิงก์ไปหน้ารายการบทความตามแท็ก (ชื่อแท็กตามภาษาที่แสดงอยู่เป็นส่วนหนึ่งของ URL)
             'tags' => $article->tags
                 ->map(fn (ArticleTagInfo $tag) => trim((string) (FrontLang::pick($tag->details, $lang, 'name')?->name ?? '')))
                 ->filter()
+                ->unique()
+                ->map(fn (string $name) => ['name' => $name, 'url' => FrontUrl::articleTag($lang, $name)])
                 ->values()
                 ->all(),
             'meta' => self::meta($detail),

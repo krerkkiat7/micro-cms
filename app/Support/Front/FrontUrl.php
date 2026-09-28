@@ -30,6 +30,14 @@ final class FrontUrl
         return route('front.article.item', self::params(['lang' => $lang, 'id' => $id], $slug));
     }
 
+    /**
+     * รายการบทความตามแท็ก — ใช้ชื่อแท็ก (ไม่ใช่ slug) ใน URL; route รับ "/" ในชื่อได้ (where tag = .+)
+     */
+    public static function articleTag(string $lang, string $name): string
+    {
+        return route('front.article.tag', ['lang' => $lang, 'tag' => $name]);
+    }
+
     public static function home(string $lang): string
     {
         return route('front.home', ['lang' => $lang]);

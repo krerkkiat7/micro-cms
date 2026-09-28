@@ -18,6 +18,7 @@ interface Row {
     title: string | null;
     created_at: string | null;
     status: string;
+    view_amount: number;
 }
 
 const props = defineProps<{
@@ -142,6 +143,12 @@ const breadcrumbs = [
                                         <component :is="sortIcon('title')" class="size-3.5" :class="sort === 'title' ? 'text-brand-500' : 'text-gray-400'" />
                                     </button>
                                 </th>
+                                <th class="w-36 px-4 py-3 text-right font-medium">
+                                    <button type="button" class="inline-flex items-center gap-1 transition-colors hover:text-gray-700" @click="sortBy('view_amount')">
+                                        จำนวนเข้าชม
+                                        <component :is="sortIcon('view_amount')" class="size-3.5" :class="sort === 'view_amount' ? 'text-brand-500' : 'text-gray-400'" />
+                                    </button>
+                                </th>
                                 <th class="w-48 px-4 py-3 font-medium">
                                     <button type="button" class="inline-flex items-center gap-1 transition-colors hover:text-gray-700" @click="sortBy('created_at')">
                                         วันที่สร้าง
@@ -168,13 +175,14 @@ const breadcrumbs = [
                                         {{ row.title ?? '(ไม่มีชื่อ)' }}
                                     </Link>
                                 </td>
+                                <td class="w-36 px-4 py-3 text-right tabular-nums text-gray-600">{{ row.view_amount.toLocaleString('th-TH') }}</td>
                                 <td class="w-48 px-4 py-3 text-gray-600">{{ formatDate(row.created_at) }}</td>
                                 <td class="w-28 px-4 py-3">
                                     <StatusBadge :status="row.status" />
                                 </td>
                             </tr>
                             <tr v-if="items.data.length === 0">
-                                <td colspan="3" class="px-4 py-10 text-center text-gray-500">ไม่พบหน้าเพจตามเงื่อนไข</td>
+                                <td colspan="4" class="px-4 py-10 text-center text-gray-500">ไม่พบหน้าเพจตามเงื่อนไข</td>
                             </tr>
                         </tbody>
                     </table>

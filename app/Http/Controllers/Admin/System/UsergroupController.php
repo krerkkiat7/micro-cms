@@ -11,6 +11,7 @@ use App\Models\LogBackAction;
 use App\Models\SysAction;
 use App\Models\SysActionGroup;
 use App\Models\UserGroup;
+use App\Support\SystemInfo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -155,6 +156,7 @@ class UsergroupController extends Controller
                 'users_count' => $group->users_count,
                 'created_at' => $group->created_at,
             ],
+            'systemInfo' => SystemInfo::audit($group),
             'can' => [
                 'manage' => $request->user()->hasPermission('system.usergroup.manage'),
                 'delete' => $request->user()->hasPermission('system.usergroup.delete'),

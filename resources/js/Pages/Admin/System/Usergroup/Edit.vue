@@ -14,7 +14,8 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import { Save, Trash2 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import { STATUS_OPTIONS } from '@/utils/options';
-import { formatDateTime } from '@/utils/date';
+import SystemInfoCard from '@/Components/Admin/SystemInfoCard.vue';
+import type { SystemAudit } from '@/Components/Admin/SystemInfoCard.vue';
 
 interface EditGroup {
     id: number;
@@ -30,6 +31,7 @@ interface EditGroup {
 
 const props = defineProps<{
     group: EditGroup;
+    systemInfo: SystemAudit;
     can: { manage: boolean; delete: boolean; rights: boolean };
 }>();
 
@@ -83,9 +85,8 @@ const tabs = computed(() => [
 ]);
 
 const groupInfo = computed(() => [
-    { label: 'จำนวนสิทธิ์', value: String(props.group.actions_count) },
-    { label: 'จำนวนสมาชิก', value: String(props.group.users_count) },
-    { label: 'วันที่สร้าง', value: formatDateTime(props.group.created_at) },
+    { label: 'จำนวนสิทธิ์', value: props.group.actions_count },
+    { label: 'จำนวนสมาชิก', value: props.group.users_count },
 ]);
 </script>
 
@@ -151,19 +152,8 @@ const groupInfo = computed(() => [
                     </div>
                 </div>
 
-                <div
-                    class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8"
-                >
-                    <h2 class="text-base font-semibold text-gray-800">ข้อมูลกลุ่ม</h2>
-                    <dl class="mt-5 grid gap-4 sm:grid-cols-3">
-                        <div v-for="item in groupInfo" :key="item.label">
-                            <dt class="text-sm text-gray-500">{{ item.label }}</dt>
-                            <dd class="mt-0.5 text-sm font-medium text-gray-800">
-                                {{ item.value }}
-                            </dd>
-                        </div>
-                    </dl>
-                </div>
+                <!-- จำนวนสิทธิ์/สมาชิก แถวแรก แล้วตามด้วยวันเวลา + ผู้กระทำคู่กันแถวละคู่ (สร้าง / ปรับปรุงล่าสุด) -->
+                <SystemInfoCard title="ข้อมูลกลุ่ม" :audit="systemInfo" :prepend="groupInfo" />
 
                 <div class="flex flex-wrap items-center gap-3">
                     <PrimaryButton

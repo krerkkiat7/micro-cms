@@ -15,6 +15,7 @@ use App\Models\PageItemInfo;
 use App\Support\FrontMenuType;
 use App\Support\PageTextStyle;
 use App\Support\Setting;
+use App\Support\SystemInfo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,6 +26,13 @@ use Inertia\Response;
 
 class FrontMenuController extends Controller
 {
+    /**
+     * ชื่อผู้กระทำ (sys_user.id => ชื่อ) ของเมนูทั้งหมดในหน้ารายการ — เตรียมใน index() ใช้ใน menuNode()
+     *
+     * @var array<int, string>
+     */
+    private array $auditNames = [];
+
     /**
      * หน้ารายการเมนูหน้าบ้านแบบ tree
      */
@@ -50,6 +58,9 @@ class FrontMenuController extends Controller
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get();
+
+        // ชื่อผู้สร้าง/ผู้ปรับปรุงของทุกเมนูดึงครั้งเดียว (แสดงใน "ข้อมูลระบบ" ของ dialog แก้ไข)
+        $this->auditNames = SystemInfo::names([...$menus->pluck('created_by')->all(), ...$menus->pluck('updated_by')->all()]);
 
         return Inertia::render('Admin/System/FrontMenu/Index', [
             'tree' => $this->buildTree($menus),
@@ -496,6 +507,7 @@ class FrontMenuController extends Controller
         return [
             'id' => $menu->id,
             'parent_id' => $menu->parent_id,
+            'system_info' => SystemInfo::audit($menu, [], $this->auditNames),
             'menu_type' => $menu->menu_type,
             'target_article_category_id' => $menu->target_article_category_id,
             'target_article_item_id' => $menu->target_article_item_id,

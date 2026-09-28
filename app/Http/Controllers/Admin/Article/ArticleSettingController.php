@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\Article\UpdateArticleSettingRequest;
 use App\Models\LogBackAccess;
 use App\Models\LogBackAction;
 use App\Models\SysSetting;
+use App\Support\ArticleSetting;
 use App\Support\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,7 +24,8 @@ use Inertia\Response;
 class ArticleSettingController extends Controller
 {
     /**
-     * หน้าตั้งค่าโมดูลบทความ — ตอนนี้มีกลุ่มเดียว "รายการบทความ" เพิ่มกลุ่มอื่นในอนาคตได้ (ยังบันทึกร่วมฟอร์มเดียว)
+     * หน้าตั้งค่าโมดูลบทความ — กลุ่ม "รายการบทความ" (+ กลุ่มย่อยการแสดงแบบการ์ด/แถว) และ "รายละเอียดบทความ"
+     * บันทึกร่วมฟอร์มเดียว ทะเบียนคีย์/ค่าเริ่มต้นอยู่ที่ App\Support\ArticleSetting
      */
     public function index(Request $request): Response|RedirectResponse
     {
@@ -36,7 +38,8 @@ class ArticleSettingController extends Controller
         }
 
         return Inertia::render('Admin/Article/Setting/Index', [
-            'settings' => SysSetting::query()->where('group', 'article')->pluck('value', 'name'),
+            // ค่าที่บันทึกไว้ทับค่าเริ่มต้น — คีย์ที่เพิ่มทีหลัง (ยังไม่เคยบันทึก) ได้ค่าเริ่มต้นเสมอ
+            'settings' => ArticleSetting::all(),
         ]);
     }
 

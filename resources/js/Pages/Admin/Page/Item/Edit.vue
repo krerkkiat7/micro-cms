@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import AdminLayout from '@/Layouts/Admin/AdminLayout.vue';
+import SystemInfoCard from '@/Components/Admin/SystemInfoCard.vue';
+import type { SystemAudit } from '@/Components/Admin/SystemInfoCard.vue';
 import PageHeader from '@/Components/Admin/PageHeader.vue';
 import TabNav from '@/Components/Admin/TabNav.vue';
 import PageItemFormFields from '@/Components/Admin/PageItem/PageItemFormFields.vue';
@@ -29,6 +31,8 @@ const props = defineProps<{
     item: EditItem;
     details: Record<string, PageDetailFields>;
     languages: LanguageOption[];
+    systemInfo: SystemAudit;
+    viewCount: number;
     can: { manage: boolean; delete: boolean };
 }>();
 
@@ -87,6 +91,8 @@ const breadcrumbs = computed(() => [
 
             <form class="space-y-6" @submit.prevent="submit">
                 <PageItemFormFields :form="form" :languages="languages" />
+
+                <SystemInfoCard :audit="systemInfo" :append="[{ label: 'จำนวนผู้เข้าชม', value: viewCount }]" />
 
                 <div v-if="can.manage || can.delete" class="flex flex-wrap items-center gap-3">
                     <PrimaryButton v-if="can.manage" type="submit" :disabled="form.processing">

@@ -239,6 +239,20 @@ export function formatDate(value: string | null | undefined, lang: string): stri
     return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString(intlLocale(lang), { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
+/**
+ * วันที่ + เวลา (ชั่วโมง:นาที) ตามเวลาที่บันทึกไว้ฝั่ง server — อ่านตัวเลขจากสตริง ISO ตรง ๆ ไม่แปลงเป็นโซนเวลาของเบราว์เซอร์
+ * (ผู้ชมต่างประเทศเห็นเวลาเดียวกับที่ตั้งไว้ในหลังบ้าน) `timeText` = ข้อความรูปแบบเวลาตามภาษา เช่น "เวลา :time น."
+ */
+export function formatDateTime(value: string | null | undefined, lang: string, timeText = ':time'): string {
+    const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+    if (!match) return formatDate(value, lang);
+
+    const [, y, m, d, hh, mm] = match;
+    const date = new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString(intlLocale(lang), { day: 'numeric', month: 'long', year: 'numeric' });
+
+    return `${date} ${timeText.replace(':time', `${hh}:${mm}`)}`;
+}
+
 export function formatShortDate(value: string | null | undefined, lang: string): string {
     if (!value) return '';
 

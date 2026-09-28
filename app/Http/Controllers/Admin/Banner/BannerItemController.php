@@ -12,6 +12,7 @@ use App\Models\FileInfo;
 use App\Models\LogBackAccess;
 use App\Models\LogBackAction;
 use App\Support\Setting;
+use App\Support\SystemInfo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -209,6 +210,8 @@ class BannerItemController extends Controller
             ]),
             'languages' => $this->languageOptions(),
             'categories' => $this->categoryOptions(),
+            'systemInfo' => SystemInfo::audit($model),
+            'clickCount' => (int) $model->click_amount,
             'can' => [
                 'manage' => $request->user()->hasPermission('banner.item.manage'),
                 'delete' => $request->user()->hasPermission('banner.item.delete'),

@@ -26,6 +26,7 @@ use App\Http\Controllers\AppAssetController;
 use App\Http\Controllers\Front\AccessLogController as FrontAccessLogController;
 use App\Http\Controllers\Front\Article\ArticleCategoryController as FrontArticleCategoryController;
 use App\Http\Controllers\Front\Article\ArticleItemController as FrontArticleItemController;
+use App\Http\Controllers\Front\Article\ArticleTagController as FrontArticleTagController;
 use App\Http\Controllers\Front\Banner\BannerItemController as FrontBannerItemController;
 use App\Http\Controllers\Front\FileController as FrontFileController;
 use App\Http\Controllers\Front\Intropage\IntropageController;
@@ -102,6 +103,11 @@ Route::group([
     Route::get('/article/item/{id}/{slug?}', [FrontArticleItemController::class, 'show'])
         ->whereNumber('id')
         ->name('front.article.item');
+
+    // รายการบทความตามแท็ก — {tag} = ชื่อแท็ก (ภาษาใดก็ได้) ไม่พบแท็ก/ไม่มีบทความ = แสดง "ไม่พบข้อมูล" (ไม่ใช่ 404)
+    Route::get('/article/tag/{tag}', [FrontArticleTagController::class, 'show'])
+        ->where('tag', '.+')
+        ->name('front.article.tag');
 });
 
 /*
@@ -193,9 +199,12 @@ Route::prefix('admin')->group(function () {
             Route::delete('/{item}', [BannerItemController::class, 'destroy'])->name('admin.banner.item.destroy');
         });
 
-        // ตั้งค่าโมดูลป้ายโฆษณา — placeholder เฉพาะ index (ยังไม่มีฟิลด์ให้บันทึก/ล้างแคชจริง)
+        // ตั้งค่าโมดูลป้ายโฆษณา — ยังไม่มีฟิลด์ตั้งค่า หน้า index จึงเป็นหน้าล้างแคช (banner.setting.manage)
         Route::prefix('banner/setting')->group(function () {
             Route::get('/', [BannerSettingController::class, 'index'])->name('admin.banner.setting.index');
+            Route::post('/clearcache/setting', [BannerSettingController::class, 'clearCacheSetting'])->name('admin.banner.setting.clearcache.setting');
+            Route::post('/clearcache/front', [BannerSettingController::class, 'clearCacheFront'])->name('admin.banner.setting.clearcache.front');
+            Route::post('/clearcache-all', [BannerSettingController::class, 'clearCacheAll'])->name('admin.banner.setting.clearcache.all');
         });
 
         // Intropage (หน้าคั่นก่อนเข้าเว็บ) — ตรวจสอบสิทธิ์ในแต่ละ method ของ IntropageItemController

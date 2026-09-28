@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import AdminLayout from '@/Layouts/Admin/AdminLayout.vue';
+import SystemInfoCard from '@/Components/Admin/SystemInfoCard.vue';
+import type { SystemAudit } from '@/Components/Admin/SystemInfoCard.vue';
 import PageHeader from '@/Components/Admin/PageHeader.vue';
 import TabNav from '@/Components/Admin/TabNav.vue';
 import YesNoCheckbox from '@/Components/Admin/Template/YesNoCheckbox.vue';
@@ -19,6 +21,7 @@ import { templateTabs } from '@/utils/template';
  */
 const props = defineProps<{
     template: { id: number; name: string; preset: string | null; preset_label: string | null; status: string };
+    systemInfo: SystemAudit;
     can: { manage: boolean; delete: boolean };
 }>();
 
@@ -95,6 +98,8 @@ const breadcrumbs = computed(() => [
                 </div>
 
                 <InputError :message="(deleteForm.errors as Record<string, string>).delete" />
+
+                <SystemInfoCard :audit="systemInfo" />
 
                 <div class="flex flex-wrap items-center gap-3">
                     <PrimaryButton v-if="can.manage" type="submit" :disabled="form.processing">

@@ -10,6 +10,7 @@ use App\Models\ArticleTagInfo;
 use App\Models\LogBackAccess;
 use App\Models\LogBackAction;
 use App\Support\Setting;
+use App\Support\SystemInfo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -185,6 +186,8 @@ class ArticleTagController extends Controller
                 ]];
             }),
             'languages' => $this->languageOptions(),
+            'systemInfo' => SystemInfo::audit($model),
+            'articleCount' => $model->items()->count(),
             'can' => [
                 'manage' => $request->user()->hasPermission('article.item.manage'),
                 'delete' => $request->user()->hasPermission('article.item.delete'),

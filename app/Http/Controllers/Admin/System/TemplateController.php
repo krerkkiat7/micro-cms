@@ -16,6 +16,7 @@ use App\Support\AppAsset;
 use App\Support\FrontMenuTree;
 use App\Support\PageTextStyle;
 use App\Support\Setting;
+use App\Support\SystemInfo;
 use App\Support\Template\TemplatePreset;
 use App\Support\Template\TemplateZone;
 use Illuminate\Http\RedirectResponse;
@@ -171,6 +172,7 @@ class TemplateController extends Controller
                 ...$this->summary($model),
                 'preset_label' => TemplatePreset::OPTIONS[$model->preset] ?? null,
             ],
+            'systemInfo' => SystemInfo::audit($model, ['layout_updated' => ['layout_updated_at', 'layout_updated_by']]),
             'can' => [
                 'manage' => $request->user()->hasPermission('system.template.manage'),
                 'delete' => $request->user()->hasPermission('system.template.delete'),

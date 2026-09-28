@@ -7,9 +7,11 @@ use App\Http\Requests\Admin\Banner\StoreBannerCategoryRequest;
 use App\Http\Requests\Admin\Banner\UpdateBannerCategoryRequest;
 use App\Models\BannerCategoryDetail;
 use App\Models\BannerCategoryInfo;
+use App\Models\BannerItemInfo;
 use App\Models\LogBackAccess;
 use App\Models\LogBackAction;
 use App\Support\Setting;
+use App\Support\SystemInfo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -181,6 +183,8 @@ class BannerCategoryController extends Controller
                 ]];
             }),
             'languages' => $this->languageOptions(),
+            'systemInfo' => SystemInfo::audit($model),
+            'bannerCount' => BannerItemInfo::query()->where('banner_category_info_id', $model->id)->count(),
             'can' => [
                 'manage' => $request->user()->hasPermission('banner.category.manage'),
                 'delete' => $request->user()->hasPermission('banner.category.delete'),
