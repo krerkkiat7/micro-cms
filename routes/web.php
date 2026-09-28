@@ -10,6 +10,8 @@ use App\Http\Controllers\Admin\Banner\BannerSettingController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Intropage\IntropageItemController;
 use App\Http\Controllers\Admin\Page\PageItemController;
+use App\Http\Controllers\Admin\Popup\PopupItemController;
+use App\Http\Controllers\Admin\Popup\PopupSettingController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\System\BackLogAccessController;
 use App\Http\Controllers\Admin\System\BackLogActionController;
@@ -205,6 +207,28 @@ Route::prefix('admin')->group(function () {
             Route::post('/clearcache/setting', [BannerSettingController::class, 'clearCacheSetting'])->name('admin.banner.setting.clearcache.setting');
             Route::post('/clearcache/front', [BannerSettingController::class, 'clearCacheFront'])->name('admin.banner.setting.clearcache.front');
             Route::post('/clearcache-all', [BannerSettingController::class, 'clearCacheAll'])->name('admin.banner.setting.clearcache.all');
+        });
+
+        // Popup — ตรวจสอบสิทธิ์ในแต่ละ method ของ PopupItemController
+        // part และเมนูที่แสดงส่งมาพร้อมกับ store/update ไม่มี route แยก (เหมือน article_item_part)
+        Route::prefix('popup/item')->group(function () {
+            Route::get('/', [PopupItemController::class, 'index'])->name('admin.popup.item.index');
+            Route::get('/add', [PopupItemController::class, 'add'])->name('admin.popup.item.add');
+            Route::post('/', [PopupItemController::class, 'store'])->name('admin.popup.item.store');
+            Route::get('/{item}/edit', [PopupItemController::class, 'edit'])->name('admin.popup.item.edit');
+            Route::put('/{item}', [PopupItemController::class, 'update'])->name('admin.popup.item.update');
+            Route::delete('/{item}', [PopupItemController::class, 'destroy'])->name('admin.popup.item.destroy');
+        });
+
+        // ตั้งค่าโมดูล Popup + ล้างแคช — ตรวจสอบสิทธิ์ในแต่ละ method ของ PopupSettingController (popup.setting.manage)
+        Route::prefix('popup/setting')->group(function () {
+            Route::get('/', [PopupSettingController::class, 'index'])->name('admin.popup.setting.index');
+            Route::put('/', [PopupSettingController::class, 'update'])->name('admin.popup.setting.update');
+
+            Route::get('/clearcache', [PopupSettingController::class, 'clearcache'])->name('admin.popup.setting.clearcache');
+            Route::post('/clearcache/setting', [PopupSettingController::class, 'clearCacheSetting'])->name('admin.popup.setting.clearcache.setting');
+            Route::post('/clearcache/front', [PopupSettingController::class, 'clearCacheFront'])->name('admin.popup.setting.clearcache.front');
+            Route::post('/clearcache-all', [PopupSettingController::class, 'clearCacheAll'])->name('admin.popup.setting.clearcache.all');
         });
 
         // Intropage (หน้าคั่นก่อนเข้าเว็บ) — ตรวจสอบสิทธิ์ในแต่ละ method ของ IntropageItemController
