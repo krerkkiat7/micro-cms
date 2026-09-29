@@ -55,7 +55,9 @@ final class ViewCounter
         self::assertType($type);
         $request = request();
 
-        if (UserAgentParser::parse((string) $request->userAgent())['robot'] !== null) {
+        $agent = UserAgentParser::parse((string) $request->userAgent());
+
+        if ($agent['robot'] !== null) {
             return false;
         }
 
@@ -69,6 +71,10 @@ final class ViewCounter
             'lang' => $lang,
             'session_id' => $request->hasSession() ? $request->session()->getId() : null,
             'remote_ip' => ClientIp::from($request),
+            'browser' => $agent['browser'],
+            'platform' => $agent['platform'],
+            'device_type' => $agent['device_type'],
+            'referrer' => self::referrer($request->headers->get('referer')),
             'at' => now()->format('Y-m-d H:i:s'),
         ];
 
@@ -165,6 +171,11 @@ final class ViewCounter
                 'session_id' => $row['session_id'] ?? null,
                 'remote_ip' => $row['remote_ip'] ?? null,
                 'geo_ip' => null,
+                // แถวเก่าที่ค้างในคิว Redis ก่อนมีคอลัมน์เหล่านี้ไม่มีคีย์ → null
+                'browser' => isset($row['browser']) ? mb_substr((string) $row['browser'], 0, 50) : null,
+                'platform' => isset($row['platform']) ? mb_substr((string) $row['platform'], 0, 50) : null,
+                'device_type' => isset($row['device_type']) ? mb_substr((string) $row['device_type'], 0, 20) : null,
+                'referrer' => $row['referrer'] ?? null,
                 'action_date' => substr($at, 0, 10),
                 'status' => 'Y',
                 'created_by' => $row['user_id'] ?? null,
@@ -222,6 +233,14 @@ final class ViewCounter
         $session->put(self::SESSION_KEY, $viewed);
 
         return true;
+    }
+
+    /** URL ที่อ้างอิงมา (header Referer) — ตัดให้พอดีคอลัมน์ 250 ตัวอักษร, ค่าว่าง = null */
+    private static function referrer(?string $referer): ?string
+    {
+        $referer = trim((string) $referer);
+
+        return $referer !== '' ? mb_substr($referer, 0, 250) : null;
     }
 
     private static function assertType(string $type): void

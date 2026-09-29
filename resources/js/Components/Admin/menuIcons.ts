@@ -1,4 +1,5 @@
 import {
+    ChartColumn,
     Circle,
     FileText,
     FolderOpen,
@@ -27,6 +28,7 @@ import {
  * ถ้าจะเพิ่มไอคอนใหม่: import จาก lucide-vue-next แล้วใส่ในแมพนี้
  */
 const MENU_ICONS: Record<string, LucideIcon> = {
+    ChartColumn,
     Circle,
     FileText,
     FolderOpen,

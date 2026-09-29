@@ -2,25 +2,32 @@
 
 use App\Http\Controllers\Admin\Article\ArticleCategoryController;
 use App\Http\Controllers\Admin\Article\ArticleItemController;
+use App\Http\Controllers\Admin\Article\ArticleReportController;
 use App\Http\Controllers\Admin\Article\ArticleSettingController;
 use App\Http\Controllers\Admin\Article\ArticleTagController;
 use App\Http\Controllers\Admin\Banner\BannerCategoryController;
 use App\Http\Controllers\Admin\Banner\BannerItemController;
+use App\Http\Controllers\Admin\Banner\BannerReportController;
 use App\Http\Controllers\Admin\Banner\BannerSettingController;
 use App\Http\Controllers\Admin\Contactus\ContactusItemController;
 use App\Http\Controllers\Admin\Contactus\ContactusSettingController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Intropage\IntropageItemController;
 use App\Http\Controllers\Admin\Page\PageItemController;
+use App\Http\Controllers\Admin\Page\PageReportController;
 use App\Http\Controllers\Admin\Popup\PopupItemController;
 use App\Http\Controllers\Admin\Popup\PopupSettingController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\System\BackLogAccessController;
+use App\Http\Controllers\Admin\System\BackLogAccessReportController;
 use App\Http\Controllers\Admin\System\BackLogActionController;
+use App\Http\Controllers\Admin\System\BackLogActionReportController;
 use App\Http\Controllers\Admin\System\BackLogLoginController;
+use App\Http\Controllers\Admin\System\BackLogLoginReportController;
 use App\Http\Controllers\Admin\System\FileController;
 use App\Http\Controllers\Admin\System\FileServeController;
 use App\Http\Controllers\Admin\System\FrontLogAccessController;
+use App\Http\Controllers\Admin\System\FrontLogAccessReportController;
 use App\Http\Controllers\Admin\System\FrontMenuController;
 use App\Http\Controllers\Admin\System\SettingController;
 use App\Http\Controllers\Admin\System\TemplateController;
@@ -162,8 +169,21 @@ Route::prefix('admin')->group(function () {
             Route::get('/add', [ArticleItemController::class, 'add'])->name('admin.article.item.add');
             Route::post('/', [ArticleItemController::class, 'store'])->name('admin.article.item.store');
             Route::get('/{item}/edit', [ArticleItemController::class, 'edit'])->name('admin.article.item.edit');
+            Route::get('/{item}/report', [ArticleItemController::class, 'report'])->name('admin.article.item.report');
+            Route::get('/{item}/report/export', [ArticleItemController::class, 'reportExport'])->name('admin.article.item.report.export');
             Route::put('/{item}', [ArticleItemController::class, 'update'])->name('admin.article.item.update');
             Route::delete('/{item}', [ArticleItemController::class, 'destroy'])->name('admin.article.item.destroy');
+        });
+
+        // รายงานการเข้าชมบทความ (ภาพรวมทั้งโมดูล) — ตรวจสอบสิทธิ์ article.report.view ใน ArticleReportController
+        Route::prefix('article/report')->group(function () {
+            Route::get('/', [ArticleReportController::class, 'index'])->name('admin.article.report.index');
+            Route::get('/overview', [ArticleReportController::class, 'overview'])->name('admin.article.report.overview');
+            Route::get('/top', [ArticleReportController::class, 'top'])->name('admin.article.report.top');
+            Route::get('/category', [ArticleReportController::class, 'category'])->name('admin.article.report.category');
+            Route::get('/audience', [ArticleReportController::class, 'audience'])->name('admin.article.report.audience');
+            Route::get('/time', [ArticleReportController::class, 'time'])->name('admin.article.report.time');
+            Route::get('/export', [ArticleReportController::class, 'export'])->name('admin.article.report.export');
         });
 
         // แท็กบทความ — จัดการเต็มรูปแบบ + endpoint ajax ค้นหา/สร้างด่วนที่ใช้จาก TagPicker.vue
@@ -206,8 +226,21 @@ Route::prefix('admin')->group(function () {
             Route::get('/add', [BannerItemController::class, 'add'])->name('admin.banner.item.add');
             Route::post('/', [BannerItemController::class, 'store'])->name('admin.banner.item.store');
             Route::get('/{item}/edit', [BannerItemController::class, 'edit'])->name('admin.banner.item.edit');
+            Route::get('/{item}/report', [BannerItemController::class, 'report'])->name('admin.banner.item.report');
+            Route::get('/{item}/report/export', [BannerItemController::class, 'reportExport'])->name('admin.banner.item.report.export');
             Route::put('/{item}', [BannerItemController::class, 'update'])->name('admin.banner.item.update');
             Route::delete('/{item}', [BannerItemController::class, 'destroy'])->name('admin.banner.item.destroy');
+        });
+
+        // รายงานการคลิกป้ายโฆษณา (ภาพรวมทั้งโมดูล) — ตรวจสอบสิทธิ์ banner.report.view ใน BannerReportController (ฐาน ItemReportController)
+        Route::prefix('banner/report')->group(function () {
+            Route::get('/', [BannerReportController::class, 'index'])->name('admin.banner.report.index');
+            Route::get('/overview', [BannerReportController::class, 'overview'])->name('admin.banner.report.overview');
+            Route::get('/top', [BannerReportController::class, 'top'])->name('admin.banner.report.top');
+            Route::get('/category', [BannerReportController::class, 'category'])->name('admin.banner.report.category');
+            Route::get('/audience', [BannerReportController::class, 'audience'])->name('admin.banner.report.audience');
+            Route::get('/time', [BannerReportController::class, 'time'])->name('admin.banner.report.time');
+            Route::get('/export', [BannerReportController::class, 'export'])->name('admin.banner.report.export');
         });
 
         // ตั้งค่าโมดูลป้ายโฆษณา — ยังไม่มีฟิลด์ตั้งค่า หน้า index จึงเป็นหน้าล้างแคช (banner.setting.manage)
@@ -278,10 +311,22 @@ Route::prefix('admin')->group(function () {
             Route::get('/widget/preview', [PageItemController::class, 'widgetPreview'])->name('admin.page.item.widget.preview');
             Route::post('/', [PageItemController::class, 'store'])->name('admin.page.item.store');
             Route::get('/{item}/edit', [PageItemController::class, 'edit'])->name('admin.page.item.edit');
+            Route::get('/{item}/report', [PageItemController::class, 'report'])->name('admin.page.item.report');
+            Route::get('/{item}/report/export', [PageItemController::class, 'reportExport'])->name('admin.page.item.report.export');
             Route::put('/{item}', [PageItemController::class, 'update'])->name('admin.page.item.update');
             Route::delete('/{item}', [PageItemController::class, 'destroy'])->name('admin.page.item.destroy');
             Route::get('/{item}/layout', [PageItemController::class, 'layout'])->name('admin.page.item.layout');
             Route::put('/{item}/layout', [PageItemController::class, 'layoutUpdate'])->name('admin.page.item.layout.update');
+        });
+
+        // รายงานการเข้าชมหน้าเพจ (ภาพรวมทั้งโมดูล) — ตรวจสอบสิทธิ์ page.report.view ใน PageReportController (ฐาน ItemReportController)
+        Route::prefix('page/report')->group(function () {
+            Route::get('/', [PageReportController::class, 'index'])->name('admin.page.report.index');
+            Route::get('/overview', [PageReportController::class, 'overview'])->name('admin.page.report.overview');
+            Route::get('/top', [PageReportController::class, 'top'])->name('admin.page.report.top');
+            Route::get('/audience', [PageReportController::class, 'audience'])->name('admin.page.report.audience');
+            Route::get('/time', [PageReportController::class, 'time'])->name('admin.page.report.time');
+            Route::get('/export', [PageReportController::class, 'export'])->name('admin.page.report.export');
         });
 
         // จัดการผู้ใช้งานหลังบ้าน (user_type = back) — ตรวจสอบสิทธิ์ในแต่ละ method ของ UserController
@@ -342,6 +387,13 @@ Route::prefix('admin')->group(function () {
             // การเข้าชม (log_back_access)
             Route::prefix('access')->group(function () {
                 Route::get('/', [BackLogAccessController::class, 'index'])->name('admin.system.backlog.access.index');
+                // สถิติ (แท็บต่อจากหน้ารายการ) — BackLogAccessReportController (ฐาน LogStatsController::show)
+                Route::get('/overview', [BackLogAccessReportController::class, 'show'])->defaults('tab', 'overview')->name('admin.system.backlog.access.overview');
+                Route::get('/user', [BackLogAccessReportController::class, 'show'])->defaults('tab', 'user')->name('admin.system.backlog.access.user');
+                Route::get('/page', [BackLogAccessReportController::class, 'show'])->defaults('tab', 'page')->name('admin.system.backlog.access.page');
+                Route::get('/device', [BackLogAccessReportController::class, 'show'])->defaults('tab', 'device')->name('admin.system.backlog.access.device');
+                Route::get('/time', [BackLogAccessReportController::class, 'show'])->defaults('tab', 'time')->name('admin.system.backlog.access.time');
+                Route::get('/export', [BackLogAccessReportController::class, 'export'])->name('admin.system.backlog.access.export');
                 // ปลายทาง keep-alive อัปเดต last_visited (ยิงจาก navigator.sendBeacon)
                 Route::post('/ping', [BackLogAccessController::class, 'ping'])
                     ->name('admin.system.backlog.access.ping')
@@ -349,16 +401,41 @@ Route::prefix('admin')->group(function () {
             });
 
             // การเข้าสู่ระบบ (log_back_login)
-            Route::get('/login', [BackLogLoginController::class, 'index'])->name('admin.system.backlog.login.index');
+            Route::prefix('login')->group(function () {
+                Route::get('/', [BackLogLoginController::class, 'index'])->name('admin.system.backlog.login.index');
+                // สถิติ (แท็บต่อจากหน้ารายการ) — BackLogLoginReportController (ฐาน LogStatsController::show)
+                Route::get('/overview', [BackLogLoginReportController::class, 'show'])->defaults('tab', 'overview')->name('admin.system.backlog.login.overview');
+                Route::get('/account', [BackLogLoginReportController::class, 'show'])->defaults('tab', 'account')->name('admin.system.backlog.login.account');
+                Route::get('/security', [BackLogLoginReportController::class, 'show'])->defaults('tab', 'security')->name('admin.system.backlog.login.security');
+                Route::get('/time', [BackLogLoginReportController::class, 'show'])->defaults('tab', 'time')->name('admin.system.backlog.login.time');
+                Route::get('/export', [BackLogLoginReportController::class, 'export'])->name('admin.system.backlog.login.export');
+            });
 
             // การกระทำ (log_back_action)
-            Route::get('/action', [BackLogActionController::class, 'index'])->name('admin.system.backlog.action.index');
+            Route::prefix('action')->group(function () {
+                Route::get('/', [BackLogActionController::class, 'index'])->name('admin.system.backlog.action.index');
+                // สถิติ (แท็บต่อจากหน้ารายการ) — BackLogActionReportController (ฐาน LogStatsController::show)
+                Route::get('/overview', [BackLogActionReportController::class, 'show'])->defaults('tab', 'overview')->name('admin.system.backlog.action.overview');
+                Route::get('/user', [BackLogActionReportController::class, 'show'])->defaults('tab', 'user')->name('admin.system.backlog.action.user');
+                Route::get('/module', [BackLogActionReportController::class, 'show'])->defaults('tab', 'module')->name('admin.system.backlog.action.module');
+                Route::get('/time', [BackLogActionReportController::class, 'show'])->defaults('tab', 'time')->name('admin.system.backlog.action.time');
+                Route::get('/export', [BackLogActionReportController::class, 'export'])->name('admin.system.backlog.action.export');
+            });
         });
 
         // ประวัติหน้าบ้าน (log_front_*) — ตรวจสอบสิทธิ์ในแต่ละ controller
         Route::prefix('system/frontlog')->group(function () {
             // การเข้าชม (log_front_access)
-            Route::get('/access', [FrontLogAccessController::class, 'index'])->name('admin.system.frontlog.access.index');
+            Route::prefix('access')->group(function () {
+                Route::get('/', [FrontLogAccessController::class, 'index'])->name('admin.system.frontlog.access.index');
+                // สถิติ (แท็บต่อจากหน้ารายการ) — FrontLogAccessReportController (ฐาน LogStatsController::show)
+                Route::get('/overview', [FrontLogAccessReportController::class, 'show'])->defaults('tab', 'overview')->name('admin.system.frontlog.access.overview');
+                Route::get('/page', [FrontLogAccessReportController::class, 'show'])->defaults('tab', 'page')->name('admin.system.frontlog.access.page');
+                Route::get('/source', [FrontLogAccessReportController::class, 'show'])->defaults('tab', 'source')->name('admin.system.frontlog.access.source');
+                Route::get('/device', [FrontLogAccessReportController::class, 'show'])->defaults('tab', 'device')->name('admin.system.frontlog.access.device');
+                Route::get('/time', [FrontLogAccessReportController::class, 'show'])->defaults('tab', 'time')->name('admin.system.frontlog.access.time');
+                Route::get('/export', [FrontLogAccessReportController::class, 'export'])->name('admin.system.frontlog.access.export');
+            });
         });
 
         // ตั้งค่าระบบ (sys_setting) + ล้างแคช — ตรวจสอบสิทธิ์ในแต่ละ method ของ SettingController

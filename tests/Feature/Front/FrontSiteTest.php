@@ -270,6 +270,22 @@ test('article views are recorded in article_item_view', function () {
         ->and((int) $article->fresh()->view_amount)->toBe($before + 1);
 });
 
+test('article views store device, browser, platform and referrer for reports', function () {
+    $article = sampleArticle();
+
+    $this->withHeaders([
+        'User-Agent' => 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+        'Referer' => 'https://www.google.com/search?q=test',
+    ])->get("/th/article/item/{$article->id}")->assertOk();
+
+    $row = DB::table('article_item_view')->where('article_item_info_id', $article->id)->sole();
+
+    expect($row->device_type)->toBe('mobile')
+        ->and($row->browser)->not->toBeNull()
+        ->and($row->platform)->not->toBeNull()
+        ->and($row->referrer)->toBe('https://www.google.com/search?q=test');
+});
+
 test('category slugs cannot be all digits (would collide with the article route)', function () {
     actingAsUserWithPermissions(['article.category.manage', 'article.category.view']);
     $category = ArticleCategoryInfo::query()->orderBy('id')->firstOrFail();

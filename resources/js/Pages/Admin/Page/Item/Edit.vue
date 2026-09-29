@@ -70,6 +70,7 @@ const defaultTitle = computed(() => {
 const tabs = computed(() => [
     { label: 'ข้อมูลทั่วไป', href: route('admin.page.item.edit', props.item.id), active: true },
     { label: 'โครงสร้าง', href: route('admin.page.item.layout', props.item.id), active: false },
+    { label: 'รายงาน', href: route('admin.page.item.report', props.item.id), active: false },
 ]);
 
 const breadcrumbs = computed(() => [

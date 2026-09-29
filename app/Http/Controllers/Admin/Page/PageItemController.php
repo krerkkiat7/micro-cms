@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Page;
 
+use App\Http\Controllers\Admin\Concerns\RendersItemReport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Page\StorePageItemRequest;
 use App\Http\Requests\Admin\Page\UpdatePageItemLayoutRequest;
@@ -18,6 +19,7 @@ use App\Support\PageLayoutSync;
 use App\Support\PageSpacing;
 use App\Support\PageTextStyle;
 use App\Support\PageWidget\PageWidgetRegistry;
+use App\Support\Report\ItemReport;
 use App\Support\Setting;
 use App\Support\SystemInfo;
 use Illuminate\Database\Eloquent\Collection;
@@ -29,6 +31,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * จัดการหน้าเพจเดี่ยว (page_item_info + page_item_detail) และโครงสร้างการแสดงผล แถว → คอลัมน์ → widget
@@ -37,6 +40,8 @@ use Inertia\Response;
  */
 class PageItemController extends Controller
 {
+    use RendersItemReport;
+
     /** จำนวนรายการต่อหน้าที่อนุญาต (ตัวแรก = ค่าเริ่มต้น) */
     private const PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
@@ -209,6 +214,51 @@ class PageItemController extends Controller
                 'delete' => $request->user()->hasPermission('page.item.delete'),
             ],
         ]);
+    }
+
+    /**
+     * รายงานการเข้าชมของหน้าเพจนี้ — กำหนดช่วงวันที่ / รายวัน-สัปดาห์-เดือน-ปี, log module "page.item.report"
+     */
+    public function report(Request $request, string $item): Response|RedirectResponse
+    {
+        if (! $request->user()->hasPermission('page.item.view')) {
+            return redirect()->route('admin.page.item.index');
+        }
+
+        $model = PageItemInfo::find($item);
+
+        if (! $model) {
+            return redirect()->route('admin.page.item.index');
+        }
+
+        return $this->itemReportResponse($request, ItemReport::page(), $model, [
+            'item_label' => 'หน้าเพจ',
+            'list_label' => 'หน้าเพจ',
+            'tabs' => [
+                ['label' => 'ข้อมูลทั่วไป', 'route' => 'admin.page.item.edit'],
+                ['label' => 'โครงสร้าง', 'route' => 'admin.page.item.layout'],
+            ],
+            'amount' => (int) $model->view_amount,
+            'publish_date' => null,
+        ]);
+    }
+
+    /**
+     * ส่งออกข้อมูลรายงานของหน้าเพจนี้เป็น CSV (ตารางรายช่วงเวลาตามตัวกรอง)
+     */
+    public function reportExport(Request $request, string $item): StreamedResponse|RedirectResponse
+    {
+        if (! $request->user()->hasPermission('page.item.view')) {
+            return redirect()->route('admin.page.item.index');
+        }
+
+        $model = PageItemInfo::find($item);
+
+        if (! $model) {
+            return redirect()->route('admin.page.item.index');
+        }
+
+        return $this->itemReportExport($request, ItemReport::page(), $model);
     }
 
     /**

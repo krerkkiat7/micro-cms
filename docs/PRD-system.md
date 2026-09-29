@@ -366,6 +366,35 @@ proxy/CDN ก่อน (`CF-Connecting-IP` → `X-Real-IP` → `X-Forwarded-For`
 > ฝั่งอื่นที่ยังไม่ทำ: `log_*_action` ผ่าน model observer หรือ trait กลาง;
 > `log_front_access` / `log_front_login` ผ่าน middleware/auth ฝั่งหน้าบ้าน (ต้องสร้างตารางก่อน)
 
+### `log_back_access` — สถิติ (แท็บต่อจากหน้ารายการ)
+
+หน้า "ประวัติการใช้งานหลังบ้าน" มีแท็บ **รายการ** (เดิม) + **ภาพรวม / ผู้ใช้งาน / หน้าจอ / อุปกรณ์และเครือข่าย / ช่วงเวลา**
+(`BackLogAccessReportController`, route `admin.system.backlog.access.{overview,user,page,device,time,export}`, สิทธิ์ `system.backlog.access`
+เดียวกับหน้ารายการ, บันทึกเฉพาะ `LogBackAccess` เหมือนหน้าประวัติอื่น). ตัวคำนวณ `App\Support\Report\AccessLogReport` (ใช้ร่วมกับหน้าบ้าน) ต่อยอด `ViewReport`
+(FK = `user_id` → จำนวนผู้ใช้งาน) — ใช้ component รายงานกลางชุดเดียวกับรายงานบทความ (`Components/Admin/Report/*`, คำชุด `metric = access`)
++ `Components/Admin/LogStats/*` (`StatsShell`, `DurationCards`, `PageStatsTable`, `StatTiles`, `ActionTypeTable`) + `Components/Admin/BackLogAccess/UserStatsTable`,
+หน้า `Pages/Admin/System/BackLogAccess/*`
+
+**โครงร่วมของหน้าสถิติประวัติทุกตัว** — controller extends `Admin\System\LogStatsController` (กำหนด `permission()` / `tabs()` / `build()` /
+`exportRows()`), route แต่ละแท็บชี้ `show()` + `->defaults('tab', '<แท็บ>')`, ส่งออก `export?tab=`; หน้าจอใช้ `StatsShell` ที่อ่านแท็บจาก
+`LOG_STATS` ใน `resources/js/utils/logStats.ts` (แท็บแรก "รายการ" = หน้ารายการเดิม) — `ViewReport` รับคอลัมน์ที่นับ "ไม่ซ้ำ" ได้ (`uniqueColumn`,
+default `session_id`) สำหรับตารางที่ไม่มี session
+- ตัวกรอง: ช่วงวันที่ (+ปุ่มลัด) / รายวัน-สัปดาห์-เดือน-ปี / **ผู้ใช้งาน** (`user_id`, รวมผู้ใช้ที่ถูกลบ) — ส่งต่อระหว่างแท็บ; ทุกแท็บส่งออก CSV ได้
+- **เวลาที่ใช้ต่อหน้าจอ** = `last_visited - created_at` (keep-alive ทุก 45 วินาที) ตัดไม่เกิน `DURATION_CAP` = 30 นาทีต่อครั้ง (กันแท็บที่เปิดทิ้งไว้) —
+  แสดงเป็นเวลาเฉลี่ยต่อหน้าจอ / ต่อ session / เวลาใช้งานรวมโดยประมาณ
+- ผู้ใช้งาน: จำนวนเข้าหน้าจอ / เข้าระบบ (session) / วันที่ใช้งาน / หน้าจอที่ต่างกัน / IP / เวลาใช้งานรวม-เฉลี่ย / ครั้งแรก-ล่าสุด (เรียงคอลัมน์ในหน้าจอได้,
+  กดชื่อ = ดูภาพรวมเฉพาะคนนั้น); หน้าจอ: จัดกลุ่มตาม `title_name` + เวลาเฉลี่ย (กราฟเวลาเฉลี่ยนับเฉพาะหน้าที่เปิด ≥ 3 ครั้ง)
+- อุปกรณ์และเครือข่าย: อุปกรณ์/เบราว์เซอร์/OS + IP 30 อันดับ พร้อมจำนวนบัญชีต่อ IP (มากกว่า 1 บัญชี = ไฮไลต์ให้ตรวจสอบ)
+- ช่วงเวลา: heatmap วัน × ชั่วโมง, สัดส่วนในเวลาทำการ (จ.–ศ. 08:00–17:59) / นอกเวลา / เสาร์-อาทิตย์
+
+### `log_back_login` / `log_back_action` / `log_front_access` — สถิติ
+
+| ประวัติ | route (+ `.export`) / สิทธิ์ | แท็บ | ตัวคำนวณ |
+|---|---|---|---|
+| การเข้าสู่ระบบหลังบ้าน | `admin.system.backlog.login.*` / `system.backlog.login` | ภาพรวม (สำเร็จ/ไม่สำเร็จ/บล็อก/ออกจากระบบ, อัตราสำเร็จ, แนวโน้มตามผลลัพธ์, สาเหตุ) · บัญชีผู้ใช้งาน (ต่อ username, ผิดพลาด ≥ 5 ครั้ง = เตือน, username ที่ไม่เคยสำเร็จ) · ความปลอดภัย (IP ที่ผิดพลาด + จำนวนบัญชีที่ลอง — ลอง ≥ 3 บัญชี หรือผิด ≥ 10 ครั้งโดยไม่เคยสำเร็จ = น่าสงสัย) · ช่วงเวลา (heatmap สำเร็จ / ผิดพลาด + ในเวลา/นอกเวลาทำการ) | `LoginLogReport` (unique = `username`; กรองผู้ใช้งาน = `user_id` นั้น + ที่กรอกอีเมลของบัญชีนั้น) |
+| การกระทำหลังบ้าน | `admin.system.backlog.action.*` / `system.backlog.action` | ภาพรวม (แยกประเภท เพิ่ม/แก้ไข/ลบ/ดู/อื่น ๆ + แนวโน้ม) · ผู้ใช้งาน (ต่อคนแยกประเภท) · โมดูลและข้อมูล (ต่อ `module_code` + ข้อมูลที่ถูกเปลี่ยนแปลงบ่อยตาม `module_code`+`ref_id`) · ช่วงเวลา (heatmap ทั้งหมด / เฉพาะการเปลี่ยนแปลงข้อมูล) | `ActionLogReport` (unique = `user_id`) |
+| การใช้งานหน้าบ้าน | `admin.system.frontlog.access.*` / `system.frontlog.access` | ภาพรวม (+ bounce rate, หน้าต่อ session, landing page) · หน้าที่เข้าชม · แหล่งที่มาและภาษา (referrer, ภาษาของเว็บจาก `/{lang}/`, ภาษาเบราว์เซอร์) · อุปกรณ์และเครือข่าย (+ บอท) · ช่วงเวลา | `AccessLogReport` (ตัดบอทออกจากทุกสถิติ แล้วแสดงแยก; **ยังไม่มีผู้ใช้งานหน้าบ้าน** จึงไม่มีตัวกรอง/แท็บผู้ใช้งาน — เพิ่มได้เมื่อมี login หน้าบ้าน) |
+
 ### `log_back_login` — คอลัมน์ + การเก็บ (ทำแล้ว)
 
 `id`, `user_id` (bigint null — เก็บเมื่อ `success`/`logout`), `log_type` `varchar(10)` (`login`/`logout`),

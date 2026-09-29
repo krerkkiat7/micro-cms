@@ -425,6 +425,25 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   `google_map` (`api_key`, `App\Support\GoogleMap`); เมนูหน้าบ้านประเภทใหม่ `FrontMenuType::CONTACTUS` (popup/ปุ่มอ่านทั้งหมดเลือกได้);
   **เมนูที่ไม่แสดง (status N/พาเรนต์ซ่อน) ยังใช้ตั้งค่าส่วนหัวกับหน้าของตัวเอง แต่ breadcrumb = หน้าแรก > เมนูตัวเอง** (`FrontMenuResolver` โหลดทุกเมนู + flag `hidden`)
 
+- **รายงานการเข้าชมบทความ (branch `article-edit-report`) — ดู `docs/PRD-article.md` §4** — รายบทความ `admin.article.item.report` (+`.export`,
+  สิทธิ์ `article.item.view`, log `article.item.report`; คอลัมน์สุดท้ายของหน้ารายการ + แท็บในหน้าแก้ไข) และเมนูรายงาน `admin.article.report.*`
+  (สิทธิ์ `article.report.view`, แท็บ index/overview/top/category/audience/time + export, log `article.report.<แท็บ>`); ตัวคำนวณกลาง
+  `App\Support\Report\ViewReport` (นิพจน์จัดกลุ่มแยก MySQL/SQLite — เพิ่ม driver อื่นต้องเพิ่มใน `bucketExpression()`/`heatmap()`) +
+  `ItemReport` (`::article()`/`::page()`/`::banner()`). **หน้าเพจ/ป้ายโฆษณาใช้ชุดเดียวกัน** (`admin.page.item.report`/`admin.page.report.*` ไม่มีแท็บหมวดหมู่,
+  `admin.banner.item.report`/`admin.banner.report.*` = ยอดคลิก) — เมนูรายงานของโมดูล = subclass ของ `Admin\ItemReportController`, รายรายการ = trait
+  `Admin\Concerns\RendersItemReport`, หน้าจอ `Pages/Admin/Report/*` (prop `module`; ชื่อรายการเป็นลิงก์เฉพาะเมื่อ `can.view_item`); โมดูลใหม่ที่นับผ่าน
+  `ViewCounter` เพิ่มรายงานได้ด้วยการเพิ่ม factory ใน `ItemReport` + subclass controller + routes; กราฟใช้ **Chart.js + vue-chartjs** (`Components/Admin/Report/ViewTrendChart.vue`). ตารางประวัติการเข้าชม
+  (`article_item_view`/`page_item_view`/`banner_item_click`) มีคอลัมน์ `browser`/`platform`/`device_type`/`referrer` แล้ว (migration
+  `2026_10_07_000001_*`, `ViewCounter` เติมให้). `DatabaseSeeder` ลบสิทธิ์ `article.tag.*` เก่าด้วย **code** ก่อน upsert — id `article201`
+  ถูกนำกลับมาใช้กับ `article.report.view` (เดิมลบด้วย id ทำให้สิทธิ์ใหม่ถูกลบทิ้งทุกครั้งที่ seed)
+
+- **สถิติของประวัติทั้ง 4 ตัว** (`log_back_access` / `log_back_login` / `log_back_action` / `log_front_access`) — แท็บต่อจากหน้ารายการของแต่ละประวัติ
+  (`admin.system.backlog.{access,login,action}.*`, `admin.system.frontlog.access.*` + `.export`, สิทธิ์เดียวกับหน้ารายการ) — controller extends
+  `Admin\System\LogStatsController` (route แท็บ = `show()` + `->defaults('tab', …)`), ตัวคำนวณ `App\Support\Report\{AccessLogReport,LoginLogReport,ActionLogReport}`
+  ต่อยอด `ViewReport` (`uniqueColumn` สำหรับตารางที่ไม่มี session), หน้าจอใช้ `Components/Admin/LogStats/StatsShell.vue` + config `LOG_STATS` ใน
+  `utils/logStats.ts`; หน้าบ้านตัดบอทออกจากสถิติและยังไม่มีสถิติรายผู้ใช้งาน (รอ login หน้าบ้าน). ของ `log_back_access`: กรองผู้ใช้งานได้,
+  เวลาที่ใช้ต่อหน้าจอจาก `last_visited - created_at` ตัดที่ 30 นาที/ครั้ง — `ReportFilterBar` รองรับ dropdown กำหนดเองผ่าน prop `select` (เช่น `user_id`)
+  และ `utils/report.ts` มี metric `access` — ดู `docs/PRD-system.md` §5
 ## ทดสอบ
 
 - เทสหน้าบ้านอยู่ `tests/Feature/Front/FrontSiteTest.php` (seed `DatabaseSeeder` แล้วใช้ข้อมูลตัวอย่าง)

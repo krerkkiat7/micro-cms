@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Article;
 
+use App\Http\Controllers\Admin\Concerns\RendersItemReport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Article\StoreArticleItemRequest;
 use App\Http\Requests\Admin\Article\UpdateArticleItemRequest;
@@ -14,6 +15,7 @@ use App\Models\ArticleItemPartFile;
 use App\Models\FileInfo;
 use App\Models\LogBackAccess;
 use App\Models\LogBackAction;
+use App\Support\Report\ItemReport;
 use App\Support\Setting;
 use App\Support\SystemInfo;
 use Illuminate\Http\RedirectResponse;
@@ -21,6 +23,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * จัดการบทความ (article_item_info + article_item_detail + เนื้อหาแบบแบ่ง part + แท็ก)
@@ -28,6 +31,8 @@ use Inertia\Response;
  */
 class ArticleItemController extends Controller
 {
+    use RendersItemReport;
+
     /** จำนวนรายการต่อหน้าที่อนุญาต (ตัวแรก = ค่าเริ่มต้น) */
     private const PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
@@ -222,6 +227,48 @@ class ArticleItemController extends Controller
                 'delete' => $request->user()->hasPermission('article.item.delete'),
             ],
         ]);
+    }
+
+    /**
+     * รายงานการเข้าชมของบทความนี้ (article_item_view) — กำหนดช่วงวันที่ / รายวัน-สัปดาห์-เดือน-ปี, log module "article.item.report"
+     */
+    public function report(Request $request, string $item): Response|RedirectResponse
+    {
+        if (! $request->user()->hasPermission('article.item.view')) {
+            return redirect()->route('admin.article.item.index');
+        }
+
+        $model = ArticleItemInfo::find($item);
+
+        if (! $model) {
+            return redirect()->route('admin.article.item.index');
+        }
+
+        return $this->itemReportResponse($request, ItemReport::article(), $model, [
+            'item_label' => 'บทความ',
+            'list_label' => 'บทความ',
+            'tabs' => [['label' => 'ข้อมูลทั่วไป', 'route' => 'admin.article.item.edit']],
+            'amount' => (int) $model->view_amount,
+            'publish_date' => optional($model->publish_date)->format('Y-m-d H:i:s'),
+        ]);
+    }
+
+    /**
+     * ส่งออกข้อมูลรายงานของบทความนี้เป็น CSV (ตารางรายช่วงเวลาตามตัวกรอง)
+     */
+    public function reportExport(Request $request, string $item): StreamedResponse|RedirectResponse
+    {
+        if (! $request->user()->hasPermission('article.item.view')) {
+            return redirect()->route('admin.article.item.index');
+        }
+
+        $model = ArticleItemInfo::find($item);
+
+        if (! $model) {
+            return redirect()->route('admin.article.item.index');
+        }
+
+        return $this->itemReportExport($request, ItemReport::article(), $model);
     }
 
     /**
