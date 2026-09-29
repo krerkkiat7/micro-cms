@@ -10,6 +10,7 @@ import { computed } from 'vue';
 
 const props = defineProps<{
     filters: ReportFilters;
+    can: { view_item: boolean };
     categories: CategoryOption[];
     series: SeriesRow[];
     summary: ReportSummary;
@@ -52,7 +53,7 @@ const exportHref = computed(() => route('admin.article.report.export', { tab: 'o
                             ดู 20 อันดับ
                         </Link>
                     </div>
-                    <TopArticleTable :rows="top" :total="summary.views" />
+                    <TopArticleTable :rows="top" :total="summary.views" :linkable="can.view_item" />
                 </section>
             </template>
         </ReportDashboard>

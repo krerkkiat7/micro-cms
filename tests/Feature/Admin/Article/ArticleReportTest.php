@@ -263,3 +263,17 @@ test('report export returns csv for each tab', function () {
 
     expect(LogBackAction::where('action_type', 'export')->count())->toBe(6);
 });
+
+test('report pages tell the UI whether article titles may link to the per-article report', function () {
+    actingAsUserWithPermissions(['article.report.view']);
+
+    foreach (['index', 'overview', 'top'] as $tab) {
+        $this->get(route("admin.article.report.{$tab}"))
+            ->assertInertia(fn (Assert $page) => $page->where('can.view_item', false)->etc());
+    }
+
+    actingAsUserWithPermissions(['article.report.view', 'article.item.view']);
+
+    $this->get(route('admin.article.report.top'))
+        ->assertInertia(fn (Assert $page) => $page->where('can.view_item', true)->etc());
+});

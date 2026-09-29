@@ -10,6 +10,7 @@ import { computed } from 'vue';
 
 const props = defineProps<{
     filters: ReportFilters;
+    can: { view_item: boolean };
     categories: CategoryOption[];
     rows: TopRow[];
     summary: ReportSummary;
@@ -47,6 +48,6 @@ const datasets = computed(() => [
             <ViewTrendChart :labels="labels" :datasets="datasets" horizontal :height="Math.max(240, rows.length * 34 + 60)" />
         </section>
 
-        <TopArticleTable :rows="rows" :total="summary.views" />
+        <TopArticleTable :rows="rows" :total="summary.views" :linkable="can.view_item" />
     </ReportShell>
 </template>

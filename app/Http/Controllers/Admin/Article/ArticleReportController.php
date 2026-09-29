@@ -80,6 +80,7 @@ class ArticleReportController extends Controller
             'sort' => $sort,
             'direction' => $direction,
             'perPageOptions' => self::PER_PAGE_OPTIONS,
+            'can' => $this->can($request),
         ]);
     }
 
@@ -223,8 +224,20 @@ class ArticleReportController extends Controller
         return Inertia::render('Admin/Article/Report/'.ucfirst($tab), [
             'filters' => $filters + ['category_id' => $categoryId],
             'categories' => $withCategory ? $this->categoryOptions() : [],
+            'can' => $this->can($request),
             ...$build($report, $filters),
         ]);
+    }
+
+    /**
+     * view_item = ลิงก์ไปรายงานรายบทความได้ (ต้องมี article.item.view — ไม่มีสิทธิ์แสดงชื่อเป็นข้อความธรรมดา
+     * เพราะกดไปแล้วจะถูก redirect ออก)
+     *
+     * @return array{view_item: bool}
+     */
+    private function can(Request $request): array
+    {
+        return ['view_item' => $request->user()->hasPermission('article.item.view')];
     }
 
     private function allowed(Request $request): bool

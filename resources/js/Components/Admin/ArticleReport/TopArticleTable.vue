@@ -4,11 +4,12 @@ import type { TopRow } from '@/utils/report';
 import { Link } from '@inertiajs/vue3';
 
 /**
- * ตารางบทความยอดนิยม — ชื่อลิงก์ไปรายงานของบทความนั้น, % เทียบยอดรวมทั้งช่วง
+ * ตารางบทความยอดนิยม — ชื่อลิงก์ไปรายงานของบทความนั้น (เฉพาะเมื่อ linkable = มีสิทธิ์ดูบทความ), % เทียบยอดรวมทั้งช่วง
  */
 defineProps<{
     rows: TopRow[];
     total: number;
+    linkable: boolean;
 }>();
 </script>
 
@@ -31,6 +32,7 @@ defineProps<{
                         <td class="px-4 py-3 text-center font-semibold text-gray-700 tabular-nums">{{ row.rank }}</td>
                         <td class="px-4 py-3">
                             <span v-if="row.deleted" class="text-gray-500">{{ row.title ?? `บทความ #${row.id}` }} (ถูกลบแล้ว)</span>
+                            <span v-else-if="!linkable" class="text-gray-800">{{ row.title ?? `บทความ #${row.id}` }}</span>
                             <Link v-else :href="route('admin.article.item.report', row.id)" class="text-brand-600 hover:text-brand-700">
                                 {{ row.title ?? `บทความ #${row.id}` }}
                             </Link>

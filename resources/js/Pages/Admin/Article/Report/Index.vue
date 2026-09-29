@@ -30,6 +30,7 @@ const props = defineProps<{
     sort: string;
     direction: 'asc' | 'desc';
     perPageOptions: number[];
+    can: { view_item: boolean };
 }>();
 
 const form = reactive({
@@ -147,7 +148,8 @@ const exportHref = computed(() =>
                     <tbody class="divide-y divide-gray-100">
                         <tr v-for="row in logs.data" :key="row.id" class="transition-colors hover:bg-gray-50">
                             <td class="px-4 py-3">
-                                <Link :href="route('admin.article.item.report', row.article_id)" class="text-brand-600 hover:text-brand-700">
+                                <span v-if="!can.view_item" class="text-gray-800">{{ row.title ?? `บทความ #${row.article_id}` }}</span>
+                                <Link v-else :href="route('admin.article.item.report', row.article_id)" class="text-brand-600 hover:text-brand-700">
                                     {{ row.title ?? `บทความ #${row.article_id}` }}
                                 </Link>
                             </td>
