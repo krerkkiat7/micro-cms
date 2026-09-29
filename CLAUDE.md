@@ -429,7 +429,10 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   สิทธิ์ `article.item.view`, log `article.item.report`; คอลัมน์สุดท้ายของหน้ารายการ + แท็บในหน้าแก้ไข) และเมนูรายงาน `admin.article.report.*`
   (สิทธิ์ `article.report.view`, แท็บ index/overview/top/category/audience/time + export, log `article.report.<แท็บ>`); ตัวคำนวณกลาง
   `App\Support\Report\ViewReport` (นิพจน์จัดกลุ่มแยก MySQL/SQLite — เพิ่ม driver อื่นต้องเพิ่มใน `bucketExpression()`/`heatmap()`) +
-  `ArticleReport`; กราฟใช้ **Chart.js + vue-chartjs** (`Components/Admin/Report/ViewTrendChart.vue`). ตารางประวัติการเข้าชม
+  `ItemReport` (`::article()`/`::page()`/`::banner()`). **หน้าเพจ/ป้ายโฆษณาใช้ชุดเดียวกัน** (`admin.page.item.report`/`admin.page.report.*` ไม่มีแท็บหมวดหมู่,
+  `admin.banner.item.report`/`admin.banner.report.*` = ยอดคลิก) — เมนูรายงานของโมดูล = subclass ของ `Admin\ItemReportController`, รายรายการ = trait
+  `Admin\Concerns\RendersItemReport`, หน้าจอ `Pages/Admin/Report/*` (prop `module`; ชื่อรายการเป็นลิงก์เฉพาะเมื่อ `can.view_item`); โมดูลใหม่ที่นับผ่าน
+  `ViewCounter` เพิ่มรายงานได้ด้วยการเพิ่ม factory ใน `ItemReport` + subclass controller + routes; กราฟใช้ **Chart.js + vue-chartjs** (`Components/Admin/Report/ViewTrendChart.vue`). ตารางประวัติการเข้าชม
   (`article_item_view`/`page_item_view`/`banner_item_click`) มีคอลัมน์ `browser`/`platform`/`device_type`/`referrer` แล้ว (migration
   `2026_10_07_000001_*`, `ViewCounter` เติมให้). `DatabaseSeeder` ลบสิทธิ์ `article.tag.*` เก่าด้วย **code** ก่อน upsert — id `article201`
   ถูกนำกลับมาใช้กับ `article.report.view` (เดิมลบด้วย id ทำให้สิทธิ์ใหม่ถูกลบทิ้งทุกครั้งที่ seed)

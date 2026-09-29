@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Banner;
 
+use App\Http\Controllers\Admin\Concerns\RendersItemReport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Banner\StoreBannerItemRequest;
 use App\Http\Requests\Admin\Banner\UpdateBannerItemRequest;
@@ -11,12 +12,14 @@ use App\Models\BannerItemInfo;
 use App\Models\FileInfo;
 use App\Models\LogBackAccess;
 use App\Models\LogBackAction;
+use App\Support\Report\ItemReport;
 use App\Support\Setting;
 use App\Support\SystemInfo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * จัดการป้ายโฆษณา (banner_item_info + banner_item_detail) — แสดงผลเป็นรูปภาพเท่านั้น (รูปภาพใช้ร่วมทุกภาษา
@@ -25,6 +28,8 @@ use Inertia\Response;
  */
 class BannerItemController extends Controller
 {
+    use RendersItemReport;
+
     /** จำนวนรายการต่อหน้าที่อนุญาต (ตัวแรก = ค่าเริ่มต้น) */
     private const PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
@@ -217,6 +222,48 @@ class BannerItemController extends Controller
                 'delete' => $request->user()->hasPermission('banner.item.delete'),
             ],
         ]);
+    }
+
+    /**
+     * รายงานการคลิกของป้ายโฆษณานี้ — กำหนดช่วงวันที่ / รายวัน-สัปดาห์-เดือน-ปี, log module "banner.item.report"
+     */
+    public function report(Request $request, string $item): Response|RedirectResponse
+    {
+        if (! $request->user()->hasPermission('banner.item.view')) {
+            return redirect()->route('admin.banner.item.index');
+        }
+
+        $model = BannerItemInfo::find($item);
+
+        if (! $model) {
+            return redirect()->route('admin.banner.item.index');
+        }
+
+        return $this->itemReportResponse($request, ItemReport::banner(), $model, [
+            'item_label' => 'ป้ายโฆษณา',
+            'list_label' => 'ป้ายโฆษณา',
+            'tabs' => [['label' => 'ข้อมูลทั่วไป', 'route' => 'admin.banner.item.edit']],
+            'amount' => (int) $model->click_amount,
+            'publish_date' => optional($model->publish_date)->format('Y-m-d H:i:s'),
+        ]);
+    }
+
+    /**
+     * ส่งออกข้อมูลรายงานของป้ายโฆษณานี้เป็น CSV (ตารางรายช่วงเวลาตามตัวกรอง)
+     */
+    public function reportExport(Request $request, string $item): StreamedResponse|RedirectResponse
+    {
+        if (! $request->user()->hasPermission('banner.item.view')) {
+            return redirect()->route('admin.banner.item.index');
+        }
+
+        $model = BannerItemInfo::find($item);
+
+        if (! $model) {
+            return redirect()->route('admin.banner.item.index');
+        }
+
+        return $this->itemReportExport($request, ItemReport::banner(), $model);
     }
 
     /**

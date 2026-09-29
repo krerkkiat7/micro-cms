@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { formatDate } from '@/utils/date';
-import { formatDecimal, formatNumber } from '@/utils/report';
+import { formatDecimal, formatNumber, useReportTerms } from '@/utils/report';
 import type { ReportSummary } from '@/utils/report';
 import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 /**
  * การ์ดสรุปตัวเลขของช่วงวันที่ที่เลือก + % เปลี่ยนแปลงเทียบกับช่วงก่อนหน้าที่ยาวเท่ากัน
- * showItems = แสดงจำนวนบทความที่มีผู้เข้าชม (รายงานภาพรวม)
+ * showItems = แสดงจำนวนรายการที่มีข้อมูล (รายงานภาพรวม)
  */
 const props = defineProps<{
     summary: ReportSummary;
     showItems?: boolean;
 }>();
+
+const terms = useReportTerms();
 
 const previousRange = computed(() => `${formatDate(props.summary.previous.date_from)} – ${formatDate(props.summary.previous.date_to)}`);
 
@@ -34,23 +36,23 @@ function changeText(value: number | null): string {
 const cards = computed(() => {
     const s = props.summary;
     const list: { label: string; value: string; hint: string; change?: number | null }[] = [
-        { label: 'ยอดเข้าชม', value: formatNumber(s.views), hint: '', change: s.change.views },
-        { label: 'ผู้เข้าชมไม่ซ้ำ (session)', value: formatNumber(s.sessions), hint: '', change: s.change.sessions },
+        { label: terms.count, value: formatNumber(s.views), hint: '', change: s.change.views },
+        { label: `${terms.unique} (session)`, value: formatNumber(s.sessions), hint: '', change: s.change.sessions },
         { label: 'IP Address ไม่ซ้ำ', value: formatNumber(s.ips), hint: `เฉลี่ย ${formatDecimal(s.views_per_session)} ครั้ง / session` },
         {
             label: 'เฉลี่ยต่อวัน',
             value: formatDecimal(s.avg_per_day),
-            hint: `มีผู้เข้าชม ${formatNumber(s.active_days)} จาก ${formatNumber(s.days)} วัน`,
+            hint: `มีการ${terms.verb} ${formatNumber(s.active_days)} จาก ${formatNumber(s.days)} วัน`,
         },
         {
-            label: 'ช่วงที่มีผู้เข้าชมสูงสุด',
+            label: `ช่วงที่มีการ${terms.verb}สูงสุด`,
             value: s.peak ? formatNumber(s.peak.views) : '-',
             hint: s.peak?.label ?? 'ไม่มีข้อมูลในช่วงนี้',
         },
     ];
 
     if (props.showItems) {
-        list.splice(2, 0, { label: 'บทความที่มีผู้เข้าชม', value: formatNumber(s.items), hint: 'รายการ' });
+        list.splice(2, 0, { label: `${terms.item}ที่มีการ${terms.verb}`, value: formatNumber(s.items), hint: 'รายการ' });
     }
 
     return list;

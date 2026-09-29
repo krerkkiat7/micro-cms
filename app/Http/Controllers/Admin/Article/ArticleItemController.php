@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Article;
 
+use App\Http\Controllers\Admin\Concerns\RendersItemReport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Article\StoreArticleItemRequest;
 use App\Http\Requests\Admin\Article\UpdateArticleItemRequest;
@@ -14,8 +15,7 @@ use App\Models\ArticleItemPartFile;
 use App\Models\FileInfo;
 use App\Models\LogBackAccess;
 use App\Models\LogBackAction;
-use App\Support\Report\ArticleReport;
-use App\Support\Report\ViewReport;
+use App\Support\Report\ItemReport;
 use App\Support\Setting;
 use App\Support\SystemInfo;
 use Illuminate\Http\RedirectResponse;
@@ -31,6 +31,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class ArticleItemController extends Controller
 {
+    use RendersItemReport;
+
     /** จำนวนรายการต่อหน้าที่อนุญาต (ตัวแรก = ค่าเริ่มต้น) */
     private const PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
@@ -242,26 +244,12 @@ class ArticleItemController extends Controller
             return redirect()->route('admin.article.item.index');
         }
 
-        $filters = ViewReport::filters($request);
-        $info = ArticleReport::itemInfo([$model->id])[$model->id] ?? [];
-
-        // บันทึก log เฉพาะการเข้าหน้าจริง ๆ — ไม่บันทึกตอนเปลี่ยนตัวกรอง
-        if (count($request->query()) === 0) {
-            LogBackAccess::record('รายงานบทความ');
-            LogBackAction::record('article.item.report', 'view', $info['title'] ?? null, $model->id);
-        }
-
-        return Inertia::render('Admin/Article/Item/Report', [
-            'item' => [
-                'id' => $model->id,
-                'title' => $info['title'] ?? null,
-                'category_title' => $info['category_title'] ?? null,
-                'publish_date' => optional($model->publish_date)->format('Y-m-d H:i:s'),
-                'view_amount' => (int) $model->view_amount,
-                'status' => $model->status,
-            ],
-            'filters' => $filters,
-            ...ArticleReport::dashboard(ArticleReport::forItem($model->id, $filters), $request),
+        return $this->itemReportResponse($request, ItemReport::article(), $model, [
+            'item_label' => 'บทความ',
+            'list_label' => 'บทความ',
+            'tabs' => [['label' => 'ข้อมูลทั่วไป', 'route' => 'admin.article.item.edit']],
+            'amount' => (int) $model->view_amount,
+            'publish_date' => optional($model->publish_date)->format('Y-m-d H:i:s'),
         ]);
     }
 
@@ -280,20 +268,7 @@ class ArticleItemController extends Controller
             return redirect()->route('admin.article.item.index');
         }
 
-        $filters = ViewReport::filters($request);
-        $title = ArticleReport::itemInfo([$model->id])[$model->id]['title'] ?? null;
-
-        LogBackAction::record('article.item.report', 'export', $title, $model->id);
-
-        $rows = array_map(fn (array $row) => [
-            $row['label'], $row['start'], $row['end'], $row['views'], $row['sessions'], $row['ips'],
-        ], ArticleReport::forItem($model->id, $filters)->series());
-
-        return ViewReport::csv(
-            "article-{$model->id}-report-{$filters['date_from']}-{$filters['date_to']}.csv",
-            ['ช่วงเวลา', 'วันที่เริ่มต้น', 'วันที่สิ้นสุด', 'ยอดเข้าชม', 'ผู้เข้าชมไม่ซ้ำ (session)', 'IP ไม่ซ้ำ'],
-            $rows,
-        );
+        return $this->itemReportExport($request, ItemReport::article(), $model);
     }
 
     /**

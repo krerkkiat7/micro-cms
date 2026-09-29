@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PERIOD_UNIT, formatNumber, percent } from '@/utils/report';
+import { PERIOD_UNIT, formatNumber, percent, useReportTerms } from '@/utils/report';
 import type { ReportPeriod, SeriesRow } from '@/utils/report';
 import { computed } from 'vue';
 
@@ -10,6 +10,8 @@ const props = defineProps<{
     rows: SeriesRow[];
     period: ReportPeriod;
 }>();
+
+const terms = useReportTerms();
 
 const totals = computed(() => ({
     views: props.rows.reduce((sum, r) => sum + r.views, 0),
@@ -27,8 +29,8 @@ const max = computed(() => Math.max(1, ...props.rows.map((r) => r.views)));
                 <thead class="sticky top-0 border-b border-gray-200 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                     <tr>
                         <th class="px-4 py-3 font-medium">{{ PERIOD_UNIT[period] }}</th>
-                        <th class="w-32 px-4 py-3 text-right font-medium">ยอดเข้าชม</th>
-                        <th class="w-40 px-4 py-3 text-right font-medium">ผู้เข้าชมไม่ซ้ำ</th>
+                        <th class="w-32 px-4 py-3 text-right font-medium">{{ terms.count }}</th>
+                        <th class="w-40 px-4 py-3 text-right font-medium">{{ terms.unique }}</th>
                         <th class="w-32 px-4 py-3 text-right font-medium">IP ไม่ซ้ำ</th>
                         <th class="w-28 px-4 py-3 text-right font-medium">สัดส่วน</th>
                     </tr>
@@ -56,7 +58,7 @@ const max = computed(() => Math.max(1, ...props.rows.map((r) => r.views)));
                     <tr>
                         <td class="px-4 py-3">รวม</td>
                         <td class="px-4 py-3 text-right tabular-nums">{{ formatNumber(totals.views) }}</td>
-                        <td class="px-4 py-3 text-right tabular-nums" title="ผลรวมของแต่ละช่วง — ผู้เข้าชมคนเดียวกันในหลายช่วงถูกนับซ้ำ">{{ formatNumber(totals.sessions) }}*</td>
+                        <td class="px-4 py-3 text-right tabular-nums" title="ผลรวมของแต่ละช่วง — คนเดียวกันในหลายช่วงถูกนับซ้ำ">{{ formatNumber(totals.sessions) }}*</td>
                         <td class="px-4 py-3 text-right tabular-nums">{{ formatNumber(totals.ips) }}*</td>
                         <td class="px-4 py-3 text-right tabular-nums">100%</td>
                     </tr>
@@ -64,7 +66,7 @@ const max = computed(() => Math.max(1, ...props.rows.map((r) => r.views)));
             </table>
         </div>
         <p class="border-t border-gray-100 px-4 py-2 text-xs text-gray-500">
-            * ผลรวมของแต่ละช่วง ผู้เข้าชมคนเดียวกันที่เข้าหลายช่วงจะถูกนับซ้ำ (ยอดไม่ซ้ำทั้งช่วงดูที่การ์ดสรุปด้านบน)
+            * ผลรวมของแต่ละช่วง คนเดียวกันที่{{ terms.verb }}หลายช่วงจะถูกนับซ้ำ (ยอดไม่ซ้ำทั้งช่วงดูที่การ์ดสรุปด้านบน)
         </p>
     </div>
 </template>

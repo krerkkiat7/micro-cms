@@ -284,6 +284,7 @@ const pageTitle = computed(() => props.item.title || `หน้าเพจ #${p
 const tabs = computed(() => [
     { label: 'ข้อมูลทั่วไป', href: route('admin.page.item.edit', props.item.id), active: false },
     { label: 'โครงสร้าง', href: route('admin.page.item.layout', props.item.id), active: true },
+    { label: 'รายงาน', href: route('admin.page.item.report', props.item.id), active: false },
 ]);
 
 const breadcrumbs = computed(() => [

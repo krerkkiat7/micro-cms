@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ReportShell from '@/Components/Admin/ArticleReport/ReportShell.vue';
+import ReportShell from '@/Components/Admin/Report/ReportShell.vue';
 import Pagination from '@/Components/Pagination.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
@@ -7,19 +7,22 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import type { Paginated } from '@/types';
 import { formatDateTime } from '@/utils/date';
+import { reportTerms } from '@/utils/report';
+import type { ReportModule } from '@/utils/report';
 import { Link, router } from '@inertiajs/vue3';
 import { ArrowDown, ArrowUp, ArrowUpDown, Download, RotateCcw, Search } from 'lucide-vue-next';
 import { computed, reactive } from 'vue';
 
 interface Row {
     id: number;
-    article_id: number;
+    item_id: number;
     title: string | null;
     remote_ip: string | null;
     created_at: string | null;
 }
 
 const props = defineProps<{
+    module: ReportModule;
     logs: Paginated<Row>;
     filters: {
         q: string | null;
@@ -42,11 +45,15 @@ const form = reactive({
 
 const perPageSelectOptions = computed(() => props.perPageOptions.map((n) => ({ value: String(n), label: String(n) })));
 
+const terms = reportTerms(props.module.metric, props.module.item_label);
+
 const columns: { key: string; label: string }[] = [
-    { key: 'title', label: 'ชื่อบทความ' },
+    { key: 'title', label: `ชื่อ${terms.item}` },
     { key: 'remote_ip', label: 'IP Address' },
-    { key: 'created_at', label: 'วันเวลาที่เข้าชม' },
+    { key: 'created_at', label: `วันเวลาที่${terms.verb}` },
 ];
+
+const indexRoute = `${props.module.route_prefix}.index`;
 
 function query(extra: Record<string, unknown> = {}) {
     return {
@@ -61,7 +68,7 @@ function query(extra: Record<string, unknown> = {}) {
 }
 
 function visit(extra: Record<string, unknown> = {}) {
-    router.get(route('admin.article.report.index'), query(extra), { preserveState: true, preserveScroll: true, replace: true });
+    router.get(route(indexRoute), query(extra), { preserveState: true, preserveScroll: true, replace: true });
 }
 
 function search() {
@@ -73,7 +80,7 @@ function resetFilters() {
     form.date_from = '';
     form.date_to = '';
     form.per_page = String(props.perPageOptions[0]);
-    router.get(route('admin.article.report.index'), {}, { preserveScroll: true, replace: true });
+    router.get(route(indexRoute), {}, { preserveScroll: true, replace: true });
 }
 
 function sortBy(column: string) {
@@ -88,7 +95,7 @@ function sortIcon(column: string) {
 
 // ส่งออกตามตัวกรองที่ใช้อยู่ (ค่าจาก server ไม่ใช่ค่าที่พิมพ์ค้างไว้ในฟอร์ม)
 const exportHref = computed(() =>
-    route('admin.article.report.export', {
+    route(`${props.module.route_prefix}.export`, {
         tab: 'index',
         q: props.filters.q ?? undefined,
         date_from: props.filters.date_from ?? undefined,
@@ -98,12 +105,12 @@ const exportHref = computed(() =>
 </script>
 
 <template>
-    <ReportShell tab="index" tab-title="รายการเข้าชม">
+    <ReportShell :module="module" tab="index">
         <!-- ตัวกรอง -->
         <form class="rounded-2xl border border-gray-200 bg-white p-4 shadow-xs" @submit.prevent="search">
             <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div class="lg:col-span-2">
-                    <TextInput v-model="form.q" type="text" placeholder="ค้นหาจากชื่อบทความ, IP Address" @keyup.enter="search" />
+                    <TextInput v-model="form.q" type="text" :placeholder="`ค้นหาจากชื่อ${terms.item}, IP Address`" @keyup.enter="search" />
                 </div>
                 <label class="flex items-center gap-2">
                     <span class="whitespace-nowrap text-sm text-gray-500">ตั้งแต่</span>
@@ -148,16 +155,16 @@ const exportHref = computed(() =>
                     <tbody class="divide-y divide-gray-100">
                         <tr v-for="row in logs.data" :key="row.id" class="transition-colors hover:bg-gray-50">
                             <td class="px-4 py-3">
-                                <span v-if="!can.view_item" class="text-gray-800">{{ row.title ?? `บทความ #${row.article_id}` }}</span>
-                                <Link v-else :href="route('admin.article.item.report', row.article_id)" class="text-brand-600 hover:text-brand-700">
-                                    {{ row.title ?? `บทความ #${row.article_id}` }}
+                                <span v-if="!can.view_item" class="text-gray-800">{{ row.title ?? `${terms.item} #${row.item_id}` }}</span>
+                                <Link v-else :href="route(module.item_report_route, row.item_id)" class="text-brand-600 hover:text-brand-700">
+                                    {{ row.title ?? `${terms.item} #${row.item_id}` }}
                                 </Link>
                             </td>
                             <td class="w-48 px-4 py-3 text-gray-600">{{ row.remote_ip ?? '-' }}</td>
                             <td class="w-56 whitespace-nowrap px-4 py-3 text-gray-600">{{ formatDateTime(row.created_at) }}</td>
                         </tr>
                         <tr v-if="logs.data.length === 0">
-                            <td :colspan="columns.length" class="px-4 py-10 text-center text-gray-500">ไม่พบข้อมูลการเข้าชมตามเงื่อนไข</td>
+                            <td :colspan="columns.length" class="px-4 py-10 text-center text-gray-500">ไม่พบข้อมูลการ{{ terms.verb }}ตามเงื่อนไข</td>
                         </tr>
                     </tbody>
                 </table>

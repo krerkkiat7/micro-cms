@@ -397,8 +397,12 @@ log action module_code = `article.tag`
 migration `2026_10_07_000001_*` เพิ่ม `browser`/`platform`/`device_type`/`referrer` ให้ `article_item_view`/`page_item_view`/`banner_item_click`
 (ทั้งสามตารางเขียนผ่าน `ViewCounter::write()` ตัวเดียวกัน) — แถวก่อนหน้านี้เป็น null ("ไม่ทราบ" / "เข้าตรง")
 
-**ตัวคำนวณ** — `App\Support\Report\ViewReport` (กลาง รับชื่อตาราง/FK + scope → page/banner ใช้ต่อได้) และ `App\Support\Report\ArticleReport`
-(ชื่อบทความ/หมวดหมู่ภาษาหลัก, top, ตามหมวดหมู่):
+**ตัวคำนวณ** — `App\Support\Report\ViewReport` (กลาง รับชื่อตาราง/FK + scope) และ `App\Support\Report\ItemReport`
+(ผูกตารางประวัติกับ info/detail/หมวดหมู่ของโมดูล — `ItemReport::article()` / `::page()` / `::banner()`, `metric` = view/click;
+ชื่อรายการ/หมวดหมู่ภาษาหลัก, top, ตามหมวดหมู่, query รายการประวัติ). **ใช้ร่วมกันทั้งบทความ / หน้าเพจ / ป้ายโฆษณา** —
+เมนูรายงานของแต่ละโมดูลเป็น subclass บาง ๆ ของ `App\Http\Controllers\Admin\ItemReportController` (กำหนด `config()` + `report()`),
+รายงานรายรายการใช้ trait `Admin\Concerns\RendersItemReport`, หน้าจอชุดเดียวที่ `Pages/Admin/Report/*` (`Item.vue` = รายรายการ)
+รับ prop `module` แล้วเปลี่ยนคำ (เข้าชม/คลิก, ชื่อรายการ) ผ่าน `provideReportTerms()`/`useReportTerms()` ใน `utils/report.ts`:
 - ตัวกรอง `date_from`/`date_to` (ค่าเริ่มต้น 30 วันล่าสุด, สลับให้ถ้ากลับด้าน, ไม่เกิน 5 ปี) กรองที่ `action_date`;
   `period` = `day`/`week`/`month`/`year` (ไม่ส่ง = เลือกตามความยาวช่วง: ≤62 วัน รายวัน, ≤190 รายสัปดาห์, ≤1100 รายเดือน, เกินนั้นรายปี)
 - จัดกลุ่มตามช่วงใน SQL (นิพจน์แยก MySQL / SQLite สำหรับเทส) สัปดาห์เริ่มวันจันทร์ — เติมช่วงที่ไม่มีข้อมูลเป็น 0, ป้ายชื่อไทย ปี พ.ศ.
@@ -410,10 +414,11 @@ migration `2026_10_07_000001_*` เพิ่ม `browser`/`platform`/`device_typ
 
 **รายงานรายบทความ** — `admin.article.item.report` (`/admin/article/item/{item}/report`) + `.report.export`, สิทธิ์ `article.item.view`,
 log module `article.item.report` (`view` เฉพาะเข้าหน้าครั้งแรกที่ไม่มี query, `export` ทุกครั้ง). เข้าได้จากคอลัมน์สุดท้ายของหน้ารายการบทความ
-และแท็บ "รายงาน" ของหน้าแก้ไข. หน้า `Pages/Admin/Article/Item/Report.vue`
+และแท็บ "รายงาน" ของหน้าแก้ไข. หน้า `Pages/Admin/Report/Item.vue`
 
 **เมนูรายงาน** (sidebar กลุ่มบทความ, `sys_menu` `article-report` ไอคอน `ChartColumn`) — สิทธิ์ `article.report.view` ทุกหน้า
-(`ArticleReportController`, หน้า `Pages/Admin/Article/Report/*`, โครงหน้า `Components/Admin/ArticleReport/ReportShell.vue`):
+(`ArticleReportController`, หน้า `Pages/Admin/Report/*`, โครงหน้า `Components/Admin/Report/ReportShell.vue`) — ผู้ใช้ที่ไม่มีสิทธิ์
+`article.item.view` เห็นชื่อบทความเป็นข้อความธรรมดา (prop `can.view_item`) ไม่เป็นลิงก์ไปรายงานรายบทความ:
 
 | route | แท็บ | เนื้อหา | log module_code |
 |---|---|---|---|
@@ -427,7 +432,7 @@ log module `article.item.report` (`view` เฉพาะเข้าหน้า
 
 ตัวกรองช่วงวันที่ส่งต่อกันระหว่างแท็บรายงาน; ชนิดกราฟ (แท่ง/เส้น) จำใน localStorage (`admin.report.chartType`) ไม่ส่งไป server.
 component กลาง `Components/Admin/Report/*` (`ReportFilterBar`, `ReportDashboard`, `ViewTrendChart` = Chart.js ผ่าน `vue-chartjs`,
-`ReportStatCards`, `ReportSeriesTable`, `BreakdownList`, `AudienceBreakdowns`, `WeekHourHeatmap`) + `resources/js/utils/report.ts`
+`ReportStatCards`, `ReportSeriesTable`, `BreakdownList`, `AudienceBreakdowns`, `WeekHourHeatmap`, `ReportShell`, `TopItemTable`) + `resources/js/utils/report.ts`
 
 ---
 

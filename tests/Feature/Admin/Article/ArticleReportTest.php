@@ -63,7 +63,7 @@ test('item report aggregates daily views with zero-filled buckets and logs the v
     ]))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('Admin/Article/Item/Report')
+            ->component('Admin/Report/Item')
             ->where('filters.period', 'day')
             ->has('series', 3)
             ->where('series.0.views', 2)
@@ -180,9 +180,9 @@ test('report index lists views with article title and filters by search and date
     $this->get(route('admin.article.report.index'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('Admin/Article/Report/Index')
+            ->component('Admin/Report/Index')
             ->has('logs.data', 2)
-            ->has('logs.data.0', fn (Assert $row) => $row->hasAll(['id', 'article_id', 'title', 'remote_ip', 'created_at']))
+            ->has('logs.data.0', fn (Assert $row) => $row->hasAll(['id', 'item_id', 'title', 'remote_ip', 'created_at']))
         );
 
     $this->get(route('admin.article.report.index', ['q' => '192.168.1']))
@@ -193,7 +193,7 @@ test('report index lists views with article title and filters by search and date
     $this->get(route('admin.article.report.index', ['date_from' => '2026-09-02']))
         ->assertInertia(fn (Assert $page) => $page
             ->has('logs.data', 1)
-            ->where('logs.data.0.article_id', $this->other->id));
+            ->where('logs.data.0.item_id', $this->other->id));
 });
 
 test('every report tab renders and logs its module code', function () {
@@ -203,7 +203,7 @@ test('every report tab renders and logs its module code', function () {
     foreach (['overview' => 'Overview', 'top' => 'Top', 'category' => 'Category', 'audience' => 'Audience', 'time' => 'Time'] as $tab => $component) {
         $this->get(route("admin.article.report.{$tab}"))
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page->component("Admin/Article/Report/{$component}"));
+            ->assertInertia(fn (Assert $page) => $page->component("Admin/Report/{$component}"));
 
         expect(LogBackAction::where('module_code', "article.report.{$tab}")->where('action_type', 'view')->exists())->toBeTrue();
     }

@@ -245,9 +245,10 @@ final class ViewReport
     }
 
     /**
-     * แหล่งที่มาจาก referrer — จัดเป็นกลุ่ม (เข้าตรง / ภายในเว็บ / เครื่องมือค้นหา / โซเชียล / เว็บไซต์อื่น) + host ยอดนิยม
+     * แหล่งที่มาจาก referrer — จัดเป็นกลุ่ม (เข้าตรง / ภายในเว็บ / เครื่องมือค้นหา / โซเชียล / เว็บไซต์อื่น) + host ภายนอกยอดนิยม
+     * + path ภายในเว็บยอดนิยม (banner = หน้าที่มีการคลิก, บทความ/หน้าเพจ = หน้าที่กดลิงก์มา)
      *
-     * @return array{sources: list<array{key: string, views: int}>, hosts: list<array{key: string, views: int}>}
+     * @return array{sources: list<array{key: string, views: int}>, hosts: list<array{key: string, views: int}>, paths: list<array{key: string, views: int}>}
      */
     public function referrers(string $ownHost, int $hostLimit = 20): array
     {
@@ -260,6 +261,7 @@ final class ViewReport
 
         $sources = ['direct' => 0, 'internal' => 0, 'search' => 0, 'social' => 0, 'other' => 0];
         $hosts = [];
+        $paths = [];
         $ownHost = self::normalizeHost($ownHost);
 
         foreach ($rows as $row) {
@@ -274,6 +276,8 @@ final class ViewReport
 
             if ($host === $ownHost) {
                 $sources['internal'] += $views;
+                $path = (string) (parse_url((string) $row->ref, PHP_URL_PATH) ?: '/');
+                $paths[$path] = ($paths[$path] ?? 0) + $views;
 
                 continue;
             }
@@ -283,14 +287,18 @@ final class ViewReport
         }
 
         arsort($hosts);
+        arsort($paths);
+
+        $top = fn (array $counts) => array_map(
+            fn ($key, $views) => ['key' => (string) $key, 'views' => $views],
+            array_keys(array_slice($counts, 0, $hostLimit, true)),
+            array_slice($counts, 0, $hostLimit, true),
+        );
 
         return [
             'sources' => array_map(fn ($key) => ['key' => $key, 'views' => $sources[$key]], array_keys($sources)),
-            'hosts' => array_map(
-                fn ($host, $views) => ['key' => $host, 'views' => $views],
-                array_keys(array_slice($hosts, 0, $hostLimit, true)),
-                array_slice($hosts, 0, $hostLimit, true),
-            ),
+            'hosts' => $top($hosts),
+            'paths' => $top($paths),
         ];
     }
 

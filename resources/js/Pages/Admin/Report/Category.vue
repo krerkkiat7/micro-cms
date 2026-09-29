@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import ReportShell from '@/Components/Admin/ArticleReport/ReportShell.vue';
+import ReportShell from '@/Components/Admin/Report/ReportShell.vue';
 import ReportFilterBar from '@/Components/Admin/Report/ReportFilterBar.vue';
 import ViewTrendChart from '@/Components/Admin/Report/ViewTrendChart.vue';
-import { PERIOD_OPTIONS, SERIES_COLORS, filterQuery, formatNumber, percent, useChartType } from '@/utils/report';
-import type { ReportFilters, SeriesRow } from '@/utils/report';
+import { PERIOD_OPTIONS, SERIES_COLORS, filterQuery, formatNumber, percent, reportTerms, useChartType } from '@/utils/report';
+import type { ReportFilters, ReportModule, SeriesRow } from '@/utils/report';
 import { computed } from 'vue';
 
 interface CategoryRow {
@@ -15,6 +15,7 @@ interface CategoryRow {
 }
 
 const props = defineProps<{
+    module: ReportModule;
     filters: ReportFilters;
     rows: CategoryRow[];
     buckets: Omit<SeriesRow, 'views' | 'sessions' | 'ips'>[];
@@ -22,8 +23,9 @@ const props = defineProps<{
 }>();
 
 const chartType = useChartType();
+const terms = reportTerms(props.module.metric, props.module.item_label);
 
-const exportHref = computed(() => route('admin.article.report.export', { tab: 'category', ...filterQuery(props.filters) }));
+const exportHref = computed(() => route(`${props.module.route_prefix}.export`, { tab: 'category', ...filterQuery(props.filters) }));
 
 const total = computed(() => props.rows.reduce((sum, r) => sum + r.views, 0));
 
@@ -31,7 +33,7 @@ const categoryName = (row: { id: number | null; title: string | null }) =>
     row.id === null ? 'ไม่ระบุหมวดหมู่' : (row.title ?? `หมวดหมู่ #${row.id}`);
 
 const shareDatasets = computed(() => [
-    { label: 'ยอดเข้าชม', data: props.rows.map((r) => r.views), color: SERIES_COLORS[0] },
+    { label: terms.count, data: props.rows.map((r) => r.views), color: SERIES_COLORS[0] },
 ]);
 
 // สีตามหมวดหมู่ตามลำดับยอด (สูงสุด 5 หมวดหมู่ = 5 สีที่ตรวจแล้ว ไม่วนสี)
@@ -43,12 +45,12 @@ const periodLabel = computed(() => PERIOD_OPTIONS.find((p) => p.value === props.
 </script>
 
 <template>
-    <ReportShell tab="category" tab-title="ตามหมวดหมู่" :filters="filters">
-        <ReportFilterBar v-model:chart-type="chartType" :filters="filters" route-name="admin.article.report.category" :export-href="exportHref" />
+    <ReportShell :module="module" tab="category" :filters="filters">
+        <ReportFilterBar v-model:chart-type="chartType" :filters="filters" :route-name="`${module.route_prefix}.category`" :export-href="exportHref" />
 
         <div class="grid gap-4 xl:grid-cols-2">
             <section class="rounded-2xl border border-gray-200 bg-white p-4 shadow-xs">
-                <h3 class="mb-2 text-sm font-semibold text-gray-800">ยอดเข้าชมแยกตามหมวดหมู่</h3>
+                <h3 class="mb-2 text-sm font-semibold text-gray-800">{{ terms.count }}แยกตามหมวดหมู่</h3>
                 <ViewTrendChart
                     v-if="rows.length > 0"
                     :labels="rows.map(categoryName)"
@@ -56,7 +58,7 @@ const periodLabel = computed(() => PERIOD_OPTIONS.find((p) => p.value === props.
                     horizontal
                     :height="Math.max(220, rows.length * 32 + 40)"
                 />
-                <p v-else class="py-10 text-center text-sm text-gray-500">ไม่มีการเข้าชมในช่วงนี้</p>
+                <p v-else class="py-10 text-center text-sm text-gray-500">ไม่มีข้อมูลในช่วงนี้</p>
             </section>
 
             <section class="rounded-2xl border border-gray-200 bg-white p-4 shadow-xs">
@@ -67,7 +69,7 @@ const periodLabel = computed(() => PERIOD_OPTIONS.find((p) => p.value === props.
                     :datasets="trendDatasets"
                     :type="chartType"
                 />
-                <p v-else class="py-10 text-center text-sm text-gray-500">ไม่มีการเข้าชมในช่วงนี้</p>
+                <p v-else class="py-10 text-center text-sm text-gray-500">ไม่มีข้อมูลในช่วงนี้</p>
             </section>
         </div>
 
@@ -77,10 +79,10 @@ const periodLabel = computed(() => PERIOD_OPTIONS.find((p) => p.value === props.
                     <thead class="border-b border-gray-200 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                         <tr>
                             <th class="px-4 py-3 font-medium">หมวดหมู่</th>
-                            <th class="w-28 px-4 py-3 text-right font-medium">ยอดเข้าชม</th>
-                            <th class="w-36 px-4 py-3 text-right font-medium">ผู้เข้าชมไม่ซ้ำ</th>
-                            <th class="w-44 px-4 py-3 text-right font-medium">บทความที่มีผู้เข้าชม</th>
-                            <th class="w-28 px-4 py-3 text-right font-medium">เฉลี่ย/บทความ</th>
+                            <th class="w-28 px-4 py-3 text-right font-medium">{{ terms.count }}</th>
+                            <th class="w-36 px-4 py-3 text-right font-medium">{{ terms.unique }}</th>
+                            <th class="w-44 px-4 py-3 text-right font-medium">{{ terms.item }}ที่มีการ{{ terms.verb }}</th>
+                            <th class="w-28 px-4 py-3 text-right font-medium">เฉลี่ย/{{ terms.item }}</th>
                             <th class="w-24 px-4 py-3 text-right font-medium">สัดส่วน</th>
                         </tr>
                     </thead>
@@ -94,7 +96,7 @@ const periodLabel = computed(() => PERIOD_OPTIONS.find((p) => p.value === props.
                             <td class="px-4 py-3 text-right text-gray-500 tabular-nums">{{ percent(row.views, total) }}</td>
                         </tr>
                         <tr v-if="rows.length === 0">
-                            <td colspan="6" class="px-4 py-10 text-center text-gray-500">ไม่มีการเข้าชมในช่วงนี้</td>
+                            <td colspan="6" class="px-4 py-10 text-center text-gray-500">ไม่มีข้อมูลในช่วงนี้</td>
                         </tr>
                     </tbody>
                 </table>

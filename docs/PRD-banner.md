@@ -191,6 +191,18 @@ module_code `banner.setting` / `banner.setting.cache`)
 
 ---
 
+## 4. รายงานการคลิก
+
+ใช้ระบบรายงานชุดเดียวกับบทความ (รายละเอียดดู [PRD-article.md](PRD-article.md) §4) แต่ตัวเลขเป็น **ยอดคลิก** จาก `banner_item_click`
+(นับผ่าน `POST front.banner.click` — ดู PRD-front.md §8) คำบนหน้าจอ/CSV เปลี่ยนเป็น "ยอดคลิก / ผู้คลิกไม่ซ้ำ" อัตโนมัติจาก `metric = click`:
+- **รายป้ายโฆษณา** `admin.banner.item.report` (+`.export`) สิทธิ์ `banner.item.view`, log `banner.item.report` — แท็บในหน้าแก้ไข
+  และคอลัมน์สุดท้ายของหน้ารายการ
+- **เมนูรายงาน** `admin.banner.report.*` (`BannerReportController`) สิทธิ์ `banner.report.view`, log `banner.report.<แท็บ>` —
+  แท็บ รายการคลิก / ภาพรวม / ป้ายโฆษณายอดนิยม / ตามหมวดหมู่ / ผู้คลิกและแหล่งที่มา / ช่วงเวลา
+- referrer ของการคลิก = หน้าที่มี banner อยู่ จึงแสดงสัดส่วน **"หน้าที่มีการคลิก"** (path ภายในเว็บ) เพิ่มจากโมดูลอื่น
+
+---
+
 ## Roadmap
 
 | รอบ | ขอบเขต | สถานะ |

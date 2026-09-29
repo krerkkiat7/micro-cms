@@ -51,6 +51,7 @@ class MenuSeeder extends Seeder
             // module : banner
             ['banner-category', 'banner', 'หมวดหมู่', 'FolderTree', 'admin.banner.category.index', 'banner.category.view', 1],
             ['banner-item', 'banner', 'ป้ายโฆษณา', 'List', 'admin.banner.item.index', 'banner.item.view', 2],
+            ['banner-report', 'banner', 'รายงาน', 'ChartColumn', 'admin.banner.report.index', 'banner.report.view', 3],
             ['banner-setting', 'banner', 'ตั้งค่า', 'SlidersHorizontal', 'admin.banner.setting.index', 'banner.setting.manage', 99],
 
             // module : popup
@@ -62,6 +63,7 @@ class MenuSeeder extends Seeder
 
             // module : page
             ['page-item', 'page', 'หน้าเพจ', 'List', 'admin.page.item.index', 'page.item.view', 1],
+            ['page-report', 'page', 'รายงาน', 'ChartColumn', 'admin.page.report.index', 'page.report.view', 2],
 
             // module : contactus
             ['contactus-item', 'contactus', 'ติดต่อเรา', 'List', 'admin.contactus.item.index', 'contactus.item.view', 1],

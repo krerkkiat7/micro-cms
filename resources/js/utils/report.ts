@@ -1,7 +1,8 @@
-import { ref, watch } from 'vue';
+import { inject, provide, ref, watch } from 'vue';
+import type { InjectionKey } from 'vue';
 
 /**
- * ชนิดข้อมูล/ตัวช่วยของหน้ารายงานการเข้าชม (ตรงกับ App\Support\Report\ViewReport + ArticleReport)
+ * ชนิดข้อมูล/ตัวช่วยของหน้ารายงานการเข้าชม/คลิก (ตรงกับ App\Support\Report\ViewReport + ItemReport)
  */
 
 export type ReportPeriod = 'day' | 'week' | 'month' | 'year';
@@ -54,6 +55,47 @@ export interface Breakdowns {
 export interface Referrers {
     sources: { key: string; views: number }[];
     hosts: { key: string; views: number }[];
+    paths: { key: string; views: number }[];
+}
+
+export type ReportMetric = 'view' | 'click';
+
+/** ข้อมูลโมดูลของเมนูรายงาน (ItemReportController::moduleMeta) */
+export interface ReportModule {
+    key: string;
+    title: string;
+    item_label: string;
+    metric: ReportMetric;
+    has_category: boolean;
+    route_prefix: string;
+    item_report_route: string;
+}
+
+/** คำที่ใช้ในหน้ารายงาน — เปลี่ยนตามชนิดตัวเลข (เข้าชม / คลิก) และคำเรียกรายการของโมดูล */
+export interface ReportTerms {
+    count: string;
+    unique: string;
+    verb: string;
+    item: string;
+}
+
+export function reportTerms(metric: ReportMetric, item = 'บทความ'): ReportTerms {
+    return metric === 'click'
+        ? { count: 'ยอดคลิก', unique: 'ผู้คลิกไม่ซ้ำ', verb: 'คลิก', item }
+        : { count: 'ยอดเข้าชม', unique: 'ผู้เข้าชมไม่ซ้ำ', verb: 'เข้าชม', item };
+}
+
+const TERMS_KEY: InjectionKey<ReportTerms> = Symbol('reportTerms');
+
+/** ให้ component รายงานที่อยู่ข้างใต้ใช้คำชุดนี้ (เรียกใน setup ของหน้า/โครงหน้า) */
+export function provideReportTerms(metric: ReportMetric, item: string): ReportTerms {
+    const terms = reportTerms(metric, item);
+    provide(TERMS_KEY, terms);
+    return terms;
+}
+
+export function useReportTerms(): ReportTerms {
+    return inject(TERMS_KEY, reportTerms('view'));
 }
 
 export interface TopRow {
@@ -157,21 +199,23 @@ export function filterQuery(filters: ReportFilters): Record<string, string> {
     return query;
 }
 
-/** แท็บของเมนูรายงานบทความ — แท็บรายงานส่งตัวกรองช่วงวันที่ต่อกันได้ */
-export function articleReportTabs(active: string, filters?: ReportFilters) {
+/** แท็บของเมนูรายงานของโมดูล — แท็บรายงานส่งตัวกรองช่วงวันที่ต่อกันได้ (แท็บตามหมวดหมู่เฉพาะโมดูลที่มีหมวดหมู่) */
+export function reportTabs(module: ReportModule, active: string, filters?: ReportFilters) {
     const query = filters ? filterQuery(filters) : {};
-    const tabs: { key: string; label: string; route: string; carry: boolean }[] = [
-        { key: 'index', label: 'รายการเข้าชม', route: 'admin.article.report.index', carry: false },
-        { key: 'overview', label: 'ภาพรวม', route: 'admin.article.report.overview', carry: true },
-        { key: 'top', label: 'บทความยอดนิยม', route: 'admin.article.report.top', carry: true },
-        { key: 'category', label: 'ตามหมวดหมู่', route: 'admin.article.report.category', carry: true },
-        { key: 'audience', label: 'ผู้เข้าชมและแหล่งที่มา', route: 'admin.article.report.audience', carry: true },
-        { key: 'time', label: 'ช่วงเวลา', route: 'admin.article.report.time', carry: true },
+    const click = module.metric === 'click';
+    const tabs: { key: string; label: string; carry: boolean }[] = [
+        { key: 'index', label: click ? 'รายการคลิก' : 'รายการเข้าชม', carry: false },
+        { key: 'overview', label: 'ภาพรวม', carry: true },
+        { key: 'top', label: `${module.item_label}ยอดนิยม`, carry: true },
+        ...(module.has_category ? [{ key: 'category', label: 'ตามหมวดหมู่', carry: true }] : []),
+        { key: 'audience', label: click ? 'ผู้คลิกและแหล่งที่มา' : 'ผู้เข้าชมและแหล่งที่มา', carry: true },
+        { key: 'time', label: 'ช่วงเวลา', carry: true },
     ];
 
     return tabs.map((tab) => ({
+        key: tab.key,
         label: tab.label,
-        href: route(tab.route, tab.carry ? query : {}),
+        href: route(`${module.route_prefix}.${tab.key}`, tab.carry ? query : {}),
         active: tab.key === active,
     }));
 }

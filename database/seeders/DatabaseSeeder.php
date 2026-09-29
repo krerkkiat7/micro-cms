@@ -55,6 +55,7 @@ class DatabaseSeeder extends Seeder
             ['banner101', 'banner', null, 'banner.item.view', 'แสดงป้ายโฆษณา', 2],
             ['banner102', 'banner', 'banner101', 'banner.item.manage', 'เพิ่ม/แก้ไขป้ายโฆษณา', 1],
             ['banner103', 'banner', 'banner102', 'banner.item.delete', 'ลบป้ายโฆษณา', 1],
+            ['banner201', 'banner', null, 'banner.report.view', 'แสดงรายงาน', 3],
             ['banner901', 'banner', null, 'banner.setting.manage', 'ตั้งค่า', 99],
 
             // module : popup
@@ -72,6 +73,7 @@ class DatabaseSeeder extends Seeder
             ['page001', 'page', null, 'page.item.view', 'แสดงเพจ', 1],
             ['page002', 'page', 'page001', 'page.item.manage', 'เพิ่ม/แก้ไขเพจ', 1],
             ['page003', 'page', 'page002', 'page.item.delete', 'ลบเพจ', 1],
+            ['page101', 'page', null, 'page.report.view', 'แสดงรายงาน', 2],
 
             // module : contactus
             ['contactus001', 'contactus', null, 'contactus.item.view', 'แสดงติดต่อเรา', 1],

@@ -7,12 +7,14 @@ use App\Http\Controllers\Admin\Article\ArticleSettingController;
 use App\Http\Controllers\Admin\Article\ArticleTagController;
 use App\Http\Controllers\Admin\Banner\BannerCategoryController;
 use App\Http\Controllers\Admin\Banner\BannerItemController;
+use App\Http\Controllers\Admin\Banner\BannerReportController;
 use App\Http\Controllers\Admin\Banner\BannerSettingController;
 use App\Http\Controllers\Admin\Contactus\ContactusItemController;
 use App\Http\Controllers\Admin\Contactus\ContactusSettingController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Intropage\IntropageItemController;
 use App\Http\Controllers\Admin\Page\PageItemController;
+use App\Http\Controllers\Admin\Page\PageReportController;
 use App\Http\Controllers\Admin\Popup\PopupItemController;
 use App\Http\Controllers\Admin\Popup\PopupSettingController;
 use App\Http\Controllers\Admin\ProfileController;
@@ -220,8 +222,21 @@ Route::prefix('admin')->group(function () {
             Route::get('/add', [BannerItemController::class, 'add'])->name('admin.banner.item.add');
             Route::post('/', [BannerItemController::class, 'store'])->name('admin.banner.item.store');
             Route::get('/{item}/edit', [BannerItemController::class, 'edit'])->name('admin.banner.item.edit');
+            Route::get('/{item}/report', [BannerItemController::class, 'report'])->name('admin.banner.item.report');
+            Route::get('/{item}/report/export', [BannerItemController::class, 'reportExport'])->name('admin.banner.item.report.export');
             Route::put('/{item}', [BannerItemController::class, 'update'])->name('admin.banner.item.update');
             Route::delete('/{item}', [BannerItemController::class, 'destroy'])->name('admin.banner.item.destroy');
+        });
+
+        // รายงานการคลิกป้ายโฆษณา (ภาพรวมทั้งโมดูล) — ตรวจสอบสิทธิ์ banner.report.view ใน BannerReportController (ฐาน ItemReportController)
+        Route::prefix('banner/report')->group(function () {
+            Route::get('/', [BannerReportController::class, 'index'])->name('admin.banner.report.index');
+            Route::get('/overview', [BannerReportController::class, 'overview'])->name('admin.banner.report.overview');
+            Route::get('/top', [BannerReportController::class, 'top'])->name('admin.banner.report.top');
+            Route::get('/category', [BannerReportController::class, 'category'])->name('admin.banner.report.category');
+            Route::get('/audience', [BannerReportController::class, 'audience'])->name('admin.banner.report.audience');
+            Route::get('/time', [BannerReportController::class, 'time'])->name('admin.banner.report.time');
+            Route::get('/export', [BannerReportController::class, 'export'])->name('admin.banner.report.export');
         });
 
         // ตั้งค่าโมดูลป้ายโฆษณา — ยังไม่มีฟิลด์ตั้งค่า หน้า index จึงเป็นหน้าล้างแคช (banner.setting.manage)
@@ -292,10 +307,22 @@ Route::prefix('admin')->group(function () {
             Route::get('/widget/preview', [PageItemController::class, 'widgetPreview'])->name('admin.page.item.widget.preview');
             Route::post('/', [PageItemController::class, 'store'])->name('admin.page.item.store');
             Route::get('/{item}/edit', [PageItemController::class, 'edit'])->name('admin.page.item.edit');
+            Route::get('/{item}/report', [PageItemController::class, 'report'])->name('admin.page.item.report');
+            Route::get('/{item}/report/export', [PageItemController::class, 'reportExport'])->name('admin.page.item.report.export');
             Route::put('/{item}', [PageItemController::class, 'update'])->name('admin.page.item.update');
             Route::delete('/{item}', [PageItemController::class, 'destroy'])->name('admin.page.item.destroy');
             Route::get('/{item}/layout', [PageItemController::class, 'layout'])->name('admin.page.item.layout');
             Route::put('/{item}/layout', [PageItemController::class, 'layoutUpdate'])->name('admin.page.item.layout.update');
+        });
+
+        // รายงานการเข้าชมหน้าเพจ (ภาพรวมทั้งโมดูล) — ตรวจสอบสิทธิ์ page.report.view ใน PageReportController (ฐาน ItemReportController)
+        Route::prefix('page/report')->group(function () {
+            Route::get('/', [PageReportController::class, 'index'])->name('admin.page.report.index');
+            Route::get('/overview', [PageReportController::class, 'overview'])->name('admin.page.report.overview');
+            Route::get('/top', [PageReportController::class, 'top'])->name('admin.page.report.top');
+            Route::get('/audience', [PageReportController::class, 'audience'])->name('admin.page.report.audience');
+            Route::get('/time', [PageReportController::class, 'time'])->name('admin.page.report.time');
+            Route::get('/export', [PageReportController::class, 'export'])->name('admin.page.report.export');
         });
 
         // จัดการผู้ใช้งานหลังบ้าน (user_type = back) — ตรวจสอบสิทธิ์ในแต่ละ method ของ UserController
