@@ -477,6 +477,9 @@ primary key = `(group, name)` — Eloquent ไม่รองรับ composite
 
 **หน้าจอ** — ฟอร์มแยกแท็บตาม group; แต่ละ field map กับ 1 แถว; บันทึกทั้งกลุ่มพร้อมกัน (upsert)
 
+**กลุ่ม Google Map** (`google_map`) — `api_key` ของ Maps Embed API ใช้สร้างแผนที่จากพิกัดในหน้าติดต่อเรา (`App\Support\GoogleMap`)
+ว่าง = ใช้ลิงก์ embed แบบไม่ใช้ key (แสดงไม่เรียบร้อย) — route `admin.system.setting.update.google_map` ดู [PRD-contactus.md](PRD-contactus.md) §5
+
 **helper (เสนอ)** — `setting('site.site_name', $default)` ที่ cache รวมทั้งตารางไว้ (invalidate ตอนบันทึก)
 
 **Permission** — `system.setting.view`, `system.setting.update`

@@ -32,6 +32,7 @@ use App\Http\Controllers\Front\Article\ArticleCategoryController as FrontArticle
 use App\Http\Controllers\Front\Article\ArticleItemController as FrontArticleItemController;
 use App\Http\Controllers\Front\Article\ArticleTagController as FrontArticleTagController;
 use App\Http\Controllers\Front\Banner\BannerItemController as FrontBannerItemController;
+use App\Http\Controllers\Front\Contactus\ContactusController as FrontContactusController;
 use App\Http\Controllers\Front\FileController as FrontFileController;
 use App\Http\Controllers\Front\Intropage\IntropageController;
 use App\Http\Controllers\Front\Page\PageItemController as FrontPageItemController;
@@ -112,6 +113,12 @@ Route::group([
     Route::get('/article/tag/{tag}', [FrontArticleTagController::class, 'show'])
         ->where('tag', '.+')
         ->name('front.article.tag');
+
+    // ติดต่อเรา — หน้าเดี่ยวตามตั้งค่าโมดูลติดต่อเรา + ส่งแบบฟอร์ม (Turnstile + honeypot + rate limit ใน controller/request)
+    Route::get('/contactus', [FrontContactusController::class, 'show'])->name('front.contactus.item');
+    Route::post('/contactus', [FrontContactusController::class, 'store'])
+        ->name('front.contactus.item.store')
+        ->middleware('throttle:10,1');
 });
 
 /*
