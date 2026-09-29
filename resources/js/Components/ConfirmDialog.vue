@@ -67,12 +67,6 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
                     </p>
 
                     <div class="mt-6 flex justify-end gap-3">
-                        <SecondaryButton
-                            :disabled="processing"
-                            @click="emit('cancel')"
-                        >
-                            {{ cancelText }}
-                        </SecondaryButton>
                         <DangerButton
                             :disabled="processing"
                             :class="{ 'opacity-50': processing }"
@@ -80,6 +74,12 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
                         >
                             {{ confirmText }}
                         </DangerButton>
+                        <SecondaryButton
+                            :disabled="processing"
+                            @click="emit('cancel')"
+                        >
+                            {{ cancelText }}
+                        </SecondaryButton>
                     </div>
                 </div>
             </div>

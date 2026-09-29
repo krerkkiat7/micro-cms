@@ -6,18 +6,16 @@ import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
 import TextInput from '@/Components/TextInput.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
-import SecondaryButton from '@/Components/SecondaryButton.vue';
 import FilePickerField from '@/Components/Admin/FileManager/FilePickerField.vue';
 import SettingSection from '@/Components/Admin/PageLayout/widgets/SettingSection.vue';
-import SlidesetTextFields from '@/Components/Admin/PageLayout/widgets/SlidesetTextFields.vue';
 import FlagField from '@/Components/Admin/PageLayout/widgets/FlagField.vue';
 import ContactusDisplayTypePicker from '@/Components/Admin/Contactus/ContactusDisplayTypePicker.vue';
 import MapPickerDialog from '@/Components/Admin/Contactus/MapPickerDialog.vue';
+import ContactusTextFields from '@/Components/Admin/Contactus/ContactusTextFields.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { AlertTriangle, MapPin, Save, ShieldAlert } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import { CONTACTUS_FORM_FIELDS, CONTACTUS_TEXT_PARTS } from '@/utils/contactus';
-import type { CardListSetting } from '@/utils/pageWidget';
 import type { FileItem } from '@/types';
 
 /**
@@ -49,7 +47,6 @@ const form = useForm<Record<string, string | FileItem[]>>({
 
 // ฟิลด์แบบ 'Y'/'N' และข้อความทั่วไปของฟอร์ม — เข้าถึงผ่านชื่อคีย์ที่ประกอบขึ้น (show_address, form_phone_show ฯลฯ)
 const values = form as unknown as Record<string, string>;
-const textSetting = form as unknown as CardListSetting;
 
 function flag(name: string) {
     return computed({
@@ -138,7 +135,7 @@ function submit() {
                             :description="contact[item.part] ? `ค่าปัจจุบัน: ${contact[item.part]}` : 'ยังไม่ได้กรอกในตั้งค่าระบบ'"
                             :toggleable="item.toggleable"
                         >
-                            <SlidesetTextFields :setting="textSetting" :part="item.part" :fonts="fonts" />
+                            <ContactusTextFields :values="values" :part="item.part" :fonts="fonts" />
                         </SettingSection>
 
                         <SettingSection v-model:enabled="showSocial" title="Social Media" description="ลิงก์ Social Media ที่กรอกไว้ในตั้งค่าระบบ" toggleable>
@@ -190,9 +187,13 @@ function submit() {
                                     <InputError :message="errors.longitude" />
                                 </div>
                                 <div class="flex items-end sm:col-span-2">
-                                    <SecondaryButton type="button" class="w-full justify-center sm:mb-px" @click="showMapPicker = true">
+                                    <button
+                                        type="button"
+                                        class="inline-flex w-full items-center justify-center rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white shadow-xs transition-colors hover:bg-sky-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2"
+                                        @click="showMapPicker = true"
+                                    >
                                         <MapPin class="mr-1.5 size-4" /> เลือกจากแผนที่
-                                    </SecondaryButton>
+                                    </button>
                                 </div>
                             </div>
                         </SettingSection>

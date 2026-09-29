@@ -23,7 +23,10 @@ class ContactusSetting
      */
     public const DISPLAY_TYPES = ['stacked', 'split_info', 'half'];
 
-    /** ข้อความข้อมูลติดต่อที่จัดรูปแบบได้ — owner (ชื่อเจ้าของ) บังคับแสดงเสมอ จึงไม่มี show_owner */
+    /**
+     * ข้อความข้อมูลติดต่อที่จัดรูปแบบได้ — owner (ชื่อเจ้าของ) บังคับแสดงเสมอ จึงไม่มี show_owner
+     * แต่ละข้อความมี ขนาด / ฟอนต์ / ตัวหนา / ตัวเอียง / ขีดเส้นใต้ / สี (`{part}_font_size` ฯลฯ)
+     */
     public const TEXT_PARTS = ['owner', 'address', 'phone', 'fax', 'mobile', 'email'];
 
     /**
@@ -56,6 +59,8 @@ class ContactusSetting
             $values["{$part}_font_size"] = $part === 'owner' ? '24' : '16';
             $values["{$part}_font_family"] = PageTextStyle::DEFAULT_FONT;
             $values["{$part}_bold"] = $part === 'owner' ? 'Y' : 'N';
+            $values["{$part}_italic"] = 'N';
+            $values["{$part}_underline"] = 'N';
             $values["{$part}_color"] = $part === 'owner' ? '#000000' : '#374151';
         }
 
@@ -93,6 +98,8 @@ class ContactusSetting
             $rules["{$part}_font_size"] = ['required', 'integer', 'between:'.PageTextStyle::FONT_SIZE_MIN.','.PageTextStyle::FONT_SIZE_MAX];
             $rules["{$part}_font_family"] = ['required', Rule::in(PageTextStyle::fontNames())];
             $rules["{$part}_bold"] = $flag;
+            $rules["{$part}_italic"] = $flag;
+            $rules["{$part}_underline"] = $flag;
             $rules["{$part}_color"] = ['required', 'string', 'max:20', 'regex:'.self::COLOR_REGEX];
         }
 

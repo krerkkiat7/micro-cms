@@ -37,13 +37,13 @@ class GoogleMap
     }
 
     /**
-     * ลิงก์เปิดตำแหน่งในเว็บ/แอป Google Maps (ปุ่ม "เปิดใน Google Maps")
+     * ลิงก์เส้นทางไปยังพิกัดใน Google Maps (ปุ่ม "เส้นทาง" บนกล่องรายละเอียดสถานที่ — เปิดหน้าใหม่ จุดเริ่มต้น = ตำแหน่งผู้ใช้)
      */
-    public static function linkUrl(float $latitude, float $longitude): string
+    public static function directionsUrl(float $latitude, float $longitude): string
     {
-        return 'https://www.google.com/maps/search/?'.http_build_query([
+        return 'https://www.google.com/maps/dir/?'.http_build_query([
             'api' => 1,
-            'query' => self::coordinates($latitude, $longitude),
+            'destination' => self::coordinates($latitude, $longitude),
         ]);
     }
 

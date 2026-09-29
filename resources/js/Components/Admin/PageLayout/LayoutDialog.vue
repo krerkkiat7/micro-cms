@@ -66,8 +66,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
                     <div class="flex items-center gap-3 border-t border-gray-100 px-6 py-4">
                         <slot name="footer-left" />
                         <div class="ml-auto flex gap-3">
-                            <SecondaryButton type="button" @click="emit('close')">ยกเลิก</SecondaryButton>
                             <PrimaryButton type="button" :disabled="confirmDisabled" @click="emit('confirm')">{{ confirmText }}</PrimaryButton>
+                            <SecondaryButton type="button" @click="emit('close')">ยกเลิก</SecondaryButton>
                         </div>
                     </div>
                 </div>

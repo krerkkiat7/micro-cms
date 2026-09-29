@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BackToListButton from '@/Components/Admin/BackToListButton.vue';
 import AdminLayout from '@/Layouts/Admin/AdminLayout.vue';
 import PageHeader from '@/Components/Admin/PageHeader.vue';
 import TabNav from '@/Components/Admin/TabNav.vue';
@@ -9,7 +10,7 @@ import YesNoCheckbox from '@/Components/Admin/Template/YesNoCheckbox.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import { Save } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { LOADING_SPINNERS, LOADING_TYPES, templateTabs } from '@/utils/template';
@@ -168,9 +169,7 @@ const breadcrumbs = computed(() => [
                     <PrimaryButton v-if="can.manage" type="submit" :disabled="form.processing">
                         <Save class="mr-1.5 size-4" /> บันทึก
                     </PrimaryButton>
-                    <Link :href="route('admin.system.template.index')" class="text-sm font-medium text-gray-500 hover:text-gray-700">
-                        กลับไปหน้ารายการ
-                    </Link>
+                    <BackToListButton :href="route('admin.system.template.index')" />
                 </div>
             </form>
         </div>

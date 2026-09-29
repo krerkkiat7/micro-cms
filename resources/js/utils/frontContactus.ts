@@ -6,7 +6,7 @@ export type ContactusTextPart = 'owner' | 'address' | 'phone' | 'fax' | 'mobile'
 
 export interface ContactusTextSetting {
     show: boolean;
-    style: { font_size: number; font_family: string; bold: boolean; color: string };
+    style: { font_size: number; font_family: string; bold: boolean; italic: boolean; underline: boolean; color: string };
 }
 
 export interface FrontContactusData {
@@ -14,8 +14,8 @@ export interface FrontContactusData {
     displayType: 'stacked' | 'split_info' | 'half';
     texts: Record<ContactusTextPart, ContactusTextSetting>;
     showSocial: boolean;
-    mapImage: { url: string; name: string } | null;
-    googleMap: { embedUrl: string; linkUrl: string } | null;
+    mapImage: { url: string; downloadUrl: string; name: string } | null;
+    googleMap: { embedUrl: string; directionsUrl: string } | null;
     fontsUrl: string | null;
 }
 

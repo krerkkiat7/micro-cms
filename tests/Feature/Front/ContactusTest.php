@@ -81,6 +81,23 @@ test('contactus page renders without a form while turnstile is not configured', 
     expect(ContactusItem::count())->toBe(0);
 });
 
+test('text styles and map links follow the settings', function () {
+    setContactusSetting('address_italic', 'Y');
+    setContactusSetting('address_underline', 'Y');
+    setContactusSetting('show_google_map', 'Y');
+    setContactusSetting('latitude', '13.7563');
+    setContactusSetting('longitude', '100.5018');
+
+    $this->get('/th/contactus')
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('contactus.texts.address.style.italic', true)
+            ->where('contactus.texts.address.style.underline', true)
+            ->where('contactus.texts.phone.style.italic', false)
+            ->where('contactus.googleMap.directionsUrl', 'https://www.google.com/maps/dir/?api=1&destination=13.7563%2C100.5018')
+            ->where('contactus.googleMap.embedUrl', fn ($url) => str_starts_with($url, 'https://maps.google.com/maps?q=13.7563%2C100.5018'))
+        );
+});
+
 test('form is offered with configured fields once turnstile is configured', function () {
     configureTurnstile();
     setContactusSetting('form_company_show', 'Y');

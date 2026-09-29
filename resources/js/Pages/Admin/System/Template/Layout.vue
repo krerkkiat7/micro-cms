@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BackToListButton from '@/Components/Admin/BackToListButton.vue';
 import AdminLayout from '@/Layouts/Admin/AdminLayout.vue';
 import PageHeader from '@/Components/Admin/PageHeader.vue';
 import TabNav from '@/Components/Admin/TabNav.vue';
@@ -12,7 +13,7 @@ import HeaderSettingsDialog from '@/Components/Admin/Template/HeaderSettingsDial
 import BodySettingsDialog from '@/Components/Admin/Template/BodySettingsDialog.vue';
 import FooterSettingsDialog from '@/Components/Admin/Template/FooterSettingsDialog.vue';
 import AsideSettingsDialog from '@/Components/Admin/Template/AsideSettingsDialog.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import type { RequestPayload } from '@inertiajs/core';
 import { Save } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
@@ -154,9 +155,7 @@ function formatDate(value: string | null): string {
                     </PrimaryButton>
                     <span v-if="dirty" class="text-sm font-medium text-amber-600">มีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก</span>
                 </template>
-                <Link :href="route('admin.system.template.index')" class="text-sm font-medium text-gray-500 hover:text-gray-700">
-                    กลับไปหน้ารายการ
-                </Link>
+                <BackToListButton :href="route('admin.system.template.index')" />
                 <span class="text-xs text-gray-500 sm:ml-auto">บันทึกโครงสร้างล่าสุด: {{ formatDate(template.layout_updated_at) }}</span>
             </div>
 
@@ -245,9 +244,7 @@ function formatDate(value: string | null): string {
                     </PrimaryButton>
                     <span v-if="dirty" class="text-sm font-medium text-amber-600">มีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก</span>
                 </template>
-                <Link :href="route('admin.system.template.index')" class="text-sm font-medium text-gray-500 hover:text-gray-700">
-                    กลับไปหน้ารายการ
-                </Link>
+                <BackToListButton :href="route('admin.system.template.index')" />
             </div>
         </div>
 

@@ -123,6 +123,8 @@ class ContactusController extends FrontController
                     'font_size' => (int) $settings["{$part}_font_size"],
                     'font_family' => $settings["{$part}_font_family"],
                     'bold' => $settings["{$part}_bold"] === 'Y',
+                    'italic' => $settings["{$part}_italic"] === 'Y',
+                    'underline' => $settings["{$part}_underline"] === 'Y',
                     'color' => $settings["{$part}_color"],
                 ],
             ];
@@ -142,7 +144,7 @@ class ContactusController extends FrontController
             $longitude = (float) $settings['longitude'];
             $googleMap = [
                 'embedUrl' => GoogleMap::embedUrl($latitude, $longitude, $lang),
-                'linkUrl' => GoogleMap::linkUrl($latitude, $longitude),
+                'directionsUrl' => GoogleMap::directionsUrl($latitude, $longitude),
             ];
         }
 
@@ -150,7 +152,7 @@ class ContactusController extends FrontController
             'displayType' => $settings['display_type'],
             'texts' => $texts,
             'showSocial' => $settings['show_social'] === 'Y',
-            'mapImage' => $mapImage ? ['url' => $mapImage['url'], 'name' => $mapImage['name']] : null,
+            'mapImage' => $mapImage ? ['url' => $mapImage['url'], 'downloadUrl' => $mapImage['download_url'], 'name' => $mapImage['name']] : null,
             'googleMap' => $googleMap,
             'fontsUrl' => PageTextStyle::stylesheetUrlFor(array_unique($fonts)),
             'formEnabled' => ContactusSetting::formEnabled($settings),

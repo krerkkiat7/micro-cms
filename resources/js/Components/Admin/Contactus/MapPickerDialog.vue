@@ -208,10 +208,10 @@ onBeforeUnmount(() => {
                     </div>
 
                     <div class="flex items-center justify-end gap-3 border-t border-gray-200 px-5 py-3">
-                        <SecondaryButton type="button" @click="emit('close')">ยกเลิก</SecondaryButton>
                         <PrimaryButton type="button" :disabled="!picked" @click="confirm">
                             <Check class="mr-1.5 size-4" /> ใช้พิกัดนี้
                         </PrimaryButton>
+                        <SecondaryButton type="button" @click="emit('close')">ยกเลิก</SecondaryButton>
                     </div>
                 </div>
             </div>

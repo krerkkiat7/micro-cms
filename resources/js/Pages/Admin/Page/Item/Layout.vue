@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BackToListButton from '@/Components/Admin/BackToListButton.vue';
 import AdminLayout from '@/Layouts/Admin/AdminLayout.vue';
 import PageHeader from '@/Components/Admin/PageHeader.vue';
 import TabNav from '@/Components/Admin/TabNav.vue';
@@ -13,7 +14,7 @@ import RowReorderDialog from '@/Components/Admin/PageLayout/RowReorderDialog.vue
 import ColumnReorderDialog from '@/Components/Admin/PageLayout/ColumnReorderDialog.vue';
 import WidgetReorderDialog from '@/Components/Admin/PageLayout/WidgetReorderDialog.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import type { RequestPayload } from '@inertiajs/core';
 import { Plus, Save } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue';
@@ -367,9 +368,7 @@ function formatDate(value: string | null): string {
                     </PrimaryButton>
                     <span v-if="dirty" class="text-sm font-medium text-amber-600">มีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก</span>
                 </template>
-                <Link :href="route('admin.page.item.index')" class="text-sm font-medium text-gray-500 hover:text-gray-700">
-                    กลับไปหน้ารายการ
-                </Link>
+                <BackToListButton :href="route('admin.page.item.index')" />
             </div>
         </div>
 

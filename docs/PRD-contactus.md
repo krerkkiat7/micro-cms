@@ -41,7 +41,7 @@
 | คีย์ | ค่า / ค่าเริ่มต้น | หมายเหตุ |
 |------|-------------------|----------|
 | `display_type` | `stacked` / `split_info` (default) / `half` | เลือกด้วยการ์ดภาพ SVG (`ContactusDisplayTypePicker.vue`) |
-| `{part}_font_size` / `_font_family` / `_bold` / `_color` | part = `owner`, `address`, `phone`, `fax`, `mobile`, `email` | owner 24px ตัวหนา ดำ, อื่น ๆ 16px `#374151`; ฟอนต์จาก `PageTextStyle::fontNames()` (UI เดียวกับ widget Slideset จาก banner — `SlidesetTextFields.vue`) |
+| `{part}_font_size` / `_font_family` / `_bold` / `_italic` / `_underline` / `_color` | part = `owner`, `address`, `phone`, `fax`, `mobile`, `email` | owner 24px ตัวหนา ดำ, อื่น ๆ 16px `#374151` ไม่เอียง/ไม่ขีดเส้นใต้; ฟอนต์จาก `PageTextStyle::fontNames()` — UI `Components/Admin/Contactus/ContactusTextFields.vue`: แถวเดียว ขนาด + ฟอนต์ + "จัดรูปแบบ" (ปุ่มไอคอน ตัวหนา/ตัวเอียง/ขีดเส้นใต้ `Components/Admin/FontStyleToggles.vue`) แล้วสีด้านล่าง |
 | `show_{part}` | `Y`/`N` (default `Y`) | ไม่มี `show_owner` — ชื่อเจ้าของแสดงเสมอ |
 | `show_social` | `Y` | ไอคอน Social Media จากตั้งค่าระบบ |
 | `show_map_image` + `map_image_id` | `N` + ว่าง | รูปแผนที่จากโมดูลจัดการไฟล์ (บังคับเลือกเมื่อแสดง) |
@@ -99,8 +99,10 @@ Model `App\Models\ContactusItem` — **`$guarded = ['*']`** (ไม่มี mas
 - **รูปแบบการแสดงผล:** `stacked` ข้อมูลติดต่อ (กึ่งกลาง) → รูปแผนที่ → Google Map → แบบฟอร์ม · `split_info` [ข้อมูลติดต่อ | แผนที่ + Google Map]
   แล้วแบบฟอร์มด้านล่าง · `half` [ข้อมูลติดต่อ + แผนที่ + Google Map | แบบฟอร์ม] — ส่วนที่ไม่มีข้อมูลยุบเป็นคอลัมน์เดียว
 - ข้อมูลการแสดงผลอยู่ใน `FrontCache` (`contactus.{lang}`); form token สร้างใหม่ทุก request (ไม่ cache)
+- **รูปแผนที่:** คลิกแล้ว **ดาวน์โหลดไฟล์** (`front.file.download`) มีแถบพื้นทึบคาดด้านล่างบนรูป "คลิกเพื่อดาวน์โหลดแผนที่"
 - **Google Map:** `App\Support\GoogleMap::embedUrl()` — มี API Key = Maps Embed API (`/maps/embed/v1/place`), ไม่มี = ลิงก์ embed แบบไม่ใช้ key
-  (แสดงได้แต่ไม่เรียบร้อย) + ลิงก์ "เปิดใน Google Maps"
+  (แสดงได้แต่ไม่เรียบร้อย) + **กล่องรายละเอียดสถานที่มุมซ้ายบน** (ชื่อเจ้าของ + ที่อยู่ จากตั้งค่าระบบ) พร้อมปุ่ม "เส้นทาง"
+  (`GoogleMap::directionsUrl()` = `/maps/dir/?api=1&destination=lat,lng` เปิดหน้าใหม่)
 - ส่วนหัว/breadcrumb: เมนูประเภท `contactus` (§4) ผ่าน `FrontMenuResolver::findFor($lang, 'contactus', 0)`; ไม่มีเมนู = หัวเรื่อง "ติดต่อเรา"
 - ข้อความ UI `lang/{th,en}/front.php` กลุ่ม `contactus_form`
 

@@ -33,7 +33,13 @@ const rows = computed(() =>
 );
 
 function style(part: ContactusTextPart) {
-    return fontCss(props.contactus.texts[part].style);
+    const setting = props.contactus.texts[part].style;
+
+    return {
+        ...fontCss(setting),
+        fontStyle: setting.italic ? 'italic' : 'normal',
+        textDecoration: setting.underline ? 'underline' : 'none',
+    };
 }
 </script>
 

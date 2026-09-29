@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BackToListButton from '@/Components/Admin/BackToListButton.vue';
 import AdminLayout from '@/Layouts/Admin/AdminLayout.vue';
 import PageHeader from '@/Components/Admin/PageHeader.vue';
 import SystemInfoCard from '@/Components/Admin/SystemInfoCard.vue';
@@ -6,14 +7,13 @@ import type { SystemAudit } from '@/Components/Admin/SystemInfoCard.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
-import SecondaryButton from '@/Components/SecondaryButton.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import Textarea from '@/Components/Textarea.vue';
 import { CONTACTUS_PROCESS_STATUS_OPTIONS } from '@/utils/contactus';
 import { formatDateTime } from '@/utils/date';
 import { languageLabel } from '@/utils/languages';
-import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ArrowLeft, Save } from 'lucide-vue-next';
+import { Head, useForm } from '@inertiajs/vue3';
+import { Save } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 /**
@@ -125,9 +125,7 @@ function submit() {
                 <PrimaryButton v-if="can.manage" type="submit" :disabled="form.processing">
                     <Save class="mr-1.5 size-4" /> บันทึก
                 </PrimaryButton>
-                <Link :href="route('admin.contactus.item.index')">
-                    <SecondaryButton type="button"><ArrowLeft class="mr-1.5 size-4" /> กลับหน้ารายการ</SecondaryButton>
-                </Link>
+                <BackToListButton :href="route('admin.contactus.item.index')" />
             </div>
         </form>
     </AdminLayout>

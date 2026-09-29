@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BackToListButton from '@/Components/Admin/BackToListButton.vue';
 import AdminLayout from '@/Layouts/Admin/AdminLayout.vue';
 import SystemInfoCard from '@/Components/Admin/SystemInfoCard.vue';
 import type { SystemAudit } from '@/Components/Admin/SystemInfoCard.vue';
@@ -11,7 +12,7 @@ import ConfirmDialog from '@/Components/ConfirmDialog.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import { Save, Trash2 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import { templateTabs } from '@/utils/template';
@@ -114,9 +115,7 @@ const breadcrumbs = computed(() => [
                     >
                         <Trash2 class="mr-1.5 size-4" /> ลบ
                     </DangerButton>
-                    <Link :href="route('admin.system.template.index')" class="text-sm font-medium text-gray-500 hover:text-gray-700">
-                        กลับไปหน้ารายการ
-                    </Link>
+                    <BackToListButton :href="route('admin.system.template.index')" />
                 </div>
             </form>
         </div>
