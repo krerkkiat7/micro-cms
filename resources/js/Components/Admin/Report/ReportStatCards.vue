@@ -37,8 +37,8 @@ const cards = computed(() => {
     const s = props.summary;
     const list: { label: string; value: string; hint: string; change?: number | null }[] = [
         { label: terms.count, value: formatNumber(s.views), hint: '', change: s.change.views },
-        { label: `${terms.unique} (session)`, value: formatNumber(s.sessions), hint: '', change: s.change.sessions },
-        { label: 'IP Address ไม่ซ้ำ', value: formatNumber(s.ips), hint: `เฉลี่ย ${formatDecimal(s.views_per_session)} ครั้ง / session` },
+        { label: `${terms.unique}${terms.uniqueSuffix}`, value: formatNumber(s.sessions), hint: '', change: s.change.sessions },
+        { label: 'IP Address ไม่ซ้ำ', value: formatNumber(s.ips), hint: `เฉลี่ย ${formatDecimal(s.views_per_session)} ครั้ง / ${terms.per}` },
         {
             label: 'เฉลี่ยต่อวัน',
             value: formatDecimal(s.avg_per_day),

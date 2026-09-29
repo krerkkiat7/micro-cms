@@ -1,18 +1,24 @@
 <script setup lang="ts">
 import { formatDateTime } from '@/utils/date';
-import type { PageStatRow } from '@/utils/backLogAccessReport';
+import type { PageStatRow } from '@/utils/logStats';
 import { formatDuration, formatNumber, percent } from '@/utils/report';
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
 /**
- * ตารางสถิติรายหน้าจอ (ตามชื่อหน้า) — เรียงคอลัมน์ได้ในหน้าจอ; compact = ย่อคอลัมน์ (ใช้ในภาพรวม)
+ * ตารางสถิติรายหน้า (ตามชื่อหน้า) — เรียงคอลัมน์ได้ในหน้าจอ; compact = ย่อคอลัมน์ (ใช้ในภาพรวม)
+ * pageLabel = คำเรียกหน้า (หลังบ้าน "หน้าจอ" / หน้าบ้าน "หน้า"), showUsers = แสดงคอลัมน์ผู้ใช้งาน (หน้าบ้านยังไม่มีผู้ใช้งาน)
  */
-const props = defineProps<{
-    rows: PageStatRow[];
-    total: number;
-    compact?: boolean;
-}>();
+const props = withDefaults(
+    defineProps<{
+        rows: PageStatRow[];
+        total: number;
+        compact?: boolean;
+        pageLabel?: string;
+        showUsers?: boolean;
+    }>(),
+    { compact: false, pageLabel: 'หน้าจอ', showUsers: true },
+);
 
 type SortKey = 'views' | 'users' | 'sessions' | 'avg_seconds' | 'total_seconds' | 'last_at';
 
@@ -20,9 +26,9 @@ const sortKey = ref<SortKey>('views');
 const sortDir = ref<'asc' | 'desc'>('desc');
 
 const columns = computed<{ key: SortKey; label: string }[]>(() => [
-    { key: 'views', label: 'เข้าหน้าจอ' },
-    { key: 'users', label: 'ผู้ใช้งาน' },
-    ...(props.compact ? [] : [{ key: 'sessions' as const, label: 'เข้าระบบ' }]),
+    { key: 'views', label: `เปิด${props.pageLabel}` },
+    ...(props.showUsers ? [{ key: 'users' as const, label: 'ผู้ใช้งาน' }] : []),
+    ...(props.compact && props.showUsers ? [] : [{ key: 'sessions' as const, label: props.showUsers ? 'เข้าระบบ' : 'ผู้เข้าชม (session)' }]),
     { key: 'avg_seconds', label: 'เวลาเฉลี่ย' },
     ...(props.compact
         ? []
@@ -70,7 +76,7 @@ function cell(row: PageStatRow, key: SortKey): string {
             <table class="w-full text-left text-sm" :class="compact ? 'min-w-[640px]' : 'min-w-[960px]'">
                 <thead class="border-b border-gray-200 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                     <tr>
-                        <th class="px-4 py-3 font-medium">หน้าจอ</th>
+                        <th class="px-4 py-3 font-medium">{{ pageLabel }}</th>
                         <th v-for="col in columns" :key="col.key" class="px-4 py-3 text-right font-medium whitespace-nowrap">
                             <button type="button" class="inline-flex items-center gap-1 transition-colors hover:text-gray-700" @click="sortBy(col.key)">
                                 {{ col.label }}

@@ -29,7 +29,7 @@ const periodLabel = computed(() => PERIOD_OPTIONS.find((p) => p.value === props.
 
 const datasets = computed(() => [
     { label: terms.count, data: props.series.map((r) => r.views), color: SERIES_COLORS[0] },
-    { label: `${terms.unique} (session)`, data: props.series.map((r) => r.sessions), color: SERIES_COLORS[1] },
+    { label: `${terms.unique}${terms.uniqueSuffix}`, data: props.series.map((r) => r.sessions), color: SERIES_COLORS[1] },
 ]);
 </script>
 

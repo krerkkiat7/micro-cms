@@ -33,12 +33,15 @@ final class ViewReport
     /**
      * @param  array{date_from: string, date_to: string, period: string}  $filters
      * @param  Closure(Builder): mixed|null  $scope  จำกัดขอบเขตข้อมูล (รับ query ของตารางประวัติ)
+     * @param  string  $uniqueColumn  คอลัมน์ที่นับ "ไม่ซ้ำ" (ค่า sessions ในผลลัพธ์) — ตารางที่ไม่มี session_id ใช้คอลัมน์อื่นแทน
+     *                                เช่น log_back_login = username, log_back_action = user_id
      */
     public function __construct(
         private readonly string $table,
         private readonly string $fk,
         private readonly array $filters,
         private readonly ?Closure $scope = null,
+        private readonly string $uniqueColumn = 'session_id',
     ) {}
 
     /**
@@ -115,7 +118,7 @@ final class ViewReport
         $bucket = $this->bucketExpression();
 
         $rows = $this->query()
-            ->selectRaw("{$bucket} as bucket, count(*) as views, count(distinct {$this->table}.session_id) as sessions, count(distinct {$this->table}.remote_ip) as ips")
+            ->selectRaw("{$bucket} as bucket, count(*) as views, count(distinct {$this->table}.{$this->uniqueColumn}) as sessions, count(distinct {$this->table}.remote_ip) as ips")
             ->groupByRaw($bucket)
             ->get()
             ->keyBy('bucket');
@@ -231,7 +234,7 @@ final class ViewReport
         $qualified = "{$this->table}.{$column}";
 
         return $this->query()
-            ->selectRaw("{$qualified} as k, count(*) as views, count(distinct {$this->table}.session_id) as sessions")
+            ->selectRaw("{$qualified} as k, count(*) as views, count(distinct {$this->table}.{$this->uniqueColumn}) as sessions")
             ->groupBy($qualified)
             ->orderByDesc('views')
             ->limit($limit)
@@ -336,7 +339,7 @@ final class ViewReport
         $fk = $this->fk();
 
         return $this->query()
-            ->selectRaw("{$fk} as item_id, count(*) as views, count(distinct {$this->table}.session_id) as sessions, count(distinct {$this->table}.remote_ip) as ips")
+            ->selectRaw("{$fk} as item_id, count(*) as views, count(distinct {$this->table}.{$this->uniqueColumn}) as sessions, count(distinct {$this->table}.remote_ip) as ips")
             ->groupBy($fk)
             ->orderByDesc('views')
             ->orderBy($fk)
@@ -449,7 +452,7 @@ final class ViewReport
     private function totals(?string $from = null, ?string $to = null): array
     {
         $row = $this->query($from, $to)
-            ->selectRaw("count(*) as views, count(distinct {$this->table}.session_id) as sessions, count(distinct {$this->table}.remote_ip) as ips, count(distinct {$this->fk()}) as items")
+            ->selectRaw("count(*) as views, count(distinct {$this->table}.{$this->uniqueColumn}) as sessions, count(distinct {$this->table}.remote_ip) as ips, count(distinct {$this->fk()}) as items")
             ->first();
 
         return [

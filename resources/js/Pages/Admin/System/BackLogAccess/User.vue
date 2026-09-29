@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import DurationCards from '@/Components/Admin/BackLogAccess/DurationCards.vue';
-import StatsShell from '@/Components/Admin/BackLogAccess/StatsShell.vue';
+import DurationCards from '@/Components/Admin/LogStats/DurationCards.vue';
+import StatsShell from '@/Components/Admin/LogStats/StatsShell.vue';
 import UserStatsTable from '@/Components/Admin/BackLogAccess/UserStatsTable.vue';
 import ReportStatCards from '@/Components/Admin/Report/ReportStatCards.vue';
 import ViewTrendChart from '@/Components/Admin/Report/ViewTrendChart.vue';
-import { userLabel } from '@/utils/backLogAccessReport';
-import type { DurationSummary, UserStatRow } from '@/utils/backLogAccessReport';
+import { userLabel } from '@/utils/logStats';
+import type { DurationSummary, UserStatRow } from '@/utils/logStats';
 import { SERIES_COLORS } from '@/utils/report';
 import type { CategoryOption, ReportFilters, ReportSummary } from '@/utils/report';
 import { computed } from 'vue';
@@ -36,7 +36,7 @@ const timeDatasets = computed(() => [
 </script>
 
 <template>
-    <StatsShell tab="user" :filters="filters" :user-options="userOptions" :show-period="false" :show-chart-type="false">
+    <StatsShell log="backAccess" tab="user" :filters="filters" :user-options="userOptions" :show-period="false" :show-chart-type="false">
         <ReportStatCards :summary="summary" :show-items="!filters.user_id" />
 
         <DurationCards :duration="duration" :cap="durationCap" />

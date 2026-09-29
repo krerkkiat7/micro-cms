@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import DurationCards from '@/Components/Admin/BackLogAccess/DurationCards.vue';
-import PageStatsTable from '@/Components/Admin/BackLogAccess/PageStatsTable.vue';
-import StatsShell from '@/Components/Admin/BackLogAccess/StatsShell.vue';
+import DurationCards from '@/Components/Admin/LogStats/DurationCards.vue';
+import PageStatsTable from '@/Components/Admin/LogStats/PageStatsTable.vue';
+import StatsShell from '@/Components/Admin/LogStats/StatsShell.vue';
 import UserStatsTable from '@/Components/Admin/BackLogAccess/UserStatsTable.vue';
 import ReportSeriesTable from '@/Components/Admin/Report/ReportSeriesTable.vue';
 import ReportStatCards from '@/Components/Admin/Report/ReportStatCards.vue';
 import ViewTrendChart from '@/Components/Admin/Report/ViewTrendChart.vue';
-import type { DurationSummary, PageStatRow, UserStatRow } from '@/utils/backLogAccessReport';
+import type { DurationSummary, PageStatRow, UserStatRow } from '@/utils/logStats';
 import { PERIOD_OPTIONS, SERIES_COLORS, filterQuery, reportTerms, useChartType } from '@/utils/report';
 import type { CategoryOption, ReportFilters, ReportSummary, SeriesRow } from '@/utils/report';
 import { Link } from '@inertiajs/vue3';
@@ -35,7 +35,7 @@ const datasets = computed(() => [
 </script>
 
 <template>
-    <StatsShell v-model:chart-type="chartType" tab="overview" :filters="filters" :user-options="userOptions">
+    <StatsShell log="backAccess" v-model:chart-type="chartType" tab="overview" :filters="filters" :user-options="userOptions">
         <ReportStatCards :summary="summary" :show-items="!filters.user_id" />
 
         <DurationCards :duration="duration" :cap="durationCap" />

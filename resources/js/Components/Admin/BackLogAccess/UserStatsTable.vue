@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { formatDateTime } from '@/utils/date';
-import { userLabel } from '@/utils/backLogAccessReport';
-import type { UserStatRow } from '@/utils/backLogAccessReport';
+import { userLabel } from '@/utils/logStats';
+import type { UserStatRow } from '@/utils/logStats';
 import { filterQuery, formatDuration, formatNumber, percent } from '@/utils/report';
 import type { ReportFilters } from '@/utils/report';
 import { Link } from '@inertiajs/vue3';

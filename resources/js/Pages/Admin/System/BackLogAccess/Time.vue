@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import DurationCards from '@/Components/Admin/BackLogAccess/DurationCards.vue';
-import StatsShell from '@/Components/Admin/BackLogAccess/StatsShell.vue';
+import DurationCards from '@/Components/Admin/LogStats/DurationCards.vue';
+import StatsShell from '@/Components/Admin/LogStats/StatsShell.vue';
 import ReportStatCards from '@/Components/Admin/Report/ReportStatCards.vue';
 import ViewTrendChart from '@/Components/Admin/Report/ViewTrendChart.vue';
 import WeekHourHeatmap from '@/Components/Admin/Report/WeekHourHeatmap.vue';
-import type { DurationSummary } from '@/utils/backLogAccessReport';
+import { officeHoursSplit } from '@/utils/logStats';
+import type { DurationSummary } from '@/utils/logStats';
 import { SERIES_COLORS, WEEKDAYS, formatNumber, percent, useChartType } from '@/utils/report';
 import type { CategoryOption, ReportFilters, ReportSummary } from '@/utils/report';
 import { computed } from 'vue';
@@ -20,21 +21,16 @@ const props = defineProps<{
 
 const chartType = useChartType();
 
-/** เวลาทำการ: จันทร์-ศุกร์ 08:00-17:59 (ใช้แยกการใช้งานนอกเวลา — ใช้ตรวจสอบความผิดปกติได้) */
-const WORK_DAYS = 5;
-const WORK_START = 8;
-const WORK_END = 18;
-
 const byWeekday = computed(() => props.heatmap.map((hours) => hours.reduce((sum, v) => sum + v, 0)));
 const byHour = computed(() => Array.from({ length: 24 }, (_, h) => props.heatmap.reduce((sum, day) => sum + (day[h] ?? 0), 0)));
 const hourLabels = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, '0')}:00`);
 
-const total = computed(() => byWeekday.value.reduce((a, b) => a + b, 0));
-const workHours = computed(() =>
-    props.heatmap.slice(0, WORK_DAYS).reduce((sum, day) => sum + day.slice(WORK_START, WORK_END).reduce((a, b) => a + b, 0), 0),
-);
-const weekend = computed(() => byWeekday.value.slice(WORK_DAYS).reduce((a, b) => a + b, 0));
-const offHours = computed(() => total.value - workHours.value - weekend.value);
+// เวลาทำการ จ.–ศ. 08:00–17:59 (officeHoursSplit ใน utils/logStats) — ใช้ตรวจสอบการใช้งานนอกเวลาได้
+const split = computed(() => officeHoursSplit(props.heatmap));
+const total = computed(() => split.value.total);
+const workHours = computed(() => split.value.work);
+const weekend = computed(() => split.value.weekend);
+const offHours = computed(() => split.value.off);
 
 function busiest(values: number[], labels: string[]): string {
     const max = Math.max(...values);
@@ -44,7 +40,7 @@ function busiest(values: number[], labels: string[]): string {
 </script>
 
 <template>
-    <StatsShell v-model:chart-type="chartType" tab="time" :filters="filters" :user-options="userOptions" :show-period="false">
+    <StatsShell log="backAccess" v-model:chart-type="chartType" tab="time" :filters="filters" :user-options="userOptions" :show-period="false">
         <ReportStatCards :summary="summary" :show-items="!filters.user_id" />
 
         <DurationCards :duration="duration" :cap="durationCap" />

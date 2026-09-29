@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { formatDuration } from '@/utils/report';
-import type { DurationSummary } from '@/utils/backLogAccessReport';
+import type { DurationSummary } from '@/utils/logStats';
 
 /**
  * เวลาที่ใช้งาน (จาก last_visited - created_at ของแต่ละครั้งที่เปิดหน้าจอ, ตัดที่ cap วินาทีต่อครั้ง)

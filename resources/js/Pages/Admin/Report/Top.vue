@@ -29,7 +29,7 @@ const labels = computed(() => props.rows.map((r) => {
 
 const datasets = computed(() => [
     { label: terms.count, data: props.rows.map((r) => r.views), color: SERIES_COLORS[0] },
-    { label: `${terms.unique} (session)`, data: props.rows.map((r) => r.sessions), color: SERIES_COLORS[1] },
+    { label: `${terms.unique}${terms.uniqueSuffix}`, data: props.rows.map((r) => r.sessions), color: SERIES_COLORS[1] },
 ]);
 </script>
 

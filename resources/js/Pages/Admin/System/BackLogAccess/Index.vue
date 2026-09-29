@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import StatsShell from '@/Components/Admin/BackLogAccess/StatsShell.vue';
+import StatsShell from '@/Components/Admin/LogStats/StatsShell.vue';
 import DetailDialog from '@/Components/Admin/DetailDialog.vue';
 import Pagination from '@/Components/Pagination.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -150,7 +150,7 @@ const detailRows = computed<{ label: string; value: string }[]>(() => {
 </script>
 
 <template>
-    <StatsShell tab="index">
+    <StatsShell log="backAccess" tab="index">
         <!-- ตัวกรอง -->
         <form
             class="rounded-2xl border border-gray-200 bg-white p-4 shadow-xs"

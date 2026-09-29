@@ -21,10 +21,13 @@ use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\System\BackLogAccessController;
 use App\Http\Controllers\Admin\System\BackLogAccessReportController;
 use App\Http\Controllers\Admin\System\BackLogActionController;
+use App\Http\Controllers\Admin\System\BackLogActionReportController;
 use App\Http\Controllers\Admin\System\BackLogLoginController;
+use App\Http\Controllers\Admin\System\BackLogLoginReportController;
 use App\Http\Controllers\Admin\System\FileController;
 use App\Http\Controllers\Admin\System\FileServeController;
 use App\Http\Controllers\Admin\System\FrontLogAccessController;
+use App\Http\Controllers\Admin\System\FrontLogAccessReportController;
 use App\Http\Controllers\Admin\System\FrontMenuController;
 use App\Http\Controllers\Admin\System\SettingController;
 use App\Http\Controllers\Admin\System\TemplateController;
@@ -384,12 +387,12 @@ Route::prefix('admin')->group(function () {
             // การเข้าชม (log_back_access)
             Route::prefix('access')->group(function () {
                 Route::get('/', [BackLogAccessController::class, 'index'])->name('admin.system.backlog.access.index');
-                // สถิติ (แท็บต่อจากหน้ารายการ) — BackLogAccessReportController
-                Route::get('/overview', [BackLogAccessReportController::class, 'overview'])->name('admin.system.backlog.access.overview');
-                Route::get('/user', [BackLogAccessReportController::class, 'user'])->name('admin.system.backlog.access.user');
-                Route::get('/page', [BackLogAccessReportController::class, 'page'])->name('admin.system.backlog.access.page');
-                Route::get('/device', [BackLogAccessReportController::class, 'device'])->name('admin.system.backlog.access.device');
-                Route::get('/time', [BackLogAccessReportController::class, 'time'])->name('admin.system.backlog.access.time');
+                // สถิติ (แท็บต่อจากหน้ารายการ) — BackLogAccessReportController (ฐาน LogStatsController::show)
+                Route::get('/overview', [BackLogAccessReportController::class, 'show'])->defaults('tab', 'overview')->name('admin.system.backlog.access.overview');
+                Route::get('/user', [BackLogAccessReportController::class, 'show'])->defaults('tab', 'user')->name('admin.system.backlog.access.user');
+                Route::get('/page', [BackLogAccessReportController::class, 'show'])->defaults('tab', 'page')->name('admin.system.backlog.access.page');
+                Route::get('/device', [BackLogAccessReportController::class, 'show'])->defaults('tab', 'device')->name('admin.system.backlog.access.device');
+                Route::get('/time', [BackLogAccessReportController::class, 'show'])->defaults('tab', 'time')->name('admin.system.backlog.access.time');
                 Route::get('/export', [BackLogAccessReportController::class, 'export'])->name('admin.system.backlog.access.export');
                 // ปลายทาง keep-alive อัปเดต last_visited (ยิงจาก navigator.sendBeacon)
                 Route::post('/ping', [BackLogAccessController::class, 'ping'])
@@ -398,16 +401,41 @@ Route::prefix('admin')->group(function () {
             });
 
             // การเข้าสู่ระบบ (log_back_login)
-            Route::get('/login', [BackLogLoginController::class, 'index'])->name('admin.system.backlog.login.index');
+            Route::prefix('login')->group(function () {
+                Route::get('/', [BackLogLoginController::class, 'index'])->name('admin.system.backlog.login.index');
+                // สถิติ (แท็บต่อจากหน้ารายการ) — BackLogLoginReportController (ฐาน LogStatsController::show)
+                Route::get('/overview', [BackLogLoginReportController::class, 'show'])->defaults('tab', 'overview')->name('admin.system.backlog.login.overview');
+                Route::get('/account', [BackLogLoginReportController::class, 'show'])->defaults('tab', 'account')->name('admin.system.backlog.login.account');
+                Route::get('/security', [BackLogLoginReportController::class, 'show'])->defaults('tab', 'security')->name('admin.system.backlog.login.security');
+                Route::get('/time', [BackLogLoginReportController::class, 'show'])->defaults('tab', 'time')->name('admin.system.backlog.login.time');
+                Route::get('/export', [BackLogLoginReportController::class, 'export'])->name('admin.system.backlog.login.export');
+            });
 
             // การกระทำ (log_back_action)
-            Route::get('/action', [BackLogActionController::class, 'index'])->name('admin.system.backlog.action.index');
+            Route::prefix('action')->group(function () {
+                Route::get('/', [BackLogActionController::class, 'index'])->name('admin.system.backlog.action.index');
+                // สถิติ (แท็บต่อจากหน้ารายการ) — BackLogActionReportController (ฐาน LogStatsController::show)
+                Route::get('/overview', [BackLogActionReportController::class, 'show'])->defaults('tab', 'overview')->name('admin.system.backlog.action.overview');
+                Route::get('/user', [BackLogActionReportController::class, 'show'])->defaults('tab', 'user')->name('admin.system.backlog.action.user');
+                Route::get('/module', [BackLogActionReportController::class, 'show'])->defaults('tab', 'module')->name('admin.system.backlog.action.module');
+                Route::get('/time', [BackLogActionReportController::class, 'show'])->defaults('tab', 'time')->name('admin.system.backlog.action.time');
+                Route::get('/export', [BackLogActionReportController::class, 'export'])->name('admin.system.backlog.action.export');
+            });
         });
 
         // ประวัติหน้าบ้าน (log_front_*) — ตรวจสอบสิทธิ์ในแต่ละ controller
         Route::prefix('system/frontlog')->group(function () {
             // การเข้าชม (log_front_access)
-            Route::get('/access', [FrontLogAccessController::class, 'index'])->name('admin.system.frontlog.access.index');
+            Route::prefix('access')->group(function () {
+                Route::get('/', [FrontLogAccessController::class, 'index'])->name('admin.system.frontlog.access.index');
+                // สถิติ (แท็บต่อจากหน้ารายการ) — FrontLogAccessReportController (ฐาน LogStatsController::show)
+                Route::get('/overview', [FrontLogAccessReportController::class, 'show'])->defaults('tab', 'overview')->name('admin.system.frontlog.access.overview');
+                Route::get('/page', [FrontLogAccessReportController::class, 'show'])->defaults('tab', 'page')->name('admin.system.frontlog.access.page');
+                Route::get('/source', [FrontLogAccessReportController::class, 'show'])->defaults('tab', 'source')->name('admin.system.frontlog.access.source');
+                Route::get('/device', [FrontLogAccessReportController::class, 'show'])->defaults('tab', 'device')->name('admin.system.frontlog.access.device');
+                Route::get('/time', [FrontLogAccessReportController::class, 'show'])->defaults('tab', 'time')->name('admin.system.frontlog.access.time');
+                Route::get('/export', [FrontLogAccessReportController::class, 'export'])->name('admin.system.frontlog.access.export');
+            });
         });
 
         // ตั้งค่าระบบ (sys_setting) + ล้างแคช — ตรวจสอบสิทธิ์ในแต่ละ method ของ SettingController

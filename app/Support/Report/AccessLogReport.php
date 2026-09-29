@@ -6,34 +6,39 @@ use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 
 /**
- * สถิติการใช้งานหลังบ้านจาก log_back_access (1 แถว = การเปิดหน้าจอ 1 ครั้ง) — ใช้ ViewReport เป็นตัวคำนวณฐาน
- * (FK = user_id → "items" = จำนวนผู้ใช้งาน) แล้วเพิ่มสรุปเฉพาะของหลังบ้าน: ผู้ใช้งาน / หน้าจอ / เวลาที่ใช้ต่อหน้าจอ / IP
+ * สถิติจากตารางประวัติการเข้าหน้า log_back_access (หลังบ้าน) / log_front_access (หน้าบ้าน) — 1 แถว = การเปิดหน้า 1 ครั้ง
+ * ใช้ ViewReport เป็นตัวคำนวณฐาน (FK = user_id → "items" = จำนวนผู้ใช้งาน) แล้วเพิ่ม: ผู้ใช้งาน / หน้า / เวลาที่ใช้ต่อหน้า / IP /
+ * หน้าแรกที่เข้า / อัตราการออกทันที (bounce) / บอท
  *
  * เวลาที่ใช้ต่อหน้าจอ = last_visited - created_at (keep-alive จาก useAccessHeartbeat ทุก 45 วินาที + ตอนออกจากหน้า)
  * ตัดค่าแต่ละครั้งไว้ไม่เกิน DURATION_CAP วินาที กันแท็บที่เปิดทิ้งไว้ทั้งวันทำให้ค่าเฉลี่ยเพี้ยน — ดู docs/PRD-system.md
  */
-final class BackLogAccessReport
+final class AccessLogReport
 {
-    public const TABLE = 'log_back_access';
+    public const BACK = 'log_back_access';
+
+    public const FRONT = 'log_front_access';
 
     /** เวลาสูงสุดที่นับต่อการเปิดหน้าจอ 1 ครั้ง (วินาที) */
     public const DURATION_CAP = 1800;
 
     /**
      * @param  array{date_from: string, date_to: string, period: string}  $filters
+     * @param  bool  $excludeRobots  ตัดแถวที่เป็นบอทออก (หน้าบ้าน — log_front_access บันทึกบอทด้วย)
      */
-    public static function make(array $filters, ?int $userId = null): ViewReport
+    public static function make(string $table, array $filters, ?int $userId = null, bool $excludeRobots = false): ViewReport
     {
-        return new ViewReport(self::TABLE, 'user_id', $filters, $userId === null ? null
-            : fn (Builder $query) => $query->where(self::TABLE.'.user_id', $userId));
+        return new ViewReport($table, 'user_id', $filters, function (Builder $query) use ($table, $userId, $excludeRobots) {
+            $query->when($userId !== null, fn ($q) => $q->where("{$table}.user_id", $userId))
+                ->when($excludeRobots, fn ($q) => $q->whereNull("{$table}.robot"));
+        });
     }
 
     /**
      * นิพจน์ SQL เวลาที่ใช้ของแต่ละแถว (วินาที, ตัดที่ DURATION_CAP) — null เมื่อไม่มี last_visited
      */
-    public static function durationExpression(): string
+    public static function durationExpression(string $t): string
     {
-        $t = self::TABLE;
         $diff = DB::connection()->getDriverName() === 'sqlite'
             ? "((julianday({$t}.last_visited) - julianday({$t}.created_at)) * 86400)"
             : "timestampdiff(second, {$t}.created_at, {$t}.last_visited)";
@@ -49,8 +54,8 @@ final class BackLogAccessReport
      */
     public static function durationSummary(ViewReport $report): array
     {
-        $duration = self::durationExpression();
-        $t = self::TABLE;
+        $t = $report->table();
+        $duration = self::durationExpression($t);
 
         $row = $report->query()
             ->selectRaw("avg({$duration}) as avg_seconds, sum({$duration}) as total_seconds, count(distinct {$t}.session_id) as sessions")
@@ -72,8 +77,8 @@ final class BackLogAccessReport
      */
     public static function users(ViewReport $report, int $limit = 100): array
     {
-        $t = self::TABLE;
-        $duration = self::durationExpression();
+        $t = $report->table();
+        $duration = self::durationExpression($t);
 
         $rows = $report->query()
             ->selectRaw("{$t}.user_id as user_id, count(*) as views, count(distinct {$t}.session_id) as sessions,
@@ -112,8 +117,8 @@ final class BackLogAccessReport
      */
     public static function pages(ViewReport $report, int $limit = 100): array
     {
-        $t = self::TABLE;
-        $duration = self::durationExpression();
+        $t = $report->table();
+        $duration = self::durationExpression($t);
 
         return $report->query()
             ->selectRaw("{$t}.title_name as title, count(*) as views, count(distinct {$t}.user_id) as users,
@@ -142,7 +147,7 @@ final class BackLogAccessReport
      */
     public static function ips(ViewReport $report, int $limit = 30): array
     {
-        $t = self::TABLE;
+        $t = $report->table();
 
         return $report->query()
             ->selectRaw("{$t}.remote_ip as ip, count(*) as views, count(distinct {$t}.user_id) as users, max({$t}.created_at) as last_at")
@@ -156,6 +161,90 @@ final class BackLogAccessReport
                 'users' => (int) $row->users,
                 'last_at' => $row->last_at,
             ])
+            ->all();
+    }
+
+    /**
+     * หน้าแรกที่เข้าของแต่ละ session (landing page) — นับจากแถวแรก (id ต่ำสุด) ของ session ในช่วงวันที่
+     *
+     * @return list<array{title: string|null, sessions: int}>
+     */
+    public static function landingPages(ViewReport $report, int $limit = 20): array
+    {
+        $t = $report->table();
+        $firstIds = $report->query()->whereNotNull("{$t}.session_id")->selectRaw("min({$t}.id)")->groupBy("{$t}.session_id");
+
+        return DB::table($t)
+            ->whereIn('id', $firstIds)
+            ->selectRaw('title_name as title, count(*) as sessions')
+            ->groupBy('title_name')
+            ->orderByDesc('sessions')
+            ->limit($limit)
+            ->get()
+            ->map(fn ($row) => ['title' => $row->title, 'sessions' => (int) $row->sessions])
+            ->all();
+    }
+
+    /**
+     * session ที่เปิดแค่หน้าเดียวแล้วออก (bounce) เทียบกับ session ทั้งหมด
+     *
+     * @return array{sessions: int, bounced: int, rate: float}
+     */
+    public static function bounce(ViewReport $report): array
+    {
+        $t = $report->table();
+        $perSession = $report->query()->whereNotNull("{$t}.session_id")
+            ->selectRaw("{$t}.session_id, count(*) as views")
+            ->groupBy("{$t}.session_id");
+
+        $row = DB::query()->fromSub($perSession, 's')
+            ->selectRaw('count(*) as sessions, sum(case when views = 1 then 1 else 0 end) as bounced')
+            ->first();
+
+        $sessions = (int) ($row->sessions ?? 0);
+        $bounced = (int) ($row->bounced ?? 0);
+
+        return ['sessions' => $sessions, 'bounced' => $bounced, 'rate' => $sessions > 0 ? round($bounced / $sessions * 100, 1) : 0.0];
+    }
+
+    /**
+     * ภาษาของเว็บไซต์ที่เปิด — จาก segment แรกของ uri_string (/{lang}/...) — หน้าบ้านเท่านั้น
+     *
+     * @return list<array{key: string|null, views: int, sessions: int}>
+     */
+    public static function siteLanguages(ViewReport $report): array
+    {
+        $t = $report->table();
+        $expr = "substr({$t}.uri_string, 2, 2)";
+        $third = "substr({$t}.uri_string, 4, 1)";
+
+        return $report->query()
+            ->selectRaw("case when ({$third} = '/' or {$third} = '') and length({$expr}) = 2 then {$expr} end as k, count(*) as views, count(distinct {$t}.session_id) as sessions")
+            ->groupByRaw('k')
+            ->orderByDesc('views')
+            ->get()
+            ->map(fn ($row) => ['key' => $row->k !== null ? (string) $row->k : null, 'views' => (int) $row->views, 'sessions' => (int) $row->sessions])
+            ->all();
+    }
+
+    /**
+     * บอทที่เข้าหน้า (แยกตามชื่อบอท) ในช่วงวันที่ — ใช้ query ของตารางตรง ๆ เพราะ report ของหน้าบ้านตัดบอทออกแล้ว
+     *
+     * @param  array{date_from: string, date_to: string}  $filters
+     * @return list<array{key: string, views: int}>
+     */
+    public static function robots(string $table, array $filters, int $limit = 20): array
+    {
+        return DB::table($table)
+            ->whereNull('deleted_at')
+            ->whereNotNull('robot')
+            ->whereBetween('action_date', [$filters['date_from'], $filters['date_to']])
+            ->selectRaw('robot as k, count(*) as views')
+            ->groupBy('robot')
+            ->orderByDesc('views')
+            ->limit($limit)
+            ->get()
+            ->map(fn ($row) => ['key' => (string) $row->k, 'views' => (int) $row->views])
             ->all();
     }
 

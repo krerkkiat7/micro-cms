@@ -59,8 +59,11 @@ export interface Referrers {
     paths: { key: string; views: number }[];
 }
 
-/** view = ยอดเข้าชม, click = ยอดคลิก, access = การเข้าหน้าจอหลังบ้าน (ประวัติการใช้งานหลังบ้าน) */
-export type ReportMetric = 'view' | 'click' | 'access';
+/**
+ * view = ยอดเข้าชม, click = ยอดคลิก — รายงานเนื้อหา
+ * access = การเข้าหน้าจอหลังบ้าน, front = การเปิดหน้าหน้าบ้าน, login = การเข้าสู่ระบบ, action = การกระทำ — สถิติประวัติ
+ */
+export type ReportMetric = 'view' | 'click' | 'access' | 'front' | 'login' | 'action';
 
 /** ข้อมูลโมดูลของเมนูรายงาน (ItemReportController::moduleMeta) */
 export interface ReportModule {
@@ -77,18 +80,31 @@ export interface ReportModule {
 export interface ReportTerms {
     count: string;
     unique: string;
+    /** ต่อท้าย unique ในการ์ด/กราฟ เช่น " (session)" — ว่างเมื่อ unique ไม่ได้นับจาก session */
+    uniqueSuffix: string;
+    /** หน่วยของ unique ใช้ในค่าเฉลี่ย "x ครั้ง / <per>" */
+    per: string;
     verb: string;
     item: string;
 }
 
 export function reportTerms(metric: ReportMetric, item = 'บทความ'): ReportTerms {
-    if (metric === 'access') {
-        return { count: 'จำนวนการเข้าหน้าจอ', unique: 'จำนวนครั้งที่เข้าระบบ', verb: 'เข้าใช้งาน', item };
-    }
+    const session = { uniqueSuffix: ' (session)', per: 'session' };
 
-    return metric === 'click'
-        ? { count: 'ยอดคลิก', unique: 'ผู้คลิกไม่ซ้ำ', verb: 'คลิก', item }
-        : { count: 'ยอดเข้าชม', unique: 'ผู้เข้าชมไม่ซ้ำ', verb: 'เข้าชม', item };
+    switch (metric) {
+        case 'access':
+            return { count: 'จำนวนการเข้าหน้าจอ', unique: 'จำนวนครั้งที่เข้าระบบ', ...session, verb: 'เข้าใช้งาน', item };
+        case 'front':
+            return { count: 'จำนวนการเปิดหน้า', unique: 'ผู้เข้าชม', ...session, verb: 'เข้าชม', item };
+        case 'login':
+            return { count: 'จำนวนการเข้าสู่ระบบ', unique: 'บัญชีที่ใช้ (username)', uniqueSuffix: '', per: 'บัญชี', verb: 'เข้าสู่ระบบ', item };
+        case 'action':
+            return { count: 'จำนวนการกระทำ', unique: 'ผู้กระทำ', uniqueSuffix: '', per: 'คน', verb: 'กระทำ', item };
+        case 'click':
+            return { count: 'ยอดคลิก', unique: 'ผู้คลิกไม่ซ้ำ', ...session, verb: 'คลิก', item };
+        default:
+            return { count: 'ยอดเข้าชม', unique: 'ผู้เข้าชมไม่ซ้ำ', ...session, verb: 'เข้าชม', item };
+    }
 }
 
 const TERMS_KEY: InjectionKey<ReportTerms> = Symbol('reportTerms');
