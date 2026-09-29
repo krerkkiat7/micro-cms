@@ -107,13 +107,13 @@ export type ServerZones = { [K in ZoneName]: ServerZone<TemplateZones[K]> };
 export interface PreviewMenu {
     id: number;
     name: string;
-    /** App\Support\FrontMenuType (heading / none / external / article_category / article_item / page) */
+    /** App\Support\FrontMenuType (heading / none / external / article_category / article_item / page / contactus) */
     menu_type: string;
     children: PreviewMenu[];
 }
 
 /** ประเภทเมนูที่เป็นลิงก์จริง (ของในระบบ + ลิงก์ภายนอก) — เมนูย่อยใน footer แสดงเฉพาะประเภทเหล่านี้ */
-export const LINK_MENU_TYPES = ['external', 'article_category', 'article_item', 'page'];
+export const LINK_MENU_TYPES = ['external', 'article_category', 'article_item', 'page', 'contactus'];
 
 /** ข้อมูลจริงของระบบที่ใช้แสดงตัวอย่าง (TemplateController::previewData) */
 export interface TemplatePreviewData {

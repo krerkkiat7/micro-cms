@@ -293,6 +293,10 @@ const dialogTitle = computed(() => (props.menu ? `แก้ไขเมนู: $
                 <InputError :message="form.errors.target_page_item_id" />
             </div>
 
+            <p v-if="form.menu_type === FrontMenuType.CONTACTUS" class="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-600">
+                ลิงก์ไปหน้าติดต่อเรา (/{ภาษา}/contactus) — รูปแบบการแสดงผลกำหนดที่เมนู Contact Us → ตั้งค่า
+            </p>
+
             <div v-if="form.menu_type !== FrontMenuType.NONE && form.menu_type !== FrontMenuType.HEADING" class="grid gap-4 sm:grid-cols-2">
                 <div>
                     <InputLabel value="Link Target" />

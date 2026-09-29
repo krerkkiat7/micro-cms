@@ -83,6 +83,7 @@ Page ตรง ๆ (รายชื่อฟอนต์ไทยเป็น re
 | `article_category` | บทความ - รายการบทความตามหมวดหมู่ | `target_article_category_id` (เลือกผ่าน dropdown ธรรมดา — จำนวนหมวดหมู่มีจำกัด) |
 | `article_item` | บทความ - รายละเอียดบทความ | `target_article_item_id` (เลือกผ่าน dialog picker ค้นหา+paginate) |
 | `page` | หน้าเพจ | `target_page_item_id` (เลือกผ่าน dialog picker ค้นหา+paginate) |
+| `contactus` | ติดต่อเรา — ลิงก์ไป `/{lang}/contactus` (หน้าเดียวทั้งระบบ ดู [PRD-contactus.md](PRD-contactus.md)) | — (ไม่มี id ปลายทาง; มีชุดตั้งค่าส่วนหัวเหมือนเมนูเนื้อหา, popup/ปุ่มอ่านทั้งหมดเลือกได้) |
 
 เฉพาะเมนูประเภท `heading` เท่านั้นที่เลือกเป็น **Parent Menu** ของเมนูอื่นได้ (บังคับใน `StoreFrontMenuRequest`/
 `UpdateFrontMenuRequest` ผ่าน `Rule::exists('front_menu_info','id')->where('menu_type', FrontMenuType::HEADING)`)
@@ -95,6 +96,10 @@ Page ตรง ๆ (รายชื่อฟอนต์ไทยเป็น re
 - **ซ่อน/แสดงเมนู** (ไอคอนลูกตา, `PUT admin.system.menu.status`) — ซ่อนเมนูประเภท `heading` จะ set `status=N`
   ให้เมนูลูกทุกระดับไปด้วยในคำสั่งเดียว (`FrontMenuController::descendantIds()`); กด "แสดง" กลับมาแก้เฉพาะแถวนั้นแถว
   เดียว **ไม่ cascade คืนสถานะให้ลูก** (ลูกที่เคยถูกซ่อนแยกไว้ก่อนหน้านี้จะยังซ่อนอยู่ ต้องกดแสดงเองทีละรายการ)
+- **เมนูที่ไม่แสดง** (`status=N` หรือพาเรนต์ถูกซ่อน) = ไม่อยู่ในแถบเมนูหน้าบ้านเท่านั้น — หน้าที่ตรงกับเมนูนี้ยังใช้ตั้งค่าเมนู
+  (รูปภาพ/หัวเรื่อง/หัวเรื่องรอง/breadcrumb) ตามปกติ แต่ breadcrumb = **หน้าแรก > เมนูตัวเอง** (ไม่ไล่พาเรนต์); ถ้ามีเมนูที่แสดงอยู่ชี้
+  ปลายทางเดียวกัน ใช้เมนูที่แสดงก่อน; popup แบบเลือกเมนูทำงานกับเมนูนี้ได้; ปุ่ม "อ่านทั้งหมด" ที่ชี้เมนูนี้ไม่แสดง
+  (`FrontMenuResolver::build()`/`findFor()`/`linkOf()`)
 - **ลบเมนู** — ลบได้เฉพาะเมนูที่ไม่มีเมนูลูก (เช็ก `FrontMenuInfo::where('parent_id', $id)->exists()`) — ไอคอนถังขยะ
   ที่หน้ารายการ disable ไว้ล่วงหน้าเมื่อมีลูก, backend เช็กซ้ำอีกชั้น
 - **กัน cycle** — ทั้งตอนแก้ไข parent ของเมนูเดียว (`UpdateFrontMenuRequest::withValidator()`) และตอนเรียงลำดับทั้ง

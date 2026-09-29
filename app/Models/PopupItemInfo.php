@@ -21,7 +21,7 @@ class PopupItemInfo extends Model
     public const MENU_MODES = ['all', 'selected', 'none'];
 
     /** ประเภทเมนูหน้าบ้านที่เลือกให้แสดง popup ได้ (เมนูที่ผูกกับโมดูลเนื้อหา) */
-    public const MENU_TYPES = [FrontMenuType::ARTICLE_CATEGORY, FrontMenuType::ARTICLE_ITEM, FrontMenuType::PAGE];
+    public const MENU_TYPES = [FrontMenuType::ARTICLE_CATEGORY, FrontMenuType::ARTICLE_ITEM, FrontMenuType::PAGE, FrontMenuType::CONTACTUS];
 
     protected $table = 'popup_item_info';
 

@@ -21,6 +21,7 @@ const TYPE_LABELS: Record<string, string> = {
     article_category: 'หมวดหมู่บทความ',
     article_item: 'บทความ',
     page: 'หน้าเพจ',
+    contactus: 'ติดต่อเรา',
 };
 
 const checked = computed({

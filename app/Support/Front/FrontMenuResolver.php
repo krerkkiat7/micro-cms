@@ -13,7 +13,10 @@ use Illuminate\Support\Facades\DB;
  * เมนูหน้าบ้าน (front_menu_info/front_menu_detail) ของภาษาหนึ่ง พร้อม URL ปลายทางจริง — ใช้กับ header/aside/footer ของ layout
  * หน้าบ้าน, หาหน้าแรก (is_home) และหา "เมนูของหน้าปัจจุบัน" เพื่อแสดงส่วนหัว (รูป/หัวเรื่อง) + breadcrumb
  *
- * กติกา: แสดงเฉพาะ status = Y ไม่ถูกลบ และพาเรนต์ต้องแสดงอยู่ทั้งสาย (พาเรนต์ถูกซ่อน = ซ่อนทั้งกิ่ง)
+ * กติกา: แถบเมนู (tree) แสดงเฉพาะ status = Y ไม่ถูกลบ และพาเรนต์ต้องแสดงอยู่ทั้งสาย (พาเรนต์ถูกซ่อน = ซ่อนทั้งกิ่ง)
+ * เมนูที่ไม่แสดง (status = N หรือพาเรนต์ถูกซ่อน) = แค่ไม่อยู่ในแถบเมนู — ถ้าหน้าปัจจุบันตรงกับเมนูนี้ยังใช้ตั้งค่าส่วนหัว
+ * (รูป/หัวเรื่อง) ของเมนูตามปกติ แต่ breadcrumb มีแค่ หน้าแรก > เมนูตัวเอง (ไม่ไล่พาเรนต์) และหาเมนูของหน้าจาก
+ * เมนูที่แสดงอยู่ก่อนเสมอ ค่อยใช้เมนูที่ไม่แสดง
  * ชื่อเมนูใช้ภาษาที่ขอ ถ้าว่างใช้ภาษาหลัก; ปลายทางที่ไม่พร้อมใช้ (ถูกปิด/ลบ) = เมนูไม่มีลิงก์ (url = null)
  * ผลลัพธ์ cache ต่อภาษา (FrontCache) — ล้างอัตโนมัติเมื่อบันทึกเมนู/เนื้อหาปลายทาง
  */
@@ -38,7 +41,8 @@ final class FrontMenuResolver
     }
 
     /**
-     * ลิงก์ของเมนู 1 รายการที่แสดงอยู่ (เปิดใช้งาน และพาเรนต์ทุกระดับแสดงอยู่) — null = ไม่มีเมนูนี้/ถูกซ่อน/ปลายทางใช้ไม่ได้
+     * ลิงก์ของเมนู 1 รายการที่แสดงอยู่ (เปิดใช้งาน และพาเรนต์ทุกระดับแสดงอยู่) — null = ไม่มีเมนูนี้/ไม่แสดง/ปลายทางใช้ไม่ได้
+     * (ปุ่ม "อ่านทั้งหมด" ที่ชี้เมนูที่ถูกซ่อนจะไม่แสดง)
      *
      * @return array{url: string, target: string, menu_type: string}|null
      */
@@ -46,7 +50,7 @@ final class FrontMenuResolver
     {
         $node = self::data($lang)['nodes'][$menuId] ?? null;
 
-        if ($node === null || $node['url'] === null) {
+        if ($node === null || $node['hidden'] || $node['url'] === null) {
             return null;
         }
 
@@ -56,7 +60,9 @@ final class FrontMenuResolver
     /**
      * เมนูที่ชี้ไปยังเนื้อหานี้ (เมนูแรกตามลำดับการแสดง) พร้อมตั้งค่าส่วนหัว + เส้นทาง (breadcrumb) จากระดับบนสุด
      *
-     * @param  string  $type  FrontMenuType::PAGE | ARTICLE_CATEGORY | ARTICLE_ITEM
+     * เมนูที่ไม่แสดงในแถบเมนู: trail มีแค่ตัวเอง (breadcrumb = หน้าแรก > เมนูตัวเอง)
+     *
+     * @param  string  $type  FrontMenuType::PAGE | ARTICLE_CATEGORY | ARTICLE_ITEM | CONTACTUS (targetId = 0)
      * @return array<string, mixed>|null
      */
     public static function findFor(string $lang, string $type, int $targetId): ?array
@@ -74,7 +80,7 @@ final class FrontMenuResolver
 
         while ($current !== null) {
             array_unshift($trail, ['id' => $current['id'], 'name' => $current['name'], 'url' => $current['url']]);
-            $current = $current['parent_id'] !== null ? ($data['nodes'][$current['parent_id']] ?? null) : null;
+            $current = ! $node['hidden'] && $current['parent_id'] !== null ? ($data['nodes'][$current['parent_id']] ?? null) : null;
         }
 
         return [
@@ -114,8 +120,8 @@ final class FrontMenuResolver
     {
         $defaultLang = Setting::defaultLanguage();
 
+        // โหลดทุกเมนูที่ไม่ถูกลบ (รวมที่ไม่แสดง) — เมนูที่ไม่แสดงไม่อยู่ในแถบเมนูแต่ยังใช้หาส่วนหัวของหน้าได้
         $menus = FrontMenuInfo::query()
-            ->where('status', 'Y')
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get();
@@ -153,6 +159,8 @@ final class FrontMenuResolver
                 'url' => $url,
                 'target' => $target,
                 'is_home' => $menu->is_home === 'Y',
+                'status' => $menu->status,
+                'hidden' => false,
                 'header' => [
                     'image_url' => $imageHash ? FrontFile::url($imageHash) : null,
                     'image_aspect_ratio' => $menu->header_image_aspect_ratio,
@@ -169,11 +177,16 @@ final class FrontMenuResolver
             ];
         }
 
-        // ตัดกิ่งที่พาเรนต์ไม่แสดง (ถูกซ่อน/ลบ) — เหลือเฉพาะโหนดที่ไล่ขึ้นไปถึงระดับบนสุดได้
+        // เมนูที่แสดงในแถบเมนู = เปิดใช้งาน และไล่พาเรนต์ขึ้นไปถึงระดับบนสุดได้โดยทุกระดับเปิดใช้งาน
+        // (พาเรนต์ถูกซ่อน/ลบ = ซ่อนทั้งกิ่ง) ที่เหลือเป็นเมนูที่ไม่แสดง (hidden) — ไม่อยู่ใน tree
         $visible = [];
         $isVisible = function (int $id, array $seen = []) use (&$isVisible, &$visible, $nodes): bool {
             if (isset($visible[$id])) {
                 return $visible[$id];
+            }
+
+            if ($nodes[$id]['status'] !== 'Y') {
+                return $visible[$id] = false;
             }
 
             $parentId = $nodes[$id]['parent_id'];
@@ -189,12 +202,17 @@ final class FrontMenuResolver
             return $visible[$id] = $isVisible($parentId, [...$seen, $id]);
         };
 
-        $nodes = array_filter($nodes, fn (array $node) => $isVisible($node['id']));
+        foreach ($nodes as $id => $node) {
+            $nodes[$id]['hidden'] = ! $isVisible($id);
+            unset($nodes[$id]['status']);
+        }
 
         $byParent = [];
 
         foreach ($nodes as $node) {
-            $byParent[$node['parent_id'] ?? 0][] = $node['id'];
+            if (! $node['hidden']) {
+                $byParent[$node['parent_id'] ?? 0][] = $node['id'];
+            }
         }
 
         $build = function (int $parentId) use (&$build, $byParent, $nodes): array {
@@ -209,17 +227,12 @@ final class FrontMenuResolver
         };
 
         // ปลายทาง → เมนูแรกตามลำดับการแสดง (เดิน tree แบบ depth-first เพื่อให้ได้ลำดับเดียวกับที่ผู้ใช้เห็น)
+        $menusById = $menus->keyBy('id');
         $targets = [];
         $home = null;
-        $walk = function (int $parentId) use (&$walk, $byParent, $menus, $nodes, &$targets, &$home): void {
+        $walk = function (int $parentId) use (&$walk, $byParent, $menusById, $nodes, &$targets, &$home): void {
             foreach ($byParent[$parentId] ?? [] as $id) {
-                $menu = $menus->firstWhere('id', $id);
-                $key = match ($menu->menu_type) {
-                    FrontMenuType::PAGE => $menu->target_page_item_id ? 'page:'.$menu->target_page_item_id : null,
-                    FrontMenuType::ARTICLE_CATEGORY => $menu->target_article_category_id ? 'article_category:'.$menu->target_article_category_id : null,
-                    FrontMenuType::ARTICLE_ITEM => $menu->target_article_item_id ? 'article_item:'.$menu->target_article_item_id : null,
-                    default => null,
-                };
+                $key = self::targetKey($menusById[$id]);
 
                 if ($key !== null && ! isset($targets[$key])) {
                     $targets[$key] = $id;
@@ -234,12 +247,35 @@ final class FrontMenuResolver
         };
         $walk(0);
 
+        // ปลายทางที่ไม่มีเมนูที่แสดงอยู่ชี้ไป → ใช้เมนูที่ไม่แสดงตัวแรก (ตามลำดับ sort_order) แทน — ไม่ใช้เป็นหน้าแรก
+        foreach ($menus as $menu) {
+            $key = $nodes[$menu->id]['hidden'] ? self::targetKey($menu) : null;
+
+            if ($key !== null && ! isset($targets[$key])) {
+                $targets[$key] = (int) $menu->id;
+            }
+        }
+
         return [
             'tree' => $build(0),
             'nodes' => $nodes,
             'targets' => $targets,
             'home' => $home,
         ];
+    }
+
+    /**
+     * คีย์ปลายทางของเมนู (ใช้หาเมนูของหน้าปัจจุบันใน findFor()) — ติดต่อเรามีหน้าเดียว ใช้ id = 0
+     */
+    private static function targetKey(FrontMenuInfo $menu): ?string
+    {
+        return match ($menu->menu_type) {
+            FrontMenuType::PAGE => $menu->target_page_item_id ? 'page:'.$menu->target_page_item_id : null,
+            FrontMenuType::ARTICLE_CATEGORY => $menu->target_article_category_id ? 'article_category:'.$menu->target_article_category_id : null,
+            FrontMenuType::ARTICLE_ITEM => $menu->target_article_item_id ? 'article_item:'.$menu->target_article_item_id : null,
+            FrontMenuType::CONTACTUS => 'contactus:0',
+            default => null,
+        };
     }
 
     /**
@@ -290,6 +326,7 @@ final class FrontMenuResolver
             FrontMenuType::ARTICLE_ITEM => $menu->target_article_item_id && array_key_exists($menu->target_article_item_id, $slugs['article_item'])
                 ? FrontUrl::articleItem($lang, (int) $menu->target_article_item_id, $slugs['article_item'][$menu->target_article_item_id])
                 : null,
+            FrontMenuType::CONTACTUS => FrontUrl::contactus($lang),
             // ลิงค์ภายนอกที่เป็น path ภายในแต่ไม่ได้ขึ้นต้นด้วยภาษา (เช่น /news) เติมภาษาของหน้าที่เปิดอยู่ให้ (header/footer/aside/ปุ่มอ่านทั้งหมด)
             FrontMenuType::EXTERNAL => FrontUrl::withLang(FrontUrl::safeExternal($menu->url), $lang),
             default => null,

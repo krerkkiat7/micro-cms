@@ -576,6 +576,7 @@ class FrontMenuController extends Controller
                 ->firstWhere('lang', $defaultLang)?->title,
             FrontMenuType::PAGE => $menu->targetPageItem?->details
                 ->firstWhere('lang', $defaultLang)?->title,
+            FrontMenuType::CONTACTUS => 'หน้าติดต่อเรา',
             default => null,
         };
     }

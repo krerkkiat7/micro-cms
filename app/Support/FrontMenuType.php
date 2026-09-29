@@ -20,6 +20,9 @@ class FrontMenuType
 
     public const PAGE = 'page';
 
+    /** หน้าติดต่อเรา (/{lang}/contactus) — ไม่มี id ปลายทาง มีหน้าเดียวทั้งระบบ */
+    public const CONTACTUS = 'contactus';
+
     /**
      * @var array<string, string>
      */
@@ -30,10 +33,11 @@ class FrontMenuType
         self::ARTICLE_CATEGORY => 'บทความ - รายการบทความตามหมวดหมู่',
         self::ARTICLE_ITEM => 'บทความ - รายละเอียดบทความ',
         self::PAGE => 'หน้าเพจ',
+        self::CONTACTUS => 'ติดต่อเรา',
     ];
 
     /** ประเภทที่มีลิงก์ปลายทางของตัวเอง (โมดูลเนื้อหา + ลิงค์ภายนอก) — เลือกเป็นปลายทางของปุ่ม "อ่านทั้งหมด" ได้ */
-    public const LINKABLE = [self::EXTERNAL, self::ARTICLE_CATEGORY, self::ARTICLE_ITEM, self::PAGE];
+    public const LINKABLE = [self::EXTERNAL, self::ARTICLE_CATEGORY, self::ARTICLE_ITEM, self::PAGE, self::CONTACTUS];
 
     /**
      * @return list<string>
