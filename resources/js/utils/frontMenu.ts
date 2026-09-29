@@ -14,10 +14,11 @@ export const FrontMenuType = {
     ARTICLE_CATEGORY: 'article_category',
     ARTICLE_ITEM: 'article_item',
     PAGE: 'page',
+    CONTACTUS: 'contactus',
 } as const;
 
 /** ประเภทเมนูที่ลิงก์ไปหน้าเนื้อหาจริงบนเว็บนี้ — เฉพาะกลุ่มนี้เท่านั้นที่มีชุดตั้งค่า "หัวเรื่องของหน้าเป้าหมาย" */
-export const CONTENT_MENU_TYPES: string[] = [FrontMenuType.ARTICLE_CATEGORY, FrontMenuType.ARTICLE_ITEM, FrontMenuType.PAGE];
+export const CONTENT_MENU_TYPES: string[] = [FrontMenuType.ARTICLE_CATEGORY, FrontMenuType.ARTICLE_ITEM, FrontMenuType.PAGE, FrontMenuType.CONTACTUS];
 
 /** อัตราส่วนรูปภาพส่วนหัว — 'natural' = ไม่ครอป แสดงตามขนาดจริงของรูป (ไม่มี image_fit/สีพื้นหลังให้ตั้ง) */
 export const HEADER_IMAGE_ASPECT_OPTIONS = [

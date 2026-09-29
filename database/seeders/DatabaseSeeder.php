@@ -75,6 +75,7 @@ class DatabaseSeeder extends Seeder
             // module : contactus
             ['contactus001', 'contactus', null, 'contactus.item.view', 'แสดงติดต่อเรา', 1],
             ['contactus002', 'contactus', 'contactus001', 'contactus.item.manage', 'เพิ่ม/แก้ไขติดต่อเรา', 1],
+            ['contactus901', 'contactus', null, 'contactus.setting.manage', 'ตั้งค่า', 99],
 
             // จัดการระบบ
             ['system001', 'system', null, 'system.user.view', 'แสดงผู้ใช้งาน', 1],
@@ -182,5 +183,8 @@ class DatabaseSeeder extends Seeder
 
         // Template หน้าบ้านตัวอย่าง จากแม่แบบตั้งต้น (ข้อมูลตัวอย่าง — แยกไฟล์)
         $this->call(TemplateSeeder::class);
+
+        // ค่าตั้งต้นของตั้งค่าโมดูลติดต่อเรา (ไม่มีข้อมูลตัวอย่าง — แยกไฟล์)
+        $this->call(ContactusSeeder::class);
     }
 }

@@ -416,6 +416,15 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   หน้าบ้าน: `FrontController::render()` ส่ง prop `popups` (`App\Support\Front\PopupResolver::forPage()` — กรองตามเมนูสุดท้ายของ `activeMenuIds`,
   Intropage/หน้า error ไม่มี) → `Components/Front/Popup/PopupStack.vue` ใน `FrontLayout.vue`; "ไม่แสดงวันนี้อีก" = localStorage, "ปิด" = ปิดเฉพาะหน้านี้ไม่จำ (หน้าถัดไปที่เข้าเงื่อนไขแสดงอีก); Floating = รูปภาพอย่างเดียว
 
+- **โมดูลติดต่อเรา (branch `contactus-init`) — ดู `docs/PRD-contactus.md`** — ตั้งค่าใน `sys_setting` กลุ่ม `contactus` (ทะเบียน `App\Support\ContactusSetting`,
+  `admin.contactus.setting.*` + ล้างแคช, log `contactus.setting`; ข้อมูลติดต่อจริงอ่านจากตั้งค่าระบบ `site`/`contact`/`social` ไม่เก็บซ้ำ; เลือกพิกัดจากแผนที่ด้วย
+  `Components/Admin/Contactus/MapPickerDialog.vue` = Leaflet + OpenStreetMap), ข้อความที่ส่งมา `contactus_item` (`ContactusItem` `$guarded=['*']`) +
+  `admin.contactus.item.index/edit/update` (log `contactus.item`, เปิดรายการ unread = read อัตโนมัติ), หน้าบ้าน `front.contactus.item` (`/{lang}/contactus`)
+  + `front.contactus.item.store` — **แบบฟอร์มแสดง/รับข้อมูลเฉพาะเมื่อ Turnstile ตั้งค่าครบ (`Turnstile::configured()`)** ความปลอดภัยทั้งหมดอยู่ใน
+  `Requests/Front/StoreContactusRequest` (rate limit ต่อ `$request->ip()`, form_token เวลาเปิดฟอร์ม, honeypot, ฟิลด์ตามตั้งค่า); ตั้งค่าระบบเพิ่มกลุ่ม
+  `google_map` (`api_key`, `App\Support\GoogleMap`); เมนูหน้าบ้านประเภทใหม่ `FrontMenuType::CONTACTUS` (popup/ปุ่มอ่านทั้งหมดเลือกได้);
+  **เมนูที่ไม่แสดง (status N/พาเรนต์ซ่อน) ยังใช้ตั้งค่าส่วนหัวกับหน้าของตัวเอง แต่ breadcrumb = หน้าแรก > เมนูตัวเอง** (`FrontMenuResolver` โหลดทุกเมนู + flag `hidden`)
+
 ## ทดสอบ
 
 - เทสหน้าบ้านอยู่ `tests/Feature/Front/FrontSiteTest.php` (seed `DatabaseSeeder` แล้วใช้ข้อมูลตัวอย่าง)

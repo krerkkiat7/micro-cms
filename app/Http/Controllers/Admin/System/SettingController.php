@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\System\Setting\TestSmtpSettingRequest;
 use App\Http\Requests\Admin\System\Setting\UpdateContactSettingRequest;
 use App\Http\Requests\Admin\System\Setting\UpdateGoogleAnalyticsSettingRequest;
+use App\Http\Requests\Admin\System\Setting\UpdateGoogleMapSettingRequest;
 use App\Http\Requests\Admin\System\Setting\UpdateLoginBackSettingRequest;
 use App\Http\Requests\Admin\System\Setting\UpdateSiteSettingRequest;
 use App\Http\Requests\Admin\System\Setting\UpdateSmtpSettingRequest;
@@ -38,19 +39,21 @@ class SettingController extends Controller
         'contact' => 'ข้อมูลติดต่อ',
         'social' => 'Social Media',
         'google_analytics' => 'Google Analytics',
+        'google_map' => 'Google Map',
         'smtp' => 'SMTP',
         'turnstile' => 'Turnstile',
         'login_back' => 'การเข้าสู่ระบบหลังบ้าน',
         'article' => 'โมดูลบทความ',
         'banner' => 'โมดูลป้ายโฆษณา',
         'popup' => 'โมดูล Popup',
+        'contactus' => 'โมดูลติดต่อเรา',
     ];
 
     /**
      * กลุ่มตั้งค่าที่หน้านี้ (ตั้งค่าระบบ) มีฟอร์มให้แก้ไขเอง — ไม่ใช่ทุกกลุ่มใน Setting::GROUPS เพราะกลุ่มอื่น
      * (เช่น 'article') เป็นของโมดูลนั้น ๆ ที่มีหน้าตั้งค่าแยกของตัวเอง แค่มาลงทะเบียนแคชร่วมทะเบียนเดียวกัน
      */
-    private const OWN_GROUPS = ['site', 'contact', 'social', 'google_analytics', 'smtp', 'turnstile', 'login_back'];
+    private const OWN_GROUPS = ['site', 'contact', 'social', 'google_analytics', 'google_map', 'smtp', 'turnstile', 'login_back'];
 
     /**
      * หน้าตั้งค่าระบบ — ฟอร์มแยกกลุ่มตาม self::OWN_GROUPS
@@ -123,6 +126,11 @@ class SettingController extends Controller
     public function updateGoogleAnalytics(UpdateGoogleAnalyticsSettingRequest $request): RedirectResponse
     {
         return $this->saveGroup($request, 'google_analytics');
+    }
+
+    public function updateGoogleMap(UpdateGoogleMapSettingRequest $request): RedirectResponse
+    {
+        return $this->saveGroup($request, 'google_map');
     }
 
     public function updateSmtp(UpdateSmtpSettingRequest $request): RedirectResponse

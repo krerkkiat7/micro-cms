@@ -125,10 +125,10 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
                     <div class="flex items-center justify-between border-t border-gray-100 px-6 py-4">
                         <p class="text-sm text-gray-500">เลือกแล้ว {{ pending.length }} ไฟล์</p>
                         <div class="flex gap-3">
-                            <SecondaryButton type="button" @click="close">ยกเลิก</SecondaryButton>
                             <PrimaryButton type="button" :disabled="pending.length === 0" @click="confirmSelection">
                                 เลือก
                             </PrimaryButton>
+                            <SecondaryButton type="button" @click="close">ยกเลิก</SecondaryButton>
                         </div>
                     </div>
                 </div>

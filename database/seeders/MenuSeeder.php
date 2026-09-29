@@ -64,6 +64,7 @@ class MenuSeeder extends Seeder
 
             // module : contactus
             ['contactus-item', 'contactus', 'ติดต่อเรา', 'List', 'admin.contactus.item.index', 'contactus.item.view', 1],
+            ['contactus-setting', 'contactus', 'ตั้งค่า', 'SlidersHorizontal', 'admin.contactus.setting.index', 'contactus.setting.manage', 99],
 
             // จัดการระบบ
             ['system-user', 'system', 'จัดการผู้ใช้งาน', 'Users', 'admin.system.user.index', 'system.user.view', 1],

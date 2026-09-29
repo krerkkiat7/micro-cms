@@ -38,6 +38,11 @@ final class FrontUrl
         return route('front.article.tag', ['lang' => $lang, 'tag' => $name]);
     }
 
+    public static function contactus(string $lang): string
+    {
+        return route('front.contactus.item', ['lang' => $lang]);
+    }
+
     public static function home(string $lang): string
     {
         return route('front.home', ['lang' => $lang]);

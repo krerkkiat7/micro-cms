@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BackToListButton from '@/Components/Admin/BackToListButton.vue';
 import AdminLayout from '@/Layouts/Admin/AdminLayout.vue';
 import PageHeader from '@/Components/Admin/PageHeader.vue';
 import TabNav from '@/Components/Admin/TabNav.vue';
@@ -10,7 +11,7 @@ import SearchableSelect from '@/Components/SearchableSelect.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import { Save, Trash2 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import { STATUS_OPTIONS } from '@/utils/options';
@@ -176,12 +177,7 @@ const groupInfo = computed(() => [
                     >
                         ลบไม่ได้: ยังมีสมาชิก {{ group.users_count }} คน
                     </p>
-                    <Link
-                        :href="route('admin.system.usergroup.index')"
-                        class="text-sm font-medium text-gray-500 hover:text-gray-700"
-                    >
-                        กลับไปหน้ารายการ
-                    </Link>
+                    <BackToListButton :href="route('admin.system.usergroup.index')" />
                 </div>
 
                 <InputError :message="deleteForm.errors.group" />

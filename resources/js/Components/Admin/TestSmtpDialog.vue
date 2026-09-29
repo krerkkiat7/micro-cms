@@ -114,12 +114,12 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
                         </div>
 
                         <div class="flex items-center justify-end gap-3 border-t border-gray-200 px-5 py-3">
-                            <SecondaryButton type="button" :disabled="form.processing" @click="close">
-                                ยกเลิก
-                            </SecondaryButton>
                             <PrimaryButton type="submit" :disabled="form.processing">
                                 <Send class="mr-1.5 size-4" /> ส่ง
                             </PrimaryButton>
+                            <SecondaryButton type="button" :disabled="form.processing" @click="close">
+                                ยกเลิก
+                            </SecondaryButton>
                         </div>
                     </form>
                 </div>

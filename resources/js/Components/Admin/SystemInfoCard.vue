@@ -29,16 +29,22 @@ const props = withDefaults(
         append?: SystemInfoItem[];
         /** แสดงเป็นเนื้อหาในกล่องอื่น (เช่น dialog) ไม่ครอบกรอบการ์ด */
         bare?: boolean;
+        /** ซ่อนแถว "วันเวลาที่สร้าง/สร้างโดย" (ข้อมูลที่ไม่ได้สร้างในหลังบ้าน เช่น ติดต่อเรา — ส่งวันเวลาที่ส่งมาทาง prepend แทน) */
+        hideCreated?: boolean;
     }>(),
-    { title: 'ข้อมูลระบบ', prepend: () => [], append: () => [], bare: false },
+    { title: 'ข้อมูลระบบ', prepend: () => [], append: () => [], bare: false, hideCreated: false },
 );
 
 const items = computed<SystemInfoItem[]>(() => {
     const audit = props.audit;
     const list: SystemInfoItem[] = [
         ...props.prepend,
-        { label: 'วันเวลาที่สร้าง', value: formatDateTime(audit.created_at) },
-        { label: 'สร้างโดย', value: audit.created_by },
+        ...(props.hideCreated
+            ? []
+            : [
+                  { label: 'วันเวลาที่สร้าง', value: formatDateTime(audit.created_at) },
+                  { label: 'สร้างโดย', value: audit.created_by },
+              ]),
         { label: 'วันเวลาที่ปรับปรุงล่าสุด', value: formatDateTime(audit.updated_at) },
         { label: 'ปรับปรุงล่าสุดโดย', value: audit.updated_by },
     ];

@@ -92,8 +92,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
                     </div>
 
                     <div class="flex justify-end gap-3 border-t border-gray-100 px-6 py-4">
-                        <SecondaryButton type="button" @click="emit('close')">ยกเลิก</SecondaryButton>
                         <PrimaryButton type="button" @click="confirm">ยืนยันลำดับ</PrimaryButton>
+                        <SecondaryButton type="button" @click="emit('close')">ยกเลิก</SecondaryButton>
                     </div>
                 </div>
             </div>

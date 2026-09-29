@@ -7,6 +7,8 @@ use App\Http\Controllers\Admin\Article\ArticleTagController;
 use App\Http\Controllers\Admin\Banner\BannerCategoryController;
 use App\Http\Controllers\Admin\Banner\BannerItemController;
 use App\Http\Controllers\Admin\Banner\BannerSettingController;
+use App\Http\Controllers\Admin\Contactus\ContactusItemController;
+use App\Http\Controllers\Admin\Contactus\ContactusSettingController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Intropage\IntropageItemController;
 use App\Http\Controllers\Admin\Page\PageItemController;
@@ -30,6 +32,7 @@ use App\Http\Controllers\Front\Article\ArticleCategoryController as FrontArticle
 use App\Http\Controllers\Front\Article\ArticleItemController as FrontArticleItemController;
 use App\Http\Controllers\Front\Article\ArticleTagController as FrontArticleTagController;
 use App\Http\Controllers\Front\Banner\BannerItemController as FrontBannerItemController;
+use App\Http\Controllers\Front\Contactus\ContactusController as FrontContactusController;
 use App\Http\Controllers\Front\FileController as FrontFileController;
 use App\Http\Controllers\Front\Intropage\IntropageController;
 use App\Http\Controllers\Front\Page\PageItemController as FrontPageItemController;
@@ -110,6 +113,12 @@ Route::group([
     Route::get('/article/tag/{tag}', [FrontArticleTagController::class, 'show'])
         ->where('tag', '.+')
         ->name('front.article.tag');
+
+    // ติดต่อเรา — หน้าเดี่ยวตามตั้งค่าโมดูลติดต่อเรา + ส่งแบบฟอร์ม (Turnstile + honeypot + rate limit ใน controller/request)
+    Route::get('/contactus', [FrontContactusController::class, 'show'])->name('front.contactus.item');
+    Route::post('/contactus', [FrontContactusController::class, 'store'])
+        ->name('front.contactus.item.store')
+        ->middleware('throttle:10,1');
 });
 
 /*
@@ -231,6 +240,24 @@ Route::prefix('admin')->group(function () {
             Route::post('/clearcache-all', [PopupSettingController::class, 'clearCacheAll'])->name('admin.popup.setting.clearcache.all');
         });
 
+        // ติดต่อเรา — ข้อมูลที่ส่งมาจากหน้าบ้าน (ไม่มีหน้าเพิ่ม/ลบ) ตรวจสอบสิทธิ์ในแต่ละ method ของ ContactusItemController
+        Route::prefix('contactus/item')->group(function () {
+            Route::get('/', [ContactusItemController::class, 'index'])->name('admin.contactus.item.index');
+            Route::get('/{item}/edit', [ContactusItemController::class, 'edit'])->name('admin.contactus.item.edit');
+            Route::put('/{item}', [ContactusItemController::class, 'update'])->name('admin.contactus.item.update');
+        });
+
+        // ตั้งค่าโมดูลติดต่อเรา + ล้างแคช — ตรวจสอบสิทธิ์ในแต่ละ method ของ ContactusSettingController (contactus.setting.manage)
+        Route::prefix('contactus/setting')->group(function () {
+            Route::get('/', [ContactusSettingController::class, 'index'])->name('admin.contactus.setting.index');
+            Route::put('/', [ContactusSettingController::class, 'update'])->name('admin.contactus.setting.update');
+
+            Route::get('/clearcache', [ContactusSettingController::class, 'clearcache'])->name('admin.contactus.setting.clearcache');
+            Route::post('/clearcache/setting', [ContactusSettingController::class, 'clearCacheSetting'])->name('admin.contactus.setting.clearcache.setting');
+            Route::post('/clearcache/front', [ContactusSettingController::class, 'clearCacheFront'])->name('admin.contactus.setting.clearcache.front');
+            Route::post('/clearcache-all', [ContactusSettingController::class, 'clearCacheAll'])->name('admin.contactus.setting.clearcache.all');
+        });
+
         // Intropage (หน้าคั่นก่อนเข้าเว็บ) — ตรวจสอบสิทธิ์ในแต่ละ method ของ IntropageItemController
         // การจัดการปุ่มด้านล่าง (intropage_item_button) ส่งมาพร้อมกับ store/update ไม่มี route แยก
         // (เหมือน article_item_part ที่จัดการอยู่ในฟอร์มบทความ ไม่มี PartController)
@@ -341,6 +368,7 @@ Route::prefix('admin')->group(function () {
             Route::put('/contact', [SettingController::class, 'updateContact'])->name('admin.system.setting.update.contact');
             Route::put('/social', [SettingController::class, 'updateSocial'])->name('admin.system.setting.update.social');
             Route::put('/google-analytics', [SettingController::class, 'updateGoogleAnalytics'])->name('admin.system.setting.update.google_analytics');
+            Route::put('/google-map', [SettingController::class, 'updateGoogleMap'])->name('admin.system.setting.update.google_map');
             Route::put('/smtp', [SettingController::class, 'updateSmtp'])->name('admin.system.setting.update.smtp');
             // ทดสอบส่งอีเมลด้วยค่า SMTP ที่บันทึกไว้ — throttle กันสแปม/กดรัวเป็น cannon เมล
             Route::post('/smtp/test', [SettingController::class, 'testSmtp'])

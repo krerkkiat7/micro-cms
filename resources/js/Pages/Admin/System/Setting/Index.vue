@@ -25,6 +25,7 @@ interface Props {
         contact: Record<string, string>;
         social: Record<string, string>;
         google_analytics: Record<string, string>;
+        google_map: Record<string, string>;
         smtp: Record<string, string>;
         turnstile: Record<string, string>;
         login_back: Record<string, string>;
@@ -166,6 +167,15 @@ const gaForm = useForm({
 
 function submitGoogleAnalytics() {
     gaForm.put(route('admin.system.setting.update.google_analytics'), { preserveScroll: true });
+}
+
+// ---------- กลุ่ม "Google Map" ----------
+const googleMapForm = useForm({
+    api_key: props.settings.google_map?.api_key ?? '',
+});
+
+function submitGoogleMap() {
+    googleMapForm.put(route('admin.system.setting.update.google_map'), { preserveScroll: true });
 }
 
 // ---------- กลุ่ม "SMTP" ----------
@@ -430,6 +440,33 @@ function submitLoginBack() {
 
                 <div class="mt-6">
                     <PrimaryButton type="submit" :disabled="gaForm.processing">
+                        <Save class="mr-1.5 size-4" /> บันทึก
+                    </PrimaryButton>
+                </div>
+            </form>
+
+            <!-- Google Map -->
+            <form
+                class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8"
+                @submit.prevent="submitGoogleMap"
+            >
+                <h2 class="text-base font-semibold text-gray-800">Google Map</h2>
+
+                <div class="mt-5 grid gap-4 sm:grid-cols-6">
+                    <div class="sm:col-span-4">
+                        <InputLabel for="google_map_api_key" value="API Key (Maps Embed API)" />
+                        <TextInput id="google_map_api_key" v-model="googleMapForm.api_key" type="text" autocomplete="off" />
+                        <p class="mt-1 text-xs text-gray-500">
+                            ใช้แสดงแผนที่ Google Map จากพิกัดในหน้าติดต่อเรา — สร้าง key ที่ Google Cloud Console โดยเปิดใช้
+                            "Maps Embed API" และจำกัดการใช้งานเฉพาะโดเมนของเว็บไซต์ (HTTP referrer) · ถ้าเว้นว่าง
+                            ระบบจะใช้แผนที่แบบไม่ใช้ key แทน ซึ่งแสดงผลได้ไม่เรียบร้อย
+                        </p>
+                        <InputError :message="googleMapForm.errors.api_key" />
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <PrimaryButton type="submit" :disabled="googleMapForm.processing">
                         <Save class="mr-1.5 size-4" /> บันทึก
                     </PrimaryButton>
                 </div>

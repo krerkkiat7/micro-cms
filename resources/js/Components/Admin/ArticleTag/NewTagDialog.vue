@@ -100,8 +100,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
                     </div>
 
                     <div class="mt-6 flex justify-end gap-3">
-                        <SecondaryButton type="button" :disabled="processing" @click="emit('close')">ยกเลิก</SecondaryButton>
                         <PrimaryButton type="button" :disabled="processing" @click="save">บันทึก</PrimaryButton>
+                        <SecondaryButton type="button" :disabled="processing" @click="emit('close')">ยกเลิก</SecondaryButton>
                     </div>
                 </div>
             </div>
