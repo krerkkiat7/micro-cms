@@ -24,6 +24,16 @@ class Turnstile
             && Setting::get('turnstile', 'key_secret') !== null;
     }
 
+    /**
+     * กรอก site key + secret ครบหรือไม่ (ไม่สนตัวเลือกเปิดใช้ของหน้า login) — ใช้กับแบบฟอร์มหน้าบ้าน (ติดต่อเรา)
+     * ที่บังคับใช้ CAPTCHA เสมอเมื่อ key ครบ และไม่เปิดรับข้อมูลเลยถ้า key ไม่ครบ
+     */
+    public static function configured(): bool
+    {
+        return Setting::get('turnstile', 'site_key') !== null
+            && Setting::get('turnstile', 'key_secret') !== null;
+    }
+
     public static function siteKey(): ?string
     {
         return Setting::get('turnstile', 'site_key');

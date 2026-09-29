@@ -25,6 +25,7 @@ const systemGroups = [
     { group: 'contact', label: 'ล้างแคช - ข้อมูลติดต่อ' },
     { group: 'social', label: 'ล้างแคช - Social Media' },
     { group: 'google_analytics', label: 'ล้างแคช - Google Analytics' },
+    { group: 'google_map', label: 'ล้างแคช - Google Map' },
     { group: 'smtp', label: 'ล้างแคช - SMTP' },
     { group: 'turnstile', label: 'ล้างแคช - Turnstile' },
     { group: 'login_back', label: 'ล้างแคช - การเข้าสู่ระบบหลังบ้าน' },
@@ -33,6 +34,9 @@ const systemGroups = [
 // ปุ่มล้างแคชของกลุ่มโมดูลบทความ — group ต้องตรงกับ App\Support\Setting::GROUPS ฝั่ง backend เช่นกัน
 // (มาลงทะเบียนร่วมทะเบียนเดียวกันกับกลุ่มตั้งค่าระบบ แต่แยกกล่องแสดงผลเพราะเป็นของคนละโมดูล)
 const articleGroups = [{ group: 'article', label: 'ล้างแคช - ตั้งค่า' }];
+
+// ปุ่มล้างแคชของกลุ่มโมดูลติดต่อเรา (App\Support\ContactusSetting — group 'contactus')
+const contactusGroups = [{ group: 'contactus', label: 'ล้างแคช - ตั้งค่าติดต่อเรา' }];
 
 const groupForm = useForm({});
 
@@ -98,6 +102,25 @@ function clearFiles() {
                 <div class="mt-5 flex flex-wrap gap-3">
                     <PrimaryButton
                         v-for="item in articleGroups"
+                        :key="item.group"
+                        type="button"
+                        :disabled="groupForm.processing"
+                        @click="clearGroup(item.group)"
+                    >
+                        <Trash2 class="mr-1.5 size-4" /> {{ item.label }}
+                    </PrimaryButton>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8">
+                <h2 class="text-base font-semibold text-gray-800">ล้างแคชติดต่อเรา</h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    ล้างแคชของโมดูลติดต่อเรา — ระบบจะอ่านค่าล่าสุดจากฐานข้อมูลใหม่ในครั้งถัดไป
+                </p>
+
+                <div class="mt-5 flex flex-wrap gap-3">
+                    <PrimaryButton
+                        v-for="item in contactusGroups"
                         :key="item.group"
                         type="button"
                         :disabled="groupForm.processing"
