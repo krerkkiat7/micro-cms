@@ -4,6 +4,7 @@ import AdminLayout from '@/Layouts/Admin/AdminLayout.vue';
 import SystemInfoCard from '@/Components/Admin/SystemInfoCard.vue';
 import type { SystemAudit } from '@/Components/Admin/SystemInfoCard.vue';
 import PageHeader from '@/Components/Admin/PageHeader.vue';
+import TabNav from '@/Components/Admin/TabNav.vue';
 import ArticleItemFormFields from '@/Components/Admin/ArticleForm/ArticleItemFormFields.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
@@ -98,6 +99,11 @@ const defaultTitle = computed(() => {
     return (defaultLang && props.details[defaultLang]?.title) || `บทความ #${props.item.id}`;
 });
 
+const tabs = computed(() => [
+    { label: 'ข้อมูลทั่วไป', href: route('admin.article.item.edit', props.item.id), active: true },
+    { label: 'รายงาน', href: route('admin.article.item.report', props.item.id), active: false },
+]);
+
 const breadcrumbs = computed(() => [
     { label: 'Dashboard', href: route('admin.dashboard') },
     { label: 'บทความ', href: route('admin.article.item.index') },
@@ -112,6 +118,8 @@ const breadcrumbs = computed(() => [
         <template #header>
             <PageHeader :title="defaultTitle" :breadcrumbs="breadcrumbs" />
         </template>
+
+        <TabNav :tabs="tabs" class="mb-6" />
 
         <form class="space-y-6" @submit.prevent="submit">
             <ArticleItemFormFields

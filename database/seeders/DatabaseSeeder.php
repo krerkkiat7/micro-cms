@@ -45,6 +45,7 @@ class DatabaseSeeder extends Seeder
             ['article101', 'article', null, 'article.item.view', 'แสดงบทความ', 2],
             ['article102', 'article', 'article101', 'article.item.manage', 'เพิ่ม/แก้ไขบทความ', 1],
             ['article103', 'article', 'article102', 'article.item.delete', 'ลบบทความ', 1],
+            ['article201', 'article', null, 'article.report.view', 'แสดงรายงาน', 3],
             ['article901', 'article', null, 'article.setting.manage', 'ตั้งค่า', 99],
 
             // module : banner
@@ -103,6 +104,11 @@ class DatabaseSeeder extends Seeder
 
         ];
 
+        // เอาสิทธิ์ article.tag.* ที่เคยแยกไว้ต่างหากออก — รวมเข้ากับ article.item.* แทน
+        // เพราะแท็กสร้างใหม่ได้จากในฟอร์มบทความอยู่แล้ว จึงต้องใช้สิทธิ์ชุดเดียวกัน (cascade ลบ pivot ที่ผูกไว้ด้วย)
+        // ลบด้วย code (ไม่ใช่ id) และลบก่อน upsert — id article201 ถูกนำกลับมาใช้กับ article.report.view แล้ว
+        SysAction::whereIn('code', ['article.tag.delete', 'article.tag.manage', 'article.tag.view'])->delete();
+
         $actionIds = [];
         foreach ($actions as [$id, $actionGroupId, $parentId, $code, $name, $sortOrder]) {
             $actionIds[] = SysAction::updateOrCreate(['id' => $id], [
@@ -126,10 +132,6 @@ class DatabaseSeeder extends Seeder
         );
 
         $adminGroup->actions()->sync($actionIds);
-
-        // เอาสิทธิ์ article.tag.* ที่เคยแยกไว้ต่างหากออก — รวมเข้ากับ article.item.* แทน
-        // เพราะแท็กสร้างใหม่ได้จากในฟอร์มบทความอยู่แล้ว จึงต้องใช้สิทธิ์ชุดเดียวกัน (cascade ลบ pivot ที่ผูกไว้ด้วย)
-        SysAction::whereIn('id', ['article201', 'article202', 'article203'])->delete();
 
         // ผู้ใช้สำหรับเข้าสู่ระบบหลังบ้าน (admin@admin.com / password123)
         User::updateOrCreate(

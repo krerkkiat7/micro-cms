@@ -14,6 +14,8 @@ use App\Models\ArticleItemPartFile;
 use App\Models\FileInfo;
 use App\Models\LogBackAccess;
 use App\Models\LogBackAction;
+use App\Support\Report\ArticleReport;
+use App\Support\Report\ViewReport;
 use App\Support\Setting;
 use App\Support\SystemInfo;
 use Illuminate\Http\RedirectResponse;
@@ -21,6 +23,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * จัดการบทความ (article_item_info + article_item_detail + เนื้อหาแบบแบ่ง part + แท็ก)
@@ -222,6 +225,75 @@ class ArticleItemController extends Controller
                 'delete' => $request->user()->hasPermission('article.item.delete'),
             ],
         ]);
+    }
+
+    /**
+     * รายงานการเข้าชมของบทความนี้ (article_item_view) — กำหนดช่วงวันที่ / รายวัน-สัปดาห์-เดือน-ปี, log module "article.item.report"
+     */
+    public function report(Request $request, string $item): Response|RedirectResponse
+    {
+        if (! $request->user()->hasPermission('article.item.view')) {
+            return redirect()->route('admin.article.item.index');
+        }
+
+        $model = ArticleItemInfo::find($item);
+
+        if (! $model) {
+            return redirect()->route('admin.article.item.index');
+        }
+
+        $filters = ViewReport::filters($request);
+        $info = ArticleReport::itemInfo([$model->id])[$model->id] ?? [];
+
+        // บันทึก log เฉพาะการเข้าหน้าจริง ๆ — ไม่บันทึกตอนเปลี่ยนตัวกรอง
+        if (count($request->query()) === 0) {
+            LogBackAccess::record('รายงานบทความ');
+            LogBackAction::record('article.item.report', 'view', $info['title'] ?? null, $model->id);
+        }
+
+        return Inertia::render('Admin/Article/Item/Report', [
+            'item' => [
+                'id' => $model->id,
+                'title' => $info['title'] ?? null,
+                'category_title' => $info['category_title'] ?? null,
+                'publish_date' => optional($model->publish_date)->format('Y-m-d H:i:s'),
+                'view_amount' => (int) $model->view_amount,
+                'status' => $model->status,
+            ],
+            'filters' => $filters,
+            ...ArticleReport::dashboard(ArticleReport::forItem($model->id, $filters), $request),
+        ]);
+    }
+
+    /**
+     * ส่งออกข้อมูลรายงานของบทความนี้เป็น CSV (ตารางรายช่วงเวลาตามตัวกรอง)
+     */
+    public function reportExport(Request $request, string $item): StreamedResponse|RedirectResponse
+    {
+        if (! $request->user()->hasPermission('article.item.view')) {
+            return redirect()->route('admin.article.item.index');
+        }
+
+        $model = ArticleItemInfo::find($item);
+
+        if (! $model) {
+            return redirect()->route('admin.article.item.index');
+        }
+
+        $filters = ViewReport::filters($request);
+        $title = ArticleReport::itemInfo([$model->id])[$model->id]['title'] ?? null;
+
+        LogBackAction::record('article.item.report', 'export', $title, $model->id);
+
+        $rows = array_map(fn (array $row) => [
+            $row['label'], $row['start'], $row['end'], $row['views'], $row['sessions'], $row['ips'],
+        ], ArticleReport::forItem($model->id, $filters)->series());
+
+        return ViewReport::csv(
+            "article-{$model->id}-report-{$filters['date_from']}-{$filters['date_to']}.csv",
+            ['ช่วงเวลา', 'วันที่เริ่มต้น', 'วันที่สิ้นสุด', 'ยอดเข้าชม', 'ผู้เข้าชมไม่ซ้ำ (session)', 'IP ไม่ซ้ำ'],
+            $rows,
+        );
     }
 
     /**

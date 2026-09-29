@@ -8,7 +8,7 @@ import SearchableSelect from '@/Components/SearchableSelect.vue';
 import StatusBadge from '@/Components/StatusBadge.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ArrowDown, ArrowUp, ArrowUpDown, Plus, RotateCcw, Search } from 'lucide-vue-next';
+import { ArrowDown, ArrowUp, ArrowUpDown, ChartColumn, Plus, RotateCcw, Search } from 'lucide-vue-next';
 import { computed, reactive } from 'vue';
 import { STATUS_FILTER_OPTIONS } from '@/utils/options';
 import type { Paginated } from '@/types';
@@ -184,6 +184,7 @@ const breadcrumbs = [
                                         <component :is="sortIcon('status')" class="size-3.5" :class="sort === 'status' ? 'text-brand-500' : 'text-gray-400'" />
                                     </button>
                                 </th>
+                                <th class="w-20 px-4 py-3 text-center font-medium">รายงาน</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -204,9 +205,20 @@ const breadcrumbs = [
                                 <td class="w-28 px-4 py-3">
                                     <StatusBadge :status="row.status" />
                                 </td>
+                                <td class="w-20 px-4 py-3 text-center">
+                                    <Link
+                                        :href="route('admin.article.item.report', row.id)"
+                                        class="inline-flex size-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-brand-50 hover:text-brand-600"
+                                        title="ดูรายงานการเข้าชม"
+                                        aria-label="ดูรายงานการเข้าชม"
+                                        @click.stop
+                                    >
+                                        <ChartColumn class="size-4" />
+                                    </Link>
+                                </td>
                             </tr>
                             <tr v-if="items.data.length === 0">
-                                <td colspan="5" class="px-4 py-10 text-center text-gray-500">ไม่พบบทความตามเงื่อนไข</td>
+                                <td colspan="6" class="px-4 py-10 text-center text-gray-500">ไม่พบบทความตามเงื่อนไข</td>
                             </tr>
                         </tbody>
                     </table>

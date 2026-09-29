@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\Article\ArticleCategoryController;
 use App\Http\Controllers\Admin\Article\ArticleItemController;
+use App\Http\Controllers\Admin\Article\ArticleReportController;
 use App\Http\Controllers\Admin\Article\ArticleSettingController;
 use App\Http\Controllers\Admin\Article\ArticleTagController;
 use App\Http\Controllers\Admin\Banner\BannerCategoryController;
@@ -162,8 +163,21 @@ Route::prefix('admin')->group(function () {
             Route::get('/add', [ArticleItemController::class, 'add'])->name('admin.article.item.add');
             Route::post('/', [ArticleItemController::class, 'store'])->name('admin.article.item.store');
             Route::get('/{item}/edit', [ArticleItemController::class, 'edit'])->name('admin.article.item.edit');
+            Route::get('/{item}/report', [ArticleItemController::class, 'report'])->name('admin.article.item.report');
+            Route::get('/{item}/report/export', [ArticleItemController::class, 'reportExport'])->name('admin.article.item.report.export');
             Route::put('/{item}', [ArticleItemController::class, 'update'])->name('admin.article.item.update');
             Route::delete('/{item}', [ArticleItemController::class, 'destroy'])->name('admin.article.item.destroy');
+        });
+
+        // รายงานการเข้าชมบทความ (ภาพรวมทั้งโมดูล) — ตรวจสอบสิทธิ์ article.report.view ใน ArticleReportController
+        Route::prefix('article/report')->group(function () {
+            Route::get('/', [ArticleReportController::class, 'index'])->name('admin.article.report.index');
+            Route::get('/overview', [ArticleReportController::class, 'overview'])->name('admin.article.report.overview');
+            Route::get('/top', [ArticleReportController::class, 'top'])->name('admin.article.report.top');
+            Route::get('/category', [ArticleReportController::class, 'category'])->name('admin.article.report.category');
+            Route::get('/audience', [ArticleReportController::class, 'audience'])->name('admin.article.report.audience');
+            Route::get('/time', [ArticleReportController::class, 'time'])->name('admin.article.report.time');
+            Route::get('/export', [ArticleReportController::class, 'export'])->name('admin.article.report.export');
         });
 
         // แท็กบทความ — จัดการเต็มรูปแบบ + endpoint ajax ค้นหา/สร้างด่วนที่ใช้จาก TagPicker.vue

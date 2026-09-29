@@ -391,6 +391,44 @@ log action module_code = `article.tag`
 > (query builder ตรง ๆ ไม่ผ่าน Eloquent) ทั้งสองไฟล์ — มีเทส regression ทั้งฝั่ง `site`
 > (`SiteSettingTest.php`) และ `article` (`ArticleSettingManagementTest.php`)
 
+## 4. รายงานการเข้าชม (branch `article-edit-report`)
+
+**ข้อมูลต้นทาง** — `article_item_view` (1 แถว = 1 การเข้าชมที่ `ViewCounter` นับ — ข้ามบอท + dedupe ต่อ session แล้ว).
+migration `2026_10_07_000001_*` เพิ่ม `browser`/`platform`/`device_type`/`referrer` ให้ `article_item_view`/`page_item_view`/`banner_item_click`
+(ทั้งสามตารางเขียนผ่าน `ViewCounter::write()` ตัวเดียวกัน) — แถวก่อนหน้านี้เป็น null ("ไม่ทราบ" / "เข้าตรง")
+
+**ตัวคำนวณ** — `App\Support\Report\ViewReport` (กลาง รับชื่อตาราง/FK + scope → page/banner ใช้ต่อได้) และ `App\Support\Report\ArticleReport`
+(ชื่อบทความ/หมวดหมู่ภาษาหลัก, top, ตามหมวดหมู่):
+- ตัวกรอง `date_from`/`date_to` (ค่าเริ่มต้น 30 วันล่าสุด, สลับให้ถ้ากลับด้าน, ไม่เกิน 5 ปี) กรองที่ `action_date`;
+  `period` = `day`/`week`/`month`/`year` (ไม่ส่ง = เลือกตามความยาวช่วง: ≤62 วัน รายวัน, ≤190 รายสัปดาห์, ≤1100 รายเดือน, เกินนั้นรายปี)
+- จัดกลุ่มตามช่วงใน SQL (นิพจน์แยก MySQL / SQLite สำหรับเทส) สัปดาห์เริ่มวันจันทร์ — เติมช่วงที่ไม่มีข้อมูลเป็น 0, ป้ายชื่อไทย ปี พ.ศ.
+- ตัวเลขต่อช่วง: ยอดเข้าชม, ผู้เข้าชมไม่ซ้ำ (distinct `session_id`), IP ไม่ซ้ำ; สรุป: ยอดรวม/ไม่ซ้ำ/เฉลี่ยต่อวัน/วันที่มีผู้เข้าชม/ช่วงสูงสุด
+  + % เปลี่ยนแปลงเทียบช่วงก่อนหน้าที่ยาวเท่ากัน
+- แยกตามภาษา/อุปกรณ์/เบราว์เซอร์/ระบบปฏิบัติการ, แหล่งที่มาจาก host ของ referrer (เข้าตรง / ภายในเว็บ / เครื่องมือค้นหา / โซเชียล / เว็บอื่น),
+  heatmap วันในสัปดาห์ × ชั่วโมง (จาก `created_at`)
+- ส่งออก CSV (UTF-8 + BOM ให้ Excel อ่านไทยได้) ตามตัวกรองเดียวกับหน้าจอ
+
+**รายงานรายบทความ** — `admin.article.item.report` (`/admin/article/item/{item}/report`) + `.report.export`, สิทธิ์ `article.item.view`,
+log module `article.item.report` (`view` เฉพาะเข้าหน้าครั้งแรกที่ไม่มี query, `export` ทุกครั้ง). เข้าได้จากคอลัมน์สุดท้ายของหน้ารายการบทความ
+และแท็บ "รายงาน" ของหน้าแก้ไข. หน้า `Pages/Admin/Article/Item/Report.vue`
+
+**เมนูรายงาน** (sidebar กลุ่มบทความ, `sys_menu` `article-report` ไอคอน `ChartColumn`) — สิทธิ์ `article.report.view` ทุกหน้า
+(`ArticleReportController`, หน้า `Pages/Admin/Article/Report/*`, โครงหน้า `Components/Admin/ArticleReport/ReportShell.vue`):
+
+| route | แท็บ | เนื้อหา | log module_code |
+|---|---|---|---|
+| `admin.article.report.index` | รายการเข้าชม | ชื่อบทความ / IP / วันเวลาที่เข้าชม — ค้นหา (ชื่อ/IP) + ช่วงวันที่ + paging + เรียง, ไม่มี dialog; ส่งออกข้อมูลดิบ (สูงสุด 100,000 แถว) | access เท่านั้น (`article.report.index` เมื่อส่งออก) |
+| `.overview` | ภาพรวม | เหมือนรายงานรายบทความแต่รวมทุกบทความ + กรองหมวดหมู่ + 5 อันดับแรก | `article.report.overview` |
+| `.top` | บทความยอดนิยม | 20 อันดับในช่วงวันที่ (กราฟแท่งแนวนอน + ตาราง %) | `article.report.top` |
+| `.category` | ตามหมวดหมู่ | ยอดต่อหมวดหมู่ + แนวโน้ม 5 หมวดหมู่ยอดนิยม | `article.report.category` |
+| `.audience` | ผู้เข้าชมและแหล่งที่มา | ภาษา/อุปกรณ์/เบราว์เซอร์/OS/แหล่งที่มา + เว็บไซต์ภายนอกที่อ้างอิงมา | `article.report.audience` |
+| `.time` | ช่วงเวลา | heatmap วัน × ชั่วโมง + ยอดตามวันในสัปดาห์/ชั่วโมง | `article.report.time` |
+| `.export` | — | CSV ของแท็บ `?tab=` | `article.report.<tab>` action `export` |
+
+ตัวกรองช่วงวันที่ส่งต่อกันระหว่างแท็บรายงาน; ชนิดกราฟ (แท่ง/เส้น) จำใน localStorage (`admin.report.chartType`) ไม่ส่งไป server.
+component กลาง `Components/Admin/Report/*` (`ReportFilterBar`, `ReportDashboard`, `ViewTrendChart` = Chart.js ผ่าน `vue-chartjs`,
+`ReportStatCards`, `ReportSeriesTable`, `BreakdownList`, `AudienceBreakdowns`, `WeekHourHeatmap`) + `resources/js/utils/report.ts`
+
 ---
 
 ## Roadmap
@@ -402,7 +440,8 @@ log action module_code = `article.tag`
 | 2 — schema บทความ + content part + แท็ก | `article_item_*` + ตาราง part (ข้อความ/รูปภาพ/วิดีโอ/เอกสาร) + `article_tag_*` + `ArticleSeeder` ตัวอย่าง | ✅ เสร็จ |
 | 3 — CRUD บทความ | controller/route/หน้า Vue list+add+edit พร้อม part editor (ลากสลับลำดับรูป/เอกสารในกลุ่มตรง ๆ, สลับลำดับ part ผ่าน dialog), `TagPicker.vue` เลือก/สร้างแท็กแบบ autocomplete, แสดง/ซ่อน part + ตัวเลือกแสดงหัวเรื่อง | ✅ เสร็จ |
 | 4 — ตั้งค่าโมดูลบทความ | หน้า `admin.article.setting.index` + ล้างแคช (`sys_setting` group `article`) + ลงทะเบียนร่วมกับล้างแคชของตั้งค่าระบบ | ✅ เสร็จ |
-| **5 — ปรับปรุงบทความ (branch `article-edit`)** *(รอบนี้)* | จัดฟอร์มหมวดหมู่/บทความใหม่เป็นการ์ดตามลำดับ (component ร่วม `Components/Admin/ArticleForm/*`), ตั้งค่ารายการ/รายละเอียดเพิ่ม, หน้าบ้าน: ค้นหา + เรียงลำดับ, รายละเอียดเรียงใหม่ + พิมพ์ + แชร์ + แท็กเป็นลิงก์, หน้ารายการตามแท็ก | ✅ เสร็จ |
+| 5 — ปรับปรุงบทความ (branch `article-edit`) | จัดฟอร์มหมวดหมู่/บทความใหม่เป็นการ์ดตามลำดับ (component ร่วม `Components/Admin/ArticleForm/*`), ตั้งค่ารายการ/รายละเอียดเพิ่ม, หน้าบ้าน: ค้นหา + เรียงลำดับ, รายละเอียดเรียงใหม่ + พิมพ์ + แชร์ + แท็กเป็นลิงก์, หน้ารายการตามแท็ก | ✅ เสร็จ |
+| **6 — รายงานการเข้าชม (branch `article-edit-report`)** *(รอบนี้)* | รายงานรายบทความ + เมนูรายงานภาพรวม 6 แท็บ, คอลัมน์ client ในตารางประวัติการเข้าชม, ส่งออก CSV (ดู §4) | ✅ เสร็จ |
 
 ## หน้าบ้าน (สรุป — รายละเอียดเต็มดู [PRD-front.md](PRD-front.md) §5, §8)
 

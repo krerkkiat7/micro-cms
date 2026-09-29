@@ -425,6 +425,15 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   `google_map` (`api_key`, `App\Support\GoogleMap`); เมนูหน้าบ้านประเภทใหม่ `FrontMenuType::CONTACTUS` (popup/ปุ่มอ่านทั้งหมดเลือกได้);
   **เมนูที่ไม่แสดง (status N/พาเรนต์ซ่อน) ยังใช้ตั้งค่าส่วนหัวกับหน้าของตัวเอง แต่ breadcrumb = หน้าแรก > เมนูตัวเอง** (`FrontMenuResolver` โหลดทุกเมนู + flag `hidden`)
 
+- **รายงานการเข้าชมบทความ (branch `article-edit-report`) — ดู `docs/PRD-article.md` §4** — รายบทความ `admin.article.item.report` (+`.export`,
+  สิทธิ์ `article.item.view`, log `article.item.report`; คอลัมน์สุดท้ายของหน้ารายการ + แท็บในหน้าแก้ไข) และเมนูรายงาน `admin.article.report.*`
+  (สิทธิ์ `article.report.view`, แท็บ index/overview/top/category/audience/time + export, log `article.report.<แท็บ>`); ตัวคำนวณกลาง
+  `App\Support\Report\ViewReport` (นิพจน์จัดกลุ่มแยก MySQL/SQLite — เพิ่ม driver อื่นต้องเพิ่มใน `bucketExpression()`/`heatmap()`) +
+  `ArticleReport`; กราฟใช้ **Chart.js + vue-chartjs** (`Components/Admin/Report/ViewTrendChart.vue`). ตารางประวัติการเข้าชม
+  (`article_item_view`/`page_item_view`/`banner_item_click`) มีคอลัมน์ `browser`/`platform`/`device_type`/`referrer` แล้ว (migration
+  `2026_10_07_000001_*`, `ViewCounter` เติมให้). `DatabaseSeeder` ลบสิทธิ์ `article.tag.*` เก่าด้วย **code** ก่อน upsert — id `article201`
+  ถูกนำกลับมาใช้กับ `article.report.view` (เดิมลบด้วย id ทำให้สิทธิ์ใหม่ถูกลบทิ้งทุกครั้งที่ seed)
+
 ## ทดสอบ
 
 - เทสหน้าบ้านอยู่ `tests/Feature/Front/FrontSiteTest.php` (seed `DatabaseSeeder` แล้วใช้ข้อมูลตัวอย่าง)
