@@ -437,6 +437,10 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   `2026_10_07_000001_*`, `ViewCounter` เติมให้). `DatabaseSeeder` ลบสิทธิ์ `article.tag.*` เก่าด้วย **code** ก่อน upsert — id `article201`
   ถูกนำกลับมาใช้กับ `article.report.view` (เดิมลบด้วย id ทำให้สิทธิ์ใหม่ถูกลบทิ้งทุกครั้งที่ seed)
 
+- **สถิติประวัติการใช้งานหลังบ้าน** (`log_back_access`) — แท็บต่อจากหน้ารายการ `admin.system.backlog.access.{overview,user,page,device,time}` + `.export`
+  (`BackLogAccessReportController`, สิทธิ์ `system.backlog.access`, `App\Support\Report\BackLogAccessReport` ต่อยอด `ViewReport`), กรองผู้ใช้งานได้,
+  เวลาที่ใช้ต่อหน้าจอจาก `last_visited - created_at` ตัดที่ 30 นาที/ครั้ง — `ReportFilterBar` รองรับ dropdown กำหนดเองผ่าน prop `select` (เช่น `user_id`)
+  และ `utils/report.ts` มี metric `access` — ดู `docs/PRD-system.md` §5
 ## ทดสอบ
 
 - เทสหน้าบ้านอยู่ `tests/Feature/Front/FrontSiteTest.php` (seed `DatabaseSeeder` แล้วใช้ข้อมูลตัวอย่าง)

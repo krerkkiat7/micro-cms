@@ -1,15 +1,14 @@
 <script setup lang="ts">
+import StatsShell from '@/Components/Admin/BackLogAccess/StatsShell.vue';
 import DetailDialog from '@/Components/Admin/DetailDialog.vue';
-import PageHeader from '@/Components/Admin/PageHeader.vue';
 import Pagination from '@/Components/Pagination.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import TextInput from '@/Components/TextInput.vue';
-import AdminLayout from '@/Layouts/Admin/AdminLayout.vue';
 import type { Paginated } from '@/types';
 import { formatDateTime } from '@/utils/date';
-import { Head, router } from '@inertiajs/vue3';
+import { router } from '@inertiajs/vue3';
 import { ArrowDown, ArrowUp, ArrowUpDown, RotateCcw, Search } from 'lucide-vue-next';
 import { computed, reactive, ref } from 'vue';
 
@@ -110,11 +109,6 @@ function sortIcon(column: string) {
     return props.direction === 'asc' ? ArrowUp : ArrowDown;
 }
 
-const breadcrumbs = [
-    { label: 'Dashboard', href: route('admin.dashboard') },
-    { label: 'ประวัติการใช้งานหลังบ้าน' },
-];
-
 // --- dialog รายละเอียด ---
 const selected = ref<Row | null>(null);
 
@@ -156,148 +150,137 @@ const detailRows = computed<{ label: string; value: string }[]>(() => {
 </script>
 
 <template>
-    <Head title="ประวัติการใช้งานหลังบ้าน" />
-
-    <AdminLayout>
-        <template #header>
-            <PageHeader
-                title="ประวัติการใช้งานหลังบ้าน"
-                :breadcrumbs="breadcrumbs"
-            />
-        </template>
-
-        <div class="space-y-4">
-            <!-- ตัวกรอง -->
-            <form
-                class="rounded-2xl border border-gray-200 bg-white p-4 shadow-xs"
-                @submit.prevent="search"
-            >
-                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    <div class="lg:col-span-2">
-                        <TextInput
-                            v-model="form.q"
-                            type="text"
-                            placeholder="ค้นหาจาก URL, ชื่อหน้า, IP Address"
-                            @keyup.enter="search"
-                        />
-                    </div>
-                    <label class="flex items-center gap-2">
-                        <span class="whitespace-nowrap text-sm text-gray-500">
-                            ตั้งแต่
-                        </span>
-                        <TextInput v-model="form.date_from" type="date" />
-                    </label>
-                    <label class="flex items-center gap-2">
-                        <span class="whitespace-nowrap text-sm text-gray-500">
-                            ถึง
-                        </span>
-                        <TextInput v-model="form.date_to" type="date" />
-                    </label>
+    <StatsShell tab="index">
+        <!-- ตัวกรอง -->
+        <form
+            class="rounded-2xl border border-gray-200 bg-white p-4 shadow-xs"
+            @submit.prevent="search"
+        >
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="lg:col-span-2">
+                    <TextInput
+                        v-model="form.q"
+                        type="text"
+                        placeholder="ค้นหาจาก URL, ชื่อหน้า, IP Address"
+                        @keyup.enter="search"
+                    />
                 </div>
-                <div class="mt-3 flex flex-wrap items-center gap-2">
-                    <PrimaryButton type="submit">
-                        <Search class="mr-1.5 size-4" /> ค้นหา
-                    </PrimaryButton>
-                    <SecondaryButton type="button" @click="resetFilters">
-                        <RotateCcw class="mr-1.5 size-4" /> เริ่มใหม่
-                    </SecondaryButton>
-                </div>
-            </form>
-
-            <!-- ตาราง -->
-            <div
-                class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs"
-            >
-                <div class="overflow-x-auto">
-                    <table class="w-full min-w-[900px] text-left text-sm">
-                        <thead
-                            class="border-b border-gray-200 bg-gray-50 text-xs uppercase tracking-wide text-gray-500"
-                        >
-                            <tr>
-                                <th
-                                    v-for="col in columns"
-                                    :key="col.key"
-                                    class="px-4 py-3 font-medium"
-                                >
-                                    <button
-                                        v-if="col.sortable"
-                                        type="button"
-                                        class="inline-flex items-center gap-1 transition-colors hover:text-gray-700"
-                                        @click="sortBy(col.key)"
-                                    >
-                                        {{ col.label }}
-                                        <component
-                                            :is="sortIcon(col.key)"
-                                            class="size-3.5"
-                                            :class="
-                                                sort === col.key
-                                                    ? 'text-brand-500'
-                                                    : 'text-gray-400'
-                                            "
-                                        />
-                                    </button>
-                                    <span v-else>{{ col.label }}</span>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100">
-                            <tr
-                                v-for="row in logs.data"
-                                :key="row.id"
-                                class="cursor-pointer transition-colors hover:bg-gray-50"
-                                @click="openDetail(row)"
-                            >
-                                <td class="px-4 py-3 text-gray-700">
-                                    {{ row.name ?? '-' }}
-                                </td>
-                                <td
-                                    class="max-w-[22rem] truncate px-4 py-3 text-gray-600"
-                                    :title="row.uri_string ?? ''"
-                                >
-                                    {{ row.uri_string ?? '-' }}
-                                </td>
-                                <td class="px-4 py-3 text-gray-600">
-                                    {{ row.title_name ?? '-' }}
-                                </td>
-                                <td class="px-4 py-3 text-gray-600">
-                                    {{ row.remote_ip ?? '-' }}
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap text-gray-600">
-                                    {{ formatDateTime(row.created_at) }}
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap text-gray-600">
-                                    {{ formatDateTime(row.last_visited) }}
-                                </td>
-                            </tr>
-                            <tr v-if="logs.data.length === 0">
-                                <td
-                                    :colspan="columns.length"
-                                    class="px-4 py-10 text-center text-gray-500"
-                                >
-                                    ไม่พบประวัติตามเงื่อนไข
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <label class="flex items-center gap-2">
+                    <span class="whitespace-nowrap text-sm text-gray-500">
+                        ตั้งแต่
+                    </span>
+                    <TextInput v-model="form.date_from" type="date" />
+                </label>
+                <label class="flex items-center gap-2">
+                    <span class="whitespace-nowrap text-sm text-gray-500">
+                        ถึง
+                    </span>
+                    <TextInput v-model="form.date_to" type="date" />
+                </label>
             </div>
+            <div class="mt-3 flex flex-wrap items-center gap-2">
+                <PrimaryButton type="submit">
+                    <Search class="mr-1.5 size-4" /> ค้นหา
+                </PrimaryButton>
+                <SecondaryButton type="button" @click="resetFilters">
+                    <RotateCcw class="mr-1.5 size-4" /> เริ่มใหม่
+                </SecondaryButton>
+            </div>
+        </form>
 
-            <!-- ท้ายตาราง: จำนวนรายการอยู่ซ้าย, เลขหน้าอยู่กึ่งกลาง (ตกลงบรรทัดใหม่ถ้าที่ไม่พอ), จำนวนต่อหน้าชิดขวา -->
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <p class="order-1 shrink-0 text-sm text-gray-500">
-                    แสดง {{ logs.from ?? 0 }}–{{ logs.to ?? 0 }} จาก {{ logs.total }} รายการ
-                </p>
+        <!-- ตาราง -->
+        <div
+            class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs"
+        >
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[900px] text-left text-sm">
+                    <thead
+                        class="border-b border-gray-200 bg-gray-50 text-xs uppercase tracking-wide text-gray-500"
+                    >
+                        <tr>
+                            <th
+                                v-for="col in columns"
+                                :key="col.key"
+                                class="px-4 py-3 font-medium"
+                            >
+                                <button
+                                    v-if="col.sortable"
+                                    type="button"
+                                    class="inline-flex items-center gap-1 transition-colors hover:text-gray-700"
+                                    @click="sortBy(col.key)"
+                                >
+                                    {{ col.label }}
+                                    <component
+                                        :is="sortIcon(col.key)"
+                                        class="size-3.5"
+                                        :class="
+                                            sort === col.key
+                                                ? 'text-brand-500'
+                                                : 'text-gray-400'
+                                        "
+                                    />
+                                </button>
+                                <span v-else>{{ col.label }}</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <tr
+                            v-for="row in logs.data"
+                            :key="row.id"
+                            class="cursor-pointer transition-colors hover:bg-gray-50"
+                            @click="openDetail(row)"
+                        >
+                            <td class="px-4 py-3 text-gray-700">
+                                {{ row.name ?? '-' }}
+                            </td>
+                            <td
+                                class="max-w-[22rem] truncate px-4 py-3 text-gray-600"
+                                :title="row.uri_string ?? ''"
+                            >
+                                {{ row.uri_string ?? '-' }}
+                            </td>
+                            <td class="px-4 py-3 text-gray-600">
+                                {{ row.title_name ?? '-' }}
+                            </td>
+                            <td class="px-4 py-3 text-gray-600">
+                                {{ row.remote_ip ?? '-' }}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-gray-600">
+                                {{ formatDateTime(row.created_at) }}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-gray-600">
+                                {{ formatDateTime(row.last_visited) }}
+                            </td>
+                        </tr>
+                        <tr v-if="logs.data.length === 0">
+                            <td
+                                :colspan="columns.length"
+                                class="px-4 py-10 text-center text-gray-500"
+                            >
+                                ไม่พบประวัติตามเงื่อนไข
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-                <Pagination
-                    :current-page="logs.current_page"
-                    :last-page="logs.last_page"
-                    class="order-3 w-full sm:order-2 sm:w-auto sm:flex-1"
-                    @navigate="(page) => visit({ page })"
-                />
+        <!-- ท้ายตาราง: จำนวนรายการอยู่ซ้าย, เลขหน้าอยู่กึ่งกลาง (ตกลงบรรทัดใหม่ถ้าที่ไม่พอ), จำนวนต่อหน้าชิดขวา -->
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <p class="order-1 shrink-0 text-sm text-gray-500">
+                แสดง {{ logs.from ?? 0 }}–{{ logs.to ?? 0 }} จาก {{ logs.total }} รายการ
+            </p>
 
-                <div class="order-2 w-20 shrink-0 sm:order-3">
-                    <SearchableSelect v-model="form.per_page" :options="perPageSelectOptions" class="text-sm" @update:model-value="search" />
-                </div>
+            <Pagination
+                :current-page="logs.current_page"
+                :last-page="logs.last_page"
+                class="order-3 w-full sm:order-2 sm:w-auto sm:flex-1"
+                @navigate="(page) => visit({ page })"
+            />
+
+            <div class="order-2 w-20 shrink-0 sm:order-3">
+                <SearchableSelect v-model="form.per_page" :options="perPageSelectOptions" class="text-sm" @update:model-value="search" />
             </div>
         </div>
 
@@ -319,5 +302,5 @@ const detailRows = computed<{ label: string; value: string }[]>(() => {
                 </div>
             </dl>
         </DetailDialog>
-    </AdminLayout>
+    </StatsShell>
 </template>

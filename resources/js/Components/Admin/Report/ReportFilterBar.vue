@@ -10,7 +10,8 @@ import { ChartColumn, ChartLine, Download, Search } from 'lucide-vue-next';
 import { computed, reactive, watch } from 'vue';
 
 /**
- * แถบตัวกรองของหน้ารายงาน — ช่วงวันที่ (+ ปุ่มลัด), รายวัน/สัปดาห์/เดือน/ปี, หมวดหมู่ (ถ้าส่ง categories มา), ชนิดกราฟ
+ * แถบตัวกรองของหน้ารายงาน — ช่วงวันที่ (+ ปุ่มลัด), รายวัน/สัปดาห์/เดือน/ปี, dropdown กรองเพิ่ม 1 ช่อง, ชนิดกราฟ
+ * dropdown: `categories` = กรองหมวดหมู่ (category_id) หรือ `select` = กำหนดเอง (เช่น ผู้ใช้งาน → user_id)
  * เปลี่ยนตัวกรองแล้ว visit ไปที่ routeName เดิมพร้อม query ใหม่; ชนิดกราฟเป็น v-model ฝั่งหน้าจอเท่านั้น
  */
 const props = defineProps<{
@@ -18,6 +19,7 @@ const props = defineProps<{
     routeName: string;
     routeParams?: Record<string, unknown>;
     categories?: CategoryOption[];
+    select?: { param: 'category_id' | 'user_id'; label: string; allLabel: string; options: CategoryOption[] };
     exportHref?: string;
     showChartType?: boolean;
     showPeriod?: boolean;
@@ -25,11 +27,22 @@ const props = defineProps<{
 
 const chartType = defineModel<ChartType>('chartType', { default: 'bar' });
 
+// dropdown กรองเพิ่ม — categories เป็นรูปแบบย่อของ select สำหรับหมวดหมู่
+const selectConfig = computed(() =>
+    props.select ??
+    (props.categories ? { param: 'category_id' as const, label: 'หมวดหมู่', allLabel: 'ทุกหมวดหมู่', options: props.categories } : null),
+);
+
+const selectedValue = (f: ReportFilters) => {
+    const value = selectConfig.value ? f[selectConfig.value.param] : null;
+    return value ? String(value) : '';
+};
+
 const form = reactive({
     date_from: props.filters.date_from,
     date_to: props.filters.date_to,
     period: props.filters.period as string,
-    category_id: props.filters.category_id ? String(props.filters.category_id) : '',
+    select_value: selectedValue(props.filters),
 });
 
 watch(
@@ -38,14 +51,18 @@ watch(
         form.date_from = f.date_from;
         form.date_to = f.date_to;
         form.period = f.period;
-        form.category_id = f.category_id ? String(f.category_id) : '';
+        form.select_value = selectedValue(f);
     },
 );
 
-const categoryOptions = computed(() => [
-    { value: '', label: 'ทุกหมวดหมู่' },
-    ...(props.categories ?? []).map((c) => ({ value: String(c.id), label: c.title ?? `หมวดหมู่ #${c.id}` })),
-]);
+const selectOptions = computed(() =>
+    selectConfig.value
+        ? [
+              { value: '', label: selectConfig.value.allLabel },
+              ...selectConfig.value.options.map((c) => ({ value: String(c.id), label: c.title ?? `#${c.id}` })),
+          ]
+        : [],
+);
 
 const chartOptions = [
     { value: 'bar', label: 'กราฟแท่ง', icon: ChartColumn },
@@ -64,7 +81,7 @@ function apply(extra: Record<string, unknown> = {}) {
             date_from: form.date_from || undefined,
             date_to: form.date_to || undefined,
             period: form.period,
-            category_id: form.category_id !== '' ? form.category_id : undefined,
+            ...(selectConfig.value ? { [selectConfig.value.param]: form.select_value !== '' ? form.select_value : undefined } : {}),
             ...extra,
         },
         { preserveScroll: true, preserveState: true, replace: true },
@@ -111,9 +128,13 @@ const quickRanges: { value: '7' | '30' | '90' | 'year' | 'lastyear'; label: stri
                 <span class="text-xs font-medium text-gray-500">ถึงวันที่</span>
                 <TextInput v-model="form.date_to" type="date" class="w-40" />
             </label>
-            <div v-if="categories" class="flex w-56 flex-col gap-1">
-                <span class="text-xs font-medium text-gray-500">หมวดหมู่</span>
-                <SearchableSelect v-model="form.category_id" :options="categoryOptions" @update:model-value="(v: string) => apply({ category_id: v !== '' ? v : undefined })" />
+            <div v-if="selectConfig" class="flex w-64 flex-col gap-1">
+                <span class="text-xs font-medium text-gray-500">{{ selectConfig.label }}</span>
+                <SearchableSelect
+                    v-model="form.select_value"
+                    :options="selectOptions"
+                    @update:model-value="(v: string) => apply({ [selectConfig!.param]: v !== '' ? v : undefined })"
+                />
             </div>
             <PrimaryButton type="submit">
                 <Search class="mr-1.5 size-4" /> แสดงข้อมูล

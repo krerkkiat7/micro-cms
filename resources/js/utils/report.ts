@@ -13,6 +13,7 @@ export interface ReportFilters {
     date_to: string;
     period: ReportPeriod;
     category_id?: number | null;
+    user_id?: number | null;
 }
 
 export interface SeriesRow {
@@ -58,7 +59,8 @@ export interface Referrers {
     paths: { key: string; views: number }[];
 }
 
-export type ReportMetric = 'view' | 'click';
+/** view = ยอดเข้าชม, click = ยอดคลิก, access = การเข้าหน้าจอหลังบ้าน (ประวัติการใช้งานหลังบ้าน) */
+export type ReportMetric = 'view' | 'click' | 'access';
 
 /** ข้อมูลโมดูลของเมนูรายงาน (ItemReportController::moduleMeta) */
 export interface ReportModule {
@@ -80,6 +82,10 @@ export interface ReportTerms {
 }
 
 export function reportTerms(metric: ReportMetric, item = 'บทความ'): ReportTerms {
+    if (metric === 'access') {
+        return { count: 'จำนวนการเข้าหน้าจอ', unique: 'จำนวนครั้งที่เข้าระบบ', verb: 'เข้าใช้งาน', item };
+    }
+
     return metric === 'click'
         ? { count: 'ยอดคลิก', unique: 'ผู้คลิกไม่ซ้ำ', verb: 'คลิก', item }
         : { count: 'ยอดเข้าชม', unique: 'ผู้เข้าชมไม่ซ้ำ', verb: 'เข้าชม', item };
@@ -173,6 +179,18 @@ export function formatDecimal(value: number): string {
     return decimalFmt.format(value);
 }
 
+/** ระยะเวลา (วินาที) เป็นข้อความสั้น เช่น "1 ชม. 5 นาที", "2 นาที 30 วินาที", "45 วินาที" */
+export function formatDuration(seconds: number): string {
+    const total = Math.max(0, Math.round(seconds));
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+
+    if (h > 0) return `${numberFmt.format(h)} ชม. ${m} นาที`;
+    if (m > 0) return s > 0 ? `${m} นาที ${s} วินาที` : `${m} นาที`;
+    return `${s} วินาที`;
+}
+
 /** สัดส่วนเป็น % (ทศนิยม 1 ตำแหน่ง) */
 export function percent(part: number, total: number): string {
     return total > 0 ? `${decimalFmt.format(Math.round((part / total) * 1000) / 10)}%` : '0%';
@@ -194,6 +212,10 @@ export function filterQuery(filters: ReportFilters): Record<string, string> {
 
     if (filters.category_id) {
         query.category_id = String(filters.category_id);
+    }
+
+    if (filters.user_id) {
+        query.user_id = String(filters.user_id);
     }
 
     return query;

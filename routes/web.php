@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\Popup\PopupItemController;
 use App\Http\Controllers\Admin\Popup\PopupSettingController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\System\BackLogAccessController;
+use App\Http\Controllers\Admin\System\BackLogAccessReportController;
 use App\Http\Controllers\Admin\System\BackLogActionController;
 use App\Http\Controllers\Admin\System\BackLogLoginController;
 use App\Http\Controllers\Admin\System\FileController;
@@ -383,6 +384,13 @@ Route::prefix('admin')->group(function () {
             // การเข้าชม (log_back_access)
             Route::prefix('access')->group(function () {
                 Route::get('/', [BackLogAccessController::class, 'index'])->name('admin.system.backlog.access.index');
+                // สถิติ (แท็บต่อจากหน้ารายการ) — BackLogAccessReportController
+                Route::get('/overview', [BackLogAccessReportController::class, 'overview'])->name('admin.system.backlog.access.overview');
+                Route::get('/user', [BackLogAccessReportController::class, 'user'])->name('admin.system.backlog.access.user');
+                Route::get('/page', [BackLogAccessReportController::class, 'page'])->name('admin.system.backlog.access.page');
+                Route::get('/device', [BackLogAccessReportController::class, 'device'])->name('admin.system.backlog.access.device');
+                Route::get('/time', [BackLogAccessReportController::class, 'time'])->name('admin.system.backlog.access.time');
+                Route::get('/export', [BackLogAccessReportController::class, 'export'])->name('admin.system.backlog.access.export');
                 // ปลายทาง keep-alive อัปเดต last_visited (ยิงจาก navigator.sendBeacon)
                 Route::post('/ping', [BackLogAccessController::class, 'ping'])
                     ->name('admin.system.backlog.access.ping')
