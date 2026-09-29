@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import BackToListButton from '@/Components/Admin/BackToListButton.vue';
 import AdminLayout from '@/Layouts/Admin/AdminLayout.vue';
 import PageHeader from '@/Components/Admin/PageHeader.vue';
 import PopupItemFormFields from '@/Components/Admin/PopupForm/PopupItemFormFields.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import { Save } from 'lucide-vue-next';
 import { createPopupPart, nowDateTime, popupPartsToPayload } from '@/utils/popupForm';
 import type { PopupItemFormData, PopupMenuNode } from '@/utils/popupForm';
@@ -59,7 +60,7 @@ const breadcrumbs = [
                 <PrimaryButton type="submit" :disabled="form.processing">
                     <Save class="mr-1.5 size-4" /> บันทึก
                 </PrimaryButton>
-                <Link :href="route('admin.popup.item.index')" class="text-sm font-medium text-gray-500 hover:text-gray-700">ยกเลิก</Link>
+                <BackToListButton :href="route('admin.popup.item.index')" cancel />
             </div>
         </form>
     </AdminLayout>

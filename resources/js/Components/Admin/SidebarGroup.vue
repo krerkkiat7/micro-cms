@@ -28,12 +28,12 @@ function itemIsActive(item: MenuItem): boolean {
 // route ปัจจุบันอยู่ในกลุ่มนี้ไหม (ใช้ทั้งไฮไลต์หัวข้อกลุ่ม และบังคับให้กางไว้)
 const containsActive = computed(() => props.group.items.some(itemIsActive));
 
+// ค่าเริ่มต้น = ปิดทุกกลุ่ม (ยังไม่เคยกดเปิด/ปิดเอง) — กลุ่มที่มีหน้าปัจจุบันจะกางให้อัตโนมัติ (containsActive)
 function readStored(): boolean {
     try {
-        const v = window.localStorage.getItem(STORAGE_PREFIX + props.group.id);
-        return v === null ? true : v === '1';
+        return window.localStorage.getItem(STORAGE_PREFIX + props.group.id) === '1';
     } catch {
-        return true;
+        return false;
     }
 }
 
