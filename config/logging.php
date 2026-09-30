@@ -66,10 +66,20 @@ return [
         ],
 
         // error ที่ถูก report (5xx ฯลฯ) พร้อมรหัสอ้างอิง (App\Support\ErrorReference) — เขียนจาก bootstrap/app.php เสมอ
-        // ไม่ขึ้นกับ LOG_STACK ของแต่ละเครื่อง; หมุนไฟล์รายวัน storage/logs/error-YYYY-MM-DD.log เก็บ LOG_ERROR_DAYS วัน (default 90)
-        'error' => [
+        // ไม่ขึ้นกับ LOG_STACK ของแต่ละเครื่อง; แยกไฟล์ตามฝั่ง (ErrorReference::channel()) หมุนรายวัน เก็บ LOG_ERROR_DAYS วัน (default 90)
+        //   error_front → storage/logs/error-front-YYYY-MM-DD.log  (หน้าบ้าน + path สาธารณะอื่น เช่น /file, /sitemap.xml)
+        //   error_admin → storage/logs/error-admin-YYYY-MM-DD.log  (/admin + คำสั่ง artisan/queue ที่ไม่ได้มาจากหน้าเว็บ)
+        'error_front' => [
             'driver' => 'daily',
-            'path' => storage_path('logs/error.log'),
+            'path' => storage_path('logs/error-front.log'),
+            'level' => 'error',
+            'days' => (int) env('LOG_ERROR_DAYS', 90),
+            'replace_placeholders' => true,
+        ],
+
+        'error_admin' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/error-admin.log'),
             'level' => 'error',
             'days' => (int) env('LOG_ERROR_DAYS', 90),
             'replace_placeholders' => true,

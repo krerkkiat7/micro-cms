@@ -14,17 +14,20 @@ beforeEach(function () {
     $this->seed(DatabaseSeeder::class);
     config(['app.debug' => false]);
 
-    // channel `error` → เก็บในหน่วยความจำ เพื่อตรวจว่าเขียน log พร้อมรหัสอ้างอิงจริง
-    config(['logging.channels.error' => ['driver' => 'monolog', 'handler' => TestHandler::class]]);
+    // channel error_front / error_admin → เก็บในหน่วยความจำ เพื่อตรวจว่าเขียน log พร้อมรหัสอ้างอิงลงไฟล์ของฝั่งที่ถูกต้อง
+    config([
+        'logging.channels.error_front' => ['driver' => 'monolog', 'handler' => TestHandler::class],
+        'logging.channels.error_admin' => ['driver' => 'monolog', 'handler' => TestHandler::class],
+    ]);
 
     Route::middleware('web')->get('/th/test-error-500', fn () => throw new RuntimeException('secret-db-password'));
     Route::middleware('web')->get('/admin/test-error-500', fn () => throw new RuntimeException('secret-admin-detail'));
     Route::middleware('web')->get('/admin/test-error-403', fn () => abort(403, 'secret-forbidden-reason'));
 });
 
-function errorLogRecords(): array
+function errorLogRecords(string $channel): array
 {
-    return Log::channel('error')->getLogger()->getHandlers()[0]->getRecords();
+    return Log::channel($channel)->getLogger()->getHandlers()[0]->getRecords();
 }
 
 test('front 404 is rendered per language with site branding and a home link', function (string $lang, string $title) {
@@ -56,7 +59,8 @@ test('front 500 only says something went wrong and logs a reference', function (
     expect($response->getContent())->not->toContain('secret-db-password');
 
     $reference = $response->viewData('page')['props']['reference'];
-    $record = collect(errorLogRecords())->first();
+    $record = collect(errorLogRecords('error_front'))->first();
+    expect(errorLogRecords('error_admin'))->toBe([]);
 
     expect($record['message'])->toContain('secret-db-password')
         ->and($record['context']['reference'])->toBe($reference)
@@ -83,6 +87,11 @@ test('admin errors never show the real reason', function () {
     $server = $this->get('/admin/test-error-500')->assertStatus(500);
     $server->assertInertia(fn (Assert $page) => $page->component('Admin/Error')->where('title', 'เกิดข้อผิดพลาด')->whereType('reference', 'string'));
     expect($server->getContent())->not->toContain('secret-admin-detail');
+
+    // 500 ของหลังบ้านลงไฟล์ error_admin เท่านั้น
+    $reference = $server->viewData('page')['props']['reference'];
+    expect(collect(errorLogRecords('error_admin'))->pluck('context.reference')->all())->toBe([$reference])
+        ->and(errorLogRecords('error_front'))->toBe([]);
 });
 
 test('unlisted statuses fall back to the generic 4xx text', function () {

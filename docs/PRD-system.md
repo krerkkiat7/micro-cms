@@ -662,10 +662,12 @@ backend ด้วย ajax (axios) ไม่ใช่ Inertia visit เพรา�
 - รหัสอ้างอิง `ERR-XXXXXXXX` (8 ตัวอักษรไม่กำกวม) สร้างครั้งเดียวต่อ request → แสดงบนหน้า 5xx และอยู่ใน log — ผู้ใช้แจ้งรหัส ผู้ดูแลค้นใน log ได้ทันที
 - `$exceptions->context()` เติมข้อมูลให้ทุก exception ที่ถูก report: `reference`, `url`, `method`, `route`, `user_id` (หลังบ้าน), `front_user_id`, `ip` (`ClientIp`),
   `user_agent`, `referer`, `input_keys` (**ชื่อฟิลด์เท่านั้น ไม่เก็บค่า** — กันรหัสผ่าน/ข้อมูลส่วนบุคคล)
-- `$exceptions->report()` เขียนซ้ำลง channel **`error`** (`config/logging.php`: daily → `storage/logs/error-YYYY-MM-DD.log`, **เก็บ `LOG_ERROR_DAYS` = 90 วัน**,
+- `$exceptions->report()` เขียนซ้ำลงไฟล์ error **แยกหน้าบ้าน/หลังบ้าน** (`ErrorReference::channel()`, `config/logging.php` daily **เก็บ `LOG_ERROR_DAYS` = 90 วัน**):
+  `error_front` → `storage/logs/error-front-YYYY-MM-DD.log` (หน้าบ้าน + path สาธารณะ เช่น `/file`, `/sitemap.xml`),
+  `error_admin` → `storage/logs/error-admin-YYYY-MM-DD.log` (`/admin*` + คำสั่ง artisan/queue ที่ไม่ได้มาจากหน้าเว็บ) —
   มี class/message/file:line/trace) — ไม่ขึ้นกับ `LOG_STACK` ของเครื่อง; `.env.example` แนะนำ `LOG_STACK=daily` + `LOG_DAILY_DAYS=90` ด้วย
 - exception ที่ Laravel ไม่ report อยู่แล้ว (404/403/419/ValidationException ฯลฯ) ไม่ลง log
-- ค้นหา: `grep ERR-XXXXXXXX storage/logs/error-*.log`
+- ค้นหา: `grep ERR-XXXXXXXX storage/logs/error-*.log` (ค้นได้ทั้ง 2 ฝั่งในคำสั่งเดียว)
 
 หน้าตา: หน้าบ้าน = การ์ดขาวบนพื้นสว่าง; หลังบ้าน = การ์ดบนพื้นเทาเข้ม `admin-900` (โทนเดียวกับ sidebar) — แยกกันชัดเจน
 
@@ -687,7 +689,7 @@ backend ด้วย ajax (axios) ไม่ใช่ Inertia visit เพรา�
    - **429** — ส่งฟอร์มติดต่อเราเกิน 10 ครั้ง/นาที, หรือ login ผิดติดกันหลายครั้ง (ถูกบล็อก)
    - **503** — `php artisan down` (เลิกด้วย `php artisan up`)
    - **หน้าสำรอง Blade** — ปิด MySQL (`docker-compose stop`) แล้วเปิดหน้าใดก็ได้ → 500 แบบ Blade (เปิดคืน `docker-compose start`); หรือ `/file/get/ไม่มีจริง` → 404 แบบ Blade
-4. ดู log ของ 500: `storage/logs/error-YYYY-MM-DD.log` ค้นด้วยรหัสอ้างอิงที่หน้าเว็บแสดง
+4. ดู log ของ 500: `storage/logs/error-front-YYYY-MM-DD.log` (หน้าบ้าน) / `error-admin-YYYY-MM-DD.log` (หลังบ้าน) ค้นด้วยรหัสอ้างอิงที่หน้าเว็บแสดง
 5. ทดสอบเสร็จแล้วคืน `APP_DEBUG=true` สำหรับการพัฒนา
 
 **ข้อเสนอเพิ่มเติม (ยังไม่ทำ)**

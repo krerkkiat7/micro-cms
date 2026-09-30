@@ -460,7 +460,7 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 - **หน้า error + รหัสอ้างอิง (branch `error-pages`) — ดู `docs/PRD-system.md` §10** — หลังบ้าน `App\Support\Admin\AdminErrorPage` → `Admin/Error`
   (ไทย, `lang/th/error.php`), หน้าบ้าน `FrontErrorPage` → `Front/Error` (layout เปล่า ไม่โหลด template/เมนู, ข้อความตามภาษาของ URL); ทุก 4xx/5xx
   (`App\Support\ErrorStatus`); **5xx บอกแค่ "เกิดข้อผิดพลาด" + รหัส `ERR-XXXXXXXX` ห้ามแสดง message ของ exception**; หน้าสำรอง Blade `resources/views/errors/*`
-  (ไม่พึ่ง DB/Vite — ไฟล์รายสถานะ override ของ Laravel). log: `ErrorReference::context()` ใน `$exceptions->context()` + channel `error` รายวันเก็บ 90 วัน (`LOG_ERROR_DAYS`)
+  (ไม่พึ่ง DB/Vite — ไฟล์รายสถานะ override ของ Laravel). log: `ErrorReference::context()` ใน `$exceptions->context()` + ไฟล์ error แยกฝั่ง `error-front-*.log` / `error-admin-*.log` (`ErrorReference::channel()`) รายวันเก็บ 90 วัน (`LOG_ERROR_DAYS`)
 ## ทดสอบ
 
 - เทสหน้าบ้านอยู่ `tests/Feature/Front/FrontSiteTest.php` (seed `DatabaseSeeder` แล้วใช้ข้อมูลตัวอย่าง)

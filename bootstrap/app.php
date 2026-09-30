@@ -47,10 +47,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // ข้อมูลประกอบของ exception ที่ถูก report (log หลัก) — รหัสอ้างอิงเดียวกับที่แสดงบนหน้า error 5xx + URL/ผู้ใช้/IP/ชื่อฟิลด์ (ไม่เก็บค่า)
         $exceptions->context(fn () => ErrorReference::context());
 
-        // เขียนซ้ำลง channel `error` (รายวัน เก็บ 90 วัน — config/logging.php) ให้มีประวัติ error เสมอแม้ LOG_STACK ของเครื่องเป็น single
+        // เขียนซ้ำลงไฟล์ error แยกหน้าบ้าน/หลังบ้าน (error_front / error_admin — รายวัน เก็บ 90 วัน, config/logging.php)
+        // ให้มีประวัติ error เสมอแม้ LOG_STACK ของเครื่องเป็น single
         $exceptions->report(function (Throwable $e) {
             try {
-                Log::channel('error')->error($e::class.': '.$e->getMessage(), [
+                Log::channel(ErrorReference::channel())->error($e::class.': '.$e->getMessage(), [
                     ...ErrorReference::context(),
                     'file' => $e->getFile().':'.$e->getLine(),
                     'trace' => mb_substr($e->getTraceAsString(), 0, 8000),

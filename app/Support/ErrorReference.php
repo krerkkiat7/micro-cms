@@ -37,6 +37,21 @@ final class ErrorReference
     }
 
     /**
+     * channel ของ log error ตามฝั่งที่เกิด (config/logging.php):
+     * error_admin = /admin* และคำสั่ง artisan/queue ที่ไม่ได้มาจากหน้าเว็บ (ไม่มี route), error_front = ที่เหลือทั้งหมด (หน้าบ้าน + path สาธารณะ)
+     */
+    public static function channel(): string
+    {
+        $request = request();
+
+        if ($request->is('admin', 'admin/*') || (app()->runningInConsole() && $request->route() === null)) {
+            return 'error_admin';
+        }
+
+        return 'error_front';
+    }
+
+    /**
      * ข้อมูลประกอบของ request ที่เกิด error — เก็บเฉพาะ "ชื่อ" ฟิลด์ที่ส่งมา ไม่เก็บค่า (กันรหัสผ่าน/ข้อมูลส่วนบุคคลหลุดลง log)
      * ทุกค่าอ่านแบบปลอดภัย: error อาจเกิดก่อน session/auth พร้อม หรือระหว่างฐานข้อมูลล่ม
      *
