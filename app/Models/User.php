@@ -96,22 +96,29 @@ class User extends Authenticatable
         return $this->belongsTo(FileInfo::class, 'profile_image_id');
     }
 
-    public function hasPermission(string $actionCode): bool
+    /**
+     * ผู้ใช้อยู่ในกลุ่มระบบ (sys_usergroup.can_edit = 'N') — กันการยกระดับสิทธิ์: เฉพาะผู้ใช้กลุ่มระบบเท่านั้นที่จัดการ
+     * ผู้ใช้ในกลุ่มระบบ (แก้ไข/ลบ/เปลี่ยนรหัสผ่าน) และย้ายผู้ใช้เข้ากลุ่มระบบได้ (ดู UserController)
+     */
+    public function isSystemUser(): bool
     {
-        if (! $this->group) {
-            return false;
-        }
-
-        // ดึงรหัส Action ทั้งหมดของผู้ใช้มาเช็กใน Array (คล้ายระบบเดิมของคุณ)
-        return $this->group->actions->pluck('code')->contains($actionCode);
+        return (bool) $this->group?->isSystem();
     }
 
+    public function hasPermission(string $actionCode): bool
+    {
+        return in_array($actionCode, $this->getPermissionsArray(), true);
+    }
+
+    /**
+     * รหัส action ทั้งหมดของผู้ใช้ — ไม่มีกลุ่ม หรือกลุ่มถูกปิดใช้งาน (status != 'Y') = ไม่มีสิทธิ์ใดเลย
+     */
     public function getPermissionsArray(): array
     {
-        if (! $this->group) {
+        if (! $this->group || $this->group->status !== 'Y') {
             return [];
         }
 
-        return $this->group->actions->pluck('code')->toArray();
+        return $this->group->actions->pluck('code')->all();
     }
 }

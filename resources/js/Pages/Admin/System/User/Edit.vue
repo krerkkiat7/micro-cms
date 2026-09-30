@@ -11,6 +11,9 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
 import FilePickerField from '@/Components/Admin/FileManager/FilePickerField.vue';
+import SystemInfoCard from '@/Components/Admin/SystemInfoCard.vue';
+import type { SystemAudit } from '@/Components/Admin/SystemInfoCard.vue';
+import { userGroupSelectOptions } from '@/utils/userGroup';
 import { Head, useForm } from '@inertiajs/vue3';
 import { Save, Trash2 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
@@ -41,6 +44,11 @@ const props = defineProps<{
     user: EditUser;
     userGroups: UserGroupOption[];
     isSelf: boolean;
+    /** ผู้ใช้ในกลุ่มระบบที่ผู้ใช้ปัจจุบันจัดการไม่ได้ — ดูได้อย่างเดียว */
+    protected: boolean;
+    /** ข้อความแนะนำเรื่องกลุ่มระบบ (null = ผู้ใช้ปัจจุบันอยู่ในกลุ่มระบบ ไม่ต้องแสดง) */
+    systemGroupMessage: string | null;
+    systemInfo: SystemAudit;
     can: { manage: boolean; delete: boolean; password: boolean };
 }>();
 
@@ -77,7 +85,8 @@ function destroy() {
     });
 }
 
-const userGroupOptions = computed(() => props.userGroups.map((g) => ({ value: String(g.id), label: g.name })));
+const userGroupOptions = computed(() => userGroupSelectOptions(props.userGroups));
+const hasDisabledGroup = computed(() => props.userGroups.some((g) => g.disabled));
 
 const statusOptions = computed(() => [
     { value: 'Y', label: 'ใช้งาน' },
@@ -103,8 +112,7 @@ const tabs = computed(() => [
     },
 ]);
 
-const systemInfo = computed(() => [
-    { label: 'วันที่สร้าง', value: formatDateTime(props.user.created_at) },
+const loginInfo = computed(() => [
     { label: 'เข้าสู่ระบบล่าสุด', value: formatDateTime(props.user.last_login_at) },
     {
         label: 'จำนวนครั้งที่เข้าสู่ระบบผิดพลาด',
@@ -127,6 +135,10 @@ const systemInfo = computed(() => [
 
         <div class="space-y-6">
             <TabNav v-if="can.password" :tabs="tabs" />
+
+            <div v-if="protected && systemGroupMessage" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                ผู้ใช้งานนี้อยู่ในกลุ่มระบบ — ดูข้อมูลได้อย่างเดียว. {{ systemGroupMessage }}
+            </div>
 
             <form class="space-y-6" @submit.prevent="submit">
                 <div
@@ -177,6 +189,7 @@ const systemInfo = computed(() => [
                                 required
                             />
                             <SearchableSelect id="usergroup_id" v-model="form.usergroup_id" :options="userGroupOptions" placeholder="เลือกกลุ่มผู้ใช้งาน" />
+                            <p v-if="hasDisabledGroup && systemGroupMessage && !protected" class="mt-1.5 text-xs text-gray-500">{{ systemGroupMessage }}</p>
                             <InputError :message="form.errors.usergroup_id" />
                         </div>
 
@@ -227,26 +240,9 @@ const systemInfo = computed(() => [
                     </div>
                 </div>
 
-                <div
-                    class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs lg:p-8"
-                >
-                    <h2 class="text-base font-semibold text-gray-800">
-                        ข้อมูลระบบ
-                    </h2>
-                    <dl class="mt-5 grid gap-4 sm:grid-cols-2">
-                        <div v-for="item in systemInfo" :key="item.label">
-                            <dt class="text-sm text-gray-500">{{ item.label }}</dt>
-                            <dd class="mt-0.5 text-sm font-medium text-gray-800">
-                                {{ item.value }}
-                            </dd>
-                        </div>
-                    </dl>
-                </div>
+                <SystemInfoCard :audit="systemInfo" :append="loginInfo" />
 
-                <div
-                    v-if="can.manage || (can.delete && !isSelf)"
-                    class="flex flex-wrap items-center gap-3"
-                >
+                <div class="flex flex-wrap items-center gap-3">
                     <PrimaryButton
                         v-if="can.manage"
                         type="submit"

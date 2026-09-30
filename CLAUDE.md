@@ -59,7 +59,7 @@ npm run build                 # vue-tsc typecheck + vite build
 ## โครงสร้าง Routing (`routes/web.php`)
 
 - `/` (`front.root`) และ `/{lang}` (`front.home`) → แสดง Intropage ที่เผยแพร่อยู่ (ไม่มี → redirect ไปหน้าแรกตามเมนู `is_home`)
-- **Front-office**: prefix `{lang}` (ภาษาที่เปิดใช้ใน `sys_setting`), middleware `['web', 'setLocale', FrontSecurityHeaders]` — ดู `docs/PRD-front.md`
+- **Front-office**: prefix `{lang}` (ภาษาที่เปิดใช้ใน `sys_setting`), middleware `['web', 'setLocale']` (security header ทุก route ในกลุ่ม web ผ่าน `SecurityHeaders` ใน `bootstrap/app.php`) — ดู `docs/PRD-front.md`
   - `SetLocale` middleware อ่าน `lang` จาก route แล้ว `App::setLocale()` (default `th`)
   - ชื่อ route ขึ้นต้น `front.*`: `front.page.item`, `front.article.category`, `front.article.category.item`, `front.article.item`
     (`/{lang}/page/item/{id}/{slug?}` ฯลฯ — slug ไม่บังคับ); ไฟล์สาธารณะ `front.file.*` (`/file/get/{hash}`), `front.access.ping`;
@@ -370,7 +370,7 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   รับ `$lang` เพิ่ม), หมวดหมู่/รายละเอียดบทความ (`ArticleReader`, part ครบ 7 รูปแบบกลุ่มรูปใน `Components/Front/ContentPart/*`),
   SEO/AEO/GEO (`SeoMeta` → meta/hreflang/OG/JSON-LD ฝั่ง server ใน `app.blade.php` + `SeoHead.vue`), WCAG (skip link, landmark,
   เครื่องมือขนาดตัวอักษร/การแสดงสี, carousel หยุดได้, dialog focus trap), security (`HtmlSanitizer` สำหรับ rich text, `FrontUrl::safeExternal()`,
-  `FrontSecurityHeaders`, หน้าบ้านไม่ส่ง `auth.user`/`menu` และ Ziggy ส่งเฉพาะกลุ่ม `front` — `config/ziggy.php`),
+  `SecurityHeaders`, หน้าบ้านไม่ส่ง `auth.user`/`menu` และ Ziggy ส่งเฉพาะกลุ่ม `front` — `config/ziggy.php`),
   หน้า error หน้าบ้าน (`FrontErrorPage` ผูกใน `bootstrap/app.php`), ข้อความ UI `lang/{th,en}/front.php`.
   **ข้อมูล `is_temp='Y'` แสดงที่หน้าบ้านตามปกติ — ห้ามกรอง `is_temp` ใน query หน้าบ้าน**
 - **cache หน้าบ้าน** `App\Support\Front\FrontCache` (key มี version — `forgetAll()` เพิ่ม version แทน `Cache::flush()`), ล้างอัตโนมัติผ่าน

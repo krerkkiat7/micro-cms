@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
 use App\Support\Admin\AdminErrorPage;
 use App\Support\ErrorReference;
@@ -20,7 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // SecurityHeaders ครอบทุก route ในกลุ่ม web (หน้าบ้าน/หลังบ้าน/ไฟล์/sitemap) — กัน clickjacking + MIME sniffing
         $middleware->web(append: [
+            SecurityHeaders::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
@@ -38,6 +41,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'front/access/ping',
             'front/banner/click',
         ]);
+
+        // รับเฉพาะ Host ของ APP_URL (+ subdomain) — กัน Host header ปลอมที่ทำให้ URL เต็มใน cache หน้าบ้าน/อีเมลรีเซ็ตรหัสผ่านชี้ไปโดเมนอื่น
+        // (Laravel ข้ามให้เองเมื่อ APP_ENV=local และตอนรันเทส) — production ต้องตั้ง APP_URL ให้ตรงโดเมนจริง
+        $middleware->trustHosts();
 
         // Breeze ถูกย้ายมาไว้ใต้ /admin — ชี้ redirect ของ middleware auth/guest ไป route admin.*
         $middleware->redirectGuestsTo(fn () => route('admin.login'));

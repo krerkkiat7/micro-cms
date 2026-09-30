@@ -10,10 +10,11 @@ use App\Models\LogBackAccess;
 use App\Models\LogBackAction;
 use App\Models\User;
 use App\Models\UserGroup;
-use Illuminate\Database\Eloquent\Collection;
+use App\Support\SystemInfo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,6 +22,9 @@ class UserController extends Controller
 {
     /** จำนวนรายการต่อหน้าที่อนุญาต (ตัวแรก = ค่าเริ่มต้น) */
     private const PER_PAGE_OPTIONS = [10, 25, 50, 100];
+
+    /** ข้อความเมื่อผู้ใช้นอกกลุ่มระบบพยายามจัดการผู้ใช้/ย้ายผู้ใช้เข้ากลุ่มระบบ */
+    public const SYSTEM_GROUP_MESSAGE = 'การจัดการผู้ใช้งานในกลุ่มระบบ (เช่น Super Admin) หรือการย้ายผู้ใช้งานเข้ากลุ่มระบบ ต้องให้ผู้ใช้งานในกลุ่มระบบเป็นผู้ดำเนินการ';
 
     /**
      * หน้ารายการผู้ใช้งานหลังบ้าน — ค้นหา / กรอง / แบ่งหน้า
@@ -107,7 +111,7 @@ class UserController extends Controller
             'filters' => $filters,
             'sort' => $sort,
             'direction' => $direction,
-            'userGroups' => $this->userGroupOptions(),
+            'userGroups' => $this->userGroupOptions($request->user(), includeAll: true),
             'perPageOptions' => self::PER_PAGE_OPTIONS,
             'can' => [
                 'manage' => $request->user()->hasPermission('system.user.manage'),
@@ -127,7 +131,8 @@ class UserController extends Controller
         LogBackAccess::record('เพิ่มผู้ใช้งาน');
 
         return Inertia::render('Admin/System/User/Add', [
-            'userGroups' => $this->userGroupOptions(),
+            'userGroups' => $this->userGroupOptions($request->user()),
+            'systemGroupMessage' => $request->user()->isSystemUser() ? null : self::SYSTEM_GROUP_MESSAGE,
         ]);
     }
 
@@ -142,6 +147,10 @@ class UserController extends Controller
 
         $data = $request->validated();
         $actorId = $request->user()->id;
+
+        if ($this->movesIntoSystemGroup($request->user(), (int) $data['usergroup_id'])) {
+            return back()->withErrors(['usergroup_id' => self::SYSTEM_GROUP_MESSAGE])->withInput();
+        }
 
         $user = User::create([
             'titlename' => $data['titlename'],
@@ -190,6 +199,9 @@ class UserController extends Controller
 
         $profileImage = $model->profileImage; // อาจเป็น null ทั้งกรณียังไม่ได้เลือก และไฟล์ถูกลบไปแล้ว
 
+        // ผู้ใช้ในกลุ่มระบบ + ผู้ใช้ปัจจุบันไม่ได้อยู่กลุ่มระบบ → ดูได้อย่างเดียว (แสดงข้อความแนะนำในหน้าจอ)
+        $protected = $this->isProtected($request->user(), $model);
+
         return Inertia::render('Admin/System/User/Edit', [
             'user' => [
                 'id' => $model->id,
@@ -218,12 +230,15 @@ class UserController extends Controller
                     'created_at' => $profileImage->created_at,
                 ] : null,
             ],
-            'userGroups' => $this->userGroupOptions(),
+            'userGroups' => $this->userGroupOptions($request->user(), $model->usergroup_id),
             'isSelf' => $model->id === $request->user()->id,
+            'protected' => $protected,
+            'systemGroupMessage' => $request->user()->isSystemUser() ? null : self::SYSTEM_GROUP_MESSAGE,
+            'systemInfo' => SystemInfo::audit($model),
             'can' => [
-                'manage' => $request->user()->hasPermission('system.user.manage'),
-                'delete' => $request->user()->hasPermission('system.user.delete'),
-                'password' => $request->user()->hasPermission('system.user.password'),
+                'manage' => ! $protected && $request->user()->hasPermission('system.user.manage'),
+                'delete' => ! $protected && $request->user()->hasPermission('system.user.delete'),
+                'password' => ! $protected && $request->user()->hasPermission('system.user.password'),
             ],
         ]);
     }
@@ -245,6 +260,11 @@ class UserController extends Controller
 
         $data = $request->validated();
 
+        if ($this->isProtected($request->user(), $model)
+            || ($data['usergroup_id'] != $model->usergroup_id && $this->movesIntoSystemGroup($request->user(), (int) $data['usergroup_id']))) {
+            return back()->withErrors(['usergroup_id' => self::SYSTEM_GROUP_MESSAGE]);
+        }
+
         // กันไม่ให้ระงับบัญชีของตัวเอง
         if ($model->id === $request->user()->id && $data['status'] === 'N') {
             return back()->withErrors(['status' => 'ไม่สามารถระงับบัญชีของตัวเองได้']);
@@ -263,7 +283,15 @@ class UserController extends Controller
             'usergroup_id' => $data['usergroup_id'],
             'status' => $data['status'],
             'updated_by' => $request->user()->id,
-        ])->save();
+        ]);
+
+        // เปิดบัญชีคืน (N → Y) — รีเซ็ตตัวนับ login ไม่สำเร็จ ไม่งั้นพิมพ์ผิดอีกครั้งเดียวก็ถูกล็อกอัตโนมัติซ้ำทันที
+        if ($model->isDirty('status') && $model->status === 'Y') {
+            $model->failed_login_count = 0;
+            $model->last_failed_login_at = null;
+        }
+
+        $model->save();
 
         LogBackAction::record('system.user', 'update', $model->name, $model->id);
 
@@ -290,6 +318,10 @@ class UserController extends Controller
         // กันไม่ให้ลบบัญชีของตัวเอง
         if ($model->id === $request->user()->id) {
             return back()->withErrors(['user' => 'ไม่สามารถลบบัญชีของตัวเองได้']);
+        }
+
+        if ($this->isProtected($request->user(), $model)) {
+            return back()->withErrors(['user' => self::SYSTEM_GROUP_MESSAGE]);
         }
 
         // เก็บข้อมูลไว้ก่อนลบ เพื่อบันทึก log
@@ -324,6 +356,10 @@ class UserController extends Controller
             return redirect()->route('admin.system.user.index');
         }
 
+        if ($this->isProtected($request->user(), $model)) {
+            return redirect()->route('admin.system.user.edit', $model->id);
+        }
+
         LogBackAccess::record('เปลี่ยนรหัสผ่านผู้ใช้งาน');
         LogBackAction::record('system.user.password', 'view', $model->name, $model->id);
 
@@ -351,6 +387,10 @@ class UserController extends Controller
             return redirect()->route('admin.system.user.index');
         }
 
+        if ($this->isProtected($request->user(), $model)) {
+            return redirect()->route('admin.system.user.edit', $model->id)->withErrors(['password' => self::SYSTEM_GROUP_MESSAGE]);
+        }
+
         $actorId = $request->user()->id;
 
         $model->update([
@@ -359,6 +399,10 @@ class UserController extends Controller
             'password_changed_by' => $actorId,
             'updated_by' => $actorId,
         ]);
+
+        // หมุน remember token — คุกกี้ "จดจำฉัน" เดิมของผู้ใช้คนนั้นใช้ไม่ได้อีก (session อื่นหลุดผ่าน auth.session)
+        $model->setRememberToken(Str::random(60));
+        $model->save();
 
         LogBackAction::record('system.user.password', 'update', $model->name, $model->id);
 
@@ -376,16 +420,45 @@ class UserController extends Controller
     }
 
     /**
-     * ตัวเลือกกลุ่มผู้ใช้งานที่ใช้งานอยู่ (สำหรับ dropdown)
-     *
-     * @return Collection<int, UserGroup>
+     * ผู้ใช้เป้าหมายอยู่ในกลุ่มระบบ แต่ผู้กระทำไม่ได้อยู่ในกลุ่มระบบ → ห้ามแก้ไข/ลบ/เปลี่ยนรหัสผ่าน (กันการยกระดับสิทธิ์)
      */
-    private function userGroupOptions(): Collection
+    private function isProtected(User $actor, User $target): bool
     {
+        return $target->isSystemUser() && ! $actor->isSystemUser();
+    }
+
+    /**
+     * ผู้กระทำที่ไม่ได้อยู่ในกลุ่มระบบพยายามใส่ผู้ใช้เข้ากลุ่มระบบ
+     */
+    private function movesIntoSystemGroup(User $actor, int $usergroupId): bool
+    {
+        return ! $actor->isSystemUser()
+            && UserGroup::query()->whereKey($usergroupId)->where('can_edit', 'N')->exists();
+    }
+
+    /**
+     * ตัวเลือกกลุ่มผู้ใช้งาน (สำหรับ dropdown) — กลุ่มที่ใช้งานอยู่ + กลุ่มปัจจุบันของผู้ใช้ที่แก้ไข (แม้ถูกปิดใช้งานก็ยังอยู่ในรายการ
+     * จะได้บันทึกซ้ำได้โดยไม่ต้องเปลี่ยนกลุ่ม); `includeAll` = ทุกกลุ่ม (ตัวกรองหน้ารายการ)
+     * `disabled` = กลุ่มระบบที่ผู้ใช้ปัจจุบันเลือกไม่ได้ (ไม่ได้อยู่กลุ่มระบบ)
+     *
+     * @return list<array{id: int, name: string, status: string, disabled: bool}>
+     */
+    private function userGroupOptions(User $actor, ?int $currentId = null, bool $includeAll = false): array
+    {
+        $actorIsSystem = $actor->isSystemUser();
+
         return UserGroup::query()
-            ->where('status', 'Y')
-            ->whereNull('deleted_at')
+            ->when(! $includeAll, fn ($query) => $query->where(fn ($w) => $w
+                ->where('status', 'Y')
+                ->when($currentId, fn ($or) => $or->orWhere('id', $currentId))))
             ->orderBy('name')
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'status', 'can_edit'])
+            ->map(fn (UserGroup $group) => [
+                'id' => $group->id,
+                'name' => $group->name,
+                'status' => $group->status,
+                'disabled' => ! $includeAll && $group->isSystem() && ! $actorIsSystem && $group->id !== $currentId,
+            ])
+            ->all();
     }
 }

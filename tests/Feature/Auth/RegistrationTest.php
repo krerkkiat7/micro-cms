@@ -1,71 +1,17 @@
 <?php
 
-use App\Models\User;
+// หลังบ้านไม่เปิดให้สมัครสมาชิกเอง — ผู้ใช้หลังบ้านสร้างได้จากหน้าจัดการผู้ใช้งานเท่านั้น (route ของ Breeze ถูกลบออกแล้ว)
+test('back-office registration is not available', function () {
+    $this->get('/admin/register')->assertNotFound();
 
-test('registration screen can be rendered', function () {
-    $response = $this->get('/admin/register');
-
-    $response->assertStatus(200);
-});
-
-test('new users can register', function () {
-    $response = $this->post('/admin/register', [
-        'titlename' => 'นาย',
+    $this->post('/admin/register', [
         'firstname' => 'Test',
         'lastname' => 'User',
         'email' => 'test@example.com',
-        'password' => 'password',
-        'password_confirmation' => 'password',
-    ]);
+        'password' => 'Password1!',
+        'password_confirmation' => 'Password1!',
+    ])->assertNotFound();
 
-    $this->assertAuthenticated();
-    $response->assertRedirect(route('admin.dashboard', absolute: false));
-});
-
-test('email may be reused when it belongs to a front user', function () {
-    User::factory()->front()->create(['email' => 'shared@example.com']);
-
-    $response = $this->post('/admin/register', [
-        'firstname' => 'Test',
-        'lastname' => 'User',
-        'email' => 'shared@example.com',
-        'password' => 'password',
-        'password_confirmation' => 'password',
-    ]);
-
-    $response->assertValid('email');
-    $this->assertAuthenticated();
-    expect(User::where('email', 'shared@example.com')->where('user_type', 'back')->exists())->toBeTrue();
-});
-
-test('email may be reused when the previous back user was soft deleted', function () {
-    User::factory()->create(['email' => 'gone@example.com'])->delete();
-
-    $response = $this->post('/admin/register', [
-        'firstname' => 'Test',
-        'lastname' => 'User',
-        'email' => 'gone@example.com',
-        'password' => 'password',
-        'password_confirmation' => 'password',
-    ]);
-
-    $response->assertValid('email');
-    $this->assertAuthenticated();
-});
-
-test('email can not be reused by an active back user', function () {
-    User::factory()->create(['email' => 'taken@example.com']);
-
-    $response = $this
-        ->from('/admin/register')
-        ->post('/admin/register', [
-            'firstname' => 'Test',
-            'lastname' => 'User',
-            'email' => 'taken@example.com',
-            'password' => 'password',
-            'password_confirmation' => 'password',
-        ]);
-
-    $response->assertInvalid('email');
     $this->assertGuest();
+    $this->assertDatabaseMissing('sys_user', ['email' => 'test@example.com']);
 });

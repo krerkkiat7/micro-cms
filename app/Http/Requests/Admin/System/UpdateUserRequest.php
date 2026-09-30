@@ -40,11 +40,22 @@ class UpdateUserRequest extends FormRequest
             ],
             'usergroup_id' => [
                 'required', 'integer',
+                // กลุ่มที่ใช้งานอยู่ หรือกลุ่มเดิมของผู้ใช้นี้ (แม้ถูกปิดใช้งานไปแล้ว ก็ยังบันทึกซ้ำได้โดยไม่ต้องเปลี่ยนกลุ่ม)
                 Rule::exists('sys_usergroup', 'id')->where(fn ($query) => $query
-                    ->where('status', 'Y')
-                    ->whereNull('deleted_at')),
+                    ->whereNull('deleted_at')
+                    ->where(fn ($w) => $w
+                        ->where('status', 'Y')
+                        ->orWhere('id', $this->currentUsergroupId()))),
             ],
             'status' => ['required', Rule::in(['Y', 'N'])],
         ];
+    }
+
+    /**
+     * กลุ่มเดิมของผู้ใช้ที่กำลังแก้ไข (null = ไม่พบ/ไม่มีกลุ่ม)
+     */
+    private function currentUsergroupId(): ?int
+    {
+        return User::query()->whereKey($this->route('user'))->value('usergroup_id');
     }
 }

@@ -6,6 +6,7 @@ use App\Models\FileInfo;
 use App\Models\PageItemWidgetCustomtextPart;
 use App\Models\PageItemWidgetCustomtextPartDetail;
 use App\Models\PageItemWidgetCustomtextPartFile;
+use App\Support\Front\HtmlSanitizer;
 use App\Support\PageTextStyle;
 use App\Support\Setting;
 use Illuminate\Database\Eloquent\Collection;
@@ -173,7 +174,8 @@ class CustomTextWidget implements PageWidgetType
 
             foreach ($partData['detail'] ?? [] as $lang => $detail) {
                 $title = trim((string) ($detail['title'] ?? ''));
-                $text = trim((string) ($detail['detail'] ?? ''));
+                // sanitize ตอนบันทึกด้วย (ไม่ใช่แค่ตอนแสดงหน้าบ้าน) — ตัวอย่างในหน้าโครงสร้างหลังบ้าน (CustomTextPreview.vue) render ด้วย v-html
+                $text = HtmlSanitizer::clean((string) ($detail['detail'] ?? ''));
 
                 if ($title === '' && $text === '') {
                     continue;

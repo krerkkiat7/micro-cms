@@ -277,6 +277,8 @@ class UsergroupController extends Controller
                 'name' => $group->name,
                 'can_edit' => $group->can_edit,
             ],
+            // กลุ่มของตัวเอง — ดูได้อย่างเดียว (กันการเพิ่มสิทธิ์ให้ตัวเอง)
+            'isOwnGroup' => $group->id === $request->user()->usergroup_id,
             'actionGroups' => $actionGroups,
             'checkedIds' => $group->actions()->pluck('sys_action.id')->all(),
         ]);
@@ -300,6 +302,11 @@ class UsergroupController extends Controller
         // กลุ่มระบบ (can_edit = N) แสดงอย่างเดียว บันทึกไม่ได้
         if ($group->can_edit === 'N') {
             return back()->withErrors(['action_ids' => 'กลุ่มนี้เป็นกลุ่มระบบ ไม่อนุญาตให้แก้ไข']);
+        }
+
+        // ห้ามกำหนดสิทธิ์ให้กลุ่มของตัวเอง (กันการยกระดับสิทธิ์ตัวเอง)
+        if ($group->id === $request->user()->usergroup_id) {
+            return back()->withErrors(['action_ids' => 'ไม่สามารถกำหนดสิทธิ์ให้กลุ่มของตัวเองได้ ต้องให้ผู้ใช้งานกลุ่มอื่นที่มีสิทธิ์เป็นผู้ดำเนินการ']);
         }
 
         $ids = $this->pruneOrphanActions($request->validated()['action_ids'] ?? []);

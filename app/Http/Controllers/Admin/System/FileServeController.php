@@ -39,6 +39,10 @@ class FileServeController extends Controller
         $hashname = (string) $request->route('hashname');
         $size = $request->route('size');
 
+        if ($size !== null && ! in_array((int) $size, config('filemanagement.admin_thumbnail_sizes'), true)) {
+            abort(404);
+        }
+
         return FileDelivery::respond(
             $request,
             $this->resolve($hashname),

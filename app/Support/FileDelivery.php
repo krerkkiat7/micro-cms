@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\FileInfo;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\ImageManager;
@@ -83,11 +84,18 @@ class FileDelivery
                 abort(404);
             }
 
-            $manager = new ImageManager(new Driver);
-            $image = $manager->read(Storage::disk($disk)->path($file->path));
-            $image->scale(width: $width);
+            // lock ต่อไฟล์+ขนาด — request แรกพร้อมกันหลายตัวไม่ต้อง decode/resize รูปต้นฉบับซ้ำ (กิน memory ของ GD)
+            Cache::lock('thumbnail:'.$width.':'.$file->hash_name, 30)->block(20, function () use ($disk, $thumbPath, $file, $width) {
+                if (Storage::disk($disk)->exists($thumbPath)) {
+                    return; // อีก request สร้างเสร็จระหว่างรอ lock
+                }
 
-            Storage::disk($disk)->put($thumbPath, (string) $image->encodeByExtension($file->extension, quality: 82));
+                $manager = new ImageManager(new Driver);
+                $image = $manager->read(Storage::disk($disk)->path($file->path));
+                $image->scaleDown(width: $width); // ไม่ขยายรูปที่เล็กกว่าขนาดที่ขอ
+
+                Storage::disk($disk)->put($thumbPath, (string) $image->encodeByExtension($file->extension, quality: 82));
+            });
         }
 
         $etag = self::etag($file, $width);

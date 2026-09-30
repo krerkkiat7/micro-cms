@@ -45,7 +45,7 @@ use App\Http\Controllers\Front\FileController as FrontFileController;
 use App\Http\Controllers\Front\Intropage\IntropageController;
 use App\Http\Controllers\Front\Page\PageItemController as FrontPageItemController;
 use App\Http\Controllers\Front\SitemapController;
-use App\Http\Middleware\FrontSecurityHeaders;
+use App\Http\Middleware\EnsureBackUserActive;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Support\ErrorStatus;
 use App\Support\Setting;
@@ -64,7 +64,7 @@ use Inertia\Inertia;
 */
 // หน้าแรก (/) — แสดง Intropage ของภาษาหลักทันที (ไม่มี Intropage ที่เผยแพร่อยู่ = redirect ไปหน้าแรกที่กำหนดในเมนู)
 Route::get('/', [IntropageController::class, 'root'])
-    ->middleware(['setLocale', FrontSecurityHeaders::class])
+    ->middleware('setLocale')
     ->name('front.root');
 
 // โลโก้/favicon สาธารณะของระบบ — ไม่ต้อง login, ไม่มี prefix ภาษา {lang} และไม่อยู่ใต้ /admin
@@ -113,7 +113,7 @@ Route::post('/front/banner/click', [FrontBannerItemController::class, 'click'])
 Route::group([
     'prefix' => '{lang}',
     'where' => ['lang' => Setting::languageRoutePattern()],
-    'middleware' => ['web', 'setLocale', FrontSecurityHeaders::class],
+    'middleware' => ['web', 'setLocale'],
 ], function () {
     // Intropage (ไม่มีที่เผยแพร่อยู่ = redirect ไปหน้าแรกที่กำหนดในเมนู)
     Route::get('/', [IntropageController::class, 'index'])->name('front.home');
@@ -164,7 +164,7 @@ Route::group([
 Route::prefix('admin')->group(function () {
 
     // 1. ดึงไฟล์ Auth Routes (Login, Register, Password Reset) มาไว้ภายใต้ /admin
-    // ทำให้ URL กลายเป็น /admin/login, /admin/register อัตโนมัติ
+    // ทำให้ URL กลายเป็น /admin/login, /admin/forgot-password อัตโนมัติ
     require __DIR__.'/auth_admin.php';
 
     // /admin เฉย ๆ — login แล้วไป dashboard, ยังไม่ login ไปหน้า login
@@ -178,7 +178,8 @@ Route::prefix('admin')->group(function () {
     }
 
     // 2. Route หน้าหลังบ้านที่ต้องผ่านการ Login ก่อน
-    Route::middleware(['auth', 'verified'])->group(function () {
+    // auth.session = เปลี่ยนรหัสผ่านแล้ว session อื่นของผู้ใช้คนนั้นหลุด, EnsureBackUserActive = ถูกระงับระหว่าง login อยู่ก็หลุด
+    Route::middleware(['auth', 'auth.session', EnsureBackUserActive::class, 'verified'])->group(function () {
 
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 

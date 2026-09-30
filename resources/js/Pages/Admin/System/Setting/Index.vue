@@ -34,6 +34,8 @@ interface Props {
     faviconFile: FileItem | null;
     /** รายชื่อ timezone identifier ทั้งหมดที่ PHP รู้จัก — ใช้กับ SearchableSelect ของฟิลด์ "โซนเวลา" */
     timezoneOptions: { value: string; label: string }[];
+    /** ค่าลับที่บันทึกไว้แล้ว (ค่าจริงไม่ถูกส่งมาหน้าจอ) */
+    secretsSet: { smtp: boolean; turnstile: boolean };
 }
 
 const props = defineProps<Props>();
@@ -184,7 +186,7 @@ const smtpForm = useForm({
     port: props.settings.smtp?.port ?? '',
     use_auth: props.settings.smtp?.use_auth ?? 'N',
     username: props.settings.smtp?.username ?? '',
-    password: props.settings.smtp?.password ?? '',
+    password: '', // ค่าจริงไม่ถูกส่งมา — เว้นว่าง = ใช้รหัสผ่านเดิม
     ssl_type: props.settings.smtp?.ssl_type ?? 'none',
     from_name: props.settings.smtp?.from_name ?? '',
     from_email: props.settings.smtp?.from_email ?? '',
@@ -212,7 +214,7 @@ const showTestSmtpDialog = ref(false);
 // ---------- กลุ่ม "Turnstile CAPTCHA" ----------
 const turnstileForm = useForm({
     site_key: props.settings.turnstile?.site_key ?? '',
-    key_secret: props.settings.turnstile?.key_secret ?? '',
+    key_secret: '', // ค่าจริงไม่ถูกส่งมา — เว้นว่าง = ใช้ค่าเดิม
 });
 
 function submitTurnstile() {
@@ -524,6 +526,7 @@ function submitLoginBack() {
                             type="password"
                             autocomplete="new-password"
                             :disabled="smtpForm.use_auth !== 'Y'"
+                            :placeholder="secretsSet.smtp ? 'ตั้งค่าไว้แล้ว — เว้นว่างเพื่อใช้ค่าเดิม' : ''"
                         />
                         <InputError :message="smtpForm.errors.password" />
                     </div>
@@ -588,7 +591,14 @@ function submitLoginBack() {
 
                     <div class="sm:col-span-3">
                         <InputLabel for="turnstile_key_secret" value="Key Secret" />
-                        <TextInput id="turnstile_key_secret" v-model="turnstileForm.key_secret" type="text" />
+                        <TextInput
+                            id="turnstile_key_secret"
+                            v-model="turnstileForm.key_secret"
+                            type="password"
+                            autocomplete="new-password"
+                            :placeholder="secretsSet.turnstile ? 'ตั้งค่าไว้แล้ว — เว้นว่างเพื่อใช้ค่าเดิม' : ''"
+                        />
+                        <p class="mt-1.5 text-xs text-gray-500">ล้าง Site Key แล้วบันทึก = ปิดการใช้งาน Turnstile (ล้าง Key Secret ด้วย)</p>
                         <InputError :message="turnstileForm.errors.key_secret" />
                     </div>
                 </div>
