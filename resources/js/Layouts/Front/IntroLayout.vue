@@ -6,7 +6,7 @@ import { useFront } from '@/composables/useFront';
 import type { SeoData } from '@/utils/front';
 
 /**
- * layout เปล่าของหน้า Intropage — ไม่ใช้ template (sys_template) ใช้เฉพาะข้อมูลระบบร่วม (ชื่อไซต์/ภาษา/ข้อความส่วนติดต่อผู้ใช้)
+ * layout เปล่าของหน้า Intropage และหน้า error (Pages/Front/Error.vue) — ไม่ใช้ template (sys_template) ใช้เฉพาะข้อมูลระบบร่วม (ชื่อไซต์/ภาษา/ข้อความส่วนติดต่อผู้ใช้)
  * มีลิงก์ข้ามไปเนื้อหาหลัก + landmark main + บันทึกการเข้าชม keep-alive เหมือน layout หน้าภายใน
  */
 defineProps<{ seo: SeoData }>();

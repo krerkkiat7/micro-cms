@@ -640,6 +640,77 @@ backend ด้วย ajax (axios) ไม่ใช่ Inertia visit เพรา�
 
 ---
 
+## 10. หน้า error + การเก็บข้อมูล error — 🟢 มีแล้ว
+
+**หน้าจอ** (แยกหลังบ้าน/หน้าบ้าน, ผูกใน `bootstrap/app.php` → `$exceptions->respond()`):
+
+| | หลังบ้าน (`/admin*`) | หน้าบ้าน |
+|---|---|---|
+| คลาส | `App\Support\Admin\AdminErrorPage` | `App\Support\Front\FrontErrorPage` |
+| หน้า | `Pages/Admin/Error.vue` + `Layouts/Admin/ErrorLayout.vue` (การ์ดบนพื้นเทาเข้ม) | `Pages/Front/Error.vue` + `Layouts/Front/IntroLayout.vue` |
+| ข้อความ | `lang/th/error.php` (ไทย) | `lang/{ภาษา}/front.php` ตามภาษาของ URL |
+| กลับหน้าแรก | `admin.home` (→ dashboard / login) · 419 มีปุ่มเข้าสู่ระบบอีกครั้ง | `/{lang}` |
+
+- ทุกสถานะ 4xx/5xx — ข้อความเฉพาะ `App\Support\ErrorStatus::KNOWN` (400/403/404/405/410/413/419/429/500/503) ที่เหลือใช้ `4xx`/`5xx`
+- **5xx (ยกเว้น 503) บอกแค่ "เกิดข้อผิดพลาด" + รหัสอ้างอิง** — ไม่ใช้ message ของ exception เลย (รวม `abort(403, '...')`); `APP_DEBUG=true` + 5xx ใช้หน้า debug ของ Laravel;
+  JSON request ตอบ JSON ตามเดิม
+- **หน้าสำรอง** `resources/views/errors/{4xx,5xx,401,…,503}.blade.php` + `layout.blade.php` (ข้อมูลจาก `App\Support\ErrorFallbackPage`) — CSS inline
+  ไม่พึ่ง Vite/DB: ใช้เมื่อสร้างหน้าแบบ Inertia ไม่ได้ (DB ล่ม/ยังไม่ build) และ path ที่ไม่ใช่หน้าเว็บ (`/file/*`, `/apps/*`) — ไฟล์รายสถานะมีไว้ override
+  view ของ Laravel ที่ชื่อเดียวกัน (ไม่งั้นของ Laravel ชนะ `4xx`/`5xx`)
+
+**การเก็บข้อมูล error** — `App\Support\ErrorReference`:
+- รหัสอ้างอิง `ERR-XXXXXXXX` (8 ตัวอักษรไม่กำกวม) สร้างครั้งเดียวต่อ request → แสดงบนหน้า 5xx และอยู่ใน log — ผู้ใช้แจ้งรหัส ผู้ดูแลค้นใน log ได้ทันที
+- `$exceptions->context()` เติมข้อมูลให้ทุก exception ที่ถูก report: `reference`, `url`, `method`, `route`, `user_id` (หลังบ้าน), `front_user_id`, `ip` (`ClientIp`),
+  `user_agent`, `referer`, `input_keys` (**ชื่อฟิลด์เท่านั้น ไม่เก็บค่า** — กันรหัสผ่าน/ข้อมูลส่วนบุคคล)
+- `$exceptions->report()` เขียนซ้ำลงไฟล์ error **แยกหน้าบ้าน/หลังบ้าน** (`ErrorReference::channel()`, `config/logging.php` daily **เก็บ `LOG_ERROR_DAYS` = 90 วัน**):
+  `error_front` (หน้าบ้าน + path สาธารณะ เช่น `/file`, `/sitemap.xml`) / `error_admin` (`/admin*` + คำสั่ง artisan/queue ที่ไม่ได้มาจากหน้าเว็บ)
+  เป็น channel แบบ stack ที่เขียน **2 รูปแบบแยกไฟล์**: `storage/logs/text-error-{front,admin}-YYYY-MM-DD.log` (ข้อความอ่านง่าย) +
+  `storage/logs/json-error-{front,admin}-YYYY-MM-DD.log` (1 บรรทัด = 1 รายการ JSON — หน้า "ตรวจสอบ Error" อ่านไฟล์นี้) —
+  มี class/message/file:line/trace) — ไม่ขึ้นกับ `LOG_STACK` ของเครื่อง; `.env.example` แนะนำ `LOG_STACK=daily` + `LOG_DAILY_DAYS=90` ด้วย
+- exception ที่ Laravel ไม่ report อยู่แล้ว (404/403/419/ValidationException ฯลฯ) ไม่ลง log
+- ค้นหา: หน้า **ตรวจสอบ Error** ในหลังบ้าน (§10.2) หรือ `grep ERR-XXXXXXXX storage/logs/text-error-*.log` (ทั้ง 2 ฝั่งในคำสั่งเดียว)
+
+หน้าตา: หน้าบ้าน = การ์ดขาวบนพื้นสว่าง; หลังบ้าน = การ์ดบนพื้นเทาเข้ม `admin-900` (โทนเดียวกับ sidebar) — แยกกันชัดเจน
+
+### 10.1 วิธีทดสอบดูหน้า error
+
+1. `.env` ตั้ง `APP_DEBUG=false` (ถ้า `true` error 5xx จะเป็นหน้า debug ของ Laravel แทน) แล้วเปิดเว็บตามปกติ — **route ทดสอบมีเฉพาะ `APP_ENV=local`**
+2. เปิด URL ตัวอย่าง (`{status}` = 400–599):
+
+| ต้องการดู | หน้าบ้าน | หลังบ้าน (ไม่ต้อง login) |
+|---|---|---|
+| ทุกสถานะ | `/th/test-error/{status}`, `/en/test-error/{status}` | `/admin/test-error/{status}` |
+| 500 (throw จริง → log + รหัสอ้างอิง) | `/th/test-error/500` | `/admin/test-error/500` |
+| สถานะไม่มีข้อความเฉพาะ (ใช้ 4xx/5xx) | `/th/test-error/418`, `/th/test-error/502` | `/admin/test-error/418` |
+
+3. ทดสอบจากสถานการณ์จริง:
+   - **404** — URL ที่ไม่มี เช่น `/th/abc`, `/en/page/item/999999`, `/admin/abc`
+   - **405** — เปิด `/admin/logout` ตรง ๆ ในเบราว์เซอร์ (route รับเฉพาะ POST)
+   - **419** — เปิดหน้า login หลังบ้าน → ลบคุกกี้ของเว็บ (DevTools → Application → Cookies) → กดเข้าสู่ระบบ
+   - **429** — ส่งฟอร์มติดต่อเราเกิน 10 ครั้ง/นาที, หรือ login ผิดติดกันหลายครั้ง (ถูกบล็อก)
+   - **503** — `php artisan down` (เลิกด้วย `php artisan up`)
+   - **หน้าสำรอง Blade** — ปิด MySQL (`docker-compose stop`) แล้วเปิดหน้าใดก็ได้ → 500 แบบ Blade (เปิดคืน `docker-compose start`); หรือ `/file/get/ไม่มีจริง` → 404 แบบ Blade
+4. ดู log ของ 500: เมนู **ตรวจสอบ Error** → ช่องค้นหาใส่รหัสอ้างอิงที่หน้าเว็บแสดง (หรือเปิด `storage/logs/text-error-{front,admin}-YYYY-MM-DD.log`)
+5. ทดสอบเสร็จแล้วคืน `APP_DEBUG=true` สำหรับการพัฒนา
+
+### 10.2 หน้า "ตรวจสอบ Error" (`admin.system.errorviewer.*`)
+
+- สิทธิ์ `system.error.view` (`system910`), เมนู `system-errorviewer` "ตรวจสอบ Error" ไอคอน `Bug` (กลุ่มจัดการระบบ)
+- `Admin\System\ErrorViewerController` — `index` (Inertia `Admin/System/ErrorViewer/Index`, query `side`/`date`/`q`/`page`, 50 รายการ/หน้า) +
+  `show/{reference}` (JSON รายละเอียดเต็ม ค้นทุกฝั่งทุกวัน); ไม่มีสิทธิ์ = redirect dashboard / 403; อ่านอย่างเดียวจึงไม่บันทึก `LogBackAction`
+- ตัวอ่าน `App\Support\Report\ErrorLogReader` — อ่านเฉพาะ `json-error-*` (หาไฟล์จาก path ของ channel `error_{side}_json`), รายการวันที่จากชื่อไฟล์,
+  อ่านทีละบรรทัดสูงสุด 10,000 รายการ/วัน (เกิน = แจ้ง truncated), กลุ่ม error ที่เกิดซ้ำ (class + file:line) 5 อันดับ; ตรวจรูปแบบ side/วันที่/รหัสก่อนประกอบ path เสมอ
+- หน้าจอ: แท็บหน้าบ้าน/หลังบ้าน, `Components/Admin/ErrorViewer/AvailableDatePicker.vue` (ปฏิทินกดได้เฉพาะวันที่มีไฟล์ + ปุ่มวันล่าสุด),
+  ช่องค้นหา (รูปแบบ `ERR-XXXXXXXX` = เปิดรายละเอียดทันที / ข้อความอื่น = กรองวันนั้น), `ErrorLogDetailDialog.vue` (message, ผู้ใช้, IP, ฟิลด์ที่ส่งมา, stack trace)
+
+**ข้อเสนอเพิ่มเติม (ยังไม่ทำ)**
+- แจ้งเตือนทันทีเมื่อเกิด 5xx — เพิ่ม channel `slack` หรือส่งอีเมล (มี SMTP ในตั้งค่าระบบแล้ว) แบบจำกัดความถี่ (เช่น รหัส error เดิมแจ้งไม่เกิน 1 ครั้ง/ชั่วโมง)
+- บันทึก 404 ของหน้าบ้าน (URL + referrer) เพื่อหาลิงก์เสียจากเว็บอื่น/เมนู แล้วทำ redirect 301 — อาจเป็นตาราง `log_front_notfound` ในไฟล์ log กลาง
+- เก็บ 419 ที่เกิดถี่ในหลังบ้าน (session หมดอายุระหว่างกรอกฟอร์มยาว) เพื่อพิจารณาปรับ `SESSION_LIFETIME`
+- ถ้าต้องการหน้าจอดู error ในหลังบ้าน: ตาราง `log_error` + หน้าประวัติ (error ตอน DB ล่มยังลงไฟล์อย่างเดียว)
+
+---
+
 ## ภาคผนวก: สเปก schema รอบนี้
 
 ไฟล์เดียว: `database/migrations/0001_01_01_000000_create_users_table.php` — ต้อง `php artisan migrate:fresh --seed` ใหม่

@@ -1,5 +1,6 @@
 <?php
 
+use Monolog\Formatter\JsonFormatter;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -63,6 +64,55 @@ return [
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'replace_placeholders' => true,
+        ],
+
+        // error ที่ถูก report (5xx ฯลฯ) พร้อมรหัสอ้างอิง (App\Support\ErrorReference) — เขียนจาก bootstrap/app.php เสมอ ไม่ขึ้นกับ LOG_STACK
+        // แยกฝั่งด้วย ErrorReference::channel() (error_front / error_admin = stack) แล้วเขียน 2 รูปแบบแยกไฟล์ หมุนรายวัน เก็บ LOG_ERROR_DAYS วัน (default 90):
+        //   text-error-{front,admin}-YYYY-MM-DD.log  ข้อความอ่านง่าย (เปิดดู/grep เอง)
+        //   json-error-{front,admin}-YYYY-MM-DD.log  1 บรรทัด = 1 รายการ JSON — หน้า "ตรวจสอบ Error" ในหลังบ้านอ่านไฟล์นี้ (App\Support\Report\ErrorLogReader)
+        // front = หน้าบ้าน + path สาธารณะอื่น (/file, /sitemap.xml), admin = /admin + คำสั่ง artisan/queue ที่ไม่ได้มาจากหน้าเว็บ
+        'error_front' => [
+            'driver' => 'stack',
+            'channels' => ['error_front_text', 'error_front_json'],
+            'ignore_exceptions' => false,
+        ],
+
+        'error_admin' => [
+            'driver' => 'stack',
+            'channels' => ['error_admin_text', 'error_admin_json'],
+            'ignore_exceptions' => false,
+        ],
+
+        'error_front_text' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/text-error-front.log'),
+            'level' => 'error',
+            'days' => (int) env('LOG_ERROR_DAYS', 90),
+            'replace_placeholders' => true,
+        ],
+
+        'error_front_json' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/json-error-front.log'),
+            'level' => 'error',
+            'days' => (int) env('LOG_ERROR_DAYS', 90),
+            'formatter' => JsonFormatter::class,
+        ],
+
+        'error_admin_text' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/text-error-admin.log'),
+            'level' => 'error',
+            'days' => (int) env('LOG_ERROR_DAYS', 90),
+            'replace_placeholders' => true,
+        ],
+
+        'error_admin_json' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/json-error-admin.log'),
+            'level' => 'error',
+            'days' => (int) env('LOG_ERROR_DAYS', 90),
+            'formatter' => JsonFormatter::class,
         ],
 
         'daily' => [

@@ -2,12 +2,15 @@
 
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SetLocale;
+use App\Support\Admin\AdminErrorPage;
+use App\Support\ErrorReference;
 use App\Support\Front\FrontErrorPage;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -41,6 +44,26 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectUsersTo(fn () => route('admin.dashboard'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        // หน้า error ของหน้าบ้าน (404/403/419/429/500/503) แสดงใน layout หน้าบ้านตามภาษาของ URL — หลังบ้าน/JSON ใช้ของ Laravel ตามเดิม
-        $exceptions->respond(fn (Response $response, Throwable $e, Request $request) => FrontErrorPage::render($response, $request));
+        // ข้อมูลประกอบของ exception ที่ถูก report (log หลัก) — รหัสอ้างอิงเดียวกับที่แสดงบนหน้า error 5xx + URL/ผู้ใช้/IP/ชื่อฟิลด์ (ไม่เก็บค่า)
+        $exceptions->context(fn () => ErrorReference::context());
+
+        // เขียนซ้ำลงไฟล์ error แยกหน้าบ้าน/หลังบ้าน (error_front / error_admin — รายวัน เก็บ 90 วัน, config/logging.php)
+        // ให้มีประวัติ error เสมอแม้ LOG_STACK ของเครื่องเป็น single
+        $exceptions->report(function (Throwable $e) {
+            try {
+                Log::channel(ErrorReference::channel())->error($e::class.': '.$e->getMessage(), [
+                    ...ErrorReference::context(),
+                    'file' => $e->getFile().':'.$e->getLine(),
+                    'trace' => mb_substr($e->getTraceAsString(), 0, 8000),
+                ]);
+            } catch (Throwable) {
+                // เขียน log ไม่ได้ (disk เต็ม/สิทธิ์ไฟล์) — ไม่ให้การ log ทำให้หน้า error พังซ้ำ
+            }
+        });
+
+        // หน้า error: หลังบ้าน (/admin) และหน้าบ้าน (แยกตามภาษาของ URL) — JSON/ไฟล์ใช้ของ Laravel;
+        // สร้างไม่ได้ = หน้าสำรอง resources/views/errors/{4xx,5xx}.blade.php
+        $exceptions->respond(fn (Response $response, Throwable $e, Request $request) => AdminErrorPage::isAdminRequest($request)
+            ? AdminErrorPage::render($response, $request)
+            : FrontErrorPage::render($response, $request));
     })->create();

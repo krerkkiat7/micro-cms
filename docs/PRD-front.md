@@ -31,8 +31,11 @@
     และหมวดหมู่ต้องเผยแพร่
   - **ข้อมูลตัวอย่าง `is_temp = Y` แสดงได้ตามปกติทุกโมดูล** (ผู้ใช้อาจแก้ตัวอย่างแล้วใช้ต่อ — ไม่มี query หน้าบ้านตัวไหนกรอง `is_temp`)
 - ภาษาที่ยังไม่ได้แปล (หัวเรื่องว่าง) ใช้ข้อมูลภาษาหลัก (`App\Support\Front\FrontLang`)
-- หน้า error ของหน้าบ้าน (403/404/419/429/500/503) render `Front/Error.vue` ใน layout หน้าบ้าน (`App\Support\Front\FrontErrorPage`
-  ผูกใน `bootstrap/app.php`) — 500 ตอน `APP_DEBUG=true` ยังใช้หน้า debug ของ Laravel
+- หน้า error ของหน้าบ้าน (ทุก 4xx/5xx — ข้อความเฉพาะ 400/403/404/405/410/413/419/429/500/503, ที่เหลือใช้ `4xx`/`5xx`) render `Front/Error.vue`
+  ใน layout เปล่า (`IntroLayout` — ไม่โหลด template/เมนู) — `App\Support\Front\FrontErrorPage` ผูกใน `bootstrap/app.php`:
+  โลโก้ + ชื่อเว็บ, รหัสสถานะ, หัวข้อ/คำอธิบาย **ตามภาษาของ URL** (`lang/{ภาษา}/front.php` `error_title`/`error_description`), ปุ่มกลับหน้าแรก
+  + ปุ่มรอง (ย้อนกลับ / ลองอีกครั้ง), ลิงก์ภาษาอื่น; **5xx บอกแค่ "เกิดข้อผิดพลาด" + รหัสอ้างอิง** (`App\Support\ErrorReference`) ไม่แสดงสาเหตุ
+  — 5xx ตอน `APP_DEBUG=true` ยังใช้หน้า debug ของ Laravel; สร้างหน้าไม่ได้ (DB ล่ม) → หน้าสำรอง Blade `resources/views/errors/*` (ดู PRD-system.md §10)
 
 ## 2. Intropage
 

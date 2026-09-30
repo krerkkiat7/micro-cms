@@ -93,7 +93,9 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   drawer บนมือถือ ผ่าน `composables/useSidebar.ts` — จำสถานะใน `localStorage`) + **header โทนมืด** +
   พื้นที่เนื้อหาสว่าง. ทุกหน้า `Admin/*` (ยกเว้น auth) wrap `<AdminLayout>` และมี slot `#header`
 - `Layouts/Admin/AuthLayout.vue` — หน้า auth ก่อน login (Login/Register/Forgot/Reset/Confirm/VerifyEmail):
-  split-screen ฟอร์มซ้าย + branding panel มืดขวา (จอ `lg`)
+  การ์ดกลางจอบนพื้นเทาอ่อน (โลโก้ + ชื่อระบบเหนือการ์ด, ไม่มีแถบมืดด้านขวาแล้ว)
+- `Layouts/Admin/ErrorLayout.vue` — หน้า error หลังบ้าน: การ์ดบนพื้นเทาเข้ม `admin-900` (ต่างจากหน้า error หน้าบ้านที่พื้นสว่าง);
+  ดูตัวอย่างทุกสถานะที่ `/admin/test-error/{status}` และ `/{lang}/test-error/{status}` (เฉพาะ `APP_ENV=local`, ดู `docs/PRD-system.md` §10.1)
 - สไตล์อ้างอิง TailAdmin Vue (MIT) — port เฉพาะโครง ไม่ได้ใช้ตัวเทมเพลตตรง ๆ (มัน vue-router SPA + Pinia);
   **ไม่มี dark-mode toggle** (chrome มืดตายตัว เนื้อหาสว่างเสมอ)
 - `Components/Admin/AppSidebar.vue` — Dashboard + Profile ฮาร์ดโค้ด; กลุ่มเมนูจาก DB อยู่ section เดียวกับ Dashboard
@@ -455,6 +457,11 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   เนื้อหาที่ไม่มีเมนูและหน้าแท็กไม่ใส่. `App\Support\Front\Sitemap` (index + main + article-{n}, hreflang + x-default + image, canonical ตรงกับหน้า)
   cache XML ผ่าน `FrontCache` (key แยก host) + ETag/304; route ตัด session/CSRF/Inertia middleware (ไม่มี Set-Cookie); ตั้งค่า `config('front.sitemap')`.
   **ประเภทเมนู/เนื้อหาใหม่ที่มี URL สาธารณะต้องเพิ่มใน sitemap ผ่านเมนู** (เทส `tests/Feature/Front/SitemapTest.php`)
+- **หน้า error + รหัสอ้างอิง (branch `error-pages`) — ดู `docs/PRD-system.md` §10** — หลังบ้าน `App\Support\Admin\AdminErrorPage` → `Admin/Error`
+  (ไทย, `lang/th/error.php`), หน้าบ้าน `FrontErrorPage` → `Front/Error` (layout เปล่า ไม่โหลด template/เมนู, ข้อความตามภาษาของ URL); ทุก 4xx/5xx
+  (`App\Support\ErrorStatus`); **5xx บอกแค่ "เกิดข้อผิดพลาด" + รหัส `ERR-XXXXXXXX` ห้ามแสดง message ของ exception**; หน้าสำรอง Blade `resources/views/errors/*`
+  (ไม่พึ่ง DB/Vite — ไฟล์รายสถานะ override ของ Laravel). log: `ErrorReference::context()` ใน `$exceptions->context()` + ไฟล์ error แยกฝั่ง (`ErrorReference::channel()`) × 2 รูปแบบ `text-error-{front,admin}-*.log` / `json-error-{front,admin}-*.log` รายวันเก็บ 90 วัน (`LOG_ERROR_DAYS`);
+  หน้า **ตรวจสอบ Error** `admin.system.errorviewer.*` (สิทธิ์ `system.error.view`) อ่านไฟล์ json ผ่าน `App\Support\Report\ErrorLogReader` — ดู §10.2
 ## ทดสอบ
 
 - เทสหน้าบ้านอยู่ `tests/Feature/Front/FrontSiteTest.php` (seed `DatabaseSeeder` แล้วใช้ข้อมูลตัวอย่าง)

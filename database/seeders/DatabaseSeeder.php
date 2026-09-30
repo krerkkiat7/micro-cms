@@ -103,6 +103,7 @@ class DatabaseSeeder extends Seeder
             ['system106', 'system', null, 'system.frontlog.login', 'แสดงประวัติการเข้าสู่ระบบ - หน้าบ้าน', 16],
             ['system908', 'system', null, 'system.file.manage', 'จัดการไฟล์', 91],
             ['system909', 'system', null, 'system.setting.manage', 'ตั้งค่าระบบ', 92],
+            ['system910', 'system', null, 'system.error.view', 'ตรวจสอบ Error', 93],
 
         ];
 
