@@ -61,7 +61,7 @@ const readAllOnTop = computed(() => String(props.setting.read_all_position ?? ''
     <div v-if="items.length">
         <ReadAllLink v-if="readAllOnTop" :setting="setting" class="mb-3" />
 
-        <section class="relative" aria-roledescription="carousel" :aria-label="label || undefined" v-on="carousel.pauseHandlers">
+        <section class="relative" :aria-roledescription="t('carousel_role')" :aria-label="label || undefined" v-on="carousel.pauseHandlers">
             <div class="overflow-hidden">
                 <ul class="flex" :style="trackStyle">
                     <li

@@ -121,6 +121,12 @@ return [
     'back_to_home' => 'กลับหน้าแรก',
     // popup
     'popup' => 'ป๊อปอัป',
+    'popup_image' => 'รูปภาพประกาศ',
+    // aria-roledescription ของ carousel / สไลด์ (โปรแกรมอ่านหน้าจอประกาศคำนี้แทนชื่อ role)
+    'carousel_role' => 'ภาพสไลด์',
+    'slide_role' => 'สไลด์',
+    // ตัวอักษรตัวอย่างบนปุ่มปรับขนาดตัวอักษร
+    'font_sample' => 'ก',
     'dont_show_today' => 'ไม่แสดงวันนี้อีก',
     'close_and_dont_show_today' => 'ปิด และไม่แสดงวันนี้อีก',
     // ติดต่อเรา

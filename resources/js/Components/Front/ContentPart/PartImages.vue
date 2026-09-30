@@ -74,7 +74,7 @@ const stackOrder = computed(() => images.value.map((_, i) => (i + carousel.index
 <template>
     <div v-if="images.length">
         <!-- Thumbnail Carousel: รูปหลัก + แถวรูปย่อย -->
-        <section v-if="type === 'thumbnail_carousel'" aria-roledescription="carousel" :aria-label="part.title || undefined" v-on="carousel.pauseHandlers">
+        <section v-if="type === 'thumbnail_carousel'" :aria-roledescription="t('carousel_role')" :aria-label="part.title || undefined" v-on="carousel.pauseHandlers">
             <div class="relative overflow-hidden rounded-lg bg-gray-100">
                 <button type="button" class="block w-full" :aria-label="`${t('view_image')}: ${images[carousel.index.value].alt}`" @click="lightbox = carousel.index.value">
                     <img :src="images[carousel.index.value].src" :alt="images[carousel.index.value].alt" class="mx-auto max-h-[70vh] w-full object-contain" />
@@ -113,7 +113,7 @@ const stackOrder = computed(() => images.value.map((_, i) => (i + carousel.index
         <section
             v-else-if="type === 'multi_carousel' || type === 'full_width_slider'"
             class="relative"
-            aria-roledescription="carousel"
+            :aria-roledescription="t('carousel_role')"
             :aria-label="part.title || undefined"
             v-on="carousel.pauseHandlers"
         >
@@ -167,7 +167,7 @@ const stackOrder = computed(() => images.value.map((_, i) => (i + carousel.index
         </ul>
 
         <!-- Stacked / Overlapping Cards -->
-        <section v-else-if="type === 'stacked_cards'" aria-roledescription="carousel" :aria-label="part.title || undefined" class="mx-auto max-w-xl">
+        <section v-else-if="type === 'stacked_cards'" :aria-roledescription="t('carousel_role')" :aria-label="part.title || undefined" class="mx-auto max-w-xl">
             <div class="relative aspect-[4/3]">
                 <component
                     :is="depth === 0 ? 'button' : 'div'"

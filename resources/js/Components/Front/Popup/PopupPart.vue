@@ -26,9 +26,9 @@ const SIZE_CLASS: Record<string, string> = {
     <div class="space-y-4">
         <div v-if="part.image" class="mx-auto" :class="SIZE_CLASS[part.image_size] ?? 'w-full'">
             <FrontLink v-if="part.url" :href="part.url" :target="part.link_target" class="block" @click="emit('navigate')">
-                <img :src="part.image.thumb_url ?? part.image.url" :alt="part.image.name" class="h-auto w-full rounded-md" />
+                <img :src="part.image.thumb_url ?? part.image.url" :alt="t('popup_image')" class="h-auto w-full rounded-md" />
             </FrontLink>
-            <img v-else :src="part.image.thumb_url ?? part.image.url" alt="" class="h-auto w-full rounded-md" />
+            <img v-else :src="part.image.thumb_url ?? part.image.url" :alt="t('popup_image')" class="h-auto w-full rounded-md" />
         </div>
 
         <!-- eslint-disable-next-line vue/no-v-html -- ผ่าน HtmlSanitizer ฝั่ง server แล้ว -->
