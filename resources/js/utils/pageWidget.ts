@@ -519,7 +519,8 @@ export const SLIDESET_IMAGE_FIT_OPTIONS = [
 ];
 
 export const SLIDESHOW_INTERVAL_RANGE = { min: 1, max: 60 } as const;
-export const SLIDESHOW_MAX_ITEMS_LIMIT = 1000;
+/** ต้องตรงกับ CategoryListWidget::MAX_ITEMS_LIMIT — เพดานของ "แสดงทั้งหมด" ด้วย */
+export const SLIDESHOW_MAX_ITEMS_LIMIT = 100;
 export const SLIDESHOW_SPEED_RANGE = { min: 100, max: 3000 } as const;
 
 export const SLIDESHOW_EFFECT_OPTIONS = [

@@ -28,6 +28,15 @@ abstract class Controller
     }
 
     /**
+     * วันถัดไปของวันที่ (Y-m-d) — ใช้กรองช่วงวันที่แบบ `created_at < วันถัดไป` แทน whereDate(created_at <= วันที่)
+     * ที่ครอบคอลัมน์ด้วย date() จนใช้ index ของ created_at ไม่ได้ (ตาราง log มีข้อมูลเยอะ)
+     */
+    protected function nextDay(string $date): string
+    {
+        return Carbon::parse($date)->addDay()->toDateString();
+    }
+
+    /**
      * ชื่อรายการในหน้ารายการหลังบ้าน — ใช้ของภาษาหลัก (alias `d` จาก leftJoin) ก่อน ไม่มีค่อย fallback ไปภาษาอื่นที่มีข้อมูล
      * (เช่น ภาษาหลักเพิ่งถูกเปลี่ยนเป็นภาษาใหม่ที่รายการเดิมยังไม่ได้กรอก) — ให้รายการไม่หายไปจากหน้ารายการ
      * $detailTable/$infoTable/$column ต้องเป็นค่าคงที่จากโค้ด (ไม่ใช่ input ผู้ใช้)

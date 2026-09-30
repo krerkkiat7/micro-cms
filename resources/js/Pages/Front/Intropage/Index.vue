@@ -86,7 +86,7 @@ function buttonLabel(button: IntroButton): string {
                 <div class="mx-auto" :style="mediaWidth">
                     <img
                         v-if="intro.display_type === 'image' && intro.image"
-                        :src="intro.image.url"
+                        :src="intro.image.thumb_url ?? intro.image.url"
                         :alt="intro.title"
                         class="h-auto w-full"
                         fetchpriority="high"

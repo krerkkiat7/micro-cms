@@ -7,7 +7,6 @@ use App\Support\Front\Views\RedisViewBuffer;
 use App\Support\Setting;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -37,7 +36,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Vite::prefetch(concurrency: 3);
+        // prefetch chunk ล่วงหน้าเฉพาะหลังบ้าน — หน้าบ้านไม่ต้องโหลด chunk ของหน้าหลังบ้าน (tiptap, chart.js, leaflet ฯลฯ) ติดไปด้วย
+        if ($this->app->runningInConsole() === false && request()->is('admin', 'admin/*')) {
+            Vite::prefetch(concurrency: 3);
+        }
 
         // อีเมลรีเซ็ตรหัสผ่านต้องชี้ไปที่ route ของหลังบ้าน (/admin/reset-password/{token})
         ResetPassword::createUrlUsing(function ($notifiable, string $token) {
@@ -53,14 +55,10 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * เมื่อมีการส่งอีเมลให้ใช้การตั้งค่า SMTP จาก sys_setting (กลุ่ม smtp) แทนค่าใน .env
-     * เช็ก Schema::hasTable() กันพังตอนยังไม่ได้ migrate (เช่น ระหว่างรัน migrate เอง)
+     * ยังไม่ได้ migrate (ไม่มีตาราง sys_setting) Setting::group() คืน [] ให้เอง — ไม่ต้องเช็ก Schema::hasTable() ทุก request
      */
     private function applySmtpSetting(): void
     {
-        if (! Schema::hasTable('sys_setting')) {
-            return;
-        }
-
         $smtp = Setting::group('smtp');
         $host = $smtp['host'] ?? null;
 
@@ -94,14 +92,10 @@ class AppServiceProvider extends ServiceProvider
     /**
      * โซนเวลาของระบบ — ลำดับความสำคัญ: sys_setting (กลุ่ม site คอลัมน์ timezone) มาก่อนเสมอถ้าตั้งไว้ > `.env` (`APP_TIMEZONE`)
      * > ค่า default ของ php.ini (ตั้งเป็น config('app.timezone') ไว้แล้วตามลำดับนี้ตั้งแต่ config/app.php — ดูคอมเมนต์ที่นั่น)
-     * เมธอดนี้ override ชั้นบนสุดเมื่อมีค่าตั้งไว้ใน sys_setting เท่านั้น เช็ก Schema::hasTable() กันพังตอนยังไม่ได้ migrate
+     * เมธอดนี้ override ชั้นบนสุดเมื่อมีค่าตั้งไว้ใน sys_setting เท่านั้น (ยังไม่ได้ migrate = Setting คืนค่าว่าง ไม่ override)
      */
     private function applyTimezoneSetting(): void
     {
-        if (! Schema::hasTable('sys_setting')) {
-            return;
-        }
-
         $timezone = Setting::get('site', 'timezone');
 
         if (! $timezone) {

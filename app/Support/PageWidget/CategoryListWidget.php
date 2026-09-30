@@ -17,8 +17,11 @@ abstract class CategoryListWidget extends SettingsWidget
     /** จำนวนรายการสูงสุดที่ดึงมาแสดงเป็นตัวอย่างในหน้าโครงสร้าง */
     public const PREVIEW_LIMIT = 10;
 
-    /** จำนวนที่แสดงสูงสุดที่กรอกได้ (0 = แสดงทั้งหมด) */
-    public const MAX_ITEMS_LIMIT = 1000;
+    /**
+     * จำนวนที่แสดงสูงสุดที่กรอกได้ และเพดานของ "แสดงทั้งหมด" (0) — รายการทั้งหมดถูกฝังไปกับ HTML ของหน้า (Inertia page props)
+     * ทุกครั้งที่เปิดหน้า ถ้าไม่จำกัด หมวดหมู่ที่มีข้อมูลเยอะจะทำให้หน้าหนักมาก (ต้องตรงกับ SLIDESHOW_MAX_ITEMS_LIMIT ใน utils/pageWidget.ts)
+     */
+    public const MAX_ITEMS_LIMIT = 100;
 
     public const ASPECT_RATIOS = ['16:9', '21:9', '4:3', '1:1'];
 
@@ -112,7 +115,7 @@ abstract class CategoryListWidget extends SettingsWidget
             'sort_by' => self::choice('ลำดับการเรียงลำดับ', $this->sorts()[0], $this->sorts()),
             // ว่างหรือ 0 = แสดงทั้งหมด
             'max_items' => [
-                'label' => 'จำนวนที่แสดงสูงสุด', 'default' => 0, 'type' => 'int', 'range' => [0, self::MAX_ITEMS_LIMIT, ' (0 = แสดงทั้งหมด)'],
+                'label' => 'จำนวนที่แสดงสูงสุด', 'default' => 0, 'type' => 'int', 'range' => [0, self::MAX_ITEMS_LIMIT, ' (0 = แสดงทั้งหมด สูงสุด '.self::MAX_ITEMS_LIMIT.' รายการ)'],
                 'rules' => ['nullable', 'integer', 'between:0,'.self::MAX_ITEMS_LIMIT],
             ],
         ];

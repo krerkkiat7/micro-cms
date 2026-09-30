@@ -61,12 +61,13 @@ class FileCache
      */
     public static function forgetAll(): void
     {
-        Cache::forever(self::VERSION_KEY, self::version() + 1);
+        Cache::memo()->forever(self::VERSION_KEY, self::version() + 1);
     }
 
     private static function version(): int
     {
-        return (int) Cache::rememberForever(self::VERSION_KEY, fn () => 1);
+        // memo = อ่าน version จาก cache store จริงครั้งเดียวต่อ request (หน้าหนึ่งมีรูปหลายรูป)
+        return (int) Cache::memo()->rememberForever(self::VERSION_KEY, fn () => 1);
     }
 
     private static function key(string $hashName): string

@@ -70,7 +70,8 @@ function print(): void {
             </header>
 
             <figure v-if="detailSetting.show_cover && article.image">
-                <img :src="article.image.url" alt="" class="h-auto w-full rounded-lg" />
+                <!-- ใช้ thumbnail กว้าง 1280 (ไม่โหลดไฟล์ต้นฉบับที่อาจใหญ่มาก) + fetchpriority เพราะเป็นรูปใหญ่ส่วนบนของหน้า -->
+                <img :src="article.image.thumb_url ?? article.image.url" alt="" class="h-auto w-full rounded-lg" fetchpriority="high" />
             </figure>
 
             <ShareButtons v-if="shareTop" :url="shareUrl" :title="article.title" />

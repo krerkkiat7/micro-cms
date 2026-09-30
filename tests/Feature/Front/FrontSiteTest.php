@@ -363,8 +363,13 @@ test('front pages do not expose admin user data or the admin route list', functi
 
 test('saving front content bumps the front cache version', function () {
     $version = FrontCache::version();
+    $menu = FrontMenuInfo::query()->firstOrFail();
 
-    FrontMenuInfo::query()->firstOrFail()->touch();
+    // save() ที่ไม่มีอะไรเปลี่ยนไม่ต้องล้าง cache
+    $menu->save();
+    expect(FrontCache::version())->toBe($version);
+
+    $menu->update(['sort_order' => $menu->sort_order + 1]);
 
     expect(FrontCache::version())->toBeGreaterThan($version);
 });

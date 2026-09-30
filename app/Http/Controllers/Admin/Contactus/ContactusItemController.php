@@ -58,8 +58,8 @@ class ContactusItemController extends Controller
                 });
             })
             ->when($filters['process_status'] !== null, fn ($query) => $query->where('process_status', $filters['process_status']))
-            ->when($filters['date_from'] !== null, fn ($query) => $query->whereDate('created_at', '>=', $filters['date_from']))
-            ->when($filters['date_to'] !== null, fn ($query) => $query->whereDate('created_at', '<=', $filters['date_to']))
+            ->when($filters['date_from'] !== null, fn ($query) => $query->where('created_at', '>=', $filters['date_from']))
+            ->when($filters['date_to'] !== null, fn ($query) => $query->where('created_at', '<', $this->nextDay($filters['date_to'])))
             ->orderBy($sort, $direction)
             ->orderBy('id', 'desc') // tie-breaker ให้ลำดับเสถียร
             ->paginate($filters['per_page'])

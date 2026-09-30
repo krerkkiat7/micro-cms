@@ -58,8 +58,8 @@ class BackLogLoginController extends Controller
             })
             ->when($filters['log_type'] !== null, fn ($query) => $query->where('log_back_login.log_type', $filters['log_type']))
             ->when($filters['result'] !== null, fn ($query) => $query->where('log_back_login.result', $filters['result']))
-            ->when($filters['date_from'] !== null, fn ($query) => $query->whereDate('log_back_login.created_at', '>=', $filters['date_from']))
-            ->when($filters['date_to'] !== null, fn ($query) => $query->whereDate('log_back_login.created_at', '<=', $filters['date_to']))
+            ->when($filters['date_from'] !== null, fn ($query) => $query->where('log_back_login.created_at', '>=', $filters['date_from']))
+            ->when($filters['date_to'] !== null, fn ($query) => $query->where('log_back_login.created_at', '<', $this->nextDay($filters['date_to'])))
             ->when($sort === 'name', fn ($query) => $query
                 ->orderBy('sys_user.firstname', $direction)
                 ->orderBy('sys_user.lastname', $direction))

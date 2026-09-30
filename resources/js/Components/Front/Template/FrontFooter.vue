@@ -77,7 +77,7 @@ function contentClass(width: Width): string {
                     <!-- ข้อมูลไซต์ -->
                     <div class="space-y-3" :class="zone.layout_type === 'site_contact_block' ? 'rounded-xl bg-white/5 p-5 ring-1 ring-black/5' : ''">
                         <div class="flex items-center gap-2" :class="zone.layout_type === 'site_contact_center' ? 'flex-col' : ''">
-                            <img v-if="front.site.logoUrl" :src="front.site.logoUrl" alt="" class="h-12 w-auto object-contain" />
+                            <img v-if="front.site.logoUrl" :src="front.site.logoUrl" alt="" class="h-12 w-auto object-contain" loading="lazy" />
                             <span v-else class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-500 text-white" aria-hidden="true"><Globe class="size-5" /></span>
                             <p :style="headingStyle">{{ front.site.name }}</p>
                         </div>

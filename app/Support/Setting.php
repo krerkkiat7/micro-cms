@@ -4,8 +4,9 @@ namespace App\Support;
 
 use App\Models\SysSetting;
 use App\Support\Front\FrontCache;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Schema;
+use PDOException;
 
 /**
  * อ่านค่าตั้งค่าระบบ (sys_setting) แบบ cache-first — โหลดทั้งกลุ่มแล้วแคชไว้ (invalidate ตอนบันทึก)
@@ -20,20 +21,30 @@ class Setting
 
     /**
      * ค่าตั้งค่าทั้งกลุ่ม เป็น array แบบ name => value — แคชไว้ 1 วัน
-     * คืน [] เงียบ ๆ ถ้าตาราง sys_setting ยังไม่มี (เช่น ก่อนรัน migrate ครั้งแรก)
+     * ผ่าน Cache::memo() — อ่านจาก cache store จริงครั้งเดียวต่อ request (หน้าบ้าน 1 หน้าเรียก Setting หลายสิบครั้ง)
+     * คืน [] เงียบ ๆ (และไม่ cache) ถ้ายังอ่านตาราง sys_setting ไม่ได้ (เช่น ก่อนรัน migrate ครั้งแรก)
      */
     public static function group(string $group): array
     {
-        return Cache::remember("sys_setting.{$group}", now()->addDay(), function () use ($group) {
-            if (! Schema::hasTable('sys_setting')) {
-                return [];
+        $cache = Cache::memo();
+        $key = "sys_setting.{$group}";
+
+        // try ครอบทั้งการอ่าน cache และ DB — ติดตั้งใหม่ยังไม่ได้ migrate (ไม่มีตาราง sys_setting และตาราง cache เมื่อ
+        // CACHE_STORE=database) หรือเชื่อมต่อ DB ไม่ได้ → คืนค่าว่างโดยไม่ cache (AppServiceProvider เรียกทุก request/คำสั่ง artisan)
+        try {
+            $values = $cache->get($key);
+
+            if (is_array($values)) {
+                return $values;
             }
 
-            return SysSetting::query()
-                ->where('group', $group)
-                ->pluck('value', 'name')
-                ->all();
-        });
+            $values = SysSetting::query()->where('group', $group)->pluck('value', 'name')->all();
+            $cache->put($key, $values, now()->addDay());
+
+            return $values;
+        } catch (QueryException|PDOException) {
+            return [];
+        }
     }
 
     /**
@@ -51,7 +62,7 @@ class Setting
      */
     public static function forget(string $group): void
     {
-        Cache::forget("sys_setting.{$group}");
+        Cache::memo()->forget("sys_setting.{$group}");
 
         // หน้าบ้านใช้ค่าตั้งค่า (ชื่อไซต์/ติดต่อ/social/ภาษา/บทความ ฯลฯ) ใน cache ของตัวเอง — ล้างตามไปด้วย
         FrontCache::forgetAll();

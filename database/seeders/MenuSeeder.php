@@ -2,10 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\SysMenu;
 use App\Models\SysMenuGroup;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * ข้อมูลเมนูหลังบ้าน (sys_menu_group + sys_menu)
@@ -103,5 +105,8 @@ class MenuSeeder extends Seeder
                 'status' => 'Y',
             ]);
         }
+
+        // ให้ sidebar หลังบ้านที่ cache ไว้ (HandleInertiaRequests::adminMenu) โหลดเมนูชุดใหม่
+        Cache::forever(HandleInertiaRequests::MENU_VERSION_KEY, (int) Cache::get(HandleInertiaRequests::MENU_VERSION_KEY, 1) + 1);
     }
 }

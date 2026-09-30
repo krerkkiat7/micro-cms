@@ -57,8 +57,8 @@ class FrontLogAccessController extends Controller
             })
             ->when($filters['visitor'] === 'human', fn ($query) => $query->whereNull('log_front_access.robot'))
             ->when($filters['visitor'] === 'robot', fn ($query) => $query->whereNotNull('log_front_access.robot'))
-            ->when($filters['date_from'] !== null, fn ($query) => $query->whereDate('log_front_access.created_at', '>=', $filters['date_from']))
-            ->when($filters['date_to'] !== null, fn ($query) => $query->whereDate('log_front_access.created_at', '<=', $filters['date_to']))
+            ->when($filters['date_from'] !== null, fn ($query) => $query->where('log_front_access.created_at', '>=', $filters['date_from']))
+            ->when($filters['date_to'] !== null, fn ($query) => $query->where('log_front_access.created_at', '<', $this->nextDay($filters['date_to'])))
             ->when($sort === 'name', fn ($query) => $query
                 ->orderBy('sys_user.firstname', $direction)
                 ->orderBy('sys_user.lastname', $direction))

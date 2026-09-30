@@ -6,6 +6,7 @@ use App\Models\ContactusItem;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -32,6 +33,9 @@ final class DashboardReport
 
     private CarbonImmutable $now;
 
+    /** อายุ cache ของส่วนสถิติ (วินาที) */
+    private const STATS_TTL = 300;
+
     public function __construct(User $user)
     {
         $this->permissions = array_fill_keys($user->getPermissionsArray(), true);
@@ -43,11 +47,20 @@ final class DashboardReport
      */
     public function toArray(): array
     {
-        return [
-            'attention' => $this->attention(),
+        // ส่วนที่รวมยอดจากตารางเข้าชม/ประวัติ (หนัก) cache ไว้ 5 นาที แยกตามชุดสิทธิ์ + วันที่ (ผู้ใช้สิทธิ์เดียวกันเห็นข้อมูลชุดเดียวกัน
+        // ไม่มีข้อมูลรายบุคคลในส่วนนี้) — ส่วนที่ต้องสด (รายการที่ควรดำเนินการ, ติดต่อล่าสุด, ภาพรวมเนื้อหา, กิจกรรมล่าสุด) คำนวณทุกครั้ง
+        $key = 'dashboard.stats.'.md5(implode(',', array_keys($this->permissions))).'.'.$this->now->toDateString();
+        $stats = Cache::remember($key, self::STATS_TTL, fn () => [
             'kpis' => $this->kpis(),
             'trend' => $this->trend(),
             'topArticles' => $this->topArticles(),
+        ]);
+
+        return [
+            'attention' => $this->attention(),
+            'kpis' => $stats['kpis'],
+            'trend' => $stats['trend'],
+            'topArticles' => $stats['topArticles'],
             'recentContacts' => $this->recentContacts(),
             'content' => $this->content(),
             'recentActions' => $this->recentActions(),

@@ -36,11 +36,18 @@ class ArticleCategoryController extends FrontController
         $search = mb_substr(trim((string) $request->query('q', '')), 0, 100);
         $perPage = $listSetting['per_page'];
 
-        $articles = FrontCache::remember(
-            "article.category.{$id}.{$lang}.{$perPage}.{$query['page']}.{$query['sort']}.".md5($search),
-            (int) config('front.cache.content_ttl', 300),
-            fn () => ArticleReader::listForCategory($id, $lang, $perPage, $query['page'], $query['sort'], $search),
-        );
+        $load = fn () => ArticleReader::listForCategory($id, $lang, $perPage, $query['page'], $query['sort'], $search);
+
+        // ผลการค้นหา (?q=) ไม่ cache — คำค้นเป็นอะไรก็ได้ ถ้า cache จะมี key ใหม่ไม่จำกัดจำนวน (cache บวม)
+        $articles = $search !== ''
+            ? $load()
+            : FrontCache::remember(
+                "article.category.{$id}.{$lang}.{$perPage}.{$query['page']}.{$query['sort']}",
+                (int) config('front.cache.content_ttl', 300),
+                $load,
+            );
+
+        $this->abortIfPageOutOfRange($query['page'], $articles);
 
         LogFrontAccess::record($category['title']);
 

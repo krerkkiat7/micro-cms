@@ -67,12 +67,6 @@ Route::get('/', [IntropageController::class, 'root'])
     ->middleware('setLocale')
     ->name('front.root');
 
-// โลโก้/favicon สาธารณะของระบบ — ไม่ต้อง login, ไม่มี prefix ภาษา {lang} และไม่อยู่ใต้ /admin
-// เพราะเป็น asset ที่ทั้งฝั่งแอดมินและหน้าบ้านใช้ร่วมกัน (ดู App\Http\Controllers\AppAssetController)
-// ชื่อ route (app.logo/app.favicon) เป็นข้อยกเว้นของ convention front.*/admin.* ปกติ ตามที่กำหนดไว้โดยเฉพาะ
-Route::get('/apps/logo.png', [AppAssetController::class, 'logo'])->name('app.logo');
-Route::get('/apps/favicon.ico', [AppAssetController::class, 'favicon'])->name('app.favicon');
-
 // sitemap.xml (index + ไฟล์ย่อย) และ robots.txt — อิงตามเมนูหน้าบ้านที่เผยแพร่ (App\Support\Front\Sitemap)
 // ตัด session/CSRF/Inertia ออก: bot ไม่สร้าง session และ response ไม่มี Set-Cookie (cache ที่ CDN ได้)
 Route::withoutMiddleware([
@@ -88,13 +82,28 @@ Route::withoutMiddleware([
     Route::get('/robots.txt', 'robots')->name('front.robots');
 });
 
-// ไฟล์/รูปของเนื้อหาหน้าบ้าน (สาธารณะ อ้างอิงด้วย hash_name) — URL สร้างจาก App\Support\Front\FrontFile ที่เดียว
-Route::prefix('file')->controller(FrontFileController::class)->group(function () {
-    Route::get('/get/{hashname}', 'show')->name('front.file.get');
-    Route::get('/type/download/get/{hashname}', 'download')->name('front.file.download');
-    Route::get('/type/thumbnail/size/{size}/get/{hashname}', 'thumbnail')
-        ->name('front.file.thumbnail')
-        ->where('size', '[0-9]+');
+// ไฟล์สาธารณะ (โลโก้/favicon + ไฟล์/รูปของเนื้อหาหน้าบ้าน) — ตัด session/CSRF/Inertia ออกเหมือน sitemap:
+// รูปทุกรูปในหน้าไม่ต้องเปิด session (อ่าน/เขียน Redis/DB) และ response ไม่มี Set-Cookie จึง cache ที่ CDN/proxy ได้
+Route::withoutMiddleware([
+    StartSession::class,
+    ShareErrorsFromSession::class,
+    ValidateCsrfToken::class,
+    HandleInertiaRequests::class,
+    AddLinkHeadersForPreloadedAssets::class,
+])->group(function () {
+    // โลโก้/favicon สาธารณะของระบบ — ไม่มี prefix ภาษา {lang} และไม่อยู่ใต้ /admin เพราะทั้งหลังบ้านและหน้าบ้านใช้ร่วมกัน
+    // (ดู App\Http\Controllers\AppAssetController) ชื่อ route app.* เป็นข้อยกเว้นของ convention front.*/admin.* ตามที่กำหนดไว้
+    Route::get('/apps/logo.png', [AppAssetController::class, 'logo'])->name('app.logo');
+    Route::get('/apps/favicon.ico', [AppAssetController::class, 'favicon'])->name('app.favicon');
+
+    // ไฟล์/รูปของเนื้อหาหน้าบ้าน (อ้างอิงด้วย hash_name) — URL สร้างจาก App\Support\Front\FrontFile ที่เดียว
+    Route::prefix('file')->controller(FrontFileController::class)->group(function () {
+        Route::get('/get/{hashname}', 'show')->name('front.file.get');
+        Route::get('/type/download/get/{hashname}', 'download')->name('front.file.download');
+        Route::get('/type/thumbnail/size/{size}/get/{hashname}', 'thumbnail')
+            ->name('front.file.thumbnail')
+            ->where('size', '[0-9]+');
+    });
 });
 
 // keep-alive ของ log_front_access (ยกเว้น CSRF ใน bootstrap/app.php — sendBeacon ตั้ง header ไม่ได้)
