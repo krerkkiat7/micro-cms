@@ -93,7 +93,9 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   drawer บนมือถือ ผ่าน `composables/useSidebar.ts` — จำสถานะใน `localStorage`) + **header โทนมืด** +
   พื้นที่เนื้อหาสว่าง. ทุกหน้า `Admin/*` (ยกเว้น auth) wrap `<AdminLayout>` และมี slot `#header`
 - `Layouts/Admin/AuthLayout.vue` — หน้า auth ก่อน login (Login/Register/Forgot/Reset/Confirm/VerifyEmail):
-  split-screen ฟอร์มซ้าย + branding panel มืดขวา (จอ `lg`)
+  การ์ดกลางจอบนพื้นเทาอ่อน (โลโก้ + ชื่อระบบเหนือการ์ด, ไม่มีแถบมืดด้านขวาแล้ว)
+- `Layouts/Admin/ErrorLayout.vue` — หน้า error หลังบ้าน: การ์ดบนพื้นเทาเข้ม `admin-900` (ต่างจากหน้า error หน้าบ้านที่พื้นสว่าง);
+  ดูตัวอย่างทุกสถานะที่ `/admin/test-error/{status}` และ `/{lang}/test-error/{status}` (เฉพาะ `APP_ENV=local`, ดู `docs/PRD-system.md` §10.1)
 - สไตล์อ้างอิง TailAdmin Vue (MIT) — port เฉพาะโครง ไม่ได้ใช้ตัวเทมเพลตตรง ๆ (มัน vue-router SPA + Pinia);
   **ไม่มี dark-mode toggle** (chrome มืดตายตัว เนื้อหาสว่างเสมอ)
 - `Components/Admin/AppSidebar.vue` — Dashboard + Profile ฮาร์ดโค้ด; กลุ่มเมนูจาก DB อยู่ section เดียวกับ Dashboard

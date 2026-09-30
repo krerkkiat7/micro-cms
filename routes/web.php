@@ -46,6 +46,7 @@ use App\Http\Controllers\Front\Page\PageItemController as FrontPageItemControlle
 use App\Http\Controllers\Front\SitemapController;
 use App\Http\Middleware\FrontSecurityHeaders;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Support\ErrorStatus;
 use App\Support\Setting;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
@@ -147,6 +148,11 @@ Route::group([
     Route::post('/contactus', [FrontContactusController::class, 'store'])
         ->name('front.contactus.item.store')
         ->middleware('throttle:10,1');
+
+    // ดูตัวอย่างหน้า error หน้าบ้าน — เฉพาะ APP_ENV=local (ดู docs/PRD-system.md §10.1)
+    if (app()->environment('local')) {
+        Route::get('/test-error/{status}', fn (string $lang, int $status) => ErrorStatus::simulate($status))->where('status', '[45][0-9]{2}');
+    }
 });
 
 /*
@@ -164,6 +170,11 @@ Route::prefix('admin')->group(function () {
     Route::get('/', function () {
         return redirect()->route(auth()->check() ? 'admin.dashboard' : 'admin.login');
     })->name('admin.home');
+
+    // ดูตัวอย่างหน้า error หลังบ้าน — เฉพาะ APP_ENV=local, ไม่ต้อง login (ดู docs/PRD-system.md §10.1)
+    if (app()->environment('local')) {
+        Route::get('/test-error/{status}', fn (int $status) => ErrorStatus::simulate($status))->where('status', '[45][0-9]{2}');
+    }
 
     // 2. Route หน้าหลังบ้านที่ต้องผ่านการ Login ก่อน
     Route::middleware(['auth', 'verified'])->group(function () {

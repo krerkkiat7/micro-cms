@@ -2,8 +2,8 @@
 import AppLogo from '@/Components/AppLogo.vue';
 
 /**
- * layout ของหน้า error หลังบ้าน (Pages/Admin/Error.vue) — ไม่ใช้ AdminLayout (ต้องมีผู้ใช้/เมนู ซึ่งอาจไม่มีตอนเกิด error)
- * โครงเดียวกับ AuthLayout: เนื้อหาซ้าย + แถบ branding โทนมืดขวา (จอ lg)
+ * layout ของหน้า error หลังบ้าน (Pages/Admin/Error.vue) — พื้นหลังเทาเข้มโทนเดียวกับ sidebar/header หลังบ้าน (`admin-900`)
+ * ให้ต่างจากหน้า error หน้าบ้าน (พื้นสว่าง) ชัดเจน; ไม่ใช้ AdminLayout (ต้องมีผู้ใช้/เมนู ซึ่งอาจไม่มีตอนเกิด error)
  */
 defineProps<{
     siteName: string;
@@ -13,26 +13,17 @@ defineProps<{
 </script>
 
 <template>
-    <div class="flex min-h-screen bg-gray-50">
-        <div class="flex w-full flex-col justify-center px-6 py-12 lg:w-1/2 lg:px-16">
-            <div class="mx-auto w-full max-w-md">
-                <a :href="homeUrl" class="mb-10 flex items-center gap-2.5 text-gray-900">
-                    <AppLogo class="size-9 shrink-0 stroke-current" />
-                    <span class="text-lg font-semibold tracking-tight">{{ siteName }}</span>
-                </a>
+    <div class="flex min-h-screen flex-col items-center justify-center bg-admin-900 px-4 py-12 text-gray-300">
+        <a :href="homeUrl" class="mb-8 flex items-center gap-3 text-white">
+            <AppLogo class="size-10 shrink-0 stroke-current text-white/90" />
+            <span class="flex flex-col leading-tight">
+                <span class="text-lg font-semibold tracking-tight">{{ siteName }}</span>
+                <span class="text-xs text-gray-400">{{ systemLabel }}</span>
+            </span>
+        </a>
 
-                <main>
-                    <slot />
-                </main>
-            </div>
-        </div>
-
-        <div class="relative hidden w-1/2 overflow-hidden bg-admin-900 lg:block" aria-hidden="true">
-            <div class="absolute inset-0 flex flex-col items-center justify-center gap-6 px-16 text-center">
-                <AppLogo class="size-16 stroke-current text-white/90" />
-                <p class="text-xl font-medium text-white">{{ siteName }}</p>
-                <p class="max-w-sm text-sm text-gray-400">{{ systemLabel }}</p>
-            </div>
-        </div>
+        <main class="w-full max-w-lg rounded-2xl border border-admin-border bg-admin-800 px-6 py-10 shadow-xl sm:px-10">
+            <slot />
+        </main>
     </div>
 </template>

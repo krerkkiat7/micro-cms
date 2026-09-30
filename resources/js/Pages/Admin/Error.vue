@@ -43,9 +43,9 @@ function reload(): void {
     <Head :title="title" />
 
     <ErrorLayout :site-name="siteName" :home-url="homeUrl" system-label="ระบบจัดการเนื้อหา">
-        <p class="text-5xl font-bold tracking-tight text-brand-600 tabular-nums" aria-hidden="true">{{ status }}</p>
-        <h1 class="mt-3 text-2xl font-semibold text-gray-800">{{ title }}</h1>
-        <p class="mt-2 text-sm leading-relaxed text-gray-500">{{ description }}</p>
+        <p class="text-5xl font-bold tracking-tight text-brand-400 tabular-nums" aria-hidden="true">{{ status }}</p>
+        <h1 class="mt-3 text-2xl font-semibold text-white">{{ title }}</h1>
+        <p class="mt-2 text-sm leading-relaxed text-gray-400">{{ description }}</p>
 
         <div class="mt-8 flex flex-wrap gap-3">
             <a
@@ -57,26 +57,26 @@ function reload(): void {
             <a
                 v-if="secondary === 'login'"
                 :href="loginUrl"
-                class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-xs hover:bg-gray-50"
+                class="inline-flex items-center rounded-lg border border-admin-700 bg-transparent px-4 py-2.5 text-sm font-medium text-gray-200 hover:bg-admin-700"
             >
                 เข้าสู่ระบบอีกครั้ง
             </a>
             <button
                 v-else-if="secondary"
                 type="button"
-                class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-xs hover:bg-gray-50"
+                class="inline-flex items-center rounded-lg border border-admin-700 bg-transparent px-4 py-2.5 text-sm font-medium text-gray-200 hover:bg-admin-700"
                 @click="secondary === 'back' ? goBack() : reload()"
             >
                 {{ secondary === 'back' ? 'ย้อนกลับ' : 'ลองอีกครั้ง' }}
             </button>
         </div>
 
-        <div v-if="reference" class="mt-8 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-600">
+        <div v-if="reference" class="mt-8 rounded-lg border border-admin-border bg-admin-900/60 px-4 py-3 text-sm text-gray-300">
             <p>
                 รหัสอ้างอิง:
-                <span class="font-mono font-semibold text-gray-900 select-all">{{ reference }}</span>
+                <span class="font-mono font-semibold text-white select-all">{{ reference }}</span>
             </p>
-            <p class="mt-1 text-xs text-gray-500">หากปัญหายังคงอยู่ กรุณาแจ้งรหัสนี้แก่ผู้ดูแลระบบ</p>
+            <p class="mt-1 text-xs text-gray-400">หากปัญหายังคงอยู่ กรุณาแจ้งรหัสนี้แก่ผู้ดูแลระบบ</p>
         </div>
     </ErrorLayout>
 </template>

@@ -647,7 +647,7 @@ backend ด้วย ajax (axios) ไม่ใช่ Inertia visit เพรา�
 | | หลังบ้าน (`/admin*`) | หน้าบ้าน |
 |---|---|---|
 | คลาส | `App\Support\Admin\AdminErrorPage` | `App\Support\Front\FrontErrorPage` |
-| หน้า | `Pages/Admin/Error.vue` + `Layouts/Admin/ErrorLayout.vue` (โครง AuthLayout) | `Pages/Front/Error.vue` + `Layouts/Front/IntroLayout.vue` |
+| หน้า | `Pages/Admin/Error.vue` + `Layouts/Admin/ErrorLayout.vue` (การ์ดบนพื้นเทาเข้ม) | `Pages/Front/Error.vue` + `Layouts/Front/IntroLayout.vue` |
 | ข้อความ | `lang/th/error.php` (ไทย) | `lang/{ภาษา}/front.php` ตามภาษาของ URL |
 | กลับหน้าแรก | `admin.home` (→ dashboard / login) · 419 มีปุ่มเข้าสู่ระบบอีกครั้ง | `/{lang}` |
 
@@ -666,6 +666,29 @@ backend ด้วย ajax (axios) ไม่ใช่ Inertia visit เพรา�
   มี class/message/file:line/trace) — ไม่ขึ้นกับ `LOG_STACK` ของเครื่อง; `.env.example` แนะนำ `LOG_STACK=daily` + `LOG_DAILY_DAYS=90` ด้วย
 - exception ที่ Laravel ไม่ report อยู่แล้ว (404/403/419/ValidationException ฯลฯ) ไม่ลง log
 - ค้นหา: `grep ERR-XXXXXXXX storage/logs/error-*.log`
+
+หน้าตา: หน้าบ้าน = การ์ดขาวบนพื้นสว่าง; หลังบ้าน = การ์ดบนพื้นเทาเข้ม `admin-900` (โทนเดียวกับ sidebar) — แยกกันชัดเจน
+
+### 10.1 วิธีทดสอบดูหน้า error
+
+1. `.env` ตั้ง `APP_DEBUG=false` (ถ้า `true` error 5xx จะเป็นหน้า debug ของ Laravel แทน) แล้วเปิดเว็บตามปกติ — **route ทดสอบมีเฉพาะ `APP_ENV=local`**
+2. เปิด URL ตัวอย่าง (`{status}` = 400–599):
+
+| ต้องการดู | หน้าบ้าน | หลังบ้าน (ไม่ต้อง login) |
+|---|---|---|
+| ทุกสถานะ | `/th/test-error/{status}`, `/en/test-error/{status}` | `/admin/test-error/{status}` |
+| 500 (throw จริง → log + รหัสอ้างอิง) | `/th/test-error/500` | `/admin/test-error/500` |
+| สถานะไม่มีข้อความเฉพาะ (ใช้ 4xx/5xx) | `/th/test-error/418`, `/th/test-error/502` | `/admin/test-error/418` |
+
+3. ทดสอบจากสถานการณ์จริง:
+   - **404** — URL ที่ไม่มี เช่น `/th/abc`, `/en/page/item/999999`, `/admin/abc`
+   - **405** — เปิด `/admin/logout` ตรง ๆ ในเบราว์เซอร์ (route รับเฉพาะ POST)
+   - **419** — เปิดหน้า login หลังบ้าน → ลบคุกกี้ของเว็บ (DevTools → Application → Cookies) → กดเข้าสู่ระบบ
+   - **429** — ส่งฟอร์มติดต่อเราเกิน 10 ครั้ง/นาที, หรือ login ผิดติดกันหลายครั้ง (ถูกบล็อก)
+   - **503** — `php artisan down` (เลิกด้วย `php artisan up`)
+   - **หน้าสำรอง Blade** — ปิด MySQL (`docker-compose stop`) แล้วเปิดหน้าใดก็ได้ → 500 แบบ Blade (เปิดคืน `docker-compose start`); หรือ `/file/get/ไม่มีจริง` → 404 แบบ Blade
+4. ดู log ของ 500: `storage/logs/error-YYYY-MM-DD.log` ค้นด้วยรหัสอ้างอิงที่หน้าเว็บแสดง
+5. ทดสอบเสร็จแล้วคืน `APP_DEBUG=true` สำหรับการพัฒนา
 
 **ข้อเสนอเพิ่มเติม (ยังไม่ทำ)**
 - แจ้งเตือนทันทีเมื่อเกิด 5xx — เพิ่ม channel `slack` หรือส่งอีเมล (มี SMTP ในตั้งค่าระบบแล้ว) แบบจำกัดความถี่ (เช่น รหัส error เดิมแจ้งไม่เกิน 1 ครั้ง/ชั่วโมง)

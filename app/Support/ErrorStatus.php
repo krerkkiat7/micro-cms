@@ -33,4 +33,17 @@ final class ErrorStatus
     {
         return $status >= 500 && $status !== 503;
     }
+
+    /**
+     * จำลอง error สำหรับดูตัวอย่างหน้า (route test-error เฉพาะ APP_ENV=local) — 500 โยน exception จริง
+     * (ให้ถูก report ลง log พร้อมรหัสอ้างอิง) สถานะอื่นใช้ abort()
+     */
+    public static function simulate(int $status): never
+    {
+        if ($status === 500) {
+            throw new \RuntimeException('ทดสอบ error 500 (route test-error) — ข้อความนี้ต้องไม่แสดงบนหน้าเว็บ');
+        }
+
+        abort($status);
+    }
 }
