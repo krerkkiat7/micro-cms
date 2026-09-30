@@ -71,14 +71,13 @@ class ArticleItemController extends Controller
         };
 
         $items = ArticleItemInfo::query()
-            ->join('article_item_detail as d', function ($join) use ($defaultLang) {
-                $join->on('d.id', '=', 'article_item_info.id')->where('d.lang', $defaultLang);
+            ->leftJoin('article_item_detail as d', function ($join) use ($defaultLang) {
+                $join->on('d.id', '=', 'article_item_info.id')->where('d.lang', $defaultLang)->whereNull('d.deleted_at');
             })
             ->leftJoin('article_category_detail as cd', function ($join) use ($defaultLang) {
                 $join->on('cd.id', '=', 'article_item_info.article_category_info_id')->where('cd.lang', $defaultLang);
             })
-            ->whereNull('d.deleted_at') // join ตรง ไม่ผ่าน scope ของ model ต้องกันเองไม่ให้ดึงแถวที่ถูกลบ
-            ->select('article_item_info.*', 'd.title as title', 'd.intro_text as intro_text', 'cd.title as category_title')
+            ->select('article_item_info.*', $this->detailWithFallback('article_item_detail', 'article_item_info', 'title'), 'd.intro_text as intro_text', 'cd.title as category_title')
             ->when($filters['q'] !== null, function ($query) use ($filters) {
                 $term = $filters['q'];
                 $query->where(fn ($inner) => $inner
@@ -219,7 +218,7 @@ class ArticleItemController extends Controller
             'parts' => $parts->map(fn (ArticleItemPart $part) => $this->partToArray($part))->values(),
             'tags' => $this->attachedTagChips($model),
             'languages' => $this->languageOptions(),
-            'categories' => $this->categoryOptions(),
+            'categories' => $this->categoryOptions($model->article_category_info_id),
             'systemInfo' => SystemInfo::audit($model),
             'viewCount' => (int) $model->view_amount,
             'can' => [
@@ -353,6 +352,10 @@ class ArticleItemController extends Controller
         $model->save();
         $model->delete();
 
+        // article_item_detail ไม่ถูก soft delete พร้อมพาเรนต์ แต่ unique(lang, slug) ที่ระดับ DB ยังนับแถวพวกนี้อยู่
+        // — เคลียร์ slug ทิ้งเพื่อให้ใช้ slug เดิมกับบทความใหม่ได้หลังลบ (เหมือนโมดูล page)
+        ArticleItemDetail::where('id', $id)->update(['slug' => null]);
+
         LogBackAction::record('article.item', 'delete', $title, $id);
 
         return redirect()
@@ -384,19 +387,24 @@ class ArticleItemController extends Controller
      *
      * @return list<array{id: int, title: string|null}>
      */
-    private function categoryOptions(): array
+    private function categoryOptions(?int $currentId = null): array
     {
         $defaultLang = Setting::defaultLanguage();
 
+        // หมวดหมู่ที่ใช้งานอยู่ + หมวดหมู่เดิมของบทความที่แก้ไข (แม้ถูกปิดใช้งานไปแล้ว ต่อท้ายชื่อด้วย "(ไม่ใช้งาน)")
         return ArticleCategoryInfo::query()
-            ->join('article_category_detail as d', function ($join) use ($defaultLang) {
+            ->leftJoin('article_category_detail as d', function ($join) use ($defaultLang) {
                 $join->on('d.id', '=', 'article_category_info.id')->where('d.lang', $defaultLang);
             })
-            ->whereNull('d.deleted_at')
-            ->where('article_category_info.status', 'Y')
+            ->where(fn ($w) => $w
+                ->where('article_category_info.status', 'Y')
+                ->when($currentId, fn ($or) => $or->orWhere('article_category_info.id', $currentId)))
             ->orderBy('article_category_info.sort_order')
-            ->get(['article_category_info.id', 'd.title as title'])
-            ->map(fn ($row) => ['id' => $row->id, 'title' => $row->title])
+            ->get(['article_category_info.id', 'article_category_info.status', 'd.title as title'])
+            ->map(fn ($row) => [
+                'id' => $row->id,
+                'title' => $row->status === 'Y' ? $row->title : ($row->title ?? '(ไม่มีชื่อ)').' (ไม่ใช้งาน)',
+            ])
             ->values()
             ->all();
     }
@@ -411,11 +419,12 @@ class ArticleItemController extends Controller
     {
         $defaultLang = Setting::defaultLanguage();
 
+        // leftJoin + fallback ภาษาอื่น — แท็กที่ไม่มีชื่อภาษาหลักต้องยังอยู่ในรายการ ไม่งั้นบันทึกบทความแล้ว syncTags() จะลบแท็กนั้นทิ้งเงียบ ๆ
         return $model->tags()
-            ->join('article_tag_detail as d', function ($join) use ($defaultLang) {
+            ->leftJoin('article_tag_detail as d', function ($join) use ($defaultLang) {
                 $join->on('d.id', '=', 'article_tag_info.id')->where('d.lang', $defaultLang);
             })
-            ->get(['article_tag_info.id', 'article_tag_info.status', 'd.name as name'])
+            ->get(['article_tag_info.id', 'article_tag_info.status', $this->detailWithFallback('article_tag_detail', 'article_tag_info', 'name')])
             ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name, 'status' => $row->status])
             ->values()
             ->all();

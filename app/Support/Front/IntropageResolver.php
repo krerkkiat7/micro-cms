@@ -107,7 +107,7 @@ final class IntropageResolver
                         'text' => $text,
                         'image_url' => $image,
                         // ปุ่ม home ลิงก์ไปหน้าแรกเสมอ (ใส่ URL ตอน render — ไม่ cache URL หน้าแรกไว้ที่นี่)
-                        'url' => $button->button_type === 'home' ? null : FrontUrl::safeExternal($button->url),
+                        'url' => $button->button_type === 'home' ? null : FrontUrl::withLang(FrontUrl::safeExternal($button->url), $lang),
                         'target' => $button->link_target === '_blank' ? '_blank' : '_self',
                         'background_color' => $button->background_color ?: null,
                         'text_color' => $button->text_color ?: null,

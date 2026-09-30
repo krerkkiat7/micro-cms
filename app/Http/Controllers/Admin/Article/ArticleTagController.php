@@ -63,11 +63,10 @@ class ArticleTagController extends Controller
         $sortColumn = $sort === 'name' ? 'd.name' : "article_tag_info.{$sort}";
 
         $tags = ArticleTagInfo::query()
-            ->join('article_tag_detail as d', function ($join) use ($defaultLang) {
-                $join->on('d.id', '=', 'article_tag_info.id')->where('d.lang', $defaultLang);
+            ->leftJoin('article_tag_detail as d', function ($join) use ($defaultLang) {
+                $join->on('d.id', '=', 'article_tag_info.id')->where('d.lang', $defaultLang)->whereNull('d.deleted_at');
             })
-            ->whereNull('d.deleted_at') // join ตรง ไม่ผ่าน scope ของ model ต้องกันเองไม่ให้ดึงแถวที่ถูกลบ
-            ->select('article_tag_info.*', 'd.name as name')
+            ->select('article_tag_info.*', $this->detailWithFallback('article_tag_detail', 'article_tag_info', 'name'))
             // withCount ต้องมาหลัง select() เสมอ — select() แทนที่ทั้ง column list เดิม
             // ถ้าเรียกก่อน subquery ของ withCount ที่เพิ่งเติมไว้จะถูกล้างทิ้งไปด้วย
             ->withCount('items') // จำนวนบทความที่แนบแท็กนี้ไว้ — ช่วยตัดสินใจก่อนลบ
@@ -293,10 +292,9 @@ class ArticleTagController extends Controller
         $defaultLang = Setting::defaultLanguage();
 
         $tags = ArticleTagInfo::query()
-            ->join('article_tag_detail as d', function ($join) use ($defaultLang) {
-                $join->on('d.id', '=', 'article_tag_info.id')->where('d.lang', $defaultLang);
+            ->leftJoin('article_tag_detail as d', function ($join) use ($defaultLang) {
+                $join->on('d.id', '=', 'article_tag_info.id')->where('d.lang', $defaultLang)->whereNull('d.deleted_at');
             })
-            ->whereNull('d.deleted_at')
             ->where('d.name', 'like', "%{$term}%")
             ->orderBy('d.name')
             ->limit(10)
@@ -347,6 +345,9 @@ class ArticleTagController extends Controller
         }
 
         $defaultLang = Setting::defaultLanguage();
+
+        // สร้างแท็กจากในฟอร์มบทความก็บันทึก log เหมือนสร้างจากหน้าจัดการแท็ก
+        LogBackAction::record('article.tag', 'create', $data['name'][$defaultLang] ?? reset($data['name']), $tagInfo->id);
 
         return response()->json([
             'data' => [

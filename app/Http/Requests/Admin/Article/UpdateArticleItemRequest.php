@@ -18,7 +18,7 @@ class UpdateArticleItemRequest extends FormRequest
     {
         $itemId = (int) $this->route('item');
 
-        return $this->commonRules() + $this->languageDetailRules($itemId) + $this->partRules();
+        return $this->commonRules($itemId) + $this->languageDetailRules($itemId) + $this->partRules();
     }
 
     /**

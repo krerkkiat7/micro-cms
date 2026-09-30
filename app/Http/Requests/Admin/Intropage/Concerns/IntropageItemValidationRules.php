@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\Intropage\Concerns;
 
+use App\Rules\SafeUrl;
 use App\Support\PageTextStyle;
 use App\Support\Setting;
 use App\Support\Template\TemplateZone;
@@ -123,7 +124,7 @@ trait IntropageItemValidationRules
                     ->where('status', 'Y')
                     ->whereNull('deleted_at')),
             ],
-            'buttons.*.url' => ['nullable', 'string', 'max:500'],
+            'buttons.*.url' => ['nullable', 'string', 'max:500', new SafeUrl],
             'buttons.*.link_target' => ['nullable', Rule::in(['_self', '_blank'])],
             'buttons.*.texts' => ['nullable', 'array'],
         ];

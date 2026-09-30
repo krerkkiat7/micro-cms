@@ -102,7 +102,7 @@ const breadcrumbs = computed(() => [
 
             <SystemInfoCard :audit="systemInfo" :append="[{ label: 'จำนวนบทความ', value: articleCount }]" />
 
-            <div v-if="can.manage || can.delete" class="flex flex-wrap items-center gap-3">
+            <div class="flex flex-wrap items-center gap-3">
                 <PrimaryButton v-if="can.manage" type="submit" :disabled="form.processing">
                     <Save class="mr-1.5 size-4" /> บันทึก
                 </PrimaryButton>

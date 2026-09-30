@@ -55,14 +55,11 @@ class BannerCategoryController extends Controller
         $sortColumn = $sort === 'title' ? 'd.title' : "banner_category_info.{$sort}";
 
         $categories = BannerCategoryInfo::query()
-            ->join('banner_category_detail as d', function ($join) use ($defaultLang) {
-                $join->on('d.id', '=', 'banner_category_info.id')->where('d.lang', $defaultLang);
+            ->leftJoin('banner_category_detail as d', function ($join) use ($defaultLang) {
+                $join->on('d.id', '=', 'banner_category_info.id')->where('d.lang', $defaultLang)->whereNull('d.deleted_at');
             })
-            ->whereNull('d.deleted_at') // join ตรง ไม่ผ่าน scope ของ model ต้องกันเองไม่ให้ดึงแถวที่ถูกลบ
-            ->selectRaw(
-                'banner_category_info.*, d.title as title, d.intro_text as intro_text, '.
-                '(select count(*) from banner_item_info bi where bi.banner_category_info_id = banner_category_info.id and bi.deleted_at is null) as banner_count'
-            )
+            ->select('banner_category_info.*', $this->detailWithFallback('banner_category_detail', 'banner_category_info', 'title'), 'd.intro_text as intro_text')
+            ->selectRaw('(select count(*) from banner_item_info bi where bi.banner_category_info_id = banner_category_info.id and bi.deleted_at is null) as banner_count')
             ->when($filters['q'] !== null, function ($query) use ($filters) {
                 $term = $filters['q'];
                 $query->where(fn ($inner) => $inner
@@ -260,6 +257,11 @@ class BannerCategoryController extends Controller
             ->where('lang', Setting::defaultLanguage())
             ->value('title');
         $id = $model->id;
+
+        // ห้ามลบหมวดหมู่ที่ยังมีป้ายโฆษณาอยู่ (เหมือนกันลบกลุ่มผู้ใช้ที่มีสมาชิก)
+        if (BannerItemInfo::where('banner_category_info_id', $model->id)->exists()) {
+            return back()->withErrors(['category' => 'ไม่สามารถลบหมวดหมู่ที่ยังมีป้ายโฆษณาอยู่ กรุณาย้ายหรือลบป้ายโฆษณาในหมวดหมู่นี้ก่อน']);
+        }
 
         // บันทึกผู้ลบก่อน soft delete (runSoftDelete ไม่ save attribute อื่น)
         $model->deleted_by = $request->user()->id;

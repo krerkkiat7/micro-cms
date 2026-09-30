@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Admin\System\FrontMenu;
 
+use App\Http\Requests\Admin\Concerns\OnlyEnabledLanguageDetails;
+use App\Rules\SafeUrl;
 use App\Support\FrontMenuType;
 use App\Support\PageTextStyle;
 use App\Support\Setting;
@@ -11,6 +13,8 @@ use Illuminate\Validation\Rule;
 
 class StoreFrontMenuRequest extends FormRequest
 {
+    use OnlyEnabledLanguageDetails;
+
     /** ค่าที่เลือกได้ของ header_content_align — ตรงกับ BACKGROUND_POSITION_STYLES ฝั่ง Vue (utils/intropageBackground.ts) */
     public const ALIGN_VALUES = [
         'top left', 'top', 'top right',
@@ -56,7 +60,7 @@ class StoreFrontMenuRequest extends FormRequest
             ],
             'url' => [
                 Rule::requiredIf(fn () => $this->input('menu_type') === FrontMenuType::EXTERNAL),
-                'nullable', 'string', 'max:500',
+                'nullable', 'string', 'max:500', new SafeUrl,
             ],
             'link_target' => ['required', Rule::in(['_self', '_blank'])],
             'is_home' => ['required', Rule::in(['Y', 'N'])],

@@ -91,10 +91,17 @@ class ContactusItemController extends Controller
      * หน้ารายละเอียด/แก้ไข — แสดงทุกฟิลด์ของแบบฟอร์ม (แม้ตั้งค่าซ่อนไว้) + บันทึกสถานะ/หมายเหตุ
      * เปิดครั้งแรกของรายการที่ยังไม่ได้อ่าน = เปลี่ยนสถานะเป็น "อ่านแล้ว" อัตโนมัติ
      */
-    public function edit(Request $request, ContactusItem $item): Response|RedirectResponse
+    public function edit(Request $request, string $item): Response|RedirectResponse
     {
         if (! $request->user()->hasPermission('contactus.item.view')) {
             return redirect()->route('admin.dashboard');
+        }
+
+        // ไม่พบ/ถูกลบไปแล้ว → กลับหน้ารายการ (เหมือนโมดูลอื่น ไม่ใช่หน้า 404)
+        $item = ContactusItem::find($item);
+
+        if (! $item) {
+            return redirect()->route('admin.contactus.item.index');
         }
 
         if ($item->process_status === 'unread') {
@@ -144,10 +151,16 @@ class ContactusItemController extends Controller
     /**
      * บันทึกสถานะ/หมายเหตุ
      */
-    public function update(Request $request, ContactusItem $item): RedirectResponse
+    public function update(Request $request, string $item): RedirectResponse
     {
         if (! $request->user()->hasPermission('contactus.item.manage')) {
-            return redirect()->route('admin.dashboard');
+            return redirect()->route('admin.contactus.item.index');
+        }
+
+        $item = ContactusItem::find($item);
+
+        if (! $item) {
+            return redirect()->route('admin.contactus.item.index');
         }
 
         $data = $request->validate([

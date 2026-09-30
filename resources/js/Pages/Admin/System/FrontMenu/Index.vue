@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { computed, onMounted, ref } from 'vue';
+import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import type { RequestPayload } from '@inertiajs/core';
 import { ArrowUpDown, Plus } from 'lucide-vue-next';
 import AdminLayout from '@/Layouts/Admin/AdminLayout.vue';
@@ -63,12 +63,17 @@ function toggleStatus(node: FrontMenuNode) {
 function confirmReorder(order: ReorderItem[]) {
     router.put(route('admin.system.menu.reorder'), { order } as unknown as RequestPayload, {
         preserveScroll: true,
-        onSuccess: () => (showReorder.value = false),
+        // ผิดพลาด (เช่น วางเมนูผิดระดับ) ก็ปิด dialog ให้เห็นข้อความ error เหนือรายการ
+        onFinish: () => (showReorder.value = false),
     });
 }
 
 const pendingDelete = ref<FrontMenuNode | null>(null);
 const deleteForm = useForm<{ menu?: string }>({});
+
+// ข้อความ error ของการลบ / สลับสถานะ (menu) / เรียงลำดับ (order) — แสดงเหนือรายการ
+const page = usePage();
+const listError = computed(() => deleteForm.errors.menu || page.props.errors.menu || page.props.errors.order || null);
 
 function destroy() {
     if (!pendingDelete.value) return;
@@ -95,7 +100,7 @@ const breadcrumbs = [
 
         <div class="space-y-4">
             <div class="flex flex-wrap items-center gap-3">
-                <SecondaryButton type="button" @click="showReorder = true">
+                <SecondaryButton v-if="can.manage" type="button" @click="showReorder = true">
                     <ArrowUpDown class="mr-1.5 size-4" /> เรียงลำดับ
                 </SecondaryButton>
                 <PrimaryButton v-if="can.manage" type="button" @click="openAdd">
@@ -104,8 +109,8 @@ const breadcrumbs = [
             </div>
 
             <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-xs">
-                <p v-if="deleteForm.errors.menu" class="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                    {{ deleteForm.errors.menu }}
+                <p v-if="listError" class="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                    {{ listError }}
                 </p>
 
                 <MenuTreeNode
@@ -125,7 +130,7 @@ const breadcrumbs = [
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
-                <SecondaryButton type="button" @click="showReorder = true">
+                <SecondaryButton v-if="can.manage" type="button" @click="showReorder = true">
                     <ArrowUpDown class="mr-1.5 size-4" /> เรียงลำดับ
                 </SecondaryButton>
                 <PrimaryButton v-if="can.manage" type="button" @click="openAdd">

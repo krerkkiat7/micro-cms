@@ -77,11 +77,10 @@ class PageItemController extends Controller
         };
 
         $items = PageItemInfo::query()
-            ->join('page_item_detail as d', function ($join) use ($defaultLang) {
-                $join->on('d.id', '=', 'page_item_info.id')->where('d.lang', $defaultLang);
+            ->leftJoin('page_item_detail as d', function ($join) use ($defaultLang) {
+                $join->on('d.id', '=', 'page_item_info.id')->where('d.lang', $defaultLang)->whereNull('d.deleted_at');
             })
-            ->whereNull('d.deleted_at') // join ตรง ไม่ผ่าน scope ของ model ต้องกันเองไม่ให้ดึงแถวที่ถูกลบ
-            ->select('page_item_info.*', 'd.title as title')
+            ->select('page_item_info.*', $this->detailWithFallback('page_item_detail', 'page_item_info', 'title'))
             ->when($filters['q'] !== null, fn ($query) => $query->where('d.title', 'like', '%'.$filters['q'].'%'))
             ->when($filters['status'] !== null, fn ($query) => $query->where('page_item_info.status', $filters['status']))
             ->orderBy($sortColumn, $direction)

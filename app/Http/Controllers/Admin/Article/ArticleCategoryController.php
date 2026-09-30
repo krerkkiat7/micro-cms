@@ -54,11 +54,10 @@ class ArticleCategoryController extends Controller
         $sortColumn = $sort === 'title' ? 'd.title' : "article_category_info.{$sort}";
 
         $categories = ArticleCategoryInfo::query()
-            ->join('article_category_detail as d', function ($join) use ($defaultLang) {
-                $join->on('d.id', '=', 'article_category_info.id')->where('d.lang', $defaultLang);
+            ->leftJoin('article_category_detail as d', function ($join) use ($defaultLang) {
+                $join->on('d.id', '=', 'article_category_info.id')->where('d.lang', $defaultLang)->whereNull('d.deleted_at');
             })
-            ->whereNull('d.deleted_at') // join ตรง ไม่ผ่าน scope ของ model ต้องกันเองไม่ให้ดึงแถวที่ถูกลบ
-            ->select('article_category_info.*', 'd.title as title', 'd.intro_text as intro_text')
+            ->select('article_category_info.*', $this->detailWithFallback('article_category_detail', 'article_category_info', 'title'), 'd.intro_text as intro_text')
             ->when($filters['q'] !== null, function ($query) use ($filters) {
                 $term = $filters['q'];
                 $query->where(fn ($inner) => $inner
@@ -282,10 +281,19 @@ class ArticleCategoryController extends Controller
             ->value('title');
         $id = $model->id;
 
+        // ห้ามลบหมวดหมู่ที่ยังมีบทความอยู่ (บทความจะค้างอยู่ในหมวดหมู่ที่ไม่มีแล้ว — เหมือนกันลบกลุ่มผู้ใช้ที่มีสมาชิก)
+        if (ArticleItemInfo::where('article_category_info_id', $id)->exists()) {
+            return back()->withErrors(['category' => 'ไม่สามารถลบหมวดหมู่ที่ยังมีบทความอยู่ กรุณาย้ายหรือลบบทความในหมวดหมู่นี้ก่อน']);
+        }
+
         // บันทึกผู้ลบก่อน soft delete (runSoftDelete ไม่ save attribute อื่น)
         $model->deleted_by = $request->user()->id;
         $model->save();
         $model->delete();
+
+        // article_category_detail ไม่ถูก soft delete พร้อมพาเรนต์ แต่ unique(lang, slug) ที่ระดับ DB ยังนับแถวพวกนี้อยู่
+        // — เคลียร์ slug ทิ้งเพื่อให้ใช้ slug เดิมกับหมวดหมู่ใหม่ได้หลังลบ (เหมือนโมดูล page)
+        ArticleCategoryDetail::where('id', $id)->update(['slug' => null]);
 
         LogBackAction::record('article.category', 'delete', $title, $id);
 

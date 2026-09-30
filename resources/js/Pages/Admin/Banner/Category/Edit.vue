@@ -9,6 +9,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
 import { Head, useForm } from '@inertiajs/vue3';
+import InputError from '@/Components/InputError.vue';
 import { Save, Trash2 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import type { BannerCategoryFormData, BannerDetail } from '@/utils/bannerForm';
@@ -38,11 +39,11 @@ function submit() {
 }
 
 const confirmingDeletion = ref(false);
-const deleteForm = useForm({});
+const deleteForm = useForm<{ category?: string }>({});
 
 function destroy() {
     deleteForm.delete(route('admin.banner.category.destroy', props.category.id), {
-        onSuccess: () => (confirmingDeletion.value = false),
+        onFinish: () => (confirmingDeletion.value = false),
     });
 }
 
@@ -71,7 +72,9 @@ const breadcrumbs = computed(() => [
 
             <SystemInfoCard :audit="systemInfo" :append="[{ label: 'จำนวนป้ายโฆษณา', value: bannerCount }]" />
 
-            <div v-if="can.manage || can.delete" class="flex flex-wrap items-center gap-3">
+            <InputError :message="deleteForm.errors.category" />
+
+            <div class="flex flex-wrap items-center gap-3">
                 <PrimaryButton v-if="can.manage" type="submit" :disabled="form.processing">
                     <Save class="mr-1.5 size-4" /> บันทึก
                 </PrimaryButton>

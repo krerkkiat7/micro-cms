@@ -95,7 +95,8 @@ trait ReadsBanners
     protected function frontLink(object $row, string $lang): array
     {
         return [
-            'url' => FrontUrl::safeExternal($row->front_url),
+            // path ภายในที่ไม่มีภาษา (เช่น /news) เติม /{lang} ให้ — เหมือนเมนูลิงก์ภายนอก/popup/ปุ่มอ่านทั้งหมด
+            'url' => FrontUrl::withLang(FrontUrl::safeExternal($row->front_url), $lang),
             'link_target' => $row->front_link_target === '_blank' ? '_blank' : '_self',
         ];
     }

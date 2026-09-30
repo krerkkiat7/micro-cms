@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin\Popup\Concerns;
 
 use App\Models\PopupItemInfo;
 use App\Models\PopupItemPart;
+use App\Rules\SafeUrl;
 use App\Support\Setting;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
@@ -53,7 +54,7 @@ trait PopupItemValidationRules
                     ->whereNull('deleted_at')),
             ],
             'parts.*.image_size' => ['required', Rule::in(PopupItemPart::IMAGE_SIZES)],
-            'parts.*.url' => ['nullable', 'string', 'max:500'],
+            'parts.*.url' => ['nullable', 'string', 'max:500', new SafeUrl],
             'parts.*.link_target' => ['required', Rule::in(['_self', '_blank'])],
             'parts.*.status' => $yesNo,
             'parts.*.detail' => ['nullable', 'array'],

@@ -32,7 +32,7 @@ test('pages redirect to dashboard without permission', function () {
 
     $this->get(route('admin.contactus.item.index'))->assertRedirect(route('admin.dashboard'));
     $this->get(route('admin.contactus.item.edit', $item))->assertRedirect(route('admin.dashboard'));
-    $this->put(route('admin.contactus.item.update', $item), ['process_status' => 'done'])->assertRedirect(route('admin.dashboard'));
+    $this->put(route('admin.contactus.item.update', $item), ['process_status' => 'done'])->assertRedirect(route('admin.contactus.item.index'));
 });
 
 test('index lists newest first and filters by search, status and date', function () {
@@ -87,7 +87,7 @@ test('update saves status and note with manage permission only', function () {
     actingAsUserWithPermissions(['contactus.item.view']);
     $item = makeContactusItem();
 
-    $this->put(route('admin.contactus.item.update', $item), ['process_status' => 'done'])->assertRedirect(route('admin.dashboard'));
+    $this->put(route('admin.contactus.item.update', $item), ['process_status' => 'done'])->assertRedirect(route('admin.contactus.item.index'));
 
     $user = actingAsUserWithPermissions(['contactus.item.view', 'contactus.item.manage']);
 
@@ -102,4 +102,11 @@ test('update saves status and note with manage permission only', function () {
         ->and($item->note)->toBe('โทรกลับแล้ว')
         ->and($item->updated_by)->toBe($user->id)
         ->and(LogBackAction::where('module_code', 'contactus.item')->where('action_type', 'update')->exists())->toBeTrue();
+});
+
+test('edit and update of a missing message go back to the list', function () {
+    actingAsUserWithPermissions(['contactus.item.view', 'contactus.item.manage']);
+
+    $this->get(route('admin.contactus.item.edit', 999999))->assertRedirect(route('admin.contactus.item.index'));
+    $this->put(route('admin.contactus.item.update', 999999), ['process_status' => 'done'])->assertRedirect(route('admin.contactus.item.index'));
 });
