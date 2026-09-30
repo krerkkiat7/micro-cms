@@ -86,8 +86,20 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 > `AppServiceProvider` override `ResetPassword::createUrlUsing()` ให้ทุก broker ชี้ URL ไป `admin.password.reset` —
 > เมื่อทำ front auth ต้องแยก URL ตาม broker
 
-> **ยังไม่ทำ:** การล็อกบัญชีอัตโนมัติเมื่อ `failed_login_count` เกินเกณฑ์ — จะทำพร้อมกับตอนดึงค่าเกณฑ์
-> จาก `sys_setting` (เช่น กลุ่ม `security`, key `max_failed_login`) มาใช้ในเฟสถัดไป
+**ล็อกบัญชีอัตโนมัติ** (ทำแล้ว) — ตั้งค่าระบบกลุ่ม `login_back` (`lockout_enabled` + `lockout_count`): ผิดครบจำนวน →
+`status = 'N'` + บันทึก `log_back_login` ผล `block`; ผู้ดูแลเปิดบัญชีคืน (N → Y) ในหน้าแก้ไขผู้ใช้ = รีเซ็ต `failed_login_count` อัตโนมัติ
+
+**ตรวจสถานะทุก request** — middleware `App\Http\Middleware\EnsureBackUserActive` (group หลังบ้านที่ต้อง login): ผู้ใช้ที่ถูกระงับ
+ระหว่างที่ยัง login อยู่หลุดทันทีใน request ถัดไป; `auth.session` (`AuthenticateSession`) ทำให้เปลี่ยนรหัสผ่านแล้ว session อื่นของ
+ผู้ใช้คนนั้นหลุด; กลุ่มผู้ใช้ที่ `status = 'N'` = ไม่มีสิทธิ์ใด ๆ (`User::getPermissionsArray()` คืน `[]`)
+
+**ไม่มีหน้าสมัครสมาชิกหลังบ้าน** — route `/admin/register` ของ Breeze ถูกลบแล้ว ผู้ใช้หลังบ้านสร้างได้จากหน้าจัดการผู้ใช้งานเท่านั้น
+
+**กันการยกระดับสิทธิ์** (กลุ่มระบบ = `sys_usergroup.can_edit = 'N'` เช่น Super Admin — `UserGroup::isSystem()` / `User::isSystemUser()`):
+- เฉพาะผู้ใช้ในกลุ่มระบบเท่านั้นที่แก้ไข/ลบ/เปลี่ยนรหัสผ่านผู้ใช้ในกลุ่มระบบ และย้ายผู้ใช้เข้ากลุ่มระบบได้ —
+  ผู้ใช้อื่นเห็นหน้าแก้ไขแบบอ่านอย่างเดียว + ข้อความ `UserController::SYSTEM_GROUP_MESSAGE`, dropdown กลุ่มแสดงกลุ่มระบบเป็น disabled
+- **การย้ายผู้ใช้เข้ากลุ่มระบบ:** ให้ผู้ใช้ที่อยู่ในกลุ่มระบบ (เช่น admin@admin.com ที่ seed ไว้) เข้าหน้าแก้ไขผู้ใช้คนนั้นแล้วเลือกกลุ่มระบบ
+- ห้ามกำหนดสิทธิ์ให้กลุ่มของตัวเอง (หน้ากำหนดสิทธิ์ของกลุ่มตัวเองเป็นแบบอ่านอย่างเดียว)
 
 **หน้าจอ**
 - `รายการผู้ใช้` — ตาราง (ชื่อ, อีเมล, กลุ่ม, สถานะ, login ล่าสุด), ค้นหา, กรองตามกลุ่ม/สถานะ
@@ -104,9 +116,6 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 
 **Route (เสนอ)** — `admin.system.users.index|create|store|edit|update|destroy` ใต้ `/admin/system/users`
 
-**หมายเหตุ**
-- `RegisteredUserController` สร้างผู้ใช้ใหม่ด้วย `user_type = 'back'`, `status = 'Y'` แต่ไม่กำหนด `usergroup_id`
-  → `getPermissionsArray()` คืน `[]` จนกว่าจะถูกจัดกลุ่ม
 
 ---
 
@@ -474,11 +483,26 @@ paging + per_page + sort default `created_at` desc (`sort=name` leftJoin `sys_us
 `backlog.*` ทั้ง 3 และ `frontlog.access` มี route จริงแล้ว เมนูคลิกได้; `frontlog.action`/`.login` ยังไม่มี route เมนูจึง render จาง)
 
 **หมายเหตุ**
-- retention: ลบแบบ hard delete เมื่อเกิน N วัน ผ่าน scheduled command (`routes/console.php`) — คนละชั้นกับ `softDeletes`
 - คนละส่วนกับ `sys_user.last_login_at` / `failed_login_count` / `last_failed_login_at` — ฟิลด์บน `sys_user`
   เก็บ "สถานะล่าสุด" ต่อผู้ใช้ (ใช้ประกอบการล็อกบัญชี) ส่วน `log_back_login` เก็บประวัติทุกครั้งแบบ append
-- การล็อกบัญชีเมื่อ `failed_login_count` เกินเกณฑ์: อ่านเกณฑ์จาก `sys_setting` (เสนอกลุ่ม `security`,
-  key `max_failed_login`, `lockout_minutes`) — เมื่อถึงเกณฑ์ให้บล็อก login จนกว่าจะพ้นเวลา/แอดมินรีเซ็ต
+- การล็อกบัญชีอัตโนมัติ: ดู §1 (ตั้งค่ากลุ่ม `login_back`)
+
+### แนวทาง retention ในอนาคต (ยังไม่ทำ)
+
+ตอนนี้ตาราง log และประวัติการเข้าชม (`log_back_*`, `log_front_access`, `article_item_view`, `page_item_view`, `banner_item_click`)
+**เก็บทุกแถวไม่มีการลบ** — ข้อมูลครบแต่โตขึ้นเรื่อย ๆ. เมื่อข้อมูลเยอะจนรายงาน/หน้ารายการช้า มีทางเลือกที่ข้อมูลยังครบและรายงานยังเร็วดังนี้
+(เลือกได้มากกว่า 1 ข้อ ทำเรียงจากข้อ 1):
+
+1. **ตารางสรุปรายวัน (rollup)** — คำสั่ง scheduler ทุกคืนสรุปยอดของวันก่อนหน้าลงตารางใหม่ เช่น `report_daily_view`
+   (วันที่ × ประเภท × รายการ × ภาษา × อุปกรณ์ → จำนวนครั้ง/ผู้เข้าชมไม่ซ้ำ) แล้วให้ `ViewReport`/`AccessLogReport` อ่านช่วงวันที่ผ่านมาแล้ว
+   จากตารางสรุป อ่านข้อมูลดิบเฉพาะวันนี้ → รายงานเร็วคงที่ไม่ว่าข้อมูลดิบจะเยอะแค่ไหน และลบข้อมูลดิบที่เก่ากว่าที่กำหนดได้โดยสถิติไม่หาย
+   (ข้อจำกัด: ผู้เข้าชมไม่ซ้ำข้ามหลายวันนับจากตารางสรุปตรง ๆ ไม่ได้ — เก็บค่าแยกต่อช่วงที่ต้องใช้ หรือใช้ HyperLogLog)
+2. **แบ่ง partition รายเดือนตาม `action_date`** (MySQL partitioning) — query ที่กรองช่วงวันอ่านเฉพาะ partition ที่เกี่ยวข้อง
+   และลบข้อมูลเก่าได้ทีละเดือนแบบ `DROP PARTITION` (เร็วมาก ไม่ล็อกตาราง) — ต้องปรับ primary key ให้มี `action_date` ด้วย
+3. **ย้ายข้อมูลเก่าไปเก็บถาวร (archive)** — ย้ายแถวที่เก่ากว่า N เดือนไปตาราง `*_archive` (หรือ export เป็นไฟล์ CSV/JSON รายเดือนเก็บ
+   ใน storage) ก่อนลบจากตารางหลัก — ตารางหลักเล็ก หน้ารายการเร็ว แต่ยังเปิดย้อนดูได้เมื่อจำเป็น
+4. **ลบข้อมูลดิบตามอายุ (prune)** — ใช้ `Prunable` ของ Laravel + `model:prune` ใน scheduler ตามจำนวนวันใน config (0 = ไม่ลบ)
+   ควรทำหลังมีข้อ 1 แล้วเท่านั้น (ไม่งั้นสถิติย้อนหลังหาย) และเป็น hard delete (คนละชั้นกับ `softDeletes`)
 
 ---
 
