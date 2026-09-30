@@ -177,33 +177,10 @@ final class FrontMenuResolver
             ];
         }
 
-        // เมนูที่แสดงในแถบเมนู = เปิดใช้งาน และไล่พาเรนต์ขึ้นไปถึงระดับบนสุดได้โดยทุกระดับเปิดใช้งาน
-        // (พาเรนต์ถูกซ่อน/ลบ = ซ่อนทั้งกิ่ง) ที่เหลือเป็นเมนูที่ไม่แสดง (hidden) — ไม่อยู่ใน tree
-        $visible = [];
-        $isVisible = function (int $id, array $seen = []) use (&$isVisible, &$visible, $nodes): bool {
-            if (isset($visible[$id])) {
-                return $visible[$id];
-            }
-
-            if ($nodes[$id]['status'] !== 'Y') {
-                return $visible[$id] = false;
-            }
-
-            $parentId = $nodes[$id]['parent_id'];
-
-            if ($parentId === null) {
-                return $visible[$id] = true;
-            }
-
-            if (! isset($nodes[$parentId]) || in_array($parentId, $seen, true)) {
-                return $visible[$id] = false;
-            }
-
-            return $visible[$id] = $isVisible($parentId, [...$seen, $id]);
-        };
+        $visible = self::visibility(array_map(fn (array $node) => ['status' => $node['status'], 'parent_id' => $node['parent_id']], $nodes));
 
         foreach ($nodes as $id => $node) {
-            $nodes[$id]['hidden'] = ! $isVisible($id);
+            $nodes[$id]['hidden'] = ! $visible[$id];
             unset($nodes[$id]['status']);
         }
 
@@ -262,6 +239,93 @@ final class FrontMenuResolver
             'targets' => $targets,
             'home' => $home,
         ];
+    }
+
+    /**
+     * ปลายทางของเมนูที่เผยแพร่ (แสดงในแถบเมนู — กติกาเดียวกับ tree()) แยกตามประเภท ใช้กับ sitemap.xml (App\Support\Front\Sitemap)
+     * คืนแค่ id ปลายทาง ยังไม่ได้เช็กว่าปลายทางเปิดได้ — ผู้เรียกกรองสถานะของปลายทางเอง; ไม่ขึ้นกับภาษา (การแสดงเมนูไม่แยกภาษา)
+     *
+     * @return array{page: list<int>, article_category: list<int>, article_item: list<int>, contactus: bool}
+     */
+    public static function publishedTargets(): array
+    {
+        return FrontCache::remember('menu.targets', (int) config('front.cache.shared_ttl', 3600), function () {
+            $menus = FrontMenuInfo::query()
+                ->orderBy('sort_order')
+                ->orderBy('id')
+                ->get(['id', 'parent_id', 'status', 'menu_type', 'target_page_item_id', 'target_article_category_id', 'target_article_item_id']);
+
+            $visible = self::visibility($menus->mapWithKeys(fn (FrontMenuInfo $menu) => [(int) $menu->id => [
+                'status' => $menu->status,
+                'parent_id' => $menu->parent_id !== null ? (int) $menu->parent_id : null,
+            ]])->all());
+
+            $targets = ['page' => [], 'article_category' => [], 'article_item' => [], 'contactus' => false];
+
+            // ประเภทเมนู => คอลัมน์ id ปลายทาง
+            $columns = [
+                FrontMenuType::PAGE => 'target_page_item_id',
+                FrontMenuType::ARTICLE_CATEGORY => 'target_article_category_id',
+                FrontMenuType::ARTICLE_ITEM => 'target_article_item_id',
+            ];
+
+            foreach ($menus as $menu) {
+                if (! $visible[(int) $menu->id]) {
+                    continue;
+                }
+
+                if ($menu->menu_type === FrontMenuType::CONTACTUS) {
+                    $targets['contactus'] = true;
+                } elseif (isset($columns[$menu->menu_type]) && $menu->{$columns[$menu->menu_type]}) {
+                    $targets[$menu->menu_type][] = (int) $menu->{$columns[$menu->menu_type]};
+                }
+            }
+
+            foreach (['page', 'article_category', 'article_item'] as $key) {
+                $targets[$key] = array_values(array_unique($targets[$key]));
+            }
+
+            return $targets;
+        });
+    }
+
+    /**
+     * เมนูที่แสดงในแถบเมนู = เปิดใช้งาน และไล่พาเรนต์ขึ้นไปถึงระดับบนสุดได้โดยทุกระดับเปิดใช้งาน
+     * (พาเรนต์ถูกซ่อน/ลบ = ซ่อนทั้งกิ่ง, วนซ้ำ = ซ่อน) ที่เหลือเป็นเมนูที่ไม่แสดง (hidden)
+     *
+     * @param  array<int, array{status: string, parent_id: int|null}>  $menus
+     * @return array<int, bool>
+     */
+    private static function visibility(array $menus): array
+    {
+        $visible = [];
+        $isVisible = function (int $id, array $seen = []) use (&$isVisible, &$visible, $menus): bool {
+            if (isset($visible[$id])) {
+                return $visible[$id];
+            }
+
+            if ($menus[$id]['status'] !== 'Y') {
+                return $visible[$id] = false;
+            }
+
+            $parentId = $menus[$id]['parent_id'];
+
+            if ($parentId === null) {
+                return $visible[$id] = true;
+            }
+
+            if (! isset($menus[$parentId]) || in_array($parentId, $seen, true)) {
+                return $visible[$id] = false;
+            }
+
+            return $visible[$id] = $isVisible($parentId, [...$seen, $id]);
+        };
+
+        foreach (array_keys($menus) as $id) {
+            $isVisible($id);
+        }
+
+        return $visible;
     }
 
     /**

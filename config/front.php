@@ -39,6 +39,17 @@ return [
     ],
 
     /*
+    | sitemap.xml (App\Support\Front\Sitemap) — อิงตามเมนูหน้าบ้านที่เผยแพร่
+    | ttl: อายุ cache ของ XML และ Cache-Control max-age (วินาที) — cache ถูกล้างทันทีเมื่อบันทึกเมนู/เนื้อหา TTL นี้คุมแค่รายการที่ถึง/หมด
+    |      ช่วงเผยแพร่ตามเวลา
+    | article_per_file: จำนวนบทความต่อไฟล์ sitemap-article-{n}.xml (× จำนวนภาษา = จำนวน <url>; มาตรฐานจำกัด 50,000 URL / 50MB ต่อไฟล์)
+    */
+    'sitemap' => [
+        'ttl' => (int) env('FRONT_SITEMAP_TTL', 3600),
+        'article_per_file' => (int) env('FRONT_SITEMAP_ARTICLE_PER_FILE', 1000),
+    ],
+
+    /*
     | ขนาด thumbnail ที่หน้าบ้านขอได้ (กันการสั่ง resize ขนาดแปลก ๆ ไม่จำกัดจนเปลือง disk/CPU)
     */
     'thumbnail_sizes' => [160, 320, 480, 640, 960, 1280, 1600, 1920],

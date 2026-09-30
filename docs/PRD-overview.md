@@ -200,7 +200,7 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 | จัดการเมนูหน้าบ้าน (`front_menu_info`/`front_menu_detail`) — [PRD-system-frontmenu.md](PRD-system-frontmenu.md) | 🟡 schema + admin CRUD (list/tree, add/edit dialog, เรียงลำดับแบบลาก, แสดง/ซ่อน, ลบ) เสร็จแล้ว | ✅ render ที่หน้าบ้านแล้ว (header/aside/footer + ส่วนหัว/breadcrumb — PRD-front.md) |
 | template (`sys_template` + ตั้งค่าโซน) — [PRD-system-template.md](PRD-system-template.md) | 🟢 หลังบ้านเสร็จ: list/add (เลือกแม่แบบ)/ข้อมูลทั่วไป/โครงสร้าง 4 โซนพร้อม preview/Custom CSS/JS/หน้า Loading, ใช้งานได้ครั้งละ 1 รายการ | ✅ render ที่หน้าบ้านแล้ว (PRD-front.md §3) |
 | ประวัติ (`log_back_*` / `log_front_access`) | ✅ หลังบ้านครบ 3 ตัว + `log_front_access` (บันทึก + keep-alive + หน้ารายการ "ประวัติการใช้งาน - หน้าบ้าน") | `log_front_action`/`log_front_login` (เมื่อมีสมาชิกหน้าบ้าน) |
-| หน้าบ้าน — [PRD-front.md](PRD-front.md) | ✅ รอบแรก: Intropage, layout จาก template, หน้าเพจ, หมวดหมู่/รายละเอียดบทความ, SEO/AEO/GEO, WCAG, ยอดเข้าชม (Redis buffer), cache | หน้าค้นหา, แท็ก, sitemap, CSP, ไฟล์เฉพาะสมาชิก |
+| หน้าบ้าน — [PRD-front.md](PRD-front.md) | ✅ รอบแรก: Intropage, layout จาก template, หน้าเพจ, หมวดหมู่/รายละเอียดบทความ, SEO/AEO/GEO, WCAG, ยอดเข้าชม (Redis buffer), cache | หน้าค้นหา, CSP, ไฟล์เฉพาะสมาชิก (sitemap.xml/robots.txt ✅ อิงเมนูที่เผยแพร่ — PRD-front.md §6.1) |
 | file management | ✅ เสร็จ (list/upload/folder/picker) | — |
 | ตั้งค่าระบบ (`sys_setting`) | 🟡 มีตาราง + seed ตัวอย่างแล้ว | หน้า UI จัดการ + helper อ่านค่า |
 

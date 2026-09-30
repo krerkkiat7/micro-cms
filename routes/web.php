@@ -43,10 +43,16 @@ use App\Http\Controllers\Front\Contactus\ContactusController as FrontContactusCo
 use App\Http\Controllers\Front\FileController as FrontFileController;
 use App\Http\Controllers\Front\Intropage\IntropageController;
 use App\Http\Controllers\Front\Page\PageItemController as FrontPageItemController;
+use App\Http\Controllers\Front\SitemapController;
 use App\Http\Middleware\FrontSecurityHeaders;
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Support\Setting;
 use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Inertia\Inertia;
 
 /*
@@ -64,6 +70,21 @@ Route::get('/', [IntropageController::class, 'root'])
 // ชื่อ route (app.logo/app.favicon) เป็นข้อยกเว้นของ convention front.*/admin.* ปกติ ตามที่กำหนดไว้โดยเฉพาะ
 Route::get('/apps/logo.png', [AppAssetController::class, 'logo'])->name('app.logo');
 Route::get('/apps/favicon.ico', [AppAssetController::class, 'favicon'])->name('app.favicon');
+
+// sitemap.xml (index + ไฟล์ย่อย) และ robots.txt — อิงตามเมนูหน้าบ้านที่เผยแพร่ (App\Support\Front\Sitemap)
+// ตัด session/CSRF/Inertia ออก: bot ไม่สร้าง session และ response ไม่มี Set-Cookie (cache ที่ CDN ได้)
+Route::withoutMiddleware([
+    StartSession::class,
+    ShareErrorsFromSession::class,
+    ValidateCsrfToken::class,
+    HandleInertiaRequests::class,
+    AddLinkHeadersForPreloadedAssets::class,
+])->controller(SitemapController::class)->group(function () {
+    Route::get('/sitemap.xml', 'index')->name('front.sitemap');
+    Route::get('/sitemap-main.xml', 'main')->name('front.sitemap.main');
+    Route::get('/sitemap-article-{n}.xml', 'article')->whereNumber('n')->name('front.sitemap.article');
+    Route::get('/robots.txt', 'robots')->name('front.robots');
+});
 
 // ไฟล์/รูปของเนื้อหาหน้าบ้าน (สาธารณะ อ้างอิงด้วย hash_name) — URL สร้างจาก App\Support\Front\FrontFile ที่เดียว
 Route::prefix('file')->controller(FrontFileController::class)->group(function () {
