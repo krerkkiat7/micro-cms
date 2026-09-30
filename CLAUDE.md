@@ -47,6 +47,10 @@ npm run dev                   # Vite dev server
 php artisan serve             # หรือ `composer dev` (รัน serve + queue + pail + vite พร้อมกัน)
 php artisan schedule:work     # (dev) scheduler — front:flush-views ทุกนาที (production ใช้ cron `schedule:run`)
 
+# หรือรันทั้งระบบใน Docker (nginx + PHP-FPM/OPcache + scheduler) ที่ http://localhost:8001 — ดู docker/README.md
+docker compose --profile app up -d --build   # vendor ของ container อยู่ใน volume (bind mount จาก Windows ช้ามาก)
+docker exec cms_app php artisan <คำสั่ง>     # ห้ามรัน config:cache บนเครื่องขณะใช้ container / ห้ามรัน schedule:work ซ้อนกับ cms_scheduler
+
 # ทดสอบ
 php artisan test              # หรือ `composer test`
 ./vendor/bin/pest
