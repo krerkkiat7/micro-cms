@@ -455,6 +455,10 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   เนื้อหาที่ไม่มีเมนูและหน้าแท็กไม่ใส่. `App\Support\Front\Sitemap` (index + main + article-{n}, hreflang + x-default + image, canonical ตรงกับหน้า)
   cache XML ผ่าน `FrontCache` (key แยก host) + ETag/304; route ตัด session/CSRF/Inertia middleware (ไม่มี Set-Cookie); ตั้งค่า `config('front.sitemap')`.
   **ประเภทเมนู/เนื้อหาใหม่ที่มี URL สาธารณะต้องเพิ่มใน sitemap ผ่านเมนู** (เทส `tests/Feature/Front/SitemapTest.php`)
+- **หน้า error + รหัสอ้างอิง (branch `error-pages`) — ดู `docs/PRD-system.md` §10** — หลังบ้าน `App\Support\Admin\AdminErrorPage` → `Admin/Error`
+  (ไทย, `lang/th/error.php`), หน้าบ้าน `FrontErrorPage` → `Front/Error` (layout เปล่า ไม่โหลด template/เมนู, ข้อความตามภาษาของ URL); ทุก 4xx/5xx
+  (`App\Support\ErrorStatus`); **5xx บอกแค่ "เกิดข้อผิดพลาด" + รหัส `ERR-XXXXXXXX` ห้ามแสดง message ของ exception**; หน้าสำรอง Blade `resources/views/errors/*`
+  (ไม่พึ่ง DB/Vite — ไฟล์รายสถานะ override ของ Laravel). log: `ErrorReference::context()` ใน `$exceptions->context()` + channel `error` รายวันเก็บ 90 วัน (`LOG_ERROR_DAYS`)
 ## ทดสอบ
 
 - เทสหน้าบ้านอยู่ `tests/Feature/Front/FrontSiteTest.php` (seed `DatabaseSeeder` แล้วใช้ข้อมูลตัวอย่าง)

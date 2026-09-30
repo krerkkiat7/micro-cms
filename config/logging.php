@@ -65,6 +65,16 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // error ที่ถูก report (5xx ฯลฯ) พร้อมรหัสอ้างอิง (App\Support\ErrorReference) — เขียนจาก bootstrap/app.php เสมอ
+        // ไม่ขึ้นกับ LOG_STACK ของแต่ละเครื่อง; หมุนไฟล์รายวัน storage/logs/error-YYYY-MM-DD.log เก็บ LOG_ERROR_DAYS วัน (default 90)
+        'error' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/error.log'),
+            'level' => 'error',
+            'days' => (int) env('LOG_ERROR_DAYS', 90),
+            'replace_placeholders' => true,
+        ],
+
         'daily' => [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),
