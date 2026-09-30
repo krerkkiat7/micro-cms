@@ -122,9 +122,9 @@ function confirm() {
                 </div>
             </SettingsSection>
 
-            <SettingsSection title="Social Media / การค้นหา">
+            <!-- การค้นหา (search_status) ซ่อนไว้ก่อน — ยังไม่มีหน้าค้นหาที่หน้าบ้าน (คอลัมน์ยังอยู่ใน DB) -->
+            <SettingsSection title="Social Media">
                 <YesNoCheckbox v-model="draft.social_status" label="แสดง Social Media" description="แสดงเฉพาะช่องทางที่ตั้งค่าไว้ในหน้าตั้งค่าระบบ" />
-                <YesNoCheckbox v-model="draft.search_status" label="แสดงการค้นหา" />
             </SettingsSection>
 
             <SettingsSection title="การปรับตัวอักษร">

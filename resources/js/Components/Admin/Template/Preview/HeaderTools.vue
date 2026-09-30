@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { ChevronDown, Contrast, Minus, Plus, Search } from 'lucide-vue-next';
+import { ChevronDown, Contrast, Minus, Plus } from 'lucide-vue-next';
 import LanguageFlag from '@/Components/Template/LanguageFlag.vue';
 import SocialIcon from '@/Components/Template/SocialIcon.vue';
 import { SOCIAL_LABELS } from '@/utils/template';
 import type { HeaderZone, TemplatePreviewData } from '@/utils/template';
 
 /**
- * ตัวอย่างเครื่องมือใน header — social / ค้นหา / ปรับขนาดตัวอักษร / การแสดงสี / ภาษา (ตามที่เปิดแสดงไว้)
- * `only` = กลุ่มที่ให้แสดงในตำแหน่งนี้ (แถบบนแยก social ไว้ซ้าย ส่วนเครื่องมืออื่นไว้ขวา; `aside` = ท้ายเมนูข้าง — ทุกอย่างยกเว้นค้นหา)
+ * ตัวอย่างเครื่องมือใน header — social / ปรับขนาดตัวอักษร / การแสดงสี / ภาษา (ตามที่เปิดแสดงไว้)
+ * `only` = กลุ่มที่ให้แสดงในตำแหน่งนี้ (แถบบนแยก social ไว้ซ้าย ส่วนเครื่องมืออื่นไว้ขวา; `aside` = ท้ายเมนูข้าง)
  */
 defineProps<{
     zone: HeaderZone;
@@ -25,8 +25,6 @@ defineProps<{
         </div>
 
         <template v-if="only !== 'social'">
-            <Search v-if="only !== 'aside' && zone.search_status === 'Y'" class="size-4" />
-
             <div v-if="zone.fontsize_status === 'Y'" class="flex items-center gap-1">
                 <template v-if="zone.fontsize_display === 'icon'">
                     <span class="flex size-5 items-center justify-center rounded border border-current/40"><Minus class="size-3" /></span>

@@ -99,8 +99,8 @@ class DatabaseSeeder extends Seeder
             ['system102', 'system', null, 'system.backlog.action', 'แสดงประวัติการกระทำ - หลังบ้าน', 12],
             ['system103', 'system', null, 'system.backlog.login', 'แสดงประวัติการเข้าสู่ระบบ - หลังบ้าน', 13],
             ['system104', 'system', null, 'system.frontlog.access', 'แสดงประวัติการใช้งาน - หน้าบ้าน', 14],
-            ['system105', 'system', null, 'system.frontlog.action', 'แสดงประวัติการกระทำ - หน้าบ้าน', 15],
-            ['system106', 'system', null, 'system.frontlog.login', 'แสดงประวัติการเข้าสู่ระบบ - หน้าบ้าน', 16],
+            // ['system105', 'system', null, 'system.frontlog.action', 'แสดงประวัติการกระทำ - หน้าบ้าน', 15],
+            // ['system106', 'system', null, 'system.frontlog.login', 'แสดงประวัติการเข้าสู่ระบบ - หน้าบ้าน', 16],
             ['system908', 'system', null, 'system.file.manage', 'จัดการไฟล์', 91],
             ['system909', 'system', null, 'system.setting.manage', 'ตั้งค่าระบบ', 92],
             ['system910', 'system', null, 'system.error.view', 'ตรวจสอบ Error', 93],
@@ -111,6 +111,9 @@ class DatabaseSeeder extends Seeder
         // เพราะแท็กสร้างใหม่ได้จากในฟอร์มบทความอยู่แล้ว จึงต้องใช้สิทธิ์ชุดเดียวกัน (cascade ลบ pivot ที่ผูกไว้ด้วย)
         // ลบด้วย code (ไม่ใช่ id) และลบก่อน upsert — id article201 ถูกนำกลับมาใช้กับ article.report.view แล้ว
         SysAction::whereIn('code', ['article.tag.delete', 'article.tag.manage', 'article.tag.view'])->delete();
+
+        // ประวัติการกระทำ/การเข้าสู่ระบบ - หน้าบ้าน ยังไม่มี (รอ login หน้าบ้าน phase ถัดไป) — ลบสิทธิ์ที่เคย seed ไว้ออก
+        SysAction::whereIn('code', ['system.frontlog.action', 'system.frontlog.login'])->delete();
 
         $actionIds = [];
         foreach ($actions as [$id, $actionGroupId, $parentId, $code, $name, $sortOrder]) {
