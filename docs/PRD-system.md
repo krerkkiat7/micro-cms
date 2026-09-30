@@ -14,7 +14,7 @@
 | 5 | ประวัติ login / เข้าชม / การกระทำ | `log_back_access`, `log_back_action`, `log_back_login` (+ `log_front_*`) | 🟡 หลังบ้านครบ 3 ตัว (บันทึก + หน้ารายการ) · `log_front_access` 🟢 · `log_front_action`/`log_front_login` 🔴 |
 | 6 | ตั้งค่าระบบ/เว็บไซต์ | `sys_setting` | 🟡 ตาราง/model/seed ตัวอย่างมี, ยังไม่มี UI |
 | 7 | profile | `sys_user` | 🟢 |
-| 8 | dashboard | — | 🟡 placeholder |
+| 8 | dashboard | — | 🟢 มีแล้ว |
 | 9 | file management | `file_info`, `folder_info` | 🟢 หน้าเต็ม + dialog เลือกไฟล์ (reusable, ยังไม่ผูกฟิลด์จริง) เสร็จ |
 
 ---
@@ -531,15 +531,30 @@ primary key = `(group, name)` — Eloquent ไม่รองรับ composite
 
 ---
 
-## 8. dashboard — 🟡 placeholder
+## 8. dashboard — 🟢 มีแล้ว
 
-**หน้าจอ** — `resources/js/Pages/Admin/Dashboard.vue`: การ์ดสถิติ (ตอนนี้ค่า "—") + รายการสถานะสิทธิ์
+**Route** — `admin.dashboard` ใต้ `/admin/dashboard` — เปิดได้ทุกคนที่ login (ไม่มี permission ของตัวเอง) บันทึก `LogBackAccess::record('แดชบอร์ด')`
 
-**Controller** — `Admin\DashboardController@index` ส่ง `can` (ผลของ `hasPermission()`) เป็น props
+**หลักการ** — แสดงเฉพาะข้อมูลที่ช่วยตัดสินใจ/ต้องดำเนินการ และ **แต่ละส่วนผูกกับสิทธิ์ของส่วนนั้น**: ไม่มีสิทธิ์ = backend ไม่ query และไม่ส่งข้อมูล
+(ค่า `null`/array ว่าง) หน้าจอแค่แสดงตามข้อมูลที่ได้รับ ไม่เช็กสิทธิ์ซ้ำ; ไม่มีสิทธิ์สักส่วน → empty state
 
-**Route** — `admin.dashboard` ใต้ `/admin/dashboard`
+**Backend** — `Admin\DashboardController@index` → `App\Support\Report\DashboardReport` (props `shortcuts` + `dashboard`) ใช้ตัวคำนวณเดียวกับเมนูรายงาน
+(`ViewReport`/`ItemReport`/`AccessLogReport`) ตัวเลขจึงตรงกับหน้ารายงาน
 
-**เป้าหมาย** — เมื่อมีโมดูลจริง: จำนวนบทความ/หน้า/ผู้ใช้, ข้อความติดต่อที่ยังไม่อ่าน, กราฟการเข้าชม (จาก `sys_log_visit`)
+| ส่วน (บนลงล่าง) | สิทธิ์ | รายละเอียด |
+|---|---|---|
+| ปุ่มลัด (หัวหน้า) | `article/page/banner.item.manage` | เพิ่มบทความ / หน้าเพจ / ป้ายโฆษณา |
+| รายการที่ควรดำเนินการ | `contactus.item.view`, `article.item.view`, `popup.item.view`, `system.backlog.login` | ข้อความติดต่อยังไม่อ่าน/พิจารณา, บทความ/Popup ที่จะหมดเผยแพร่ใน 7 วัน, login ไม่สำเร็จ/ถูกบล็อกใน 24 ชม. — ส่งเฉพาะรายการที่ > 0 |
+| การ์ดตัวเลข 7 วัน (เทียบ 7 วันก่อนหน้า) | `system.frontlog.access`, `article/page/banner.report.view`, `contactus.item.view` | ผู้เข้าชมเว็บ (session ไม่ซ้ำ ตัดบอท), ยอดเข้าชมบทความ/หน้าเพจ, ยอดคลิกป้ายโฆษณา, ข้อความติดต่อใหม่ |
+| กราฟแนวโน้ม 30 วัน | ตามการ์ดตัวเลข (ยกเว้นติดต่อเรา) | 1 เส้นต่อ metric |
+| บทความยอดนิยม 7 วัน (5 อันดับ) | `article.report.view` | ชื่อเป็นลิงก์แก้ไขเฉพาะเมื่อมี `article.item.view` |
+| ข้อความติดต่อล่าสุด (5) | `contactus.item.view` | |
+| ภาพรวมเนื้อหา | `<module>.item.view` ต่อโมดูล | เผยแพร่อยู่ / ทั้งหมด ของบทความ/หน้าเพจ/ป้ายโฆษณา/Popup/Intropage (เงื่อนไขเผยแพร่เดียวกับหน้าบ้าน, นับ `is_temp`) |
+| กิจกรรมล่าสุดในหลังบ้าน (6) | `system.backlog.action` | จาก `log_back_action` |
+
+**หน้าจอ** — `Pages/Admin/Dashboard.vue` + `Components/Admin/Dashboard/*` (ชนิดข้อมูลใน `utils/dashboard.ts`), กราฟใช้ `Report/ViewTrendChart.vue`
+
+**เพิ่มส่วนใหม่** — เพิ่ม method ใน `DashboardReport` ที่เช็ก `can()` ก่อนคำนวณเสมอ + key ใน `toArray()` + type ใน `utils/dashboard.ts` + เทสใน `tests/Feature/Admin/DashboardTest.php`
 
 ---
 

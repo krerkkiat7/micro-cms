@@ -194,7 +194,7 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 | จัดการผู้ใช้งานหลังบ้าน (CRUD `sys_user` `user_type='back'`) | ✅ เสร็จแล้ว — list (ค้นหา/กรอง/เรียง/paging) + add + edit + เปลี่ยนรหัสผ่าน; เป็น **ต้นแบบตาม §5** | — |
 | จัดการกลุ่มผู้ใช้งาน (CRUD `sys_usergroup` + กำหนดสิทธิ์) | ✅ list + add + edit + **หน้ากำหนดสิทธิ์** (tree `sys_action_group`/`sys_action`, checkbox parent→ลูก, เลือก/ไม่เลือกทั้งหมดต่อกลุ่ม, บันทึกแบบ detach+attach); `can_edit`/`can_delete`, guard ชื่อซ้ำ/มีสมาชิก | — |
 | profile | ✅ มี (แก้ชื่อ/ช่องทางติดต่อ/อีเมล) | เพิ่มอัปโหลดรูปโปรไฟล์ (อนาคต) |
-| dashboard | 🟡 placeholder (การ์ดสถิติ "—") | ต่อสถิติจริงเมื่อมีโมดูล |
+| dashboard | ✅ ข้อมูลจริงตามสิทธิ์ (รายการที่ควรดำเนินการ / ตัวเลข 7 วัน / แนวโน้ม 30 วัน / บทความยอดนิยม / ติดต่อล่าสุด / ภาพรวมเนื้อหา / กิจกรรมล่าสุด) — ดู PRD-system.md §8 | — |
 | โมดูลเนื้อหาทั้ง 6 | 🟡 บทความ (article) เสร็จครบ — หมวดหมู่ ตัวบทความ (list/add/edit + part editor + แท็ก) และหน้าตั้งค่าโมดูล เสร็จครบ; banner เสร็จหมวดหมู่+ป้ายโฆษณา (ตั้งค่ายังเป็น placeholder); intropage เสร็จ list/add/edit + ปุ่มแบบเรียงลำดับ; page เสร็จ list/add/edit + จัดโครงสร้างแถว/คอลัมน์/widget (ประเภท widget เสร็จ `slideshowbanner`/`slideshowarticle`/`slidesetarticle`/`slidesetbanner`, ที่เหลือรอทำ); popup เสร็จ list/add/edit + ตั้งค่า/ล้างแคช (ดู PRD-popup.md); contact us ยังไม่มี | ทยอยทำ |
 | จัดการเมนูหลังบ้าน (`sys_menu_group`/`sys_menu`) | 🟢 ตาราง + seed + `AppSidebar` อ่านจาก DB (กรองตามสิทธิ์) | หน้า CRUD จัดเมนู |
 | จัดการเมนูหน้าบ้าน (`front_menu_info`/`front_menu_detail`) — [PRD-system-frontmenu.md](PRD-system-frontmenu.md) | 🟡 schema + admin CRUD (list/tree, add/edit dialog, เรียงลำดับแบบลาก, แสดง/ซ่อน, ลบ) เสร็จแล้ว | ✅ render ที่หน้าบ้านแล้ว (header/aside/footer + ส่วนหัว/breadcrumb — PRD-front.md) |

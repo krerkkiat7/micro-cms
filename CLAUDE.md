@@ -128,7 +128,8 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 - `$user->hasPermission('system.user.view')` — คืน `bool` (คืน `false` ถ้า user ไม่มี usergroup)
 - `$user->getPermissionsArray()` — คืน array ของ action codes (คืน `[]` ถ้าไม่มี usergroup)
 - share ไป frontend ผ่าน `HandleInertiaRequests::share()` → `auth.user.permissions`
-- ฝั่ง Controller: ส่ง `can` เป็น props (ดู `Admin/DashboardController`) แล้วเช็ก `v-if="can.xxx"` ใน Vue
+- ฝั่ง Controller: ส่ง `can` เป็น props แล้วเช็ก `v-if="can.xxx"` ใน Vue — ข้อมูลที่ต้องมีสิทธิ์ถึงจะเห็นได้ ให้ไม่ส่งไปเลย
+  (ดู `App\Support\Report\DashboardReport`) ไม่ใช่ส่งไปแล้วซ่อนด้วย `v-if`
 
 > ยังไม่มี middleware/gate บังคับสิทธิ์แบบรวมศูนย์ — การเช็กทำใน controller/หน้า เป็นราย ๆ (โค้ด `abort(403)` ถูก comment ไว้)
 
@@ -444,6 +445,10 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   `utils/logStats.ts`; หน้าบ้านตัดบอทออกจากสถิติและยังไม่มีสถิติรายผู้ใช้งาน (รอ login หน้าบ้าน). ของ `log_back_access`: กรองผู้ใช้งานได้,
   เวลาที่ใช้ต่อหน้าจอจาก `last_visited - created_at` ตัดที่ 30 นาที/ครั้ง — `ReportFilterBar` รองรับ dropdown กำหนดเองผ่าน prop `select` (เช่น `user_id`)
   และ `utils/report.ts` มี metric `access` — ดู `docs/PRD-system.md` §5
+- **Dashboard หลังบ้าน (branch `back-dashboard`) — ดู `docs/PRD-system.md` §8** — `DashboardController` → `App\Support\Report\DashboardReport`
+  (reuse `ViewReport`/`ItemReport`/`AccessLogReport`) ส่วนต่าง ๆ: รายการที่ควรดำเนินการ, การ์ดตัวเลข 7 วัน, แนวโน้ม 30 วัน, บทความยอดนิยม, ติดต่อล่าสุด,
+  ภาพรวมเนื้อหา, กิจกรรมล่าสุด — **แต่ละส่วนเช็กสิทธิ์ใน `DashboardReport::can()` ก่อนคำนวณ ไม่มีสิทธิ์ = ไม่ query/ไม่ส่ง (null/[])**
+  หน้าจอ `Pages/Admin/Dashboard.vue` + `Components/Admin/Dashboard/*` + `utils/dashboard.ts`, เทส `tests/Feature/Admin/DashboardTest.php`
 ## ทดสอบ
 
 - เทสหน้าบ้านอยู่ `tests/Feature/Front/FrontSiteTest.php` (seed `DatabaseSeeder` แล้วใช้ข้อมูลตัวอย่าง)
