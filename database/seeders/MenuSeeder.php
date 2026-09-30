@@ -81,6 +81,7 @@ class MenuSeeder extends Seeder
             ['system-front-log-action', 'system', 'ประวัติการกระทำ - หน้าบ้าน', 'History', 'admin.system.frontlog.action.index', 'system.frontlog.action', 15],
             ['system-front-log-login', 'system', 'ประวัติการเข้าสู่ระบบ - หน้าบ้าน', 'History', 'admin.system.frontlog.login.index', 'system.frontlog.login', 16],
             ['system-setting', 'system', 'ตั้งค่าระบบ', 'SlidersHorizontal', 'admin.system.setting.index', 'system.setting.manage', 99],
+            ['system-errorviewer', 'system', 'ตรวจสอบ Error', 'Bug', 'admin.system.errorviewer.index', 'system.error.view', 100],
         ];
 
         // "จัดการไฟล์" เปลี่ยนมาเป็นลิงก์ hardcode ใน AppSidebar.vue (ต่อจากโปรไฟล์ เหมือน Dashboard/Profile)

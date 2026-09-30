@@ -10,7 +10,7 @@ use Throwable;
  * รหัสอ้างอิงของ error (เช่น ERR-7F3K2Q9A) + ข้อมูลประกอบสำหรับ log — ใช้กับ error 5xx
  *
  * รหัสสร้างครั้งเดียวต่อ request (เก็บใน request()->attributes) จึงเป็นค่าเดียวกันทั้งใน log (context ของ exception ใน bootstrap/app.php)
- * และที่แสดงบนหน้า error — ผู้ใช้แจ้งรหัสนี้มา ผู้ดูแลค้นใน storage/logs/error-*.log ได้ทันที (หน้า error ไม่แสดงสาเหตุจริง)
+ * และที่แสดงบนหน้า error — ผู้ใช้แจ้งรหัสนี้มา ผู้ดูแลค้นใน เมนู "ตรวจสอบ Error" / storage/logs/text-error-*.log ได้ทันที (หน้า error ไม่แสดงสาเหตุจริง)
  */
 final class ErrorReference
 {

@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\System\BackLogActionController;
 use App\Http\Controllers\Admin\System\BackLogActionReportController;
 use App\Http\Controllers\Admin\System\BackLogLoginController;
 use App\Http\Controllers\Admin\System\BackLogLoginReportController;
+use App\Http\Controllers\Admin\System\ErrorViewerController;
 use App\Http\Controllers\Admin\System\FileController;
 use App\Http\Controllers\Admin\System\FileServeController;
 use App\Http\Controllers\Admin\System\FrontLogAccessController;
@@ -456,6 +457,12 @@ Route::prefix('admin')->group(function () {
         });
 
         // ประวัติหน้าบ้าน (log_front_*) — ตรวจสอบสิทธิ์ในแต่ละ controller
+        // ตรวจสอบ Error (อ่านไฟล์ json-error-*.log) — ตรวจสิทธิ์ system.error.view ใน controller
+        Route::prefix('system/errorviewer')->controller(ErrorViewerController::class)->group(function () {
+            Route::get('/', 'index')->name('admin.system.errorviewer.index');
+            Route::get('/{reference}', 'show')->name('admin.system.errorviewer.show');
+        });
+
         Route::prefix('system/frontlog')->group(function () {
             // การเข้าชม (log_front_access)
             Route::prefix('access')->group(function () {

@@ -5,7 +5,7 @@ import { computed } from 'vue';
 
 /**
  * หน้า error ของหลังบ้าน (ทุก 4xx/5xx) — App\Support\Admin\AdminErrorPage (ข้อความจาก lang/th/error.php)
- * 5xx บอกแค่ว่าเกิดข้อผิดพลาด + รหัสอ้างอิง ไม่แสดงสาเหตุจริง (รายละเอียดอยู่ใน storage/logs/error-*.log)
+ * 5xx บอกแค่ว่าเกิดข้อผิดพลาด + รหัสอ้างอิง ไม่แสดงสาเหตุจริง (รายละเอียดอยู่ใน เมนู "ตรวจสอบ Error" / storage/logs/text-error-*.log)
  * ลิงก์เป็น <a> ธรรมดา (โหลดหน้าเต็ม) — หลังเกิด error ให้เริ่มหน้าใหม่ทั้งหมด
  */
 const props = defineProps<{

@@ -22,7 +22,10 @@ test('super admin sees every menu group and item', function () {
             ->where('menu.6.id', 'system')
             ->where('menu.6.icon', 'Settings')
             // 'จัดการไฟล์' ไม่ผ่าน sys_menu แล้ว — เปลี่ยนเป็นลิงก์ hardcode ใน AppSidebar.vue (ต่อจากโปรไฟล์)
-            ->has('menu.6.items', 11)
+            ->has('menu.6.items', 12)
+            // เมนูสุดท้าย = ตรวจสอบ Error (sort_order 100)
+            ->where('menu.6.items.11.icon', 'Bug')
+            ->where('menu.6.items.11.activePattern', 'admin.system.errorviewer.*')
             ->where('menu.6.items.0.icon', 'Users')
             // route ลงท้าย .index → activePattern ครอบทุกหน้าในโมดูล
             ->where('menu.6.items.0.activePattern', 'admin.system.user.*')

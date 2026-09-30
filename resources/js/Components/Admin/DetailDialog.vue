@@ -7,10 +7,13 @@ const props = withDefaults(
     defineProps<{
         show?: boolean;
         title?: string;
+        /** กว้างขึ้น (max-w-4xl) สำหรับเนื้อหายาว เช่น stack trace */
+        wide?: boolean;
     }>(),
     {
         show: false,
         title: 'รายละเอียด',
+        wide: false,
     },
 );
 
@@ -46,7 +49,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
                 />
 
                 <div
-                    class="relative flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-lg bg-white shadow-xl"
+                    class="relative flex max-h-[85vh] w-full flex-col overflow-hidden rounded-lg bg-white shadow-xl"
+                    :class="wide ? 'max-w-4xl' : 'max-w-lg'"
                 >
                     <div
                         class="flex items-center justify-between border-b border-gray-200 px-5 py-3.5"
