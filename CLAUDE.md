@@ -62,7 +62,8 @@ npm run build                 # vue-tsc typecheck + vite build
 - **Front-office**: prefix `{lang}` (ภาษาที่เปิดใช้ใน `sys_setting`), middleware `['web', 'setLocale', FrontSecurityHeaders]` — ดู `docs/PRD-front.md`
   - `SetLocale` middleware อ่าน `lang` จาก route แล้ว `App::setLocale()` (default `th`)
   - ชื่อ route ขึ้นต้น `front.*`: `front.page.item`, `front.article.category`, `front.article.category.item`, `front.article.item`
-    (`/{lang}/page/item/{id}/{slug?}` ฯลฯ — slug ไม่บังคับ); ไฟล์สาธารณะ `front.file.*` (`/file/get/{hash}`), `front.access.ping`
+    (`/{lang}/page/item/{id}/{slug?}` ฯลฯ — slug ไม่บังคับ); ไฟล์สาธารณะ `front.file.*` (`/file/get/{hash}`), `front.access.ping`;
+    `front.sitemap*` (`/sitemap.xml`, `/sitemap-main.xml`, `/sitemap-article-{n}.xml`) + `front.robots` (`/robots.txt` — ไม่มีไฟล์ static แล้ว)
   - controller หน้าบ้าน extends `Front\FrontController` (ส่ง prop `front` = layout จาก template + เมนู + ตั้งค่าไซต์, และ `seo`)
 - **Back-office**: prefix `/admin`
   - `routes/auth_admin.php` = auth routes ของ Breeze ที่ย้ายมาไว้ใต้ `/admin` (ชื่อ route ขึ้นต้น `admin.*` เช่น `admin.login`, `admin.password.request`)
@@ -449,6 +450,11 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   (reuse `ViewReport`/`ItemReport`/`AccessLogReport`) ส่วนต่าง ๆ: รายการที่ควรดำเนินการ, การ์ดตัวเลข 7 วัน, แนวโน้ม 30 วัน, บทความยอดนิยม, ติดต่อล่าสุด,
   ภาพรวมเนื้อหา, กิจกรรมล่าสุด — **แต่ละส่วนเช็กสิทธิ์ใน `DashboardReport::can()` ก่อนคำนวณ ไม่มีสิทธิ์ = ไม่ query/ไม่ส่ง (null/[])**
   หน้าจอ `Pages/Admin/Dashboard.vue` + `Components/Admin/Dashboard/*` + `utils/dashboard.ts`, เทส `tests/Feature/Admin/DashboardTest.php`
+- **sitemap.xml / robots.txt (branch `front-sitemap`) — ดู `docs/PRD-front.md` §6.1** — **อิงตามเมนูหน้าบ้านที่เผยแพร่เท่านั้น**
+  (`FrontMenuResolver::publishedTargets()` — กติกาเดียวกับแถบเมนู แยกเป็น `visibility()` ใช้ร่วม) — ปลายทางเมนู page/หมวดหมู่ (+บทความในหมวด)/บทความ/ติดต่อเรา;
+  เนื้อหาที่ไม่มีเมนูและหน้าแท็กไม่ใส่. `App\Support\Front\Sitemap` (index + main + article-{n}, hreflang + x-default + image, canonical ตรงกับหน้า)
+  cache XML ผ่าน `FrontCache` (key แยก host) + ETag/304; route ตัด session/CSRF/Inertia middleware (ไม่มี Set-Cookie); ตั้งค่า `config('front.sitemap')`.
+  **ประเภทเมนู/เนื้อหาใหม่ที่มี URL สาธารณะต้องเพิ่มใน sitemap ผ่านเมนู** (เทส `tests/Feature/Front/SitemapTest.php`)
 ## ทดสอบ
 
 - เทสหน้าบ้านอยู่ `tests/Feature/Front/FrontSiteTest.php` (seed `DatabaseSeeder` แล้วใช้ข้อมูลตัวอย่าง)

@@ -104,6 +104,31 @@
 - ใช้ HTML เชิงความหมาย (header/nav/main/footer/article/section/address/time) — ช่วยทั้ง SEO และ assistive technology
 - หน้า error `noindex`
 
+### 6.1 sitemap.xml / robots.txt (`App\Support\Front\Sitemap`, `Front\SitemapController`)
+
+**ขอบเขต = ตามเมนูหน้าบ้านที่เผยแพร่เท่านั้น** (`FrontMenuResolver::publishedTargets()` — `status='Y'` + พาเรนต์แสดงทั้งสาย กติกาเดียวกับแถบเมนู):
+
+| ประเภทเมนู | ที่อยู่ใน sitemap |
+|---|---|
+| `page` | หน้าเพจ (ถ้า `status='Y'`) |
+| `article_category` | หน้าหมวดหมู่ (ถ้าเผยแพร่) **+ บทความเผยแพร่ทุกเรื่องในหมวด** (status Y + อยู่ในช่วง publish) |
+| `article_item` | บทความนั้น (ถ้าเผยแพร่) |
+| `contactus` | `/{lang}/contactus` |
+| `heading` / `none` / `external` | — |
+
+- หน้าแรก `/{lang}` ใส่เมื่อมี Intropage เผยแพร่อยู่ (ไม่มี = redirect ไปเมนู `is_home` ซึ่งอยู่ใน sitemap ตามเมนูแล้ว)
+- **ไม่ใส่**: เนื้อหาที่ไม่มีเมนูที่เผยแพร่ชี้ถึง (แม้เปิดได้), เมนูที่ซ่อน, หน้าแท็ก, `?page=N`, `/`; ข้อมูลตัวอย่าง `is_temp` รวมตามปกติ
+- ไฟล์: `/sitemap.xml` (index + `lastmod`) → `/sitemap-main.xml` (หน้าแรก/หน้าเพจ/หมวดหมู่/บทความที่เมนูชี้ตรง/ติดต่อเรา) +
+  `/sitemap-article-{n}.xml` (บทความในหมวดที่มีเมนู ไฟล์ละ `front.sitemap.article_per_file` เรื่อง, default 1000)
+- แต่ละ `<url>`: `<loc>` = canonical เดียวกับหน้านั้น (slug ภาษาที่ขอถ้ามีหัวเรื่อง ไม่งั้นภาษาหลัก; บทความผ่านหมวดหมู่ถ้าหมวดเผยแพร่),
+  `<lastmod>` (ล่าสุดของ info/detail/`layout_updated_at`/publish_date; หมวดหมู่รวมบทความล่าสุดในหมวด), `xhtml:link` hreflang ทุกภาษา + `x-default`,
+  `image:image` รูปหน้าปก — ไม่ใส่ `changefreq`/`priority`
+- **performance**: XML ที่ render แล้ว cache ผ่าน `FrontCache` (key แยก host) ล้างอัตโนมัติเมื่อบันทึกเมนู/เนื้อหา + TTL `front.sitemap.ttl` (default 3600)
+  คุมรายการที่ถึง/หมดช่วงเผยแพร่ตามเวลา; query ด้วย `DB::table` เฉพาะคอลัมน์ที่ใช้; response มี `Cache-Control: public` + `ETag` (304) + `X-Robots-Tag: noindex`;
+  route ตัด session/CSRF/Inertia middleware — ไม่มี Set-Cookie, bot ไม่สร้าง session
+- `/robots.txt` เป็น route (ลบ `public/robots.txt` แล้ว — static ใส่ URL เต็มของ sitemap ไม่ได้): `Disallow: /admin` + `Sitemap: {โดเมน}/sitemap.xml`
+- **เพิ่มประเภทเมนู/เนื้อหาใหม่ที่มี URL สาธารณะ** → เพิ่มใน `publishedTargets()` + `Sitemap` + เทส `tests/Feature/Front/SitemapTest.php`
+
 ## 7. ไฟล์/รูปภาพ
 
 - URL ทั้งหมดของหน้าบ้านสร้างจาก `App\Support\Front\FrontFile` ที่เดียว (ฝั่ง Vue ไม่ประกอบ URL จาก hash เอง) → `/file/get/{hash_name}` ฯลฯ
@@ -187,4 +212,4 @@ prop `popups` ทุกหน้าที่ใช้ FrontLayout (ไม่ร�
 |-----|--------|-------|
 | 1 — front-init | Intropage, layout จาก template, หน้าเพจ, บทความ, SEO, log_front_access, ยอดเข้าชม, cache | ✅ |
 | popup-init | Popup (modal/floating, สไลด์, ตามเมนู, ไม่แสดงวันนี้อีก) | ✅ |
-| ถัดไป | หน้าค้นหา (เปิดปุ่มค้นหาใน header), หน้าแท็ก, sitemap.xml / robots.txt, CSP (nonce), GeoIP, `log_front_action`/`log_front_login` (สมาชิก), ไฟล์เฉพาะสมาชิก (§7), รายงานยอดเข้าชมจาก `*_item_view` / ยอดคลิกจาก `banner_item_click` | 🔴 |
+| ถัดไป | หน้าค้นหา (เปิดปุ่มค้นหาใน header), หน้าแท็ก, CSP (nonce), GeoIP, `log_front_action`/`log_front_login` (สมาชิก), ไฟล์เฉพาะสมาชิก (§7), รายงานยอดเข้าชมจาก `*_item_view` / ยอดคลิกจาก `banner_item_click` | 🔴 |
