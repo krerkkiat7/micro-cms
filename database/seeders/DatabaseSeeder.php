@@ -107,14 +107,6 @@ class DatabaseSeeder extends Seeder
 
         ];
 
-        // เอาสิทธิ์ article.tag.* ที่เคยแยกไว้ต่างหากออก — รวมเข้ากับ article.item.* แทน
-        // เพราะแท็กสร้างใหม่ได้จากในฟอร์มบทความอยู่แล้ว จึงต้องใช้สิทธิ์ชุดเดียวกัน (cascade ลบ pivot ที่ผูกไว้ด้วย)
-        // ลบด้วย code (ไม่ใช่ id) และลบก่อน upsert — id article201 ถูกนำกลับมาใช้กับ article.report.view แล้ว
-        SysAction::whereIn('code', ['article.tag.delete', 'article.tag.manage', 'article.tag.view'])->delete();
-
-        // ประวัติการกระทำ/การเข้าสู่ระบบ - หน้าบ้าน ยังไม่มี (รอ login หน้าบ้าน phase ถัดไป) — ลบสิทธิ์ที่เคย seed ไว้ออก
-        SysAction::whereIn('code', ['system.frontlog.action', 'system.frontlog.login'])->delete();
-
         $actionIds = [];
         foreach ($actions as [$id, $actionGroupId, $parentId, $code, $name, $sortOrder]) {
             $actionIds[] = SysAction::updateOrCreate(['id' => $id], [
@@ -139,14 +131,14 @@ class DatabaseSeeder extends Seeder
 
         $adminGroup->actions()->sync($actionIds);
 
-        // ผู้ใช้สำหรับเข้าสู่ระบบหลังบ้าน (admin@admin.com / password123)
+        // ผู้ใช้สำหรับเข้าสู่ระบบหลังบ้าน (admin@mycms.com / P@ssw0rd)
         User::updateOrCreate(
-            ['email' => 'admin@admin.com', 'user_type' => 'back'],
+            ['email' => 'admin@mycms.com', 'user_type' => 'back'],
             [
                 'titlename' => 'คุณ',
                 'firstname' => 'System',
                 'lastname' => 'Admin',
-                'password' => Hash::make('password123'),
+                'password' => Hash::make('P@ssw0rd'),
                 'status' => 'Y',
                 'usergroup_id' => $adminGroup->id,
             ],
@@ -158,7 +150,7 @@ class DatabaseSeeder extends Seeder
         // ทันทีที่ต้อง UPDATE แถวที่มีอยู่แล้วจริง ๆ (ต่างจากตอน insert ใหม่ที่ไม่มีปัญหา จึงไม่เคยเจอตอนเทส)
         $settings = [
             ['group' => 'site', 'name' => 'site_name', 'value' => 'My CMS'],
-            ['group' => 'site', 'name' => 'site_email', 'value' => 'admin@admin.com'],
+            ['group' => 'site', 'name' => 'site_email', 'value' => 'admin@mycms.com'],
             ['group' => 'site', 'name' => 'site_description', 'value' => 'Micro-CMS ติดตั้งง่าย ใช้งานง่าย'],
             // ภาษาในระบบ — เก็บรวมเป็น 1 record คั่นด้วย , (ไม่แยกเก็บทีละภาษา) ดู App\Support\Setting::selectedLanguages()
             ['group' => 'site', 'name' => 'lang_selected', 'value' => 'th,en'],

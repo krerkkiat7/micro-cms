@@ -86,14 +86,6 @@ class MenuSeeder extends Seeder
             ['system-errorviewer', 'system', 'ตรวจสอบ Error', 'Bug', 'admin.system.errorviewer.index', 'system.error.view', 100],
         ];
 
-        // "จัดการไฟล์" เปลี่ยนมาเป็นลิงก์ hardcode ใน AppSidebar.vue (ต่อจากโปรไฟล์ เหมือน Dashboard/Profile)
-        // ไม่ผ่าน sys_menu แล้ว — ลบ record เดิมที่เคย seed ไว้ (id 'system-file') ออกจาก DB จริงด้วย
-        // เพื่อให้ seeder รันซ้ำแล้วไม่มี row ค้าง
-        SysMenu::where('id', 'system-file')->forceDelete();
-
-        // ประวัติการกระทำ/การเข้าสู่ระบบ - หน้าบ้าน ยังไม่มีหน้าจอ (รอ login หน้าบ้าน) — ลบเมนูที่เคย seed ไว้ออก
-        SysMenu::whereIn('id', ['system-front-log-action', 'system-front-log-login'])->forceDelete();
-
         foreach ($menus as [$id, $groupId, $name, $icon, $routeName, $actionCode, $sortOrder]) {
             SysMenu::updateOrCreate(['id' => $id], [
                 'menu_group_id' => $groupId,
