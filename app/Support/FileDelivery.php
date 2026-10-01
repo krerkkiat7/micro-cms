@@ -74,37 +74,71 @@ class FileDelivery
     /**
      * เสิร์ฟ thumbnail — generate ครั้งแรกแล้ว cache ไฟล์ที่ resize แล้วไว้บน disk เพื่อไม่ต้อง
      * resize ซ้ำทุก request (ประเด็น performance)
+     *
+     * WebP: URL เดิม แต่ถ้าเบราว์เซอร์บอกใน header Accept ว่ารับ image/webp (เบราว์เซอร์ปัจจุบันทั้งหมด) จะได้ thumbnail แบบ WebP
+     * (ไฟล์เล็กกว่า) ไม่งั้นได้นามสกุลเดิม — ตอบ `Vary: Accept` ให้ cache (เบราว์เซอร์/CDN) แยกสองแบบ; ไฟล์ต้นฉบับ (/file/get) ไม่แปลง
      */
     private static function respondThumbnail(Request $request, FileInfo $file, int $width, bool $public = false): SymfonyResponse
     {
-        $disk = config('filemanagement.disk');
-        $thumbPath = self::thumbnailPath($file, $width);
+        $disk = Storage::disk(config('filemanagement.disk'));
+        $offerWebp = self::webpEnabled($file);
+        $webp = $offerWebp && str_contains((string) $request->headers->get('Accept'), 'image/webp');
+        $thumbPath = $webp ? self::webpPath($file, $width) : self::thumbnailPath($file, $width);
 
         // ปกติสร้างไว้แล้วตั้งแต่ตอนอัปโหลด (pregenerateThumbnails) — ขนาดอื่น/ไฟล์เก่าสร้างตอนถูกขอครั้งแรก
-        if (! Storage::disk($disk)->exists($thumbPath)) {
-            if (! Storage::disk($disk)->exists($file->path)) {
+        if (! $disk->exists($thumbPath)) {
+            if (! $disk->exists($file->path)) {
                 abort(404);
             }
 
             self::generateThumbnails($file, [$width]);
 
+            // สร้าง WebP ไม่ได้ (GD ไม่รองรับ) แต่มีแบบนามสกุลเดิม → ใช้แบบนามสกุลเดิม
+            if ($webp && ! $disk->exists($thumbPath) && $disk->exists(self::thumbnailPath($file, $width))) {
+                $webp = false;
+                $thumbPath = self::thumbnailPath($file, $width);
+            }
+
             // รูปใหญ่เกิน memory ที่มีจะย่อไม่ได้ (ดู fitsInMemory) — เสิร์ฟไฟล์ต้นฉบับแทน ไม่ให้เป็นหน้า error
-            if (! Storage::disk($disk)->exists($thumbPath)) {
+            if (! $disk->exists($thumbPath)) {
                 return self::respond($request, $file, self::TYPE_SHOW, null, $public);
             }
         }
 
-        $etag = self::etag($file, $width);
+        $etag = self::etag($file, $width).($webp ? '-webp' : '');
 
         if (self::notModified($request, $etag)) {
-            return self::notModifiedResponse($etag);
+            return self::notModifiedResponse($etag, $offerWebp);
         }
 
-        $response = new BinaryFileResponse(Storage::disk($disk)->path($thumbPath));
-        $response->headers->set('Content-Type', $file->mime_type ?: 'application/octet-stream');
+        $response = new BinaryFileResponse($disk->path($thumbPath));
+        $response->headers->set('Content-Type', $webp ? 'image/webp' : ($file->mime_type ?: 'application/octet-stream'));
         self::applyCacheHeaders($response, $etag, $file, $public);
 
+        if ($offerWebp) {
+            $response->headers->set('Vary', 'Accept');
+        }
+
         return $response;
+    }
+
+    /**
+     * path ของ thumbnail แบบ WebP — ไฟล์เดียวกับ thumbnailPath() ต่อท้าย .webp
+     */
+    public static function webpPath(FileInfo $file, int $width): string
+    {
+        return self::thumbnailPath($file, $width).'.webp';
+    }
+
+    /**
+     * ทำ thumbnail แบบ WebP ให้ไฟล์นี้ไหม — เปิดใน config (filemanagement.webp), GD รองรับ WebP, และต้นฉบับไม่ได้เป็น WebP อยู่แล้ว
+     * GIF ไม่แปลง (GD เขียน WebP แบบเคลื่อนไหวไม่ได้)
+     */
+    public static function webpEnabled(FileInfo $file): bool
+    {
+        return config('filemanagement.webp.enabled', true)
+            && function_exists('imagewebp')
+            && ! in_array(strtolower((string) $file->extension), ['webp', 'gif'], true);
     }
 
     /**
@@ -150,29 +184,53 @@ class FileDelivery
     {
         $disk = Storage::disk(config('filemanagement.disk'));
 
-        return Cache::lock('thumbnail:'.$file->hash_name, 60)->block(30, function () use ($disk, $file, $widths) {
-            // อีก request/งานอาจสร้างเสร็จระหว่างรอ lock — เหลือเฉพาะขนาดที่ยังไม่มี
-            $missing = array_values(array_filter(
-                array_unique(array_map('intval', $widths)),
-                fn (int $width) => $width > 0 && ! $disk->exists(self::thumbnailPath($file, $width)),
-            ));
+        $webp = self::webpEnabled($file);
+        $quality = (int) config('filemanagement.webp.quality', 80);
 
-            if ($missing === [] || ! self::fitsInMemory($disk->path($file->path))) {
+        return Cache::lock('thumbnail:'.$file->hash_name, 60)->block(30, function () use ($disk, $file, $widths, $webp, $quality) {
+            // ไฟล์ที่ต้องสร้างของแต่ละขนาด (แบบนามสกุลเดิม + แบบ WebP) — อีกงานอาจสร้างเสร็จระหว่างรอ lock จึงเหลือเฉพาะที่ยังไม่มี
+            $targets = [];
+
+            foreach (array_unique(array_map('intval', $widths)) as $width) {
+                if ($width <= 0) {
+                    continue;
+                }
+
+                $paths = array_filter([
+                    'original' => self::thumbnailPath($file, $width),
+                    'webp' => $webp ? self::webpPath($file, $width) : null,
+                ], fn (?string $path) => $path !== null && ! $disk->exists($path));
+
+                if ($paths !== []) {
+                    $targets[$width] = $paths;
+                }
+            }
+
+            if ($targets === [] || ! self::fitsInMemory($disk->path($file->path))) {
                 return 0;
             }
 
-            rsort($missing);
+            krsort($targets);
             $image = (new ImageManager(new Driver))->read($disk->path($file->path));
+            $created = 0;
 
-            foreach ($missing as $width) {
+            foreach ($targets as $width => $paths) {
                 $image->scaleDown(width: $width); // ไม่ขยายรูปที่เล็กกว่าขนาดที่ขอ — ขนาดถัดไป (เล็กกว่า) ย่อต่อจากภาพนี้
 
-                $disk->put(self::thumbnailPath($file, $width), (string) $image->encodeByExtension($file->extension, quality: 82));
+                if (isset($paths['original'])) {
+                    $disk->put($paths['original'], (string) $image->encodeByExtension($file->extension, quality: 82));
+                    $created++;
+                }
+
+                if (isset($paths['webp'])) {
+                    $disk->put($paths['webp'], (string) $image->toWebp(quality: $quality));
+                    $created++;
+                }
             }
 
             unset($image);
 
-            return count($missing);
+            return $created;
         });
     }
 
@@ -223,9 +281,11 @@ class FileDelivery
         return $header !== '' && $header === $etag;
     }
 
-    private static function notModifiedResponse(string $etag): SymfonyResponse
+    private static function notModifiedResponse(string $etag, bool $varyAccept = false): SymfonyResponse
     {
-        return response('', SymfonyResponse::HTTP_NOT_MODIFIED)->header('ETag', '"'.$etag.'"');
+        $response = response('', SymfonyResponse::HTTP_NOT_MODIFIED)->header('ETag', '"'.$etag.'"');
+
+        return $varyAccept ? $response->header('Vary', 'Accept') : $response;
     }
 
     private static function applyCacheHeaders(BinaryFileResponse $response, string $etag, FileInfo $file, bool $public = false): void

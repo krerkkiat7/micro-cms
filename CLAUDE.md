@@ -486,6 +486,8 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 - **thumbnail ล่วงหน้า (branch `thumbnail-on-upload`)** — อัปโหลดรูปแล้วสร้าง thumbnail ขนาด `config('filemanagement.pregenerate_thumbnail_sizes')`
   ทันทีหลังส่ง response (`defer()` → `FileDelivery::pregenerateThumbnails()`); รูปเก่า `php artisan files:thumbnails`. ขนาดหน้าบ้านใหม่ที่เพิ่มในโค้ด
   (`FrontFile::thumbnail()`/`fromFileInfo()`) ควรเพิ่มใน config นี้ด้วย — ดู `docs/PRD-system.md` §9
+- **thumbnail WebP (branch `webp-thumbnail`)** — thumbnail ทุกขนาดมีไฟล์คู่ `.webp` (`FileDelivery::webpPath()`), URL เดิมเสิร์ฟ WebP เมื่อ
+  `Accept` มี `image/webp` + `Vary: Accept`; ต้นฉบับ/ดาวน์โหลดไม่แปลง, GIF/WebP ไม่แปลง; ปิดด้วย `FILE_WEBP=false`
 
 ## ทดสอบ
 
