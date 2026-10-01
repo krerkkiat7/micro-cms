@@ -1,0 +1,27 @@
+# ไม่ส่งเข้า build context ของ docker/production/Dockerfile — ของในเครื่อง/ที่ image สร้างเอง
+.git
+.github
+.idea
+.vscode
+.claude
+.env
+.env.*
+!.env.example
+node_modules
+vendor
+public/build
+public/hot
+public/storage
+bootstrap/cache/*.php
+storage/app/private/*
+storage/app/public/*
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/testing/*
+storage/framework/views/*
+storage/logs/*
+storage/pail
+database/database.sqlite
+exampledata/_build/out
+tests
+*.log

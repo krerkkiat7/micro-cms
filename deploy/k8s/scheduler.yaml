@@ -1,0 +1,45 @@
+# งานตามเวลา (php artisan schedule:work → front:flush-views ทุกนาที) — 1 replica เท่านั้น
+# Recreate = ไม่มี 2 ตัวทำงานซ้อนกันระหว่าง deploy
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: microcms-scheduler
+  labels:
+    app.kubernetes.io/name: microcms
+    app.kubernetes.io/component: scheduler
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: microcms
+      app.kubernetes.io/component: scheduler
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: microcms
+        app.kubernetes.io/component: scheduler
+    spec:
+      containers:
+        - name: scheduler
+          image: microcms
+          args: ["scheduler"]
+          envFrom:
+            - configMapRef:
+                name: microcms-env
+            - secretRef:
+                name: microcms-secret
+          volumeMounts:
+            - name: storage
+              mountPath: /var/www/html/storage
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: microcms-storage

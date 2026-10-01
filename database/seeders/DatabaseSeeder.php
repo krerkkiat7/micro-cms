@@ -167,6 +167,9 @@ class DatabaseSeeder extends Seeder
         $this->call(MenuSeeder::class);
 
         // ข้อมูลตัวอย่างทั้งชุด (บทความ/ป้ายโฆษณา/หน้าเพจ/เมนู/template/intropage/popup/ติดต่อเรา + ไฟล์จาก exampledata/)
-        $this->call(SampleDataSeeder::class);
+        // ติดตั้งระบบเปล่าไม่เอาข้อมูลตัวอย่าง: SEED_SAMPLE_DATA=false php artisan migrate --seed
+        if (filter_var(env('SEED_SAMPLE_DATA', true), FILTER_VALIDATE_BOOL)) {
+            $this->call(SampleDataSeeder::class);
+        }
     }
 }

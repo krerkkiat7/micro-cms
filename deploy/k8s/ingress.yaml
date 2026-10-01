@@ -1,0 +1,26 @@
+# ตัวอย่างสำหรับ ingress-nginx + cert-manager — controller อื่นปรับ annotation ให้ตรง
+# (ต้องตั้งขนาด body ≥ 25MB สำหรับอัปโหลดไฟล์ และส่ง X-Forwarded-Proto ให้ระบบ)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: microcms
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "25m"
+    # cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - www.example.com
+      secretName: microcms-tls
+  rules:
+    - host: www.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: microcms-web
+                port:
+                  name: http

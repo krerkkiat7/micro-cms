@@ -1,0 +1,14 @@
+# storage/ ของระบบ (ไฟล์ที่อัปโหลด + thumbnail + log) — ใช้ร่วมกันทุก pod (web ทุกตัว + scheduler)
+# web มากกว่า 1 replica หรือกระจายหลาย node → ต้องเป็น ReadWriteMany (NFS, CephFS, EFS, Azure Files, Filestore ฯลฯ)
+# cluster ที่มีแค่ ReadWriteOnce: ตั้ง web replicas = 1 และบังคับทุก pod ลง node เดียวกัน
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: microcms-storage
+spec:
+  accessModes:
+    - ReadWriteMany
+  # storageClassName: nfs-client
+  resources:
+    requests:
+      storage: 20Gi

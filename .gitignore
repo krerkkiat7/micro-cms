@@ -25,3 +25,6 @@ Homestead.yaml
 Thumbs.db
 start.md
 exampledata/_build/out/
+
+# Kubernetes secret จริง (คัดลอกจาก deploy/k8s/secret.example.yaml)
+/deploy/k8s/secret.yaml
