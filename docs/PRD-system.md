@@ -643,6 +643,12 @@ Content` ให้เอง — ทดสอบแล้วว่า mp3/mp4 see
 `304` ก่อนอ่านไฟล์จริงถ้าตรงกัน — thumbnail generate ครั้งแรกด้วย `intervention/image` (GD driver) แล้ว cache
 ไฟล์ที่ resize ไว้ที่ `filemanager/thumbnails/{width}/{hash_name}` (ไม่ resize ซ้ำทุก request)
 
+**thumbnail ล่วงหน้า** — อัปโหลดรูปแล้ว `FileController::upload` เรียก `FileDelivery::pregenerateThumbnails()` ผ่าน `defer()` (หลังส่ง response —
+ผู้อัปโหลดไม่ต้องรอ และไม่ต้องมี queue worker) สร้างขนาดใน `config('filemanagement.pregenerate_thumbnail_sizes')` = 100/200 (หน้าจัดการไฟล์) +
+640/1280/1600/1920 (ขนาดที่หน้าบ้านใช้) โดย decode รูปต้นฉบับครั้งเดียวแล้วย่อทุกขนาด (`scaleDown` ไม่ขยายรูปเล็ก, lock ต่อไฟล์);
+ขนาดอื่นยังสร้างตอนถูกขอครั้งแรกตามเดิม. รูปที่อัปโหลดก่อนมีระบบนี้: `php artisan files:thumbnails` (ข้ามขนาดที่มีแล้ว, `--id=` เฉพาะบางไฟล์) —
+เพิ่มขนาดหน้าบ้านใหม่ในโค้ด ให้เพิ่มใน config นี้แล้วรันคำสั่งอีกครั้ง
+
 **Cache** — `App\Support\FileCache` (cache-first lookup `file_info` ด้วย `hash_name`, TTL 6 ชั่วโมง) —
 ปุ่ม "ล้าง Cache ไฟล์" อยู่ที่หน้า `admin.system.setting.clearcache` (route
 `admin.system.setting.clearcache.files`) — driver cache เป็น `database` ไม่รองรับ tag จึงล้างทั้ง cache
