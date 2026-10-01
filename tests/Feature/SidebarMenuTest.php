@@ -11,7 +11,7 @@ beforeEach(function () {
 });
 
 test('super admin sees every menu group and item', function () {
-    $admin = User::where('email', 'admin@admin.com')->firstOrFail();
+    $admin = User::where('email', 'admin@mycms.com')->firstOrFail();
 
     $this->actingAs($admin)
         ->get('/admin/dashboard')

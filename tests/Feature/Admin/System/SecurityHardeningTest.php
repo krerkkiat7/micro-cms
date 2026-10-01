@@ -20,7 +20,7 @@ function systemGroup(): UserGroup
 
 function superAdminUser(): User
 {
-    return User::where('email', 'admin@admin.com')->firstOrFail();
+    return User::where('email', 'admin@mycms.com')->firstOrFail();
 }
 
 // ---------------------------------------------------------------- สถานะผู้ใช้ทุก request

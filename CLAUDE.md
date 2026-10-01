@@ -39,7 +39,7 @@ docker-compose up -d          # เปิด MySQL (my_cms) + Redis
 composer install
 cp .env.example .env          # แล้วปรับ DB_*, REDIS_*, SESSION_DRIVER, CACHE_STORE ให้ตรง (ดูหมายเหตุด้านล่าง)
 php artisan key:generate
-php artisan migrate --seed    # seed สร้าง user: admin@admin.com / password123
+php artisan migrate --seed    # seed สร้าง user: admin@mycms.com / P@ssw0rd
 npm install
 
 # พัฒนา

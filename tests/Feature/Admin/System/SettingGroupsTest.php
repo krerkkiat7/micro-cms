@@ -51,7 +51,7 @@ test('login_back requires a count when lockout is enabled and clears it when dis
 });
 
 test('an account is locked after the configured number of failed logins', function () {
-    $this->actingAs(User::where('email', 'admin@admin.com')->firstOrFail());
+    $this->actingAs(User::where('email', 'admin@mycms.com')->firstOrFail());
     $this->put(route('admin.system.setting.update.login_back'), ['captcha_enabled' => 'N', 'lockout_enabled' => 'Y', 'lockout_count' => 3])
         ->assertSessionHasNoErrors();
     auth()->logout();
