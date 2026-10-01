@@ -520,6 +520,12 @@ paging + per_page + sort default `created_at` desc (`sort=name` leftJoin `sys_us
 | `created_by` / `updated_by` | bigint null (`sys_user.id`, ไม่มี FK) | ผู้สร้าง / ผู้แก้ไขล่าสุด (ยังไม่มี UI เขียน) |
 | `timestamps`, `deleted_at` | | timestamps + softDeletes |
 
+**ค่าลับเข้ารหัส** — `Setting::SECRETS` (`smtp.password`, `turnstile.key_secret`) เก็บใน `value` แบบเข้ารหัสด้วย Laravel `Crypt`
+(AES-256-CBC + HMAC-SHA256 ด้วยกุญแจ `APP_KEY`) ทั้งใน DB และใน cache — เข้ารหัสอัตโนมัติตอนบันทึก (`SysSetting::saving`), ถอดรหัสใน
+`Setting::group()`/`get()`; หน้าตั้งค่าไม่ส่งค่าจริงไปหน้าจอ (เว้นว่าง = ใช้ค่าเดิม). ข้อมูลเดิมเข้ารหัสด้วย migration `2026_10_09_000001_*`.
+**ย้ายเครื่อง/ติดตั้งใหม่ต้องใช้ `APP_KEY` เดิม** — ถ้าเปลี่ยน ค่าลับจะอ่านได้เป็น null (Turnstile ถือว่ายังไม่ตั้งค่า, SMTP ไม่มีรหัสผ่าน) ต้องกรอกใหม่ที่หน้าตั้งค่าระบบ.
+เพิ่มค่าลับใหม่ = เพิ่มชื่อใน `Setting::SECRETS` (+ migration เข้ารหัสค่าเดิม และไม่ส่งค่าไปหน้าจอใน `SettingController::SECRET_FIELDS`)
+
 primary key = `(group, name)` — Eloquent ไม่รองรับ composite key เต็มรูปแบบ ให้ค้นด้วย
 `SysSetting::where('group', ...)->where('name', ...)` (ไม่ใช้ `find()`)
 
