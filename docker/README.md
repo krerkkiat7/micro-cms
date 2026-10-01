@@ -32,7 +32,7 @@ docker exec cms_app php artisan migrate --seed
 docker exec cms_app php artisan files:thumbnails
 ```
 
-เปิด http://localhost:8001 (หลังบ้าน http://localhost:8001/admin — admin@admin.com / password123)
+เปิด http://localhost:8001 (หลังบ้าน http://localhost:8001/admin — admin@mycms.com / P@ssw0rd)
 
 ## ใช้งานประจำวัน
 

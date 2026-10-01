@@ -21,7 +21,7 @@ function rawSetting(string $group, string $name): ?string
 }
 
 test('secrets saved from the settings page are encrypted in the database but readable through Setting', function () {
-    $this->actingAs(User::where('email', 'admin@admin.com')->firstOrFail());
+    $this->actingAs(User::where('email', 'admin@mycms.com')->firstOrFail());
 
     $this->put(route('admin.system.setting.update.smtp'), [
         'host' => 'smtp.example.com', 'port' => 587, 'use_auth' => 'Y', 'username' => 'mailer',

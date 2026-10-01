@@ -47,5 +47,5 @@ test('database seeder is idempotent', function () {
     expect(SysAction::count())->toBe($afterFirst);
     expect(SysMenu::count())->toBeGreaterThan(0);
     expect(UserGroup::where('name', 'Super Admin')->count())->toBe(1);
-    expect(User::where('email', 'admin@admin.com')->count())->toBe(1);
+    expect(User::where('email', 'admin@mycms.com')->count())->toBe(1);
 });

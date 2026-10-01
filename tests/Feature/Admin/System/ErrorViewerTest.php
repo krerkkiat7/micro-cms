@@ -91,7 +91,7 @@ test('filters the selected day by text', function () {
 });
 
 test('show finds a reference on either side with the full trace', function () {
-    $user = User::where('email', 'admin@admin.com')->firstOrFail();
+    $user = User::where('email', 'admin@mycms.com')->firstOrFail();
     writeErrorLog($this->logDir, 'admin', '2026-09-27', '08:00:00', 'ERR-DDDDDDD2', 'RuntimeException: หลังบ้าน', ['user_id' => $user->id]);
 
     actingAsUserWithPermissions(['system.error.view']);
