@@ -655,6 +655,13 @@ Content` ให้เอง — ทดสอบแล้วว่า mp3/mp4 see
 ขนาดอื่นยังสร้างตอนถูกขอครั้งแรกตามเดิม. รูปที่อัปโหลดก่อนมีระบบนี้: `php artisan files:thumbnails` (ข้ามขนาดที่มีแล้ว, `--id=` เฉพาะบางไฟล์) —
 เพิ่มขนาดหน้าบ้านใหม่ในโค้ด ให้เพิ่มใน config นี้แล้วรันคำสั่งอีกครั้ง
 
+**thumbnail แบบ WebP** — ทุก thumbnail มีไฟล์คู่ `…/{hash_name}.webp` (GD, quality 80 — `config('filemanagement.webp')`, ปิดด้วย `FILE_WEBP=false`)
+สร้างพร้อมกันตอนอัปโหลด/`files:thumbnails`/ขอครั้งแรก. URL ไม่เปลี่ยน — `FileDelivery::respondThumbnail()` ดู header `Accept`: มี `image/webp`
+(เบราว์เซอร์ปัจจุบันทั้งหมด) = ส่ง WebP, ไม่มี = ส่งนามสกุลเดิม + ตอบ `Vary: Accept` ทุกครั้ง (ETag ต่างกัน) ให้ cache แยกสองแบบ.
+ผู้ใช้อัปโหลด JPG/PNG ตามปกติ — **ไฟล์ต้นฉบับ/ลิงก์ดาวน์โหลด (`/file/get`, `/file/type/download`) ไม่แปลง**; GIF และไฟล์ที่เป็น WebP อยู่แล้วไม่สร้าง WebP.
+ผลกับข้อมูลตัวอย่าง: thumbnail รวม 58MB → 22MB (−61%), JPG −45–65%, PNG ที่เป็นภาพถ่าย −93–96%.
+CDN ที่ไม่แยก cache ตาม `Accept` (เช่น Cloudflare แผนฟรี) อาจส่งแบบที่ cache ไว้ก่อนให้ทุกคน — เบราว์เซอร์เก่าที่ไม่รองรับ WebP มีไม่ถึง 3%
+
 **Cache** — `App\Support\FileCache` (cache-first lookup `file_info` ด้วย `hash_name`, TTL 6 ชั่วโมง) —
 ปุ่ม "ล้าง Cache ไฟล์" อยู่ที่หน้า `admin.system.setting.clearcache` (route
 `admin.system.setting.clearcache.files`) — driver cache เป็น `database` ไม่รองรับ tag จึงล้างทั้ง cache

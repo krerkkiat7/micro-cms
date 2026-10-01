@@ -489,6 +489,8 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 - **ค่าลับใน `sys_setting` เข้ารหัส (branch `setting-secret-encrypt`)** — `Setting::SECRETS` (`smtp.password`, `turnstile.key_secret`) เก็บแบบ
   `Crypt` (APP_KEY) ทั้ง DB/cache, เข้ารหัสใน `SysSetting::saving` ถอดใน `Setting::group()` — **เปลี่ยน APP_KEY = ค่าลับอ่านไม่ได้ (null)**;
   ค่าลับใหม่ให้เพิ่มใน `Setting::SECRETS` — ดู `docs/PRD-system.md` §6
+- **thumbnail WebP (branch `webp-thumbnail`)** — thumbnail ทุกขนาดมีไฟล์คู่ `.webp` (`FileDelivery::webpPath()`), URL เดิมเสิร์ฟ WebP เมื่อ
+  `Accept` มี `image/webp` + `Vary: Accept`; ต้นฉบับ/ดาวน์โหลดไม่แปลง, GIF/WebP ไม่แปลง; ปิดด้วย `FILE_WEBP=false`
 
 ## ทดสอบ
 

@@ -240,3 +240,53 @@ test('non-image uploads create no thumbnails and the backfill command fills in m
     [$w1920] = getimagesize(Storage::disk('local')->path(FileDelivery::thumbnailPath($old, 1920)));
     expect($w1920)->toBe(800);
 });
+
+// ---------------------------------------------------------------- WebP
+
+test('uploading an image also pre-generates WebP thumbnails', function () {
+    $hash = $this->actingAs(User::factory()->create())->postJson(route('admin.system.file.upload'), [
+        'file' => UploadedFile::fake()->image('photo.jpg', 1400, 900),
+    ])->assertCreated()->json('data.hash_name');
+
+    $file = FileInfo::where('hash_name', $hash)->firstOrFail();
+
+    foreach (config('filemanagement.pregenerate_thumbnail_sizes') as $width) {
+        Storage::disk('local')->assertExists(FileDelivery::webpPath($file, $width));
+    }
+
+    expect(getimagesize(Storage::disk('local')->path(FileDelivery::webpPath($file, 640)))['mime'])->toBe('image/webp');
+});
+
+test('thumbnails are served as WebP only to browsers that accept it', function () {
+    $hash = $this->actingAs(User::factory()->create())->postJson(route('admin.system.file.upload'), [
+        'file' => UploadedFile::fake()->image('photo.png', 1000, 800),
+    ])->assertCreated()->json('data.hash_name');
+
+    $url = route('front.file.thumbnail', ['size' => 640, 'hashname' => $hash]);
+
+    $webp = $this->get($url, ['Accept' => 'image/avif,image/webp,*/*'])->assertOk();
+    expect($webp->headers->get('Content-Type'))->toBe('image/webp')
+        ->and($webp->headers->get('Vary'))->toContain('Accept');
+
+    $png = $this->get($url, ['Accept' => 'image/png,*/*'])->assertOk();
+    expect($png->headers->get('Content-Type'))->toBe('image/png')
+        ->and($png->headers->get('Vary'))->toContain('Accept')
+        ->and($png->headers->get('ETag'))->not->toBe($webp->headers->get('ETag'));
+
+    // ไฟล์ต้นฉบับ (/file/get) ไม่แปลง
+    expect($this->get(route('front.file.get', $hash), ['Accept' => 'image/webp,*/*'])->headers->get('Content-Type'))->toBe('image/png');
+});
+
+test('GIF images get no WebP thumbnails', function () {
+    $hash = $this->actingAs(User::factory()->create())->postJson(route('admin.system.file.upload'), [
+        'file' => UploadedFile::fake()->image('anim.gif', 300, 200),
+    ])->assertCreated()->json('data.hash_name');
+
+    $file = FileInfo::where('hash_name', $hash)->firstOrFail();
+
+    Storage::disk('local')->assertExists(FileDelivery::thumbnailPath($file, 200));
+    Storage::disk('local')->assertMissing(FileDelivery::webpPath($file, 200));
+
+    $response = $this->get(route('front.file.thumbnail', ['size' => 640, 'hashname' => $hash]), ['Accept' => 'image/webp,*/*']);
+    expect($response->headers->get('Content-Type'))->toBe('image/gif');
+});
