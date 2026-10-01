@@ -93,6 +93,7 @@ test('a banner can be re-saved when its category was disabled', function () {
     $this->put(route('admin.banner.item.update', $banner->id), [
         'banner_category_info_id' => $banner->banner_category_info_id,
         'intro_image_id' => $banner->intro_image_id,
+        'link_type' => 'custom',
         'url' => '/contactus',
         'link_target' => '_self',
         'publish_date' => now()->format('Y-m-d H:i:s'),

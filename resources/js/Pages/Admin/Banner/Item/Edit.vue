@@ -12,13 +12,17 @@ import ConfirmDialog from '@/Components/ConfirmDialog.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { Save, Trash2 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
-import type { BannerDetail, BannerItemFormData } from '@/utils/bannerForm';
+import { bannerItemPayload } from '@/utils/bannerForm';
+import type { BannerDetail, BannerItemFormData, BannerLinkType } from '@/utils/bannerForm';
+import type { FrontMenuPickerOption } from '@/utils/readAllButton';
 import type { FileItem, LanguageOption } from '@/types';
 
 interface EditItem {
     id: number;
     banner_category_info_id: number | null;
     status: string;
+    link_type: BannerLinkType;
+    front_menu_info_id: number | null;
     url: string | null;
     link_target: string | null;
     publish_date: string | null;
@@ -37,6 +41,7 @@ const props = defineProps<{
     details: Record<string, BannerDetail>;
     languages: LanguageOption[];
     categories: CategoryOption[];
+    frontMenus: FrontMenuPickerOption[];
     systemInfo: SystemAudit;
     clickCount: number;
     can: { manage: boolean; delete: boolean };
@@ -45,6 +50,8 @@ const props = defineProps<{
 const form = useForm<BannerItemFormData>({
     banner_category_info_id: props.item.banner_category_info_id ? String(props.item.banner_category_info_id) : '',
     intro_image_id: props.item.intro_image?.id ?? null,
+    link_type: props.item.link_type ?? 'none',
+    front_menu_info_id: props.item.front_menu_info_id ? String(props.item.front_menu_info_id) : '',
     url: props.item.url ?? '',
     link_target: props.item.link_target ?? '_self',
     publish_date: props.item.publish_date,
@@ -62,10 +69,7 @@ watch(introImage, (files) => {
 });
 
 function submit() {
-    form.transform((data) => ({
-        ...data,
-        banner_category_info_id: data.banner_category_info_id !== '' ? Number(data.banner_category_info_id) : null,
-    })).put(route('admin.banner.item.update', props.item.id));
+    form.transform(bannerItemPayload).put(route('admin.banner.item.update', props.item.id));
 }
 
 const confirmingDeletion = ref(false);
@@ -105,7 +109,7 @@ const breadcrumbs = computed(() => [
         <TabNav :tabs="tabs" class="mb-6" />
 
         <form class="space-y-6" @submit.prevent="submit">
-            <BannerItemFormFields v-model:intro-image="introImage" :form="form" :languages="languages" :category-options="categoryOptions" />
+            <BannerItemFormFields v-model:intro-image="introImage" :form="form" :languages="languages" :category-options="categoryOptions" :front-menus="frontMenus" />
 
             <SystemInfoCard :audit="systemInfo" :append="[{ label: 'จำนวนคลิก', value: clickCount }]" />
 

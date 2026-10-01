@@ -26,6 +26,8 @@ function validBannerItemPayload(int $categoryId, array $overrides = []): array
     return array_replace_recursive([
         'banner_category_info_id' => $categoryId,
         'intro_image_id' => FileInfo::query()->value('id'),
+        'link_type' => 'custom',
+        'front_menu_info_id' => null,
         'url' => 'https://example.com',
         'link_target' => '_blank',
         'publish_date' => now()->format('Y-m-d H:i:s'),

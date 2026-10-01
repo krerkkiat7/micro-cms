@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
     $this->seed(DatabaseSeeder::class);
-    $this->banner = BannerItemInfo::create(['url' => 'https://example.com/promo', 'link_target' => '_blank', 'status' => 'Y']);
+    $this->banner = BannerItemInfo::create(['link_type' => 'custom', 'url' => 'https://example.com/promo', 'link_target' => '_blank', 'status' => 'Y']);
 });
 
 test('a banner click is recorded once per session with click_amount summed on banner_item_info', function () {
@@ -35,7 +35,7 @@ test('a banner click is recorded once per session with click_amount summed on ba
 
 test('bots, unknown ids, banners without a link and disabled banners are not counted', function () {
     $noLink = BannerItemInfo::create(['url' => '', 'status' => 'Y']);
-    $disabled = BannerItemInfo::create(['url' => 'https://example.com', 'status' => 'N']);
+    $disabled = BannerItemInfo::create(['link_type' => 'custom', 'url' => 'https://example.com', 'status' => 'N']);
 
     $this->withHeader('User-Agent', 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)')
         ->post(route('front.banner.click'), ['id' => $this->banner->id, 'lang' => 'th'])

@@ -330,7 +330,7 @@ test('preview returns only published banners with an image, without link urls', 
     actingAsUserWithPermissions(['page.item.view']);
     $cid = $this->category->id;
 
-    bannerItem($cid, $this->image->id, ['url' => 'https://example.com/secret'], 'แสดง');
+    bannerItem($cid, $this->image->id, ['link_type' => 'custom', 'url' => 'https://example.com/secret'], 'แสดง');
     bannerItem($cid, $this->image->id, ['url' => null], 'ไม่มีลิงก์');
     bannerItem($cid, $this->image->id, ['status' => 'N'], 'ปิดอยู่');
     bannerItem($cid, $this->image->id, ['publish_date' => now()->addDay()], 'ยังไม่ถึงเวลา');

@@ -27,6 +27,10 @@ class UpdateBannerItemRequest extends FormRequest
         $messages = [
             'banner_category_info_id.required' => 'กรุณาเลือกหมวดหมู่',
             'intro_image_id.required' => 'กรุณาเลือกรูปภาพ',
+            'link_type.required' => 'กรุณาเลือกประเภทลิงก์',
+            'front_menu_info_id.required' => 'กรุณาเลือกเมนูปลายทาง',
+            'front_menu_info_id.exists' => 'เมนูปลายทางต้องเป็นเมนูที่เปิดใช้งานและมีลิงก์ (บทความ / หน้าเพจ / ติดต่อเรา / ลิงค์ภายนอก)',
+            'url.required' => 'กรุณากรอกลิงก์ URL ปลายทาง',
             'publish_date.required' => 'กรุณากรอกวันที่เผยแพร่',
             'publish_down.after' => 'วันที่ปิดการเผยแพร่ต้องมากกว่าวันที่เผยแพร่',
         ];

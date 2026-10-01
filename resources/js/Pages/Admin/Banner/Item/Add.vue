@@ -7,8 +7,9 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { Save } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
-import { emptyBannerDetails } from '@/utils/bannerForm';
+import { bannerItemPayload, emptyBannerDetails } from '@/utils/bannerForm';
 import type { BannerItemFormData } from '@/utils/bannerForm';
+import type { FrontMenuPickerOption } from '@/utils/readAllButton';
 import type { FileItem, LanguageOption } from '@/types';
 
 interface CategoryOption {
@@ -19,6 +20,7 @@ interface CategoryOption {
 const props = defineProps<{
     languages: LanguageOption[];
     categories: CategoryOption[];
+    frontMenus: FrontMenuPickerOption[];
 }>();
 
 const categoryOptions = computed(() => props.categories.map((cat) => ({ value: String(cat.id), label: cat.title ?? '(ไม่มีชื่อ)' })));
@@ -33,6 +35,8 @@ function nowDateTime(): string {
 const form = useForm<BannerItemFormData>({
     banner_category_info_id: '',
     intro_image_id: null,
+    link_type: 'none',
+    front_menu_info_id: '',
     url: '',
     link_target: '_self',
     publish_date: nowDateTime(),
@@ -48,10 +52,7 @@ watch(introImage, (files) => {
 });
 
 function submit() {
-    form.transform((data) => ({
-        ...data,
-        banner_category_info_id: data.banner_category_info_id !== '' ? Number(data.banner_category_info_id) : null,
-    })).post(route('admin.banner.item.store'));
+    form.transform(bannerItemPayload).post(route('admin.banner.item.store'));
 }
 
 const breadcrumbs = [
@@ -70,7 +71,7 @@ const breadcrumbs = [
         </template>
 
         <form class="space-y-6" @submit.prevent="submit">
-            <BannerItemFormFields v-model:intro-image="introImage" :form="form" :languages="languages" :category-options="categoryOptions" />
+            <BannerItemFormFields v-model:intro-image="introImage" :form="form" :languages="languages" :category-options="categoryOptions" :front-menus="frontMenus" />
 
             <div class="flex items-center gap-3">
                 <PrimaryButton type="submit" :disabled="form.processing">

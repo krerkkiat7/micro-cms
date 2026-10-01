@@ -38,8 +38,7 @@ class BannerItemController extends Controller
         return BannerItemInfo::query()
             ->whereKey($id)
             ->where('status', 'Y')
-            ->whereNotNull('url')
-            ->where('url', '<>', '')
+            ->whereRaw(BannerItemInfo::HAS_LINK_SQL)
             ->exists();
     }
 }

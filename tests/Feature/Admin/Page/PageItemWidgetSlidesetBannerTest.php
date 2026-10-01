@@ -227,7 +227,7 @@ test('preview returns only published banners with an image, tells whether they h
     actingAsUserWithPermissions(['page.item.view']);
     $cid = $this->category->id;
 
-    slidesetBannerItem($cid, $this->image->id, ['url' => 'https://example.com/secret'], 'มีลิงก์');
+    slidesetBannerItem($cid, $this->image->id, ['link_type' => 'custom', 'url' => 'https://example.com/secret'], 'มีลิงก์');
     slidesetBannerItem($cid, $this->image->id, ['url' => null], 'ไม่มีลิงก์');
     slidesetBannerItem($cid, $this->image->id, ['status' => 'N'], 'ปิดอยู่');
     slidesetBannerItem($cid, $this->image->id, ['publish_date' => now()->addDay()], 'ยังไม่ถึงเวลา');

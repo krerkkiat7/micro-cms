@@ -491,6 +491,9 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   ค่าลับใหม่ให้เพิ่มใน `Setting::SECRETS` — ดู `docs/PRD-system.md` §6
 - **thumbnail WebP (branch `webp-thumbnail`)** — thumbnail ทุกขนาดมีไฟล์คู่ `.webp` (`FileDelivery::webpPath()`), URL เดิมเสิร์ฟ WebP เมื่อ
   `Accept` มี `image/webp` + `Vary: Accept`; ต้นฉบับ/ดาวน์โหลดไม่แปลง, GIF/WebP ไม่แปลง; ปิดด้วย `FILE_WEBP=false`
+- **ลิงก์ป้ายโฆษณาเลือกประเภทก่อน (branch `banner-link-type`)** — `banner_item_info.link_type` (`none`/`menu`/`custom`) + `front_menu_info_id`
+  แบบเดียวกับปุ่ม "อ่านทั้งหมด"; เงื่อนไข "มีลิงก์" ใช้ `BannerItemInfo::HAS_LINK_SQL` ทั้ง widget และการนับคลิก, dropdown เมนูใช้
+  `frontMenuSelectOptions()` (`utils/readAllButton.ts`) ร่วมกัน — ดู `docs/PRD-banner.md`
 
 ## ทดสอบ
 
