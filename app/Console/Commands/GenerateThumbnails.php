@@ -32,6 +32,7 @@ class GenerateThumbnails extends Command
             foreach ($chunk as $file) {
                 $created += FileDelivery::pregenerateThumbnails($file);
                 $files++;
+                gc_collect_cycles(); // คืน memory ของภาพ GD ก่อนไฟล์ถัดไป (คำสั่งเดียวประมวลผลหลายรูป)
                 $bar->advance();
             }
         });
