@@ -5,6 +5,7 @@ namespace App\Support\PageWidget;
 use App\Models\BannerCategoryInfo;
 use App\Models\BannerItemInfo;
 use App\Support\Front\FrontLang;
+use App\Support\Front\FrontMenuResolver;
 use App\Support\Front\FrontUrl;
 use App\Support\Setting;
 use Illuminate\Database\Eloquent\Builder;
@@ -61,7 +62,7 @@ trait ReadsBanners
 
     /**
      * ป้ายโฆษณาของหมวดหมู่ที่เผยแพร่อยู่ (`status = Y`, ไม่ถูกลบ, อยู่ในช่วงเผยแพร่) และมีรูปที่ใช้งานได้ (ภาพคือตัวเนื้อหาของ banner)
-     * พร้อมข้อมูลภาษาหลักเป็น `d` และรูปเป็น `img` — select ให้ครบตามที่ previewRow() ใช้ (`has_link` = มี url)
+     * พร้อมข้อมูลภาษาหลักเป็น `d` และรูปเป็น `img` — select ให้ครบตามที่ previewRow() ใช้ (`has_link` = มีลิงก์ตามประเภท BannerItemInfo::HAS_LINK_SQL)
      */
     protected function bannerQuery(int $categoryId, ?string $lang = null): Builder
     {
@@ -79,7 +80,9 @@ trait ReadsBanners
             ->where('banner_item_info.status', 'Y')
             ->where(fn ($q) => $q->whereNull('banner_item_info.publish_date')->orWhere('banner_item_info.publish_date', '<=', $now))
             ->where(fn ($q) => $q->whereNull('banner_item_info.publish_down')->orWhere('banner_item_info.publish_down', '>', $now))
-            ->selectRaw("banner_item_info.id, img.hash_name as image, d.title, d.intro_text, (banner_item_info.url is not null and banner_item_info.url <> '') as has_link, banner_item_info.url as front_url, banner_item_info.link_target as front_link_target");
+            ->selectRaw('banner_item_info.id, img.hash_name as image, d.title, d.intro_text, '.BannerItemInfo::HAS_LINK_SQL.' as has_link, '
+                .'banner_item_info.link_type as front_link_type, banner_item_info.front_menu_info_id as front_menu_id, '
+                .'banner_item_info.url as front_url, banner_item_info.link_target as front_link_target');
     }
 
     protected function previewQuery(int $categoryId, ?string $lang = null): Builder
@@ -88,12 +91,23 @@ trait ReadsBanners
     }
 
     /**
-     * ลิงก์ของ banner 1 แถว — URL ที่ตั้งไว้ (เฉพาะรูปแบบที่ปลอดภัย) + เป้าหมายการเปิด
+     * ลิงก์ของ banner 1 แถวตามประเภทลิงก์ — เมนู: ลิงก์ + เป้าหมายตามที่ตั้งไว้ในเมนู (เมนูถูกซ่อน/ลบ = ไม่มีลิงก์),
+     * กำหนดเอง: URL ที่ตั้งไว้ (เฉพาะรูปแบบที่ปลอดภัย) + เป้าหมายการเปิด, ไม่มีลิงก์: null
      *
      * @return array{url: string|null, link_target: string}
      */
     protected function frontLink(object $row, string $lang): array
     {
+        if ($row->front_link_type === BannerItemInfo::LINK_MENU) {
+            $link = $row->front_menu_id ? FrontMenuResolver::linkOf($lang, (int) $row->front_menu_id) : null;
+
+            return ['url' => $link['url'] ?? null, 'link_target' => $link['target'] ?? '_self'];
+        }
+
+        if ($row->front_link_type !== BannerItemInfo::LINK_CUSTOM) {
+            return ['url' => null, 'link_target' => '_self'];
+        }
+
         return [
             // path ภายในที่ไม่มีภาษา (เช่น /news) เติม /{lang} ให้ — เหมือนเมนูลิงก์ภายนอก/popup/ปุ่มอ่านทั้งหมด
             'url' => FrontUrl::withLang(FrontUrl::safeExternal($row->front_url), $lang),

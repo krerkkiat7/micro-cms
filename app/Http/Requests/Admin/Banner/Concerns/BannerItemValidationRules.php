@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin\Banner\Concerns;
 
 use App\Models\BannerItemInfo;
 use App\Rules\SafeUrl;
+use App\Support\FrontMenuType;
 use App\Support\Setting;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
@@ -21,9 +22,11 @@ trait BannerItemValidationRules
      */
     protected function commonRules(?int $itemId = null): array
     {
-        $currentCategoryId = $itemId
-            ? BannerItemInfo::query()->whereKey($itemId)->value('banner_category_info_id')
+        $current = $itemId
+            ? BannerItemInfo::query()->whereKey($itemId)->first(['banner_category_info_id', 'front_menu_info_id'])
             : null;
+        $currentCategoryId = $current?->banner_category_info_id;
+        $currentMenuId = $current?->front_menu_info_id;
 
         return [
             'banner_category_info_id' => [
@@ -40,8 +43,20 @@ trait BannerItemValidationRules
                     ->where('status', 'Y')
                     ->whereNull('deleted_at')),
             ],
-            'url' => ['nullable', 'string', 'max:500', new SafeUrl],
-            'link_target' => ['nullable', Rule::in(['_self', '_blank'])],
+            // ลิงก์: เลือกประเภทก่อน แล้วตรวจเฉพาะฟิลด์ของประเภทนั้น (exclude_unless — ฟิลด์ของประเภทอื่นไม่ถูกบันทึก ดู BannerItemController::linkPayload)
+            'link_type' => ['required', Rule::in(BannerItemInfo::LINK_TYPES)],
+            'front_menu_info_id' => [
+                'exclude_unless:link_type,'.BannerItemInfo::LINK_MENU, 'required', 'integer',
+                // เมนูที่เปิดใช้งานและมีลิงก์ของตัวเอง (ไม่ใช่เมนูหัวข้อ) — เมนูเดิมของรายการนี้ที่ถูกปิดภายหลังยังบันทึกซ้ำได้
+                Rule::exists('front_menu_info', 'id')->where(fn ($query) => $query
+                    ->whereNull('deleted_at')
+                    ->whereIn('menu_type', FrontMenuType::LINKABLE)
+                    ->where(fn ($w) => $w
+                        ->where('status', 'Y')
+                        ->when($currentMenuId, fn ($or) => $or->orWhere('id', $currentMenuId)))),
+            ],
+            'url' => ['exclude_unless:link_type,'.BannerItemInfo::LINK_CUSTOM, 'required', 'string', 'max:500', new SafeUrl],
+            'link_target' => ['exclude_unless:link_type,'.BannerItemInfo::LINK_CUSTOM, 'nullable', Rule::in(['_self', '_blank'])],
             'publish_date' => ['required', 'date'],
             'publish_down' => ['nullable', 'date', 'after:publish_date'],
             'sort_order' => ['nullable', 'integer', 'min:0'],

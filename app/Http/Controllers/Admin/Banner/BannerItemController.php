@@ -10,8 +10,11 @@ use App\Models\BannerCategoryInfo;
 use App\Models\BannerItemDetail;
 use App\Models\BannerItemInfo;
 use App\Models\FileInfo;
+use App\Models\FrontMenuDetail;
+use App\Models\FrontMenuInfo;
 use App\Models\LogBackAccess;
 use App\Models\LogBackAction;
+use App\Support\FrontMenuTree;
 use App\Support\Report\ItemReport;
 use App\Support\Setting;
 use App\Support\SystemInfo;
@@ -130,6 +133,7 @@ class BannerItemController extends Controller
         return Inertia::render('Admin/Banner/Item/Add', [
             'languages' => $this->languageOptions(),
             'categories' => $this->categoryOptions(),
+            'frontMenus' => $this->frontMenuOptions(),
         ]);
     }
 
@@ -148,8 +152,7 @@ class BannerItemController extends Controller
         $item = BannerItemInfo::create([
             'banner_category_info_id' => $data['banner_category_info_id'],
             'intro_image_id' => $data['intro_image_id'] ?? null,
-            'url' => $data['url'] ?? null,
-            'link_target' => $data['link_target'] ?? null,
+            ...$this->linkPayload($data),
             'publish_date' => $data['publish_date'] ?? null,
             'publish_down' => $data['publish_down'] ?? null,
             'sort_order' => $data['sort_order'] ?? 0,
@@ -202,6 +205,8 @@ class BannerItemController extends Controller
                 'id' => $model->id,
                 'banner_category_info_id' => $model->banner_category_info_id,
                 'status' => $model->status,
+                'link_type' => $model->link_type,
+                'front_menu_info_id' => $model->front_menu_info_id,
                 'url' => $model->url,
                 'link_target' => $model->link_target,
                 'publish_date' => optional($model->publish_date)->format('Y-m-d H:i:s'),
@@ -214,6 +219,7 @@ class BannerItemController extends Controller
             ]),
             'languages' => $this->languageOptions(),
             'categories' => $this->categoryOptions($model->banner_category_info_id),
+            'frontMenus' => $this->frontMenuOptions($model->front_menu_info_id),
             'systemInfo' => SystemInfo::audit($model),
             'clickCount' => (int) $model->click_amount,
             'can' => [
@@ -286,8 +292,7 @@ class BannerItemController extends Controller
         $model->fill([
             'banner_category_info_id' => $data['banner_category_info_id'],
             'intro_image_id' => $data['intro_image_id'] ?? null,
-            'url' => $data['url'] ?? null,
-            'link_target' => $data['link_target'] ?? null,
+            ...$this->linkPayload($data),
             'publish_date' => $data['publish_date'] ?? null,
             'publish_down' => $data['publish_down'] ?? null,
             'sort_order' => $data['sort_order'] ?? 0,
@@ -452,5 +457,51 @@ class BannerItemController extends Controller
     private function defaultTitle(array $data): ?string
     {
         return $data['detail'][Setting::defaultLanguage()]['title'] ?? null;
+    }
+
+    /**
+     * ฟิลด์ลิงก์ตามประเภทที่เลือก — บันทึกเฉพาะค่าของประเภทนั้น ประเภทอื่นเป็น null (ไม่เหลือค่าค้างที่ไม่ได้ใช้)
+     *
+     * @param  array<string, mixed>  $data
+     * @return array{link_type: string, front_menu_info_id: int|null, url: string|null, link_target: string|null}
+     */
+    private function linkPayload(array $data): array
+    {
+        $type = $data['link_type'];
+
+        return [
+            'link_type' => $type,
+            'front_menu_info_id' => $type === BannerItemInfo::LINK_MENU ? (int) $data['front_menu_info_id'] : null,
+            'url' => $type === BannerItemInfo::LINK_CUSTOM ? trim((string) $data['url']) : null,
+            'link_target' => $type === BannerItemInfo::LINK_CUSTOM ? ($data['link_target'] ?? '_self') : null,
+        ];
+    }
+
+    /**
+     * เมนูหน้าบ้านสำหรับ dropdown เมนูปลายทาง (เมนูที่เปิดใช้งาน เรียงตาม tree) — เมนูเดิมของรายการที่ถูกปิด/ซ่อนภายหลัง
+     * ต่อท้ายพร้อม `inactive` ให้ยังเห็นค่าที่บันทึกไว้ (บันทึกซ้ำได้ตาม BannerItemValidationRules)
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function frontMenuOptions(?int $currentId = null): array
+    {
+        $options = FrontMenuTree::pickerOptions();
+
+        if ($currentId !== null && ! collect($options)->contains('id', $currentId)) {
+            $menu = FrontMenuInfo::query()->find($currentId);
+
+            if ($menu) {
+                $options[] = [
+                    'id' => $menu->id,
+                    'name' => (string) FrontMenuDetail::query()->where('id', $menu->id)->where('lang', Setting::defaultLanguage())->value('name'),
+                    'depth' => 0,
+                    'menu_type' => $menu->menu_type,
+                    'selectable' => true,
+                    'inactive' => true,
+                ];
+            }
+        }
+
+        return $options;
     }
 }

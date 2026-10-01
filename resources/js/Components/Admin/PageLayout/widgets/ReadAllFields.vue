@@ -22,6 +22,7 @@ import {
     READ_ALL_LINK_TYPES,
     READ_ALL_POSITIONS,
     READ_ALL_STYLES,
+    frontMenuSelectOptions,
     readAllIconComponent,
 } from '@/utils/readAllButton';
 import type { FrontMenuPickerOption, ReadAllSettingFields } from '@/utils/readAllButton';
@@ -49,13 +50,7 @@ const page = usePage();
 const menus = computed<FrontMenuPickerOption[]>(() => (page.props.widgetOptions as WidgetOptions | undefined)?.front_menus ?? []);
 
 // แสดงเมนูทั้งหมดที่เปิดใช้งาน เยื้องตามระดับ — เมนูหัวข้อ/ไม่กำหนดเลือกไม่ได้ (ไม่มีลิงก์ของตัวเอง)
-const menuOptions = computed(() =>
-    menus.value.map((menu) => ({
-        value: String(menu.id),
-        label: `${'\u00A0\u00A0\u00A0'.repeat(menu.depth)}${menu.depth > 0 ? '└ ' : ''}${menu.name || `เมนู #${menu.id}`}${menu.selectable ? '' : ' (หัวข้อ)'}`,
-        disabled: !menu.selectable,
-    })),
-);
+const menuOptions = computed(() => frontMenuSelectOptions(menus.value));
 
 const menuId = computed({
     get: () => (props.setting.read_all_menu_id ? String(props.setting.read_all_menu_id) : ''),

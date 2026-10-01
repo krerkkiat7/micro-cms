@@ -101,4 +101,23 @@ export interface FrontMenuPickerOption {
     menu_type: string;
     /** false = เมนูหัวข้อ/ไม่กำหนด (แสดงให้เห็นโครง แต่เลือกไม่ได้) */
     selectable: boolean;
+    /** true = เมนูเดิมที่บันทึกไว้แต่ถูกปิดใช้งานภายหลัง (ส่งมาเพิ่มเฉพาะหน้าแก้ไขบางหน้า) */
+    inactive?: boolean;
+}
+
+/** non-breaking space สำหรับเยื้องระดับเมนู (ช่องว่างปกติถูกยุบเมื่อแสดงผล) */
+const NBSP = String.fromCharCode(160);
+
+/**
+ * ตัวเลือก SearchableSelect ของเมนูหน้าบ้าน — เยื้องตามระดับ, เมนูหัวข้อ/ไม่กำหนดเลือกไม่ได้ (ไม่มีลิงก์ของตัวเอง)
+ * ใช้ร่วมกันระหว่างปุ่ม "อ่านทั้งหมด" ของ widget และลิงก์ของป้ายโฆษณา
+ */
+export function frontMenuSelectOptions(menus: FrontMenuPickerOption[]): { value: string; label: string; disabled: boolean }[] {
+    return menus.map((menu) => ({
+        value: String(menu.id),
+        label:
+            `${NBSP.repeat(menu.depth * 3)}${menu.depth > 0 ? '└ ' : ''}${menu.name || `เมนู #${menu.id}`}` +
+            `${menu.selectable ? '' : ' (หัวข้อ)'}${menu.inactive ? ' (ไม่ใช้งาน)' : ''}`,
+        disabled: !menu.selectable,
+    }));
 }

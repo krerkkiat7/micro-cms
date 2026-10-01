@@ -20,7 +20,7 @@ beforeEach(function () {
     foreach (['A', 'B'] as $name) {
         $category = BannerCategoryInfo::create(['status' => 'Y']);
         DB::table('banner_category_detail')->insert(['id' => $category->id, 'lang' => 'th', 'title' => "หมวด {$name}", 'status' => 'Y']);
-        $banner = BannerItemInfo::create(['banner_category_info_id' => $category->id, 'url' => 'https://example.com', 'status' => 'Y']);
+        $banner = BannerItemInfo::create(['banner_category_info_id' => $category->id, 'link_type' => 'custom', 'url' => 'https://example.com', 'status' => 'Y']);
         BannerItemDetail::create(['id' => $banner->id, 'lang' => 'th', 'title' => "Banner {$name}", 'status' => 'Y']);
     }
 });
