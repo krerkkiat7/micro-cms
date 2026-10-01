@@ -4,8 +4,10 @@ namespace App\Support;
 
 use App\Models\SysSetting;
 use App\Support\Front\FrontCache;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 use PDOException;
 
 /**
@@ -18,6 +20,13 @@ use PDOException;
 class Setting
 {
     public const GROUPS = ['site', 'contact', 'social', 'google_analytics', 'google_map', 'smtp', 'turnstile', 'login_back', 'article', 'banner', 'popup', 'contactus'];
+
+    /**
+     * ค่าลับ (กลุ่ม => ชื่อฟิลด์) — เก็บใน sys_setting แบบเข้ารหัสด้วย APP_KEY (Crypt = AES-256-CBC + HMAC) และใน cache ก็เป็นค่าที่เข้ารหัส
+     * เข้ารหัสอัตโนมัติตอนบันทึก (SysSetting::saving) / ถอดรหัสตอนอ่านผ่าน group()/get() — โค้ดที่ใช้ค่าไม่ต้องรู้เรื่องการเข้ารหัส
+     * **เปลี่ยน APP_KEY = ถอดรหัสค่าเดิมไม่ได้** (อ่านได้เป็น null) ต้องกรอกค่าลับใหม่ที่หน้าตั้งค่าระบบ
+     */
+    public const SECRETS = ['smtp' => ['password'], 'turnstile' => ['key_secret']];
 
     /**
      * ค่าตั้งค่าทั้งกลุ่ม เป็น array แบบ name => value — แคชไว้ 1 วัน
@@ -34,17 +43,59 @@ class Setting
         try {
             $values = $cache->get($key);
 
-            if (is_array($values)) {
-                return $values;
+            if (! is_array($values)) {
+                $values = SysSetting::query()->where('group', $group)->pluck('value', 'name')->all();
+                $cache->put($key, $values, now()->addDay());
             }
 
-            $values = SysSetting::query()->where('group', $group)->pluck('value', 'name')->all();
-            $cache->put($key, $values, now()->addDay());
-
-            return $values;
+            return self::revealSecrets($group, $values);
         } catch (QueryException|PDOException) {
             return [];
         }
+    }
+
+    public static function isSecret(?string $group, ?string $name): bool
+    {
+        return in_array($name, self::SECRETS[$group] ?? [], true);
+    }
+
+    /**
+     * เข้ารหัสค่าลับ — ค่าที่เข้ารหัสไว้แล้ว (ถอดได้ด้วย APP_KEY ปัจจุบัน) คืนตามเดิม ไม่เข้ารหัสซ้อน
+     */
+    public static function encryptSecret(string $value): string
+    {
+        return self::decryptSecret($value) !== null ? $value : Crypt::encryptString($value);
+    }
+
+    /**
+     * ถอดรหัสค่าลับ — ไม่ใช่ค่าที่เข้ารหัส / APP_KEY เปลี่ยนไปแล้ว = null
+     */
+    public static function decryptSecret(?string $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        try {
+            return Crypt::decryptString($value);
+        } catch (DecryptException) {
+            return null;
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $values  ค่าดิบจาก sys_setting (ค่าลับยังเข้ารหัสอยู่)
+     * @return array<string, mixed>
+     */
+    private static function revealSecrets(string $group, array $values): array
+    {
+        foreach (self::SECRETS[$group] ?? [] as $name) {
+            if (isset($values[$name])) {
+                $values[$name] = self::decryptSecret($values[$name]);
+            }
+        }
+
+        return $values;
     }
 
     /**

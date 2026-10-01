@@ -486,6 +486,9 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 - **thumbnail ล่วงหน้า (branch `thumbnail-on-upload`)** — อัปโหลดรูปแล้วสร้าง thumbnail ขนาด `config('filemanagement.pregenerate_thumbnail_sizes')`
   ทันทีหลังส่ง response (`defer()` → `FileDelivery::pregenerateThumbnails()`); รูปเก่า `php artisan files:thumbnails`. ขนาดหน้าบ้านใหม่ที่เพิ่มในโค้ด
   (`FrontFile::thumbnail()`/`fromFileInfo()`) ควรเพิ่มใน config นี้ด้วย — ดู `docs/PRD-system.md` §9
+- **ค่าลับใน `sys_setting` เข้ารหัส (branch `setting-secret-encrypt`)** — `Setting::SECRETS` (`smtp.password`, `turnstile.key_secret`) เก็บแบบ
+  `Crypt` (APP_KEY) ทั้ง DB/cache, เข้ารหัสใน `SysSetting::saving` ถอดใน `Setting::group()` — **เปลี่ยน APP_KEY = ค่าลับอ่านไม่ได้ (null)**;
+  ค่าลับใหม่ให้เพิ่มใน `Setting::SECRETS` — ดู `docs/PRD-system.md` §6
 
 ## ทดสอบ
 
