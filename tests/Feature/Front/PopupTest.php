@@ -19,6 +19,10 @@ use Inertia\Testing\AssertableInertia as Assert;
 beforeEach(function () {
     $this->seed(DatabaseSeeder::class);
 
+    // popup ตัวอย่าง (PopupSeeder) ไม่เกี่ยวกับเทสนี้ — แต่ละเทสสร้าง popup ของตัวเอง
+    PopupItemInfo::query()->delete();
+    FrontCache::forgetAll();
+
     // หน้าเพจตัวอย่างที่มีเมนูชี้มา — ใช้เป็นหน้าทดสอบหลัก
     $this->pageMenu = FrontMenuInfo::query()->where('menu_type', FrontMenuType::PAGE)->where('status', 'Y')->orderBy('id')->firstOrFail();
     $this->pageId = $this->pageMenu->target_page_item_id;

@@ -141,7 +141,7 @@ test('article item permission shows content overview, expiring articles and edit
 });
 
 test('super admin sees every section', function () {
-    $this->actingAs(User::where('email', 'admin@mycms.com')->firstOrFail());
+    $this->actingAs(User::where('email', 'admin@microcms.com')->firstOrFail());
     LogBackAction::record('system.user', 'update', 'ทดสอบ', 1);
     DB::table('log_back_login')->insert([
         'log_type' => 'login', 'result' => 'fail', 'username' => 'x@example.com', 'action_date' => now()->toDateString(),

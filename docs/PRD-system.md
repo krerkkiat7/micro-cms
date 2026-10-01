@@ -98,7 +98,7 @@ controller หลังบ้านเรียก `Password::broker('users')->s
 **กันการยกระดับสิทธิ์** (กลุ่มระบบ = `sys_usergroup.can_edit = 'N'` เช่น Super Admin — `UserGroup::isSystem()` / `User::isSystemUser()`):
 - เฉพาะผู้ใช้ในกลุ่มระบบเท่านั้นที่แก้ไข/ลบ/เปลี่ยนรหัสผ่านผู้ใช้ในกลุ่มระบบ และย้ายผู้ใช้เข้ากลุ่มระบบได้ —
   ผู้ใช้อื่นเห็นหน้าแก้ไขแบบอ่านอย่างเดียว + ข้อความ `UserController::SYSTEM_GROUP_MESSAGE`, dropdown กลุ่มแสดงกลุ่มระบบเป็น disabled
-- **การย้ายผู้ใช้เข้ากลุ่มระบบ:** ให้ผู้ใช้ที่อยู่ในกลุ่มระบบ (เช่น admin@mycms.com ที่ seed ไว้) เข้าหน้าแก้ไขผู้ใช้คนนั้นแล้วเลือกกลุ่มระบบ
+- **การย้ายผู้ใช้เข้ากลุ่มระบบ:** ให้ผู้ใช้ที่อยู่ในกลุ่มระบบ (เช่น admin@microcms.com ที่ seed ไว้) เข้าหน้าแก้ไขผู้ใช้คนนั้นแล้วเลือกกลุ่มระบบ
 - ห้ามกำหนดสิทธิ์ให้กลุ่มของตัวเอง (หน้ากำหนดสิทธิ์ของกลุ่มตัวเองเป็นแบบอ่านอย่างเดียว)
 
 **หน้าจอ**
@@ -298,8 +298,7 @@ dropdown ธรรมดา (`SearchableSelect`) เพราะหมวดห�
 **Log** — `LogBackAction::record('system.menu', ...)` ทุกจุด create/update/delete (รวม reorder → `update`)
 ตาม convention log ที่บังคับทุกโมดูล CRUD ใหม่
 
-**FrontMenuSeeder** — ข้อมูลตัวอย่าง (`is_temp='Y'`) ต้องรันหลัง `ArticleSeeder`/`PageSeeder`: เมนูหน้าแรก
-(`is_home`, ชี้หน้าเพจตัวอย่าง) + เมนูหัวข้อ "บทความ" มีลูก 3 รายการชี้หมวดหมู่บทความตัวอย่าง — เรียกจาก `DatabaseSeeder`
+**FrontMenuSeeder** — ข้อมูลตัวอย่าง (`is_temp='Y'`) ดู `docs/PRD-system-frontmenu.md` §6 และ `exampledata/README.md`
 
 **ยังไม่ทำ (นอกขอบเขตรอบนี้)** — การ render เมนูจริงที่หน้าบ้าน: level 1 เรียงแนวนอน เมนูลูกแสดงลงมาด้านล่าง,
 level 2 เป็นต้นไปเรียงแนวตั้งไปด้านข้าง (dropdown/flyout) — ต้องมี Front controller อ่าน tree ตาม `lang`

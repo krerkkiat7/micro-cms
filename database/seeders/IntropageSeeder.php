@@ -2,93 +2,79 @@
 
 namespace Database\Seeders;
 
+use App\Models\ArticleItemDetail;
 use App\Models\IntropageItemButton;
 use App\Models\IntropageItemDetail;
 use App\Models\IntropageItemInfo;
-use App\Support\Setting;
+use Database\Seeders\Support\SampleFiles;
+use Database\Seeders\Support\SeedsSampleData;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 /**
- * ข้อมูลตัวอย่างโมดูล Intropage — ทำเครื่องหมาย is_temp = 'Y' เพื่อให้ลบออกได้ภายหลัง (หรือจะใช้ต่อไปก็ได้)
- * ไม่มีตารางหมวดหมู่ให้ seed (intropage ไม่มี category tier) จึงสร้างแค่ Intropage ตัวอย่าง 1 รายการ พร้อมปุ่ม
- * "เข้าหน้าแรก" เริ่มต้น 1 ปุ่ม — ใช้ display_type = youtubeurl (ไม่ต้องพึ่งไฟล์ใน file_info ให้ผูก เหมือนที่
- * BannerSeeder ข้ามป้ายโฆษณาตัวอย่างเพราะไม่มีไฟล์ผูก)
- *
- * รันเดี่ยว: php artisan db:seed --class=IntropageSeeder
+ * Intropage ตัวอย่าง — รูปยินดีต้อนรับ + ข้อความ + ปุ่ม "เข้าสู่เว็บไซต์" (home) และ "แนะนำระบบ" (ลิงก์บทความ)
+ * เผยแพร่ตั้งแต่เมื่อวานถึงอีก 2 ปี (ระบบบังคับให้มีวันสิ้นสุดเสมอ). เรียกผ่าน SampleDataSeeder เท่านั้น
  */
 class IntropageSeeder extends Seeder
 {
+    use SeedsSampleData;
     use WithoutModelEvents;
 
     public function run(): void
     {
-        $languages = Setting::selectedLanguages();
-        if ($languages === []) {
-            $languages = ['th', 'en'];
-        }
+        $adminId = $this->adminId();
 
-        $defaultLang = Setting::defaultLanguage();
+        $info = IntropageItemInfo::create([
+            'background_color' => '#0B1F44',
+            'display_type' => 'image',
+            'display_size' => 'container_75',
+            'image_file_id' => SampleFiles::import('images/intropage/welcome.jpg', 'ตัวอย่าง - Intropage'),
+            'detail_font_family' => 'Prompt',
+            'detail_font_size' => 20,
+            'detail_color' => '#DBEAFE',
+            'show_button' => 'Y',
+            'button_font_size' => 18,
+            'button_font_family' => 'Prompt',
+            'publish_date' => now()->subDay()->startOfDay(),
+            'publish_down' => now()->addYears(2)->endOfDay(),
+            'status' => 'Y',
+            'is_temp' => 'Y',
+            'created_by' => $adminId,
+        ]);
 
-        $title = ['th' => 'หน้าต้อนรับตัวอย่าง', 'en' => 'Sample Welcome Page'];
-        $detail = [
-            'th' => 'ยินดีต้อนรับเข้าสู่เว็บไซต์ของเรา',
-            'en' => 'Welcome to our website',
-        ];
-        $buttonText = ['th' => 'เข้าสู่เว็บไซต์', 'en' => 'Enter Site'];
+        $this->createDetails(IntropageItemDetail::class, $info->id, fn (string $lang) => [
+            'title' => $this->t(['th' => 'ยินดีต้อนรับสู่ MicroCMS', 'en' => 'Welcome to MicroCMS'], $lang),
+            'detail' => $this->t([
+                'th' => 'เว็บไซต์ตัวอย่างนี้สร้างจากข้อมูลตัวอย่างของ MicroCMS ทั้งหมด ลองสำรวจแล้วเข้าสู่ระบบหลังบ้านเพื่อแก้ไขได้ทันที',
+                'en' => 'This website is built entirely from the MicroCMS sample data. Explore it, then sign in to the back office to edit anything.',
+            ], $lang),
+            'status' => 'Y',
+        ]);
 
-        $defaultTitle = $title[$defaultLang] ?? $title['th'];
-
-        $info = IntropageItemInfo::updateOrCreate(
-            ['id' => $this->resolveId($defaultTitle, $defaultLang)],
+        $buttons = [
+            ['home', null, ['th' => 'เข้าสู่เว็บไซต์', 'en' => 'Enter website'], '#FFFFFF', '#1E3A8A'],
             [
-                'display_type' => 'youtubeurl',
-                'display_size' => 'screen_100',
-                'vdo_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-                'show_button' => 'Y',
-                'publish_date' => now(),
-                'publish_down' => now()->addDays(30),
-                'status' => 'Y',
-                'is_temp' => 'Y',
+                'other',
+                '/article/item/'.ArticleItemDetail::where('slug', 'introducing-microcms')->value('id').'/introducing-microcms',
+                ['th' => 'แนะนำระบบ', 'en' => 'About MicroCMS'],
+                '#2563EB',
+                '#FFFFFF',
             ],
-        );
+        ];
 
-        foreach ($languages as $lang) {
-            IntropageItemDetail::updateOrCreate(
-                ['id' => $info->id, 'lang' => $lang],
-                [
-                    'title' => $title[$lang] ?? $title['th'],
-                    'detail' => $detail[$lang] ?? $detail['th'],
-                    'status' => 'Y',
-                ],
-            );
-        }
-
-        if ($info->buttons()->count() === 0) {
-            $texts = [];
-            foreach ($languages as $lang) {
-                $texts[$lang] = $buttonText[$lang] ?? $buttonText['th'];
-            }
-
+        foreach ($buttons as $index => [$type, $url, $texts, $background, $color]) {
             IntropageItemButton::create([
                 'intropage_item_info_id' => $info->id,
-                'button_type' => 'home',
-                'sort_order' => 0,
+                'button_type' => $type,
+                'sort_order' => $index,
                 'button_display_type' => 'text',
-                'background_color' => '#465fff',
-                'text_color' => '#ffffff',
-                'texts' => $texts,
+                'background_color' => $background,
+                'text_color' => $color,
+                'url' => $url,
+                'link_target' => '_self',
+                'texts' => collect($this->languages())->mapWithKeys(fn (string $lang) => [$lang => $this->t($texts, $lang)])->all(),
+                'created_by' => $adminId,
             ]);
         }
-    }
-
-    /**
-     * หา id ของ Intropage ตัวอย่างจากชื่อ (title) ของภาษาหลักที่เคย seed ไว้ (intropage_item_detail ไม่มี
-     * คอลัมน์ slug ให้อ้างเหมือน ArticleSeeder) เพื่อให้ updateOrCreate อ้างแถวเดิมได้ (ไม่สร้างซ้ำ) — ถ้ายังไม่
-     * เคยมี ให้สร้างแถวใหม่
-     */
-    private function resolveId(string $defaultTitle, string $defaultLang): ?int
-    {
-        return IntropageItemDetail::where('lang', $defaultLang)->where('title', $defaultTitle)->value('id');
     }
 }

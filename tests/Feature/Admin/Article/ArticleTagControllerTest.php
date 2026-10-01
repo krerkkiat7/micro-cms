@@ -21,9 +21,9 @@ test('search requires article.item.manage', function () {
 test('search returns tags matching the default-language name', function () {
     actingAsUserWithPermissions(['article.item.manage']);
 
-    $this->get(route('admin.article.tag.search', ['q' => 'ความรู้']))
+    $this->get(route('admin.article.tag.search', ['q' => 'คู่มือ']))
         ->assertOk()
-        ->assertJsonFragment(['name' => 'ความรู้']);
+        ->assertJsonFragment(['name' => 'คู่มือ']);
 
     $this->get(route('admin.article.tag.search', ['q' => 'ไม่มีอยู่จริงแน่นอน']))
         ->assertOk()

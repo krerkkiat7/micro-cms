@@ -84,10 +84,8 @@
 
 **Migration** — `database/migrations/2026_09_18_000001_create_banner_category_tables.php`
 
-**Seeder** — `database/seeders/BannerSeeder.php` (เรียกจาก `DatabaseSeeder`) สร้างหมวดหมู่ตัวอย่าง 3 รายการ
-(ไฮไลท์/Highlight, หน่วยงานที่เกี่ยวข้อง/Related Agencies, อื่น ๆ/Others) ทำเครื่องหมาย `is_temp = 'Y'` ทุกแถว
-อ่านรายการภาษาจาก `Setting::selectedLanguages()` (fallback `th,en`) — รันซ้ำได้ (`updateOrCreate`, resolve แถวเดิม
-จาก**ชื่อของภาษาหลัก** เพราะไม่มีคอลัมน์ `slug` ให้อ้างเหมือน `ArticleSeeder`)
+**Seeder** — `database/seeders/BannerSeeder.php` (เรียกผ่าน `SampleDataSeeder`) สร้างหมวดหมู่ตัวอย่าง "Highlight"
+ทำเครื่องหมาย `is_temp = 'Y'` — ข้อมูลตัวอย่างทั้งชุดอธิบายไว้ที่ `exampledata/README.md`
 
 **หน้าจอ** — เสร็จแล้ว (`Admin/Banner/Category/{Index,Add,Edit}.vue`)
 - list หมวดหมู่ (ค้นหาชื่อ+ข้อความเกริ่นนำ, กรองสถานะ, เรียงชื่อ/สถานะ, แสดงจำนวนป้ายโฆษณาในหมวดหมู่, paging)
@@ -147,8 +145,8 @@
 
 **Migration** — `database/migrations/2026_09_18_000002_create_banner_item_tables.php`
 
-**Seeder** — ไม่มีป้ายโฆษณาตัวอย่าง (`BannerSeeder.php` seed แค่หมวดหมู่) เพราะยังไม่มีไฟล์รูปภาพตัวอย่างใน
-`file_info` ให้ผูก (โมดูลจัดการไฟล์เป็นพื้นที่ส่วนตัวต่อผู้ใช้ ไม่มี seed ไฟล์กลาง)
+**Seeder** — `BannerSeeder.php` สร้างป้ายโฆษณาตัวอย่าง 4 รายการในหมวด Highlight (รูป 21:9 จาก `exampledata/`,
+`link_type=menu` ชี้เมนูแนะนำระบบ/หมวดบทความ) แสดงด้วย widget Slideshow ในหน้าแรกตัวอย่าง
 
 **หน้าจอ** — เสร็จแล้ว (`Admin/Banner/Item/{Index,Add,Edit}.vue`)
 - list ป้ายโฆษณา (ค้นหาชื่อ+ข้อความเกริ่นนำ, กรองหมวดหมู่+สถานะ, เรียงชื่อ/หมวดหมู่/ลำดับ/วันที่เผยแพร่/สถานะ,

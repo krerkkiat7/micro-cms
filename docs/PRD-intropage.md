@@ -103,9 +103,9 @@
 **Migration** — `database/migrations/2026_09_18_000003_create_intropage_item_tables.php` (สร้างทั้ง 3 ตารางของ
 โมดูลนี้ในไฟล์เดียว รวมถึง `intropage_item_button`)
 
-**Seeder** — `database/seeders/IntropageSeeder.php` (เรียกจาก `DatabaseSeeder`) สร้าง Intropage ตัวอย่าง 1
-รายการ (`is_temp='Y'`, `display_type='youtubeurl'` เพื่อไม่ต้องพึ่งไฟล์ใน `file_info`) พร้อมปุ่ม `home` เริ่มต้น
-1 ปุ่ม — `updateOrCreate` resolve แถวเดิมจากชื่อของภาษาหลัก (เหมือน `BannerSeeder`) รันซ้ำได้
+**Seeder** — `database/seeders/IntropageSeeder.php` (เรียกผ่าน `SampleDataSeeder`) สร้าง Intropage ตัวอย่าง 1
+รายการ (`is_temp='Y'`, `display_type='image'` รูปยินดีต้อนรับจาก `exampledata/`, `container_75`) พร้อมปุ่ม `home`
+"เข้าสู่เว็บไซต์" และปุ่ม `other` "แนะนำระบบ" — เผยแพร่ถึงอีก 2 ปี
 
 **หน้าจอ** — เสร็จแล้ว (`Admin/Intropage/Item/{Index,Add,Edit}.vue`)
 - list Intropage (ค้นหาชื่อ, กรองสถานะ, เรียงชื่อ/วันที่ประกาศ/วันที่ปิดประกาศ/สถานะ, paging) — คอลัมน์ ชื่อ,

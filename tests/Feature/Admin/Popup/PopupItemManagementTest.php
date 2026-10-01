@@ -11,6 +11,8 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 beforeEach(function () {
     $this->seed(DatabaseSeeder::class);
+    // popup ตัวอย่าง (PopupSeeder) — เทสนับ/อ่าน popup ที่สร้างเองเท่านั้น
+    PopupItemInfo::query()->forceDelete();
     $this->image = FileInfo::create([
         'name' => 'popup.jpg', 'hash_name' => 'popup-hash.jpg', 'extension' => 'jpg', 'path' => 'x', 'status' => 'Y',
     ]);

@@ -4,93 +4,89 @@ namespace Database\Seeders;
 
 use App\Models\BannerCategoryDetail;
 use App\Models\BannerCategoryInfo;
-use App\Support\Setting;
+use App\Models\BannerItemDetail;
+use App\Models\BannerItemInfo;
+use Database\Seeders\Support\SampleFiles;
+use Database\Seeders\Support\SeedsSampleData;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 /**
- * ข้อมูลตัวอย่างโมดูลป้ายโฆษณา — หมวดหมู่ตัวอย่างเท่านั้น (ทำเครื่องหมาย is_temp = 'Y' ทุกแถว เพื่อให้ลบออกได้
- * ภายหลัง หรือจะใช้ต่อไปก็ได้) ไม่มีป้ายโฆษณาตัวอย่าง เพราะยังไม่มีไฟล์รูปภาพตัวอย่างใน file_info ให้ผูก
- * (โมดูลจัดการไฟล์เป็นพื้นที่ส่วนตัวต่อผู้ใช้ ไม่มี seed ไฟล์กลาง)
- *
- * banner_category_detail ไม่มีคอลัมน์ slug (ต่างจาก article_category_detail) จึง resolve แถวเดิมตอน
- * re-seed จากชื่อ (title) ของภาษาหลักแทน
- *
- * รันเดี่ยว: php artisan db:seed --class=BannerSeeder
+ * ข้อมูลตัวอย่างโมดูลป้ายโฆษณา — หมวด Highlight + ป้ายโฆษณา 4 รายการ (รูป 21:9) ลิงก์ไปเมนูหน้าบ้าน
+ * ต้องรันหลัง FrontMenuSeeder. เรียกผ่าน SampleDataSeeder เท่านั้น
  */
 class BannerSeeder extends Seeder
 {
+    use SeedsSampleData;
     use WithoutModelEvents;
+
+    public const HIGHLIGHT_TITLE = 'Highlight';
 
     public function run(): void
     {
-        $languages = Setting::selectedLanguages();
-        if ($languages === []) {
-            $languages = ['th', 'en'];
-        }
+        $category = BannerCategoryInfo::create(['status' => 'Y', 'is_temp' => 'Y', 'created_by' => $this->adminId()]);
 
-        $defaultLang = Setting::defaultLanguage();
+        $this->createDetails(BannerCategoryDetail::class, $category->id, fn (string $lang) => [
+            'title' => self::HIGHLIGHT_TITLE,
+            'intro_text' => $this->t([
+                'th' => 'ป้ายโฆษณาหลักที่แสดงเป็นสไลด์ด้านบนของหน้าแรก',
+                'en' => 'Main banners shown as the slideshow at the top of the home page',
+            ], $lang),
+            'status' => 'Y',
+        ]);
 
-        // หมวดหมู่ตัวอย่าง — ตำแหน่งที่ใช้แสดงผลป้ายโฆษณา, title/intro_text ต่อภาษา (th/en)
-        // ภาษาอื่นที่ระบบเปิดใช้นอกเหนือจากนี้ จะ fallback ไปใช้ข้อมูลชุด th
-        $categories = [
+        $banners = [
             [
-                'title' => ['th' => 'ไฮไลท์', 'en' => 'Highlight'],
-                'intro_text' => [
-                    'th' => 'แบนเนอร์ตำแหน่งไฮไลท์หน้าแรก',
-                    'en' => 'Highlight banners shown on the homepage',
-                ],
+                'image' => 'images/banner/banner-welcome.jpg',
+                'menu' => 'about',
+                'title' => ['th' => 'ยินดีต้อนรับสู่ MicroCMS', 'en' => 'Welcome to MicroCMS'],
+                'intro' => ['th' => 'ระบบจัดการเนื้อหาที่ติดตั้งง่าย ใช้งานง่าย สำหรับเว็บไซต์องค์กร', 'en' => 'An easy-to-install, easy-to-use content management system for organization websites'],
             ],
             [
-                'title' => ['th' => 'หน่วยงานที่เกี่ยวข้อง', 'en' => 'Related Agencies'],
-                'intro_text' => [
-                    'th' => 'แบนเนอร์ลิงก์ไปยังหน่วยงานที่เกี่ยวข้อง',
-                    'en' => 'Banners linking to related agencies',
-                ],
+                'image' => 'images/banner/banner-news.jpg',
+                'menu' => 'news',
+                'title' => ['th' => 'ข่าวสารล่าสุด', 'en' => 'Latest News'],
+                'intro' => ['th' => 'ติดตามฟีเจอร์ใหม่และความเคลื่อนไหวของ MicroCMS', 'en' => 'Keep up with new features and MicroCMS updates'],
             ],
             [
-                'title' => ['th' => 'อื่น ๆ', 'en' => 'Others'],
-                'intro_text' => [
-                    'th' => 'แบนเนอร์ตำแหน่งอื่น ๆ นอกเหนือจากไฮไลท์และหน่วยงานที่เกี่ยวข้อง',
-                    'en' => 'Banners for other positions besides highlight and related agencies',
-                ],
+                'image' => 'images/banner/banner-user-guide.jpg',
+                'menu' => 'user-guide',
+                'title' => ['th' => 'คู่มือการใช้งานระบบ', 'en' => 'User Guide'],
+                'intro' => ['th' => 'เรียนรู้การจัดการบทความ หน้าเพจ ป้ายโฆษณา และ Popup ทีละขั้นตอน', 'en' => 'Learn to manage articles, pages, banners and popups step by step'],
+            ],
+            [
+                'image' => 'images/banner/banner-external-services.jpg',
+                'menu' => 'external-services',
+                'title' => ['th' => 'เชื่อมต่อบริการภายนอก', 'en' => 'Connect External Services'],
+                'intro' => ['th' => 'ตั้งค่า Turnstile, Google Maps, Google Analytics และ SMTP', 'en' => 'Set up Turnstile, Google Maps, Google Analytics and SMTP'],
             ],
         ];
 
-        foreach ($categories as $category) {
-            $defaultTitle = $category['title'][$defaultLang] ?? $category['title']['th'];
+        foreach ($banners as $index => $banner) {
+            $item = BannerItemInfo::create([
+                'banner_category_info_id' => $category->id,
+                'intro_image_id' => SampleFiles::import($banner['image'], 'ตัวอย่าง - ป้ายโฆษณา'),
+                'link_type' => 'menu',
+                'front_menu_info_id' => FrontMenuSeeder::id($banner['menu']),
+                'link_target' => '_self',
+                'publish_date' => now()->subDays(30)->startOfDay(),
+                'click_amount' => [42, 27, 19, 11][$index],
+                'sort_order' => $index + 1,
+                'status' => 'Y',
+                'is_temp' => 'Y',
+                'created_by' => $this->adminId(),
+            ]);
 
-            $info = BannerCategoryInfo::updateOrCreate(
-                ['id' => $this->resolveId($defaultTitle, $defaultLang)],
-                [
-                    'status' => 'Y',
-                    'is_temp' => 'Y',
-                ],
-            );
-
-            foreach ($languages as $lang) {
-                $title = $category['title'][$lang] ?? $category['title']['th'];
-                $introText = $category['intro_text'][$lang] ?? $category['intro_text']['th'];
-
-                BannerCategoryDetail::updateOrCreate(
-                    ['id' => $info->id, 'lang' => $lang],
-                    [
-                        'title' => $title,
-                        'intro_text' => $introText,
-                        'status' => 'Y',
-                    ],
-                );
-            }
+            $this->createDetails(BannerItemDetail::class, $item->id, fn (string $lang) => [
+                'title' => $this->t($banner['title'], $lang),
+                'intro_text' => $this->t($banner['intro'], $lang),
+                'status' => 'Y',
+            ]);
         }
     }
 
-    /**
-     * หา id ของหมวดหมู่ตัวอย่างจากชื่อ (title) ของภาษาหลักที่เคย seed ไว้ (banner_category_detail ไม่มีคอลัมน์
-     * slug ให้อ้างเหมือน ArticleSeeder) เพื่อให้ updateOrCreate อ้างแถวเดิมได้ (ไม่สร้างซ้ำ) — ถ้ายังไม่เคยมี
-     * ให้สร้างแถวใหม่
-     */
-    private function resolveId(string $defaultTitle, string $defaultLang): ?int
+    public static function highlightId(): ?int
     {
-        return BannerCategoryDetail::where('lang', $defaultLang)->where('title', $defaultTitle)->value('id');
+        return BannerCategoryDetail::where('title', self::HIGHLIGHT_TITLE)->value('id');
     }
 }

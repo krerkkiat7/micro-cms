@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\ArticleCategoryDetail;
 use App\Models\ArticleCategoryInfo;
 use App\Models\ArticleItemDetail;
 use App\Models\ArticleItemInfo;
@@ -14,7 +15,9 @@ use Inertia\Testing\AssertableInertia as Assert;
 beforeEach(function () {
     // seed สร้างหมวดหมู่ article ตัวอย่าง (ArticleSeeder) + หน้าเพจตัวอย่าง (PageSeeder)
     $this->seed(DatabaseSeeder::class);
-    $this->category = ArticleCategoryInfo::query()->firstOrFail();
+    // หมวดหมู่ว่างของเทสเอง (หมวดหมู่ตัวอย่างมีบทความอยู่แล้ว)
+    $this->category = ArticleCategoryInfo::create(['status' => 'Y']);
+    ArticleCategoryDetail::create(['id' => $this->category->id, 'lang' => 'th', 'title' => 'หมวดของเทส', 'slug' => 'test-category', 'status' => 'Y']);
     $this->image = FileInfo::create([
         'name' => 'cover.jpg', 'hash_name' => 'cover-hash.jpg', 'extension' => 'jpg', 'path' => 'x', 'status' => 'Y',
     ]);

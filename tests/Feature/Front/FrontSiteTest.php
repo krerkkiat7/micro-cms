@@ -223,7 +223,17 @@ test('article category list searches by title and sorts', function () {
 
 test('category intro and detail are only sent when enabled in the article settings', function () {
     $categoryId = sampleArticle()->article_category_info_id;
+    $toggle = function (string $value) {
+        DB::table('sys_setting')->where('group', 'article')->whereIn('name', ['list_show_category_intro', 'list_show_category_detail'])->update(['value' => $value]);
+        Setting::forget('article');
+        FrontCache::forgetAll();
+    };
 
+    // ข้อมูลตัวอย่างเปิดไว้ทั้งคู่
+    $this->get("/th/article/category/{$categoryId}")
+        ->assertInertia(fn (Assert $page) => $page->where('category.intro_text', fn ($text) => $text !== '')->where('category.detail_html', fn ($html) => $html !== ''));
+
+    $toggle('N');
     $this->get("/th/article/category/{$categoryId}")
         ->assertInertia(fn (Assert $page) => $page->where('category.intro_text', '')->where('category.detail_html', ''));
 });

@@ -36,7 +36,8 @@
 
 ทะเบียนคีย์ทั้งหมดอยู่ที่ **`App\Support\ContactusSetting`** (`defaults()` / `rules()` / `all()` / `formFields()` / `formEnabled()`)
 — เพิ่มคีย์ = แก้ `defaults()` + `rules()` + หน้า `Pages/Admin/Contactus/Setting/Index.vue` (ตัวเลือกฝั่งจอ `utils/contactus.ts`)
-บันทึกแบบลบทั้งกลุ่มแล้ว insert ใหม่ (เหมือนตั้งค่า popup/บทความ); `ContactusSeeder` ใส่ค่าตั้งต้น (insertOrIgnore ไม่ทับของเดิม ไม่มีข้อมูลตัวอย่าง)
+บันทึกแบบลบทั้งกลุ่มแล้ว insert ใหม่ (เหมือนตั้งค่า popup/บทความ); `ContactusSeeder` (ส่วนหนึ่งของข้อมูลตัวอย่าง `SampleDataSeeder`) บันทึกทุกคีย์จาก `ContactusSetting::defaults()` แล้วปรับเป็นชุดสาธิต
+(รูปแผนที่, แบบฟอร์มครบทุกฟิลด์ — แสดงได้เพราะ `SiteSettingSeeder` ใส่ **คีย์ทดสอบของ Turnstile** ไว้ ต้องเปลี่ยนก่อนใช้งานจริง); ไม่มีข้อความติดต่อตัวอย่าง
 
 | คีย์ | ค่า / ค่าเริ่มต้น | หมายเหตุ |
 |------|-------------------|----------|

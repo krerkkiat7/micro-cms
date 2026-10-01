@@ -29,13 +29,20 @@ test('setting pages redirect to dashboard without contactus.setting.manage', fun
     }
 });
 
-test('seeder writes the default settings', function () {
+test('seeder writes every setting key, with the sample data showing the map image and all form fields', function () {
+    $settings = ContactusSetting::all();
+
     expect(SysSetting::where('group', 'contactus')->count())->toBe(count(ContactusSetting::defaults()))
-        ->and(ContactusSetting::all())->toBe(ContactusSetting::defaults());
+        ->and(array_keys($settings))->toBe(array_keys(ContactusSetting::defaults()))
+        ->and($settings['show_map_image'])->toBe('Y')
+        ->and($settings['map_image_id'])->not->toBe('')
+        ->and($settings['form_position_show'])->toBe('Y')
+        ->and($settings['form_company_show'])->toBe('Y');
 });
 
 test('index renders defaults and warns when turnstile and google map key are missing', function () {
     actingAsUserWithPermissions(['contactus.setting.manage']);
+    forgetSampleSetting('turnstile');
 
     $this->get(route('admin.contactus.setting.index'))
         ->assertOk()
@@ -51,6 +58,7 @@ test('index renders defaults and warns when turnstile and google map key are mis
 
 test('index reports turnstile and google map key once configured', function () {
     actingAsUserWithPermissions(['contactus.setting.manage', 'system.setting.manage']);
+    forgetSampleSetting('turnstile');
 
     SysSetting::create(['group' => 'turnstile', 'name' => 'site_key', 'value' => 'site']);
     SysSetting::create(['group' => 'turnstile', 'name' => 'key_secret', 'value' => 'secret']);

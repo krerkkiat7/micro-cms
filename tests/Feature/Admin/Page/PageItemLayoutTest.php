@@ -13,7 +13,7 @@ use Database\Seeders\DatabaseSeeder;
 use Inertia\Testing\AssertableInertia as Assert;
 
 beforeEach(function () {
-    // seed สร้างหน้าเพจตัวอย่างพร้อมโครงสร้าง 3 แถวมาด้วย (PageSeeder)
+    // seed สร้างหน้า "หน้าแรก" ตัวอย่างพร้อมโครงสร้าง 5 แถวมาด้วย (PageSeeder + PageLayoutSeeder)
     $this->seed(DatabaseSeeder::class);
     $this->sample = PageItemInfo::query()->firstOrFail();
 
@@ -40,17 +40,20 @@ test('layout page renders the row/column/widget tree and logs a layout view', fu
         ->assertInertia(fn (Assert $page) => $page
             ->component('Admin/Page/Item/Layout')
             ->where('item.id', $this->sample->id)
-            ->has('rows', 3)
+            ->has('rows', 5)
             ->where('rows.0.columns.0.column_size', 12)
-            ->where('rows.1.columns.0.column_size', 8)
-            ->where('rows.1.columns.1.column_size', 4)
-            ->where('rows.2.columns', fn ($columns) => count($columns) === 3)
+            ->where('rows.1.columns.0.column_size', 7)
+            ->where('rows.1.columns.1.column_size', 5)
+            ->where('rows.2.columns', fn ($columns) => count($columns) === 1)
             ->where('rows.0.columns.0.widgets.0.widget_type', 'slideshowbanner')
-            ->where('rows.0.columns.0.widgets.0.setting.sort_by', 'publish_desc')
-            ->where('widgetOptions.banner_categories', fn ($categories) => count($categories) === 3)
-            ->where('rows.0.detail.th.title', 'ส่วนบนสุด (Hero)')
-            ->where('rows.0.detail.th.subtitle', 'ยินดีต้อนรับ')
-            ->where('rows.0.show_title', 'Y')
+            ->where('rows.0.columns.0.widgets.0.setting.sort_by', 'order_asc')
+            ->where('rows.1.columns.0.widgets.0.widget_type', 'customtext')
+            ->where('rows.2.columns.0.widgets.0.widget_type', 'slidesetarticle')
+            ->where('rows.3.columns.0.widgets.0.widget_type', 'gridarticle')
+            ->where('widgetOptions.banner_categories', fn ($categories) => count($categories) === 1)
+            ->where('rows.2.detail.th.title', 'ข่าวสาร')
+            ->where('rows.2.detail.th.subtitle', 'อัปเดตล่าสุดจาก MicroCMS')
+            ->where('rows.2.show_title', 'Y')
             ->where('can.manage', false)
             ->where('fonts', fn ($fonts) => in_array('Sarabun', $fonts->all(), true) && count($fonts) > 20)
             ->where('fonts', fn ($fonts) => $fonts->all() === collect($fonts->all())->sortBy(fn ($name) => strtolower($name), SORT_STRING)->values()->all())
@@ -180,7 +183,7 @@ test('layout update with no rows clears the layout', function () {
     $this->put(route('admin.page.item.layout.update', $this->sample->id), ['rows' => []])->assertSessionHasNoErrors();
 
     expect(PageItemRow::where('page_item_info_id', $this->sample->id)->count())->toBe(0)
-        ->and(PageItemRow::onlyTrashed()->where('page_item_info_id', $this->sample->id)->count())->toBe(3);
+        ->and(PageItemRow::onlyTrashed()->where('page_item_info_id', $this->sample->id)->count())->toBe(5);
 });
 
 test('layout update rejects ids that belong to another page', function () {

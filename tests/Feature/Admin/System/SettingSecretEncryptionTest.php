@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
     $this->seed(DatabaseSeeder::class);
+    forgetSampleSetting('turnstile'); // ข้อมูลตัวอย่างใส่คีย์ทดสอบไว้ — เทสนี้เริ่มจาก "ยังไม่ตั้งค่า"
 });
 
 function rawSetting(string $group, string $name): ?string
@@ -21,7 +22,7 @@ function rawSetting(string $group, string $name): ?string
 }
 
 test('secrets saved from the settings page are encrypted in the database but readable through Setting', function () {
-    $this->actingAs(User::where('email', 'admin@mycms.com')->firstOrFail());
+    $this->actingAs(User::where('email', 'admin@microcms.com')->firstOrFail());
 
     $this->put(route('admin.system.setting.update.smtp'), [
         'host' => 'smtp.example.com', 'port' => 587, 'use_auth' => 'Y', 'username' => 'mailer',

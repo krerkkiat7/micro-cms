@@ -116,3 +116,17 @@ function setSiteSetting(string $name, string $value): void
     SysSetting::create(['group' => 'site', 'name' => $name, 'value' => $value]);
     Setting::forget('site');
 }
+
+/**
+ * ลบค่าตั้งค่าที่ข้อมูลตัวอย่างใส่ไว้ (เช่น คีย์ทดสอบของ Turnstile, โลโก้) — สำหรับเทสที่ต้องเริ่มจากสถานะ "ยังไม่ตั้งค่า"
+ *
+ * @param  list<string>  $names  ว่าง = ทั้งกลุ่ม
+ */
+function forgetSampleSetting(string $group, array $names = []): void
+{
+    SysSetting::query()
+        ->where('group', $group)
+        ->when($names !== [], fn ($query) => $query->whereIn('name', $names))
+        ->forceDelete();
+    Setting::forget($group);
+}

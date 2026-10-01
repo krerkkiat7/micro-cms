@@ -11,6 +11,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 beforeEach(function () {
     $this->seed(DatabaseSeeder::class);
+    forgetSampleSetting('turnstile'); // ข้อมูลตัวอย่างใส่คีย์ทดสอบไว้ — เทสนี้เริ่มจาก "ยังไม่ตั้งค่า"
 });
 
 function systemGroup(): UserGroup
@@ -20,7 +21,7 @@ function systemGroup(): UserGroup
 
 function superAdminUser(): User
 {
-    return User::where('email', 'admin@mycms.com')->firstOrFail();
+    return User::where('email', 'admin@microcms.com')->firstOrFail();
 }
 
 // ---------------------------------------------------------------- สถานะผู้ใช้ทุก request

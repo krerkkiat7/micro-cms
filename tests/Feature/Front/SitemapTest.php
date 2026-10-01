@@ -80,10 +80,14 @@ test('published menu targets are listed in every language with hreflang alternat
         ->and($alternates['th'])->toBe($thUrl)
         ->and($alternates['x-default'])->toBe($thUrl);
 
-    // หมวดหมู่ที่มีเมนู + ติดต่อเรา (ไม่มีเมนู = ไม่อยู่)
+    // หมวดหมู่ที่มีเมนู + ติดต่อเรา (ข้อมูลตัวอย่างมีเมนูติดต่อเรา) — ซ่อนเมนูติดต่อเรา = ไม่อยู่
     $locs = sitemapLocs();
+    $contactUrl = route('front.contactus.item', ['lang' => 'th']);
     expect(collect($locs)->contains(fn ($loc) => str_starts_with($loc, route('front.article.category', ['lang' => 'th', 'id' => $this->categoryId]))))->toBeTrue()
-        ->and($locs)->not->toContain(route('front.contactus.item', ['lang' => 'th']));
+        ->and($locs)->toContain($contactUrl);
+
+    FrontMenuInfo::query()->where('menu_type', FrontMenuType::CONTACTUS)->get()->each->update(['status' => 'N']);
+    expect(sitemapLocs())->not->toContain($contactUrl);
 });
 
 test('content without a published menu is not listed', function () {
