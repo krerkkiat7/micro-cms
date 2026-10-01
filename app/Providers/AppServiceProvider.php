@@ -6,6 +6,7 @@ use App\Support\Front\ViewCounter;
 use App\Support\Front\Views\RedisViewBuffer;
 use App\Support\Setting;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
@@ -49,8 +50,24 @@ class AppServiceProvider extends ServiceProvider
             ]);
         });
 
+        $this->applyTrustedProxies();
         $this->applySmtpSetting();
         $this->applyTimezoneSetting();
+    }
+
+    /**
+     * เชื่อ header X-Forwarded-* จาก proxy ที่ระบุใน TRUSTED_PROXIES (config app.trusted_proxies) — ระบบที่อยู่หลัง
+     * load balancer/ingress ที่ทำ HTTPS จะได้รู้ว่า request จริงเป็น https และได้ IP จริงของผู้ใช้ ว่าง = ไม่เชื่อ proxy ใด
+     */
+    private function applyTrustedProxies(): void
+    {
+        $proxies = trim((string) config('app.trusted_proxies'));
+
+        if ($proxies === '') {
+            return;
+        }
+
+        TrustProxies::at($proxies === '*' ? '*' : array_values(array_filter(array_map('trim', explode(',', $proxies)))));
     }
 
     /**

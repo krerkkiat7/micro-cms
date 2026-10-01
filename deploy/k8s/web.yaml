@@ -1,0 +1,87 @@
+# เว็บ (nginx + PHP-FPM ใน container เดียว) — initContainer migrate ฐานข้อมูลก่อนทุกครั้งที่ deploy
+# (--isolated = ล็อกผ่าน Redis ให้ทำแค่ pod เดียวแม้เปิดหลาย replica พร้อมกัน)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: microcms-web
+  labels:
+    app.kubernetes.io/name: microcms
+    app.kubernetes.io/component: web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: microcms
+      app.kubernetes.io/component: web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: microcms
+        app.kubernetes.io/component: web
+    spec:
+      terminationGracePeriodSeconds: 30
+      initContainers:
+        - name: migrate
+          image: microcms
+          args: ["migrate", "--isolated"]
+          envFrom:
+            - configMapRef:
+                name: microcms-env
+            - secretRef:
+                name: microcms-secret
+          volumeMounts:
+            - name: storage
+              mountPath: /var/www/html/storage
+      containers:
+        - name: web
+          image: microcms
+          args: ["web"]
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: microcms-env
+            - secretRef:
+                name: microcms-secret
+          volumeMounts:
+            - name: storage
+              mountPath: /var/www/html/storage
+          # /up ต้องส่ง Host เป็นโดเมนของ APP_URL (ระบบรับเฉพาะ Host นั้น) — แก้ให้ตรง configmap.yaml
+          readinessProbe:
+            httpGet:
+              path: /up
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: www.example.com
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              memory: 1536Mi
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: microcms-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: microcms-web
+spec:
+  selector:
+    app.kubernetes.io/name: microcms
+    app.kubernetes.io/component: web
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

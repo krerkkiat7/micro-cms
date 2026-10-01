@@ -1,0 +1,86 @@
+# MicroCMS แบบ production บนเครื่องเดียวด้วย Docker Compose — ดู README.md หัวข้อ "ติดตั้งด้วย Docker"
+#
+#   cp .env.example .env            # แล้วแก้ค่าตาม README (APP_ENV=production, APP_KEY, APP_URL, รหัสผ่าน DB/Redis ...)
+#   docker compose -f docker-compose.prod.yml build
+#   docker compose -f docker-compose.prod.yml up -d mysql redis
+#   docker compose -f docker-compose.prod.yml run --rm app migrate --seed     # ครั้งแรก (--seed = ข้อมูลตัวอย่าง)
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# ไฟล์ .env ใช้สองทาง: ค่าของระบบ (env_file) และค่าแทนที่ ${...} ในไฟล์นี้ (รหัสผ่าน MySQL/Redis ใช้ชุดเดียวกัน)
+# ใช้ MySQL/Redis ภายนอก (แนะนำสำหรับระบบจริง): ลบ service mysql/redis + depends_on และตั้ง DB_HOST/REDIS_HOST ใน .env
+# แทนการ override ด้านล่าง
+name: microcms
+
+x-app: &app
+  image: ${MICROCMS_IMAGE:-microcms:latest}
+  build:
+    context: .
+    dockerfile: docker/production/Dockerfile
+  env_file: .env
+  environment:
+    DB_HOST: mysql
+    DB_PORT: 3306
+    REDIS_HOST: redis
+    REDIS_PORT: 6379
+  volumes:
+    - storage:/var/www/html/storage
+  depends_on:
+    mysql:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  restart: unless-stopped
+
+services:
+  # เว็บ (nginx + PHP-FPM) — วาง reverse proxy ที่ทำ HTTPS ไว้หน้าพอร์ตนี้ แล้วตั้ง TRUSTED_PROXIES
+  app:
+    <<: *app
+    command: ["web"]
+    ports:
+      - "${APP_PORT:-8080}:8080"
+
+  # งานตามเวลา (front:flush-views ทุกนาที) — 1 ตัวเท่านั้น
+  scheduler:
+    <<: *app
+    command: ["scheduler"]
+    healthcheck:
+      disable: true
+
+  mysql:
+    image: mysql:8.4
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?ตั้ง DB_ROOT_PASSWORD ใน .env}
+      TZ: Asia/Bangkok
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    # appendonly = ไม่เสีย session/คิวยอดเข้าชมเมื่อ restart; noeviction = ไม่ลบ session ทิ้งเมื่อหน่วยความจำเต็ม
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction", "--requirepass", "${REDIS_PASSWORD:?ตั้ง REDIS_PASSWORD ใน .env}"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" --no-auth-warning ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    restart: unless-stopped
+
+volumes:
+  storage:       # ไฟล์ที่อัปโหลด + thumbnail + log — ต้องสำรองข้อมูล
+  mysql_data:
+  redis_data:

@@ -7,7 +7,7 @@
 Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้งานง่าย** พัฒนาบน Laravel 12 + Inertia.js + Vue 3
 Phase 1 ทำครบแล้ว (หลังบ้านจัดการระบบ + โมดูลเนื้อหา article/banner/page/intropage/popup/contactus + หน้าบ้าน)
 และผ่านการทวนสอบ functional + security + performance + cache + UX (branch `phase1-review`) + ข้อมูลตัวอย่างชุดสาธิต (branch `sample-data`,
-ดู `exampledata/README.md`) — ขั้นถัดไป: เอกสารติดตั้ง/วิธีใช้
+ดู `exampledata/README.md`) + เอกสารติดตั้ง/วิธีใช้ที่ `README.md` (server เอง / Docker / Kubernetes)
 
 ภาพรวมโมดูล/ส่วนจัดการระบบ + roadmap อยู่ที่ `docs/PRD-overview.md`
 รายละเอียดส่วนจัดการระบบ (users, สิทธิ์, เมนู, template, ประวัติ, settings, files) อยู่ที่ `docs/PRD-system.md`
@@ -504,6 +504,15 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   (ตั้ง `hash_name` เอง เพราะ `WithoutModelEvents`; **ตอนเทสไม่คัดลอกไฟล์จริง**), ภาพ/PDF สร้างด้วยสคริปต์ `exampledata/_build/` (Edge headless).
   ข้อมูลตัวอย่างตั้ง **คีย์ทดสอบของ Turnstile** ไว้ (แบบฟอร์มติดต่อเราแสดงทันที) — เทสที่ต้องเริ่มจาก "ยังไม่ตั้งค่า" ใช้ `forgetSampleSetting()` (`tests/Pest.php`).
   ชื่อระบบเปลี่ยนเป็น **MicroCMS** (`APP_NAME`, `site_name`, admin `admin@microcms.com`) — ชื่อเชิงโครงสร้าง (DB `my_cms`, image/volume Docker) คงเดิม
+- **ติดตั้ง production — ดู `README.md`** — production image `docker/production/` (Dockerfile multi-stage: composer
+  `--no-dev` → `npm run build` → nginx + PHP-FPM ใน image เดียว พอร์ต 8080; entrypoint `microcms` บทบาท `web`/`scheduler`/`migrate`/`artisan`/`healthcheck`,
+  artisan ทุกคำสั่งรันในนาม `www-data`, `STOPSIGNAL SIGTERM` — image `php:fpm` ตั้ง SIGQUIT ที่ bash เมิน), `docker-compose.prod.yml`
+  (เว็บ + scheduler + MySQL 8.4 + Redis 7) และ kustomize `deploy/k8s/` (initContainer `migrate --isolated` แล้วรอจนไม่มี migration ค้าง, PVC
+  ReadWriteMany, scheduler 1 replica) — ทดสอบจริงทั้ง compose, k3s และ Ubuntu 24.04. ข้อควรรู้: production ตรวจ Host กับ `APP_URL` (trustHosts) →
+  health check/probe ต้องส่ง Host ของโดเมน; nginx รุ่นใหม่ตั้ง `HTTP_HOST $host` (ตัดพอร์ต) ต้อง override เป็น `$http_host`;
+  build image ไม่มี Redis → `CACHE_STORE=array` ระหว่าง build (`Setting::group()` ดักแค่ error ของ DB).
+  env ใหม่: `TRUSTED_PROXIES` (config `app.trusted_proxies` → `TrustProxies::at()` ใน `AppServiceProvider`) และ `SEED_SAMPLE_DATA=false`
+  (`DatabaseSeeder` ข้าม `SampleDataSeeder` = ระบบเปล่า)
 
 ## ทดสอบ
 

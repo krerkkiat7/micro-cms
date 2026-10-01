@@ -1,0 +1,26 @@
+# MicroCMS บน Kubernetes — ดู README.md หัวข้อ "ติดตั้งบน Kubernetes"
+#
+#   cp secret.example.yaml secret.yaml   # ใส่ APP_KEY / รหัสผ่าน DB / Redis จริง (secret.yaml ไม่ถูก commit — .gitignore)
+#   # แก้ configmap.yaml (APP_URL, DB_HOST, REDIS_HOST), ingress.yaml (โดเมน/TLS), images ด้านล่าง
+#   kubectl apply -k deploy/k8s
+#
+# MySQL/Redis ใช้ของภายนอก cluster หรือ managed service (แนะนำ) — ไม่มีอยู่ในชุดนี้
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: microcms
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secret.yaml
+  - storage-pvc.yaml
+  - web.yaml
+  - scheduler.yaml
+  - ingress.yaml
+
+# image ที่ build จาก docker/production/Dockerfile แล้ว push ขึ้น registry ของคุณ
+images:
+  - name: microcms
+    newName: registry.example.com/microcms
+    newTag: "1.0.0"

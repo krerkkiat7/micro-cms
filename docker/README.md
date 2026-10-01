@@ -1,5 +1,7 @@
 # รันระบบใน Docker (dev / ทดสอบ) — http://localhost:8001
 
+> ชุดนี้สำหรับ**นักพัฒนา** (โค้ด mount จากเครื่อง) — ติดตั้งใช้งานจริงด้วย production image ใน `docker/production/` ดู `README.md`
+
 ชุดนี้รันทั้งระบบใน Docker: **nginx + PHP-FPM 8.2 (มี OPcache) + scheduler** ต่อกับ MySQL/Redis ใน `docker-compose.yml` เดิม
 ใช้ทดสอบความเร็ว/การทำงานใกล้เคียงเครื่องจริง แทน `php artisan serve` (บน Windows รับได้ทีละ request) และ `php artisan schedule:work`
 

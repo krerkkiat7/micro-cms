@@ -55,6 +55,13 @@ return [
     'url' => env('APP_URL', 'http://localhost'),
 
     /*
+    | Proxy ที่เชื่อถือได้ (load balancer / reverse proxy / ingress ของ k8s) — คั่นด้วย , หรือ * = ทุกตัว
+    | ตั้งเมื่อมี proxy อยู่หน้าระบบ (โดยเฉพาะที่ทำ HTTPS ให้) ไม่งั้นระบบเห็น request เป็น http + IP ของ proxy
+    | (ลิงก์/รูปที่สร้างเป็น http://, rate limit นับรวมทุกคนเป็น IP เดียว) — ว่าง = ไม่เชื่อ header X-Forwarded-* ใด ๆ
+    */
+    'trusted_proxies' => env('TRUSTED_PROXIES'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
