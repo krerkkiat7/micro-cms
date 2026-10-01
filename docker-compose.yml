@@ -1,4 +1,8 @@
 version: '3.8'
+
+# ฐานข้อมูล/แคช: `docker compose up -d` (เหมือนเดิม — เปิดแค่ mysql + redis)
+# รันระบบทั้งชุดใน Docker ที่ http://localhost:8001 (+ scheduler): `docker compose --profile app up -d --build`
+# รายละเอียดดู docker/README.md
 services:
   mysql:
     image: mysql:8.0
@@ -17,5 +21,55 @@ services:
     ports:
       - "6379:6379"
 
+  # PHP-FPM — โค้ดใน container คือโฟลเดอร์โปรเจกต์บนเครื่อง (bind mount) แก้ไฟล์แล้วเห็นผลทันที
+  app:
+    profiles: ["app"]
+    build: ./docker/php
+    image: my-cms-php:8.2
+    container_name: cms_app
+    volumes:
+      - ./:/var/www/html
+      # vendor อยู่ใน volume ของ Docker (ไม่ใช้ vendor บนเครื่อง) — bind mount จาก Windows ช้ามาก (artisan ~8 วินาที → ไม่ถึงวินาที)
+      - vendor:/var/www/html/vendor
+    environment: &app-env
+      # ค่าเหล่านี้ทับค่าใน .env (Laravel ไม่เขียนทับ env ที่มีอยู่แล้ว) — ใน container ต้องต่อ mysql/redis ด้วยชื่อ service
+      APP_URL: http://localhost:8001
+      DB_HOST: mysql
+      DB_PORT: 3306
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      - mysql
+      - redis
+    restart: unless-stopped
+
+  # nginx หน้าเว็บ http://localhost:8001
+  web:
+    profiles: ["app"]
+    image: nginx:alpine
+    container_name: cms_web
+    ports:
+      - "8001:80"
+    volumes:
+      - ./:/var/www/html:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+
+  # scheduler — แทน `php artisan schedule:work` บนเครื่อง (front:flush-views ทุกนาที ฯลฯ)
+  scheduler:
+    profiles: ["app"]
+    image: my-cms-php:8.2
+    container_name: cms_scheduler
+    command: ["php", "artisan", "schedule:work"]
+    volumes:
+      - ./:/var/www/html
+      - vendor:/var/www/html/vendor
+    environment: *app-env
+    depends_on:
+      - app
+    restart: unless-stopped
+
 volumes:
   mysql_data:
+  vendor:
