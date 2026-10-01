@@ -68,15 +68,14 @@ class BannerItemController extends Controller
         };
 
         $items = BannerItemInfo::query()
-            ->join('banner_item_detail as d', function ($join) use ($defaultLang) {
-                $join->on('d.id', '=', 'banner_item_info.id')->where('d.lang', $defaultLang);
+            ->leftJoin('banner_item_detail as d', function ($join) use ($defaultLang) {
+                $join->on('d.id', '=', 'banner_item_info.id')->where('d.lang', $defaultLang)->whereNull('d.deleted_at');
             })
             ->leftJoin('banner_category_detail as cd', function ($join) use ($defaultLang) {
                 $join->on('cd.id', '=', 'banner_item_info.banner_category_info_id')->where('cd.lang', $defaultLang);
             })
             ->leftJoin('file_info as img', 'img.id', '=', 'banner_item_info.intro_image_id')
-            ->whereNull('d.deleted_at') // join ตรง ไม่ผ่าน scope ของ model ต้องกันเองไม่ให้ดึงแถวที่ถูกลบ
-            ->select('banner_item_info.*', 'd.title as title', 'd.intro_text as intro_text', 'cd.title as category_title', 'img.hash_name as intro_image_hash_name')
+            ->select('banner_item_info.*', $this->detailWithFallback('banner_item_detail', 'banner_item_info', 'title'), 'd.intro_text as intro_text', 'cd.title as category_title', 'img.hash_name as intro_image_hash_name')
             ->when($filters['q'] !== null, function ($query) use ($filters) {
                 $term = $filters['q'];
                 $query->where(fn ($inner) => $inner
@@ -214,7 +213,7 @@ class BannerItemController extends Controller
                 $lang['code'] => $this->detailToArray($details->get($lang['code'])),
             ]),
             'languages' => $this->languageOptions(),
-            'categories' => $this->categoryOptions(),
+            'categories' => $this->categoryOptions($model->banner_category_info_id),
             'systemInfo' => SystemInfo::audit($model),
             'clickCount' => (int) $model->click_amount,
             'can' => [
@@ -378,19 +377,24 @@ class BannerItemController extends Controller
      *
      * @return list<array{id: int, title: string|null}>
      */
-    private function categoryOptions(): array
+    private function categoryOptions(?int $currentId = null): array
     {
         $defaultLang = Setting::defaultLanguage();
 
+        // หมวดหมู่ที่ใช้งานอยู่ + หมวดหมู่เดิมของป้ายโฆษณาที่แก้ไข (แม้ถูกปิดใช้งานไปแล้ว ต่อท้ายชื่อด้วย "(ไม่ใช้งาน)")
         return BannerCategoryInfo::query()
-            ->join('banner_category_detail as d', function ($join) use ($defaultLang) {
+            ->leftJoin('banner_category_detail as d', function ($join) use ($defaultLang) {
                 $join->on('d.id', '=', 'banner_category_info.id')->where('d.lang', $defaultLang);
             })
-            ->whereNull('d.deleted_at')
-            ->where('banner_category_info.status', 'Y')
+            ->where(fn ($w) => $w
+                ->where('banner_category_info.status', 'Y')
+                ->when($currentId, fn ($or) => $or->orWhere('banner_category_info.id', $currentId)))
             ->orderBy('d.title')
-            ->get(['banner_category_info.id', 'd.title as title'])
-            ->map(fn ($row) => ['id' => $row->id, 'title' => $row->title])
+            ->get(['banner_category_info.id', 'banner_category_info.status', 'd.title as title'])
+            ->map(fn ($row) => [
+                'id' => $row->id,
+                'title' => $row->status === 'Y' ? $row->title : ($row->title ?? '(ไม่มีชื่อ)').' (ไม่ใช้งาน)',
+            ])
             ->values()
             ->all();
     }

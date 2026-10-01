@@ -12,7 +12,8 @@ beforeEach(function () {
 
 function backLogActionGroupId(): int
 {
-    return UserGroup::where('name', 'Super Admin')->value('id');
+    // กลุ่มทั่วไป (ไม่ใช่กลุ่มระบบ) — ผู้ใช้นอกกลุ่มระบบย้ายผู้ใช้เข้ากลุ่มระบบไม่ได้ (UserController)
+    return UserGroup::firstOrCreate(['name' => 'Editor'], ['status' => 'Y'])->id;
 }
 
 // ---------------------------------------------------------------- การบันทึก: system.user

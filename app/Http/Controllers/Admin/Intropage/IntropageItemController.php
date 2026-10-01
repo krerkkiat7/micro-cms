@@ -63,11 +63,10 @@ class IntropageItemController extends Controller
         };
 
         $items = IntropageItemInfo::query()
-            ->join('intropage_item_detail as d', function ($join) use ($defaultLang) {
-                $join->on('d.id', '=', 'intropage_item_info.id')->where('d.lang', $defaultLang);
+            ->leftJoin('intropage_item_detail as d', function ($join) use ($defaultLang) {
+                $join->on('d.id', '=', 'intropage_item_info.id')->where('d.lang', $defaultLang)->whereNull('d.deleted_at');
             })
-            ->whereNull('d.deleted_at') // join ตรง ไม่ผ่าน scope ของ model ต้องกันเองไม่ให้ดึงแถวที่ถูกลบ
-            ->select('intropage_item_info.*', 'd.title as title')
+            ->select('intropage_item_info.*', $this->detailWithFallback('intropage_item_detail', 'intropage_item_info', 'title'))
             ->when($filters['q'] !== null, fn ($query) => $query->where('d.title', 'like', '%'.$filters['q'].'%'))
             ->when($filters['status'] !== null, fn ($query) => $query->where('intropage_item_info.status', $filters['status']))
             ->orderBy($sortColumn, $direction)

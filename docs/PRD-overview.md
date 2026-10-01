@@ -108,6 +108,12 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
   sub-action อื่น เช่น `password` — ต้อง seed ไว้ใน `DatabaseSeeder` (tree: `manage` เป็นลูกของ `view`, ที่เหลือลูกของ `manage`)
 - self-guard (กันทำกับบัญชีตัวเอง เช่น ระงับ/ลบ/เปลี่ยนกลุ่มตัวเอง) เช็กใน controller หลัง validate →
   `return back()->withErrors([...])`; ฝั่ง Vue ก็ disable ตัวเลือกที่เกี่ยวข้องเมื่อ `isSelf`
+- ค่าอ้างอิงที่ถูกปิดใช้งานภายหลัง (หมวดหมู่/แท็ก/กลุ่ม/ปลายทางเมนู) — rule รับ `status = 'Y'` **หรือค่าเดิมของรายการที่แก้ไข**
+  และ dropdown แสดงค่าเดิมพร้อม "(ไม่ใช้งาน)" ไม่งั้นรายการเดิมบันทึกซ้ำไม่ได้
+- หน้ารายการ join ตาราง detail ของภาษาหลักด้วย `leftJoin` + `Controller::detailWithFallback()` (ไม่ใช่ inner join) — รายการที่ยังไม่มีข้อมูล
+  ภาษาหลักต้องไม่หายจากหน้ารายการ; request ที่มี `'detail' => ['required', 'array']` ใช้ trait `OnlyEnabledLanguageDetails`
+- ช่องลิงก์ (URL) ใช้ rule `App\Rules\SafeUrl` (เกณฑ์เดียวกับ `FrontUrl::safeExternal()`); ลบข้อมูลที่มี slug ต้องเคลียร์ slug ของ detail
+  และ unique rule เช็กผ่าน `deleted_at` ของตาราง info; ลบหมวดหมู่ที่ยังมีรายการไม่ได้
 
 ### 5.3 หน้ารายการ (index)
 
@@ -188,7 +194,7 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 
 | ส่วน | ปัจจุบัน | เป้าหมาย |
 |------|----------|----------|
-| Auth หลังบ้าน (login/register/reset/verify) | ✅ มี (Breeze ย้ายมาใต้ `/admin`) + เช็ก `user_type='back'` / `status='Y'` + บันทึกสถิติ login แล้ว | เพิ่มล็อกบัญชีอัตโนมัติเมื่อ login ผิดเกินเกณฑ์ (อ่านจาก `sys_setting`) |
+| Auth หลังบ้าน (login/reset) | ✅ มี (Breeze ย้ายมาใต้ `/admin`, **ไม่มีหน้าสมัครสมาชิก**) + เช็ก `user_type='back'` / `status='Y'` ทุก request + ล็อกบัญชีอัตโนมัติ (`login_back`) + กันยกระดับสิทธิ์ (กลุ่มระบบ) | — |
 | Layout หลังบ้าน (sidebar/header มืด) | ✅ มี (สไตล์ TailAdmin) | ต่อเมนูโมดูล/จัดการระบบเข้า sidebar |
 | ระบบสิทธิ์ (`sys_*`) | ✅ ตาราง + model + `hasPermission()` + seeder ตัวอย่าง | หน้าจัดการกลุ่ม/สิทธิ์แบบ tree + middleware บังคับสิทธิ์ |
 | จัดการผู้ใช้งานหลังบ้าน (CRUD `sys_user` `user_type='back'`) | ✅ เสร็จแล้ว — list (ค้นหา/กรอง/เรียง/paging) + add + edit + เปลี่ยนรหัสผ่าน; เป็น **ต้นแบบตาม §5** | — |
@@ -200,9 +206,9 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 | จัดการเมนูหน้าบ้าน (`front_menu_info`/`front_menu_detail`) — [PRD-system-frontmenu.md](PRD-system-frontmenu.md) | 🟡 schema + admin CRUD (list/tree, add/edit dialog, เรียงลำดับแบบลาก, แสดง/ซ่อน, ลบ) เสร็จแล้ว | ✅ render ที่หน้าบ้านแล้ว (header/aside/footer + ส่วนหัว/breadcrumb — PRD-front.md) |
 | template (`sys_template` + ตั้งค่าโซน) — [PRD-system-template.md](PRD-system-template.md) | 🟢 หลังบ้านเสร็จ: list/add (เลือกแม่แบบ)/ข้อมูลทั่วไป/โครงสร้าง 4 โซนพร้อม preview/Custom CSS/JS/หน้า Loading, ใช้งานได้ครั้งละ 1 รายการ | ✅ render ที่หน้าบ้านแล้ว (PRD-front.md §3) |
 | ประวัติ (`log_back_*` / `log_front_access`) | ✅ หลังบ้านครบ 3 ตัว + `log_front_access` (บันทึก + keep-alive + หน้ารายการ "ประวัติการใช้งาน - หน้าบ้าน") | `log_front_action`/`log_front_login` (เมื่อมีสมาชิกหน้าบ้าน) |
-| หน้าบ้าน — [PRD-front.md](PRD-front.md) | ✅ รอบแรก: Intropage, layout จาก template, หน้าเพจ, หมวดหมู่/รายละเอียดบทความ, SEO/AEO/GEO, WCAG, ยอดเข้าชม (Redis buffer), cache | หน้าค้นหา, CSP, ไฟล์เฉพาะสมาชิก (sitemap.xml/robots.txt ✅ อิงเมนูที่เผยแพร่ — PRD-front.md §6.1) |
+| หน้าบ้าน — [PRD-front.md](PRD-front.md) | ✅ รอบแรก: Intropage, layout จาก template, หน้าเพจ, หมวดหมู่/รายละเอียดบทความ, SEO/AEO/GEO, WCAG, ยอดเข้าชม (Redis buffer), cache | หน้าค้นหา (phase ถัดไป — ตัวเลือก "แสดงการค้นหา" ของ template ซ่อนไว้ก่อน, `search_status` ยังอยู่ใน DB), CSP, ไฟล์เฉพาะสมาชิก (sitemap.xml/robots.txt ✅ อิงเมนูที่เผยแพร่ — PRD-front.md §6.1) |
 | file management | ✅ เสร็จ (list/upload/folder/picker) | — |
-| ตั้งค่าระบบ (`sys_setting`) | 🟡 มีตาราง + seed ตัวอย่างแล้ว | หน้า UI จัดการ + helper อ่านค่า |
+| ตั้งค่าระบบ (`sys_setting`) | ✅ หน้าตั้งค่าทุกกลุ่ม + `App\Support\Setting` (cache + memo ต่อ request) + ล้างแคช; ค่าลับ (SMTP password / Turnstile secret) ไม่ส่งไปหน้าจอ | — |
 
 ## 7. การปรับ schema รอบนี้ (เฟส 0)
 
@@ -234,3 +240,17 @@ Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้ง
 | 3 — โมดูลเนื้อหาแรก | บทความ (article) + page (หน้าเดี่ยว) + file management (`sys_file`) |
 | **4 — โมดูลที่เหลือ** *(banner เสร็จหมวดหมู่+ป้ายโฆษณาแล้ว, intropage เสร็จแล้ว, page เสร็จแล้ว)* | ~~banner~~ ✅ (ตั้งค่ายังเป็น placeholder); ~~intropage~~ ✅; ~~page~~ ✅ (ประเภท widget เสร็จ `slideshowbanner`/`slideshowarticle`/`slidesetarticle`/`slidesetbanner`, ที่เหลือรอทำ); ~~popup~~ ✅ (ดู PRD-popup.md); ~~contact us~~ ✅ (ดู PRD-contactus.md) |
 | 5 — ประวัติ & dashboard จริง | `sys_log_login` / `sys_log_visit` / `sys_log_action` + สถิติ dashboard |
+
+## 9. ทวนสอบระบบ phase 1 (branch `phase1-review`) — ข้อจำกัดที่ทราบและยังไม่แก้
+
+ตรวจ functional + security + performance + cache + UX/UI แล้ว (รายการที่แก้ดู commit ของ branch และ CLAUDE.md) — สิ่งที่ตั้งใจยังไม่แก้ในรอบนี้:
+
+| เรื่อง | รายละเอียด | แนวทาง |
+|-------|-----------|--------|
+| ไฟล์เปิดสาธารณะผ่าน hash | ทุกไฟล์ใน `file_info` ที่ `status='Y'` เปิดได้จาก `/file/get/{hash}` โดยไม่ต้อง login (hash เป็น ULID เดาไม่ได้) | phase 2 (login หน้าบ้าน) — แยกไฟล์สาธารณะ/เฉพาะสมาชิก |
+| Custom JS ของ template | สคริปต์ที่ใส่ในหน้า Custom JS ทำงานบน origin เดียวกับหลังบ้าน — ผู้มีสิทธิ์ `system.template.manage` จึงเทียบเท่าผู้ดูแลสูงสุด | ให้สิทธิ์นี้เฉพาะผู้ดูแลที่ไว้ใจได้ / อนาคตแยกโดเมนหลังบ้าน หรือใส่ CSP |
+| ล็อกบัญชีอัตโนมัติ | ใครที่รู้อีเมลผู้ดูแลสามารถกรอกรหัสผิดให้บัญชีถูกล็อกได้ (ตั้งใจคงพฤติกรรมเดิม) | ผู้ดูแลกลุ่มระบบเปิดบัญชีคืนได้ที่หน้าจัดการผู้ใช้ |
+| การเรียงลำดับตั้งต้นของหน้ารายการเนื้อหา | บทความ/banner/intropage/page เรียงตามชื่อ (ก–ฮ) ต่างจาก §5.3 (วันที่สร้างใหม่สุด) | คงไว้ตามที่ใช้งานอยู่ |
+| ตาราง log/ยอดเข้าชมโตไม่จำกัด | ไม่มี retention | ดูแนวทางใน PRD-system.md §5 "แนวทาง retention ในอนาคต" |
+| ผลการตรวจ permission ก่อน validate | FormRequest validate ก่อนเช็กสิทธิ์ใน controller — ผู้ไม่มีสิทธิ์อาจเห็นข้อความ validation (ไม่มีการบันทึกข้อมูล) | อนาคตย้ายเช็กสิทธิ์ไป `authorize()` / middleware กลาง |
+

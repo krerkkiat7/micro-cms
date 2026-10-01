@@ -46,6 +46,32 @@ final class FrontCache
         self::$version = $next;
     }
 
+    /**
+     * ล้าง cache หน้าบ้านเพราะข้อมูลเปลี่ยน (เรียกจาก trait FlushesFrontCache ทุกแถวที่บันทึก/ลบ) — บันทึกฟอร์มเดียวอาจแตะหลายสิบแถว
+     * (บทความ + part + ไฟล์ + detail) จึงล้างทันทีแค่ครั้งแรกของ request แล้วล้างซ้ำอีกครั้งเดียวหลังจบ request (defer)
+     * เผื่อหน้าบ้านสร้าง cache ใหม่ระหว่างที่แถวที่เหลือยังบันทึกไม่เสร็จ
+     * คำสั่ง console / เทส (ไม่มี HTTP request จริง) ล้างทันทีทุกครั้งเหมือนเดิม
+     */
+    public static function flushForChange(): void
+    {
+        if (app()->runningInConsole()) {
+            self::forgetAll();
+
+            return;
+        }
+
+        $attributes = request()->attributes;
+
+        if (! $attributes->get('front_cache_flushed')) {
+            $attributes->set('front_cache_flushed', true);
+            self::forgetAll();
+
+            return;
+        }
+
+        defer(fn () => self::forgetAll(), 'front-cache-final-flush');
+    }
+
     public static function version(): int
     {
         return self::$version ??= (int) Cache::rememberForever(self::VERSION_KEY, fn () => 1);

@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Admin\Banner\Concerns;
 
+use App\Models\BannerItemInfo;
+use App\Rules\SafeUrl;
 use App\Support\Setting;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
@@ -13,18 +15,24 @@ use Illuminate\Validation\Rule;
 trait BannerItemValidationRules
 {
     /**
-     * กฎของฟิลด์ข้อมูลร่วม (ไม่แยกภาษา)
+     * กฎของฟิลด์ข้อมูลร่วม (ไม่แยกภาษา) — $itemId = ป้ายโฆษณาที่แก้ไข (หมวดหมู่เดิมที่ถูกปิดใช้งานไปแล้วยังบันทึกซ้ำได้)
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
-    protected function commonRules(): array
+    protected function commonRules(?int $itemId = null): array
     {
+        $currentCategoryId = $itemId
+            ? BannerItemInfo::query()->whereKey($itemId)->value('banner_category_info_id')
+            : null;
+
         return [
             'banner_category_info_id' => [
                 'required', 'integer',
                 Rule::exists('banner_category_info', 'id')->where(fn ($query) => $query
-                    ->where('status', 'Y')
-                    ->whereNull('deleted_at')),
+                    ->whereNull('deleted_at')
+                    ->where(fn ($w) => $w
+                        ->where('status', 'Y')
+                        ->when($currentCategoryId, fn ($or) => $or->orWhere('id', $currentCategoryId)))),
             ],
             'intro_image_id' => [
                 'required', 'integer',
@@ -32,7 +40,7 @@ trait BannerItemValidationRules
                     ->where('status', 'Y')
                     ->whereNull('deleted_at')),
             ],
-            'url' => ['nullable', 'string', 'max:500'],
+            'url' => ['nullable', 'string', 'max:500', new SafeUrl],
             'link_target' => ['nullable', Rule::in(['_self', '_blank'])],
             'publish_date' => ['required', 'date'],
             'publish_down' => ['nullable', 'date', 'after:publish_date'],

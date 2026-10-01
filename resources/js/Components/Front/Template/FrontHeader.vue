@@ -50,7 +50,7 @@ function contentClass(width: Width): string {
     return width === 'container' ? 'mx-auto w-full max-w-7xl' : 'w-full';
 }
 
-const showTools = computed(() => [props.zone.search_status, props.zone.fontsize_status, props.zone.contrast_status, props.zone.lang_status].includes('Y'));
+const showTools = computed(() => [props.zone.fontsize_status, props.zone.contrast_status, props.zone.lang_status].includes('Y'));
 const showLogoImage = computed(() => props.zone.logo_display !== 'name');
 const showSiteName = computed(() => props.zone.logo_display !== 'image');
 </script>

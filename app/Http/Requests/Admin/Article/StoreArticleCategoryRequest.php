@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\Article;
 
+use App\Http\Requests\Admin\Concerns\OnlyEnabledLanguageDetails;
 use App\Support\Setting;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -9,6 +10,8 @@ use Illuminate\Validation\Rule;
 
 class StoreArticleCategoryRequest extends FormRequest
 {
+    use OnlyEnabledLanguageDetails;
+
     /**
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -63,7 +66,10 @@ class StoreArticleCategoryRequest extends FormRequest
             $rules["detail.{$lang}.slug"] = [
                 // ตัวเลขล้วนจะชนกับ URL หน้าบ้าน /{lang}/article/category/{id}/{article_id} และ / ใช้ใน path ไม่ได้
                 'nullable', 'string', 'max:250', 'not_regex:/^\d+$|\//',
-                Rule::unique('article_category_detail', 'slug')->where(fn ($query) => $query->where('lang', $lang)),
+                // ไม่นับแถว detail ของหมวดหมู่ที่ถูกลบแล้ว (detail ไม่ถูก soft delete ตามพาเรนต์)
+                Rule::unique('article_category_detail', 'slug')->where(fn ($query) => $query
+                    ->where('lang', $lang)
+                    ->whereIn('id', fn ($sub) => $sub->select('id')->from('article_category_info')->whereNull('deleted_at'))),
             ];
             $rules["detail.{$lang}.meta_title"] = ['nullable', 'string', 'max:250'];
             $rules["detail.{$lang}.meta_description"] = ['nullable', 'string', 'max:500'];

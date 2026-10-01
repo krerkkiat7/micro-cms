@@ -34,6 +34,14 @@ class UserGroup extends Model
     }
 
     /**
+     * กลุ่มระบบ (can_edit = 'N' เช่น Super Admin) — แก้ไข/ลบกลุ่มไม่ได้ และจัดการสมาชิกได้เฉพาะผู้ใช้ที่อยู่ในกลุ่มระบบด้วยกัน
+     */
+    public function isSystem(): bool
+    {
+        return $this->can_edit === 'N';
+    }
+
+    /**
      * ผู้ใช้ที่อยู่ในกลุ่มนี้ (ทั้ง back/front — กรอง user_type ที่จุดเรียกใช้)
      */
     public function users()

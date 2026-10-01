@@ -26,6 +26,8 @@ use Inertia\Response;
 
 class FrontMenuController extends Controller
 {
+    private const HOME_REQUIRED_MESSAGE = 'ต้องมีเมนูหน้าแรกเสมอ — หากต้องการเปลี่ยน ให้ตั้งเมนูอื่นเป็นหน้าแรกแทน';
+
     /**
      * ชื่อผู้กระทำ (sys_user.id => ชื่อ) ของเมนูทั้งหมดในหน้ารายการ — เตรียมใน index() ใช้ใน menuNode()
      *
@@ -130,6 +132,11 @@ class FrontMenuController extends Controller
         $data = $request->validated();
         $actorId = $request->user()->id;
 
+        // ต้องมีเมนูหน้าแรกเสมอ — ยกเลิกได้ด้วยการตั้งเมนูอื่นเป็นหน้าแรกแทน (ไม่งั้น / และ /{lang} จะ 404 เมื่อไม่มี Intropage)
+        if ($model->is_home === 'Y' && ($data['is_home'] ?? 'N') !== 'Y') {
+            return back()->withErrors(['is_home' => self::HOME_REQUIRED_MESSAGE]);
+        }
+
         DB::transaction(function () use ($data, $actorId, $model) {
             if (($data['is_home'] ?? 'N') === 'Y' && $model->is_home !== 'Y') {
                 FrontMenuInfo::where('is_home', 'Y')->update(['is_home' => 'N', 'updated_by' => $actorId]);
@@ -197,6 +204,20 @@ class FrontMenuController extends Controller
     }
 
     /**
+     * เมนูนี้เป็นเมนูหน้าแรก หรือมีเมนูหน้าแรกเป็นลูกหลาน
+     */
+    private function containsHomeMenu(FrontMenuInfo $model): bool
+    {
+        if ($model->is_home === 'Y') {
+            return true;
+        }
+
+        $descendantIds = $this->descendantIds($model->id);
+
+        return $descendantIds !== [] && FrontMenuInfo::whereIn('id', $descendantIds)->where('is_home', 'Y')->exists();
+    }
+
+    /**
      * สลับแสดง/ซ่อนเมนู — ซ่อนเมนูประเภท "เมนูหัวข้อ" จะซ่อนเมนูลูกทุกระดับไปด้วย (ไม่ cascade ตอนเปิดกลับ)
      */
     public function toggleStatus(Request $request, string $menu): RedirectResponse
@@ -213,6 +234,11 @@ class FrontMenuController extends Controller
 
         $actorId = $request->user()->id;
         $newStatus = $model->status === 'Y' ? 'N' : 'Y';
+
+        // ซ่อนเมนูหน้าแรก (หรือเมนูหัวข้อที่มีเมนูหน้าแรกอยู่ข้างใน) ไม่ได้ — เมนูที่ไม่แสดงไม่ถูกใช้เป็นหน้าแรก
+        if ($newStatus === 'N' && $this->containsHomeMenu($model)) {
+            return back()->withErrors(['menu' => 'ไม่สามารถซ่อนเมนูที่ตั้งเป็นหน้าแรก (หรือเมนูหัวข้อที่มีเมนูหน้าแรกอยู่ข้างใน) ได้ กรุณาตั้งเมนูอื่นเป็นหน้าแรกก่อน']);
+        }
 
         DB::transaction(function () use ($model, $newStatus, $actorId) {
             $model->fill(['status' => $newStatus, 'updated_by' => $actorId])->save();

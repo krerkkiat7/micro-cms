@@ -128,7 +128,23 @@ abstract class FrontController extends Controller
         return [
             'view' => in_array($view, ['card', 'row'], true) ? $view : $listSetting['display_mode'],
             'sort' => in_array($sort, ArticleSetting::SORTS, true) ? $sort : $listSetting['default_sort'],
-            'page' => max(1, (int) $request->query('page', 1)),
+            // จำกัดเลขหน้าไว้ด้วย — กัน ?page= สุ่มค่าจนมี key ใน cache ไม่จำกัด (หน้าที่เกินจริงตอบ 404 ใน abortIfPageOutOfRange)
+            'page' => min(self::MAX_LIST_PAGE, max(1, (int) $request->query('page', 1))),
         ];
+    }
+
+    /** เลขหน้าสูงสุดที่รับของหน้ารายการบทความ */
+    private const MAX_LIST_PAGE = 1000;
+
+    /**
+     * ?page= เกินจำนวนหน้าที่มีจริง → 404 (หน้าแรกของรายการว่างยังเปิดได้ตามปกติ)
+     *
+     * @param  array{last_page: int}  $result
+     */
+    protected function abortIfPageOutOfRange(int $page, array $result): void
+    {
+        if ($page > 1 && $page > $result['last_page']) {
+            abort(404);
+        }
     }
 }

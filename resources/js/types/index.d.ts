@@ -40,6 +40,10 @@ export interface MenuGroup {
 export interface UserGroupOption {
     id: number;
     name: string;
+    /** 'N' = กลุ่มถูกปิดใช้งาน (แสดงเฉพาะเมื่อเป็นกลุ่มปัจจุบันของผู้ใช้ที่แก้ไข) */
+    status?: string;
+    /** กลุ่มระบบที่ผู้ใช้ปัจจุบันเลือกไม่ได้ */
+    disabled?: boolean;
 }
 
 /** รหัสภาษาที่ระบบเปิดใช้งาน (sys_setting: site.lang_selected/lang_default) — ใช้สร้างฟอร์มข้อมูลแยกภาษา */

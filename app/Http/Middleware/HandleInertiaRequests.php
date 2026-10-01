@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Support\AppAsset;
 use App\Support\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 use Inertia\Middleware;
 
@@ -40,7 +41,8 @@ class HandleInertiaRequests extends Middleware
 
         return [
             ...parent::share($request),
-            'auth' => [
+            // closure = partial reload ที่ไม่ได้ขอ prop นี้ไม่ต้องประกอบข้อมูลผู้ใช้/สิทธิ์ใหม่
+            'auth' => fn () => [
                 'user' => $isAdmin && $request->user() ? [
                     'id' => $request->user()->id,
                     'titlename' => $request->user()->titlename,
@@ -100,6 +102,21 @@ class HandleInertiaRequests extends Middleware
 
         $permissions = $user->getPermissionsArray();
 
+        // เมนูเปลี่ยนเฉพาะตอน seed (MenuSeeder เพิ่ม version) และขึ้นกับชุดสิทธิ์เท่านั้น — cache แยกตามชุดสิทธิ์ ไม่ต้อง query ทุก request
+        $key = 'admin.menu.v'.Cache::get(self::MENU_VERSION_KEY, 1).'.'.md5(implode(',', $permissions));
+
+        return Cache::remember($key, now()->addHour(), fn () => $this->buildAdminMenu($permissions));
+    }
+
+    /** เพิ่มค่าเมื่อเมนูหลังบ้าน (sys_menu_group/sys_menu) เปลี่ยน — ดู MenuSeeder */
+    public const MENU_VERSION_KEY = 'admin.menu.version';
+
+    /**
+     * @param  list<string>  $permissions
+     * @return list<array<string, mixed>>
+     */
+    private function buildAdminMenu(array $permissions): array
+    {
         return SysMenuGroup::query()
             ->where('status', 'Y')
             ->with(['menus' => fn ($query) => $query->where('status', 'Y')->orderBy('sort_order')])

@@ -77,13 +77,32 @@ test('password can be reset with valid token', function () {
         $response = $this->post('/admin/reset-password', [
             'token' => $notification->token,
             'email' => $user->email,
-            'password' => 'password',
-            'password_confirmation' => 'password',
+            'password' => 'NewPass1!',
+            'password_confirmation' => 'NewPass1!',
         ]);
 
         $response
             ->assertSessionHasNoErrors()
             ->assertRedirect(route('admin.login'));
+
+        return true;
+    });
+});
+
+test('password reset enforces the same strong password rule as the rest of the system', function () {
+    Notification::fake();
+
+    $user = User::factory()->create();
+
+    $this->post('/admin/forgot-password', ['email' => $user->email]);
+
+    Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user) {
+        $this->post('/admin/reset-password', [
+            'token' => $notification->token,
+            'email' => $user->email,
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ])->assertSessionHasErrors('password');
 
         return true;
     });

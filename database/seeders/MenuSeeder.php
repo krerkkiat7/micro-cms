@@ -2,10 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\SysMenu;
 use App\Models\SysMenuGroup;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * ข้อมูลเมนูหลังบ้าน (sys_menu_group + sys_menu)
@@ -78,8 +80,8 @@ class MenuSeeder extends Seeder
             ['system-back-log-action', 'system', 'ประวัติการกระทำ - หลังบ้าน', 'History', 'admin.system.backlog.action.index', 'system.backlog.action', 12],
             ['system-back-log-login', 'system', 'ประวัติการเข้าสู่ระบบ - หลังบ้าน', 'History', 'admin.system.backlog.login.index', 'system.backlog.login', 13],
             ['system-front-log-access', 'system', 'ประวัติการใช้งาน - หน้าบ้าน', 'History', 'admin.system.frontlog.access.index', 'system.frontlog.access', 14],
-            ['system-front-log-action', 'system', 'ประวัติการกระทำ - หน้าบ้าน', 'History', 'admin.system.frontlog.action.index', 'system.frontlog.action', 15],
-            ['system-front-log-login', 'system', 'ประวัติการเข้าสู่ระบบ - หน้าบ้าน', 'History', 'admin.system.frontlog.login.index', 'system.frontlog.login', 16],
+            // ['system-front-log-action', 'system', 'ประวัติการกระทำ - หน้าบ้าน', 'History', 'admin.system.frontlog.action.index', 'system.frontlog.action', 15],
+            // ['system-front-log-login', 'system', 'ประวัติการเข้าสู่ระบบ - หน้าบ้าน', 'History', 'admin.system.frontlog.login.index', 'system.frontlog.login', 16],
             ['system-setting', 'system', 'ตั้งค่าระบบ', 'SlidersHorizontal', 'admin.system.setting.index', 'system.setting.manage', 99],
             ['system-errorviewer', 'system', 'ตรวจสอบ Error', 'Bug', 'admin.system.errorviewer.index', 'system.error.view', 100],
         ];
@@ -88,6 +90,9 @@ class MenuSeeder extends Seeder
         // ไม่ผ่าน sys_menu แล้ว — ลบ record เดิมที่เคย seed ไว้ (id 'system-file') ออกจาก DB จริงด้วย
         // เพื่อให้ seeder รันซ้ำแล้วไม่มี row ค้าง
         SysMenu::where('id', 'system-file')->forceDelete();
+
+        // ประวัติการกระทำ/การเข้าสู่ระบบ - หน้าบ้าน ยังไม่มีหน้าจอ (รอ login หน้าบ้าน) — ลบเมนูที่เคย seed ไว้ออก
+        SysMenu::whereIn('id', ['system-front-log-action', 'system-front-log-login'])->forceDelete();
 
         foreach ($menus as [$id, $groupId, $name, $icon, $routeName, $actionCode, $sortOrder]) {
             SysMenu::updateOrCreate(['id' => $id], [
@@ -100,5 +105,8 @@ class MenuSeeder extends Seeder
                 'status' => 'Y',
             ]);
         }
+
+        // ให้ sidebar หลังบ้านที่ cache ไว้ (HandleInertiaRequests::adminMenu) โหลดเมนูชุดใหม่
+        Cache::forever(HandleInertiaRequests::MENU_VERSION_KEY, (int) Cache::get(HandleInertiaRequests::MENU_VERSION_KEY, 1) + 1);
     }
 }

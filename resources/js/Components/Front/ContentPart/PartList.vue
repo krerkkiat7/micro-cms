@@ -43,7 +43,7 @@ function titleCss(part: FrontPart): CSSProperties | undefined {
 
             <!-- รูปภาพเดี่ยว -->
             <figure v-else-if="part.type === 'image' && part.files[0]?.file" :class="[ALIGN[part.setting.alignment], SIZE[part.setting.size]]">
-                <img :src="part.files[0].file.url" :alt="part.files[0].alt" class="h-auto w-full rounded-md" loading="lazy" />
+                <img :src="part.files[0].file.thumb_url ?? part.files[0].file.url" :alt="part.files[0].alt" class="h-auto w-full rounded-md" loading="lazy" />
                 <figcaption v-if="part.setting.show_caption && part.files[0].alt" class="mt-2 text-center text-sm text-gray-600">{{ part.files[0].alt }}</figcaption>
             </figure>
 

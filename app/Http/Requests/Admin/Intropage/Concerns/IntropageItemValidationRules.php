@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Admin\Intropage\Concerns;
 
+use App\Rules\SafeUrl;
 use App\Support\PageTextStyle;
 use App\Support\Setting;
+use App\Support\Template\TemplateZone;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -31,7 +33,8 @@ trait IntropageItemValidationRules
     protected function commonRules(): array
     {
         return [
-            'background_color' => ['nullable', 'string', 'max:20'],
+            // สีต้องเป็นรหัสสี/transparent เท่านั้น (ค่าไปอยู่ใน style ของหน้าบ้าน — กันแทรก CSS อื่น)
+            'background_color' => ['nullable', 'string', 'max:20', 'regex:'.TemplateZone::COLOR_REGEX],
             'background_image_id' => [
                 'nullable', 'integer',
                 Rule::exists('file_info', 'id')->where(fn ($query) => $query
@@ -113,15 +116,15 @@ trait IntropageItemValidationRules
             'buttons' => ['required', 'array', 'min:1'],
             'buttons.*.button_type' => ['required', Rule::in(['home', 'other'])],
             'buttons.*.button_display_type' => ['nullable', Rule::in(['text', 'image'])],
-            'buttons.*.background_color' => ['nullable', 'string', 'max:10'],
-            'buttons.*.text_color' => ['nullable', 'string', 'max:10'],
+            'buttons.*.background_color' => ['nullable', 'string', 'max:20', 'regex:'.TemplateZone::COLOR_REGEX],
+            'buttons.*.text_color' => ['nullable', 'string', 'max:20', 'regex:'.TemplateZone::COLOR_REGEX],
             'buttons.*.button_image_id' => [
                 'nullable', 'integer',
                 Rule::exists('file_info', 'id')->where(fn ($query) => $query
                     ->where('status', 'Y')
                     ->whereNull('deleted_at')),
             ],
-            'buttons.*.url' => ['nullable', 'string', 'max:500'],
+            'buttons.*.url' => ['nullable', 'string', 'max:500', new SafeUrl],
             'buttons.*.link_target' => ['nullable', Rule::in(['_self', '_blank'])],
             'buttons.*.texts' => ['nullable', 'array'],
         ];

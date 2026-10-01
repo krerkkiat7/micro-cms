@@ -58,7 +58,7 @@ Migration: `database/migrations/2026_09_30_000001_create_sys_template_tables.php
 | โลโก้ | `logo_status`, `logo_align` (left/center/right), `logo_display` (`image` / `image_name` / `name`), `logo_action` (`none` / `home`) | |
 | เมนู | `menu_align`, `menu_style` (ดู §2), `menu_text_color`, `menu_active_color` | สีเมนูเพิ่มจากที่ร้องขอ — จำเป็นเมื่อพื้นแถบเป็นสีเข้ม |
 | ภาษา | `lang_status`, `lang_display` (`code` / `flag` / `flag_code`), `lang_select` (`all` / `dropdown`) | ภาษาที่แสดง = `site.lang_selected` |
-| Social / ค้นหา | `social_status`, `search_status` | |
+| Social / ค้นหา | `social_status`, `search_status` | `search_status` **ซ่อนใน UI ไว้ก่อน** (ยังไม่มีหน้าค้นหาที่หน้าบ้าน) — คอลัมน์ยังอยู่ใน DB |
 | ปรับตัวอักษร | `fontsize_status`, `fontsize_display` (`icon` = ไอคอน + , - / `text` = ตัวอักษร ก ก ก) | |
 | การแสดงสี | `contrast_status`, `contrast_display` (`icon` / `text`) | |
 | แถบหลัก | `main_width` (`full`/`container`), `main_text_color`, พื้นหลังชุดเต็ม | |

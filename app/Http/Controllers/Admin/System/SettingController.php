@@ -53,6 +53,9 @@ class SettingController extends Controller
      * กลุ่มตั้งค่าที่หน้านี้ (ตั้งค่าระบบ) มีฟอร์มให้แก้ไขเอง — ไม่ใช่ทุกกลุ่มใน Setting::GROUPS เพราะกลุ่มอื่น
      * (เช่น 'article') เป็นของโมดูลนั้น ๆ ที่มีหน้าตั้งค่าแยกของตัวเอง แค่มาลงทะเบียนแคชร่วมทะเบียนเดียวกัน
      */
+    /** ค่าลับของแต่ละกลุ่ม (กลุ่ม => ชื่อฟิลด์) — ไม่ส่งค่าจริงไปหน้าจอ */
+    private const SECRET_FIELDS = ['smtp' => 'password', 'turnstile' => 'key_secret'];
+
     private const OWN_GROUPS = ['site', 'contact', 'social', 'google_analytics', 'google_map', 'smtp', 'turnstile', 'login_back'];
 
     /**
@@ -73,11 +76,19 @@ class SettingController extends Controller
                 $group => SysSetting::query()->where('group', $group)->pluck('value', 'name'),
             ]);
 
+        // ค่าลับไม่ส่งไปหน้าจอ (ไม่อยู่ใน page JSON/ประวัติเบราว์เซอร์) — ส่งแค่ว่า "ตั้งค่าไว้แล้ว" แทน; บันทึกโดยเว้นว่าง = ใช้ค่าเดิม
+        $secretsSet = [];
+        foreach (self::SECRET_FIELDS as $group => $name) {
+            $secretsSet[$group] = filled($settings->get($group)->get($name));
+            $settings->put($group, $settings->get($group)->except($name));
+        }
+
         return Inertia::render('Admin/System/Setting/Index', [
             'settings' => $settings,
             'logoFile' => $this->fileToArray($settings->get('site')?->get('logo_id')),
             'faviconFile' => $this->fileToArray($settings->get('site')?->get('favicon_id')),
             'timezoneOptions' => Setting::timezoneOptions(),
+            'secretsSet' => $secretsSet,
         ]);
     }
 
@@ -141,6 +152,8 @@ class SettingController extends Controller
         if ($data['use_auth'] !== 'Y') {
             $data['username'] = null;
             $data['password'] = null;
+        } elseif (blank($data['password'] ?? null)) {
+            $data['password'] = Setting::get('smtp', 'password'); // เว้นว่าง = ใช้รหัสผ่านเดิม
         }
 
         return $this->saveGroup($request, 'smtp', $data);
@@ -182,7 +195,16 @@ class SettingController extends Controller
 
     public function updateTurnstile(UpdateTurnstileSettingRequest $request): RedirectResponse
     {
-        return $this->saveGroup($request, 'turnstile');
+        $data = $request->validated();
+
+        // เว้นว่าง Key Secret = ใช้ค่าเดิม; ล้าง Site Key = ปิด Turnstile (ล้าง Key Secret คู่กันด้วย)
+        if (blank($data['site_key'] ?? null)) {
+            $data['key_secret'] = null;
+        } elseif (blank($data['key_secret'] ?? null)) {
+            $data['key_secret'] = Setting::get('turnstile', 'key_secret');
+        }
+
+        return $this->saveGroup($request, 'turnstile', $data);
     }
 
     public function updateLoginBack(UpdateLoginBackSettingRequest $request): RedirectResponse
@@ -292,8 +314,8 @@ class SettingController extends Controller
     }
 
     /**
-     * ล้างแคชของโมดูลจัดการไฟล์ (ผลการค้นหา file_info ด้วย hash_name) — driver cache เป็น
-     * `database` ไม่รองรับ tag จึง flush ทั้ง cache store (ดู App\Support\FileCache::forgetAll())
+     * ล้างแคชของโมดูลจัดการไฟล์ (ผลการค้นหา file_info ด้วย hash_name) — เพิ่ม version ของ key
+     * ไม่ flush ทั้ง cache store (ดู App\Support\FileCache::forgetAll())
      */
     public function clearCacheFiles(Request $request): RedirectResponse
     {

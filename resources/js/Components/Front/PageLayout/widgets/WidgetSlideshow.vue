@@ -83,7 +83,7 @@ const linkOf = (item: FrontWidgetItem) => (props.setting.is_clickable === 'Y' &&
         v-if="items.length"
         class="relative select-none overflow-hidden bg-gray-200"
         :style="frameStyle"
-        aria-roledescription="carousel"
+        :aria-roledescription="t('carousel_role')"
         :aria-label="label || undefined"
         v-on="carousel.pauseHandlers"
     >
@@ -95,7 +95,7 @@ const linkOf = (item: FrontWidgetItem) => (props.setting.is_clickable === 'Y' &&
                 class="absolute inset-0"
                 :style="slideStyle(i)"
                 role="group"
-                aria-roledescription="slide"
+                :aria-roledescription="t('slide_role')"
                 :aria-label="t('slide', { current: i + 1, total: items.length })"
                 :aria-hidden="i !== carousel.index.value"
                 :inert="i !== carousel.index.value"

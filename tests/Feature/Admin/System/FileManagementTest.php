@@ -173,9 +173,14 @@ test('an authenticated user can view, download, and thumbnail any file by hash_n
         ->toContain('cover.png');
 
     $this->actingAs($viewer)
-        ->get(route('admin.system.file.get.thumbnail.size', ['size' => 50, 'hashname' => $hash]))
+        ->get(route('admin.system.file.get.thumbnail.size', ['size' => 80, 'hashname' => $hash]))
         ->assertOk()
         ->assertHeader('Content-Type', 'image/png');
+
+    // ขนาดนอก config('filemanagement.admin_thumbnail_sizes') = 404 (กันสร้างรูปขนาดใหญ่/ไม่จำกัดจำนวน)
+    $this->actingAs($viewer)
+        ->get(route('admin.system.file.get.thumbnail.size', ['size' => 50000, 'hashname' => $hash]))
+        ->assertNotFound();
 });
 
 test('serving an unknown hash_name returns 404', function () {

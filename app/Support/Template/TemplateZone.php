@@ -74,6 +74,7 @@ final class TemplateZone
                 'lang_display' => ['flag_code', self::in(['code', 'flag', 'flag_code'])],
                 'lang_select' => ['dropdown', self::in(['all', 'dropdown'])],
                 'social_status' => ['Y', self::yn()],
+                // สงวนไว้ — ซ่อนใน UI จนกว่าหน้าบ้านจะมีหน้าค้นหา (ยังบันทึกค่าเดิม/ค่าเริ่มต้นไว้ตามปกติ)
                 'search_status' => ['Y', self::yn()],
                 'fontsize_status' => ['Y', self::yn()],
                 'fontsize_display' => ['icon', self::in(['icon', 'text'])],

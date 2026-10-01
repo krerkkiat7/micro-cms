@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\Article;
 
+use App\Http\Requests\Admin\Concerns\OnlyEnabledLanguageDetails;
 use App\Support\Setting;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -9,6 +10,8 @@ use Illuminate\Validation\Rule;
 
 class StoreArticleTagRequest extends FormRequest
 {
+    use OnlyEnabledLanguageDetails;
+
     /**
      * @return array<string, ValidationRule|array<mixed>|string>
      */

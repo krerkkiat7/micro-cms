@@ -282,7 +282,7 @@ migration `2026_10_03_000001_add_spacing_to_page_item_layout_tables.php` — แ
 |---------|----------------|
 | `banner_category_info_id` | FK → `banner_category_info` (nullOnDelete) — **จำเป็นต้องเลือก** (ต้องมีอยู่จริง เปิดใช้งาน ไม่ถูกลบ ตรวจตอนบันทึก) |
 | `sort_by` | `publish_desc` วันที่เผยแพร่ล่าสุด (default) · `publish_asc` เก่าสุด · `order_asc` ลำดับน้อยไปมาก · `order_desc` มากไปน้อย (วันที่ใช้ `COALESCE(publish_date, created_at)`) |
-| `max_items` | จำนวนที่แสดงสูงสุด (จำนวนเต็ม 0 - 1000, default 0) — **ไม่กรอกหรือเป็น 0 = แสดงทั้งหมด** (หน้าจอส่งช่องว่างมาเป็น 0) |
+| `max_items` | จำนวนที่แสดงสูงสุด (จำนวนเต็ม 0 - 100, default 0) — **ไม่กรอกหรือเป็น 0 = แสดงทั้งหมด (สูงสุด 100 รายการ)** (หน้าจอส่งช่องว่างมาเป็น 0) — เพดาน `CategoryListWidget::MAX_ITEMS_LIMIT` เพราะรายการทั้งหมดถูกฝังไปกับ HTML ของหน้า |
 | `show_arrows` / `show_dots` / `autoplay` | `Y`/`N` — ลูกศรกดเลื่อน · จุดด้านล่าง (อยู่ในกรอบภาพ) · เลื่อนอัตโนมัติ (default `Y`/`Y`/`Y`) |
 | `autoplay_interval` | ระยะค้างต่อภาพ (วินาที 1 - 60, default 5) — ใช้เมื่อเปิด autoplay |
 | `transition_speed` | ความเร็วเปลี่ยนภาพ (มิลลิวินาที 100 - 3000, default 500) |
@@ -324,7 +324,7 @@ class `SlidesetArticleWidget extends CategoryListWidget` (ใช้ trait `Reads
 
 | กลุ่ม | คอลัมน์ (ค่าเริ่มต้น) |
 |-------|------------------------|
-| ข้อมูล | `article_category_info_id` (**จำเป็นต้องเลือก**), `sort_by` (`publish_desc`/`publish_asc`), `max_items` (0 - 1000, **ว่างหรือ 0 = แสดงทั้งหมด**) |
+| ข้อมูล | `article_category_info_id` (**จำเป็นต้องเลือก**), `sort_by` (`publish_desc`/`publish_asc`), `max_items` (0 - 100, **ว่างหรือ 0 = แสดงทั้งหมด สูงสุด 100**) |
 | จำนวนต่อแถว | `per_row_pc` (4) / `per_row_notebook` (3) / `per_row_tablet` (2) / `per_row_mobile` (1) — 1 - 6; breakpoint: PC ≥ 1280 px, Notebook 1024 - 1279, Tablet 768 - 1023, Mobile < 768 (`SLIDESET_DEVICES`) |
 | การเลื่อน | `show_arrows` (Y), `show_dots` (Y — จุดอยู่ใต้การ์ด เป็นพื้นที่ด้านล่าง ไม่ซ้อนบนการ์ด), `autoplay` (N), `autoplay_interval` (5 วินาที, 1 - 60), `transition_speed` (500 ms, 100 - 3000) |
 | กล่องของการ์ด | `show_border` (**Y** — เส้นขอบบาง ๆ รอบการ์ด), `border_color` (**`#E5E7EB`** เทาอ่อน — เลือกได้เมื่อแสดงเส้นขอบเท่านั้น), `rounded_corners` (**Y** — มุมมน; ปิด = มุมเหลี่ยมทั้งการ์ดและรูป), `item_background` (**`#FFFFFF`** ขาว — สีพื้นหลังของแต่ละรายการ เลือก transparent ได้) — `CategoryListWidget::cardBoxFields()` ใช้ร่วมกับ Grid ทั้ง 2 แหล่งข้อมูล ด้วย (migration `2026_09_25_000001_*` + `2026_09_26_000001_*`) |
@@ -414,7 +414,7 @@ migration `2026_09_25_000003_*`; FK หมวดหมู่ตั้งชื�
 
 | กลุ่ม | คอลัมน์ (ค่าเริ่มต้น) |
 |-------|------------------------|
-| ข้อมูล | `article_category_info_id` (**จำเป็นต้องเลือก**), `sort_by` (`publish_desc`/`publish_asc`), `max_items` (0 - 1000, **ว่างหรือ 0 = แสดงทั้งหมด**), `display_type` |
+| ข้อมูล | `article_category_info_id` (**จำเป็นต้องเลือก**), `sort_by` (`publish_desc`/`publish_asc`), `max_items` (0 - 100, **ว่างหรือ 0 = แสดงทั้งหมด สูงสุด 100**), `display_type` |
 | จำนวนคอลัมน์ต่อแถว | `per_row_pc` (4) / `per_row_notebook` (3) / `per_row_tablet` (2) / `per_row_mobile` (1) — 1 - 6 (breakpoint เดียวกับ Slideset, `SLIDESET_DEVICES`) |
 | รูปภาพ | `show_image` (Y), `image_width_percent` (20, 5 - 50 — เฉพาะ `row_image`), `aspect_ratio`, `image_fit`, `image_background` (`#F3F4F6`), `image_clickable` (Y) |
 | กล่องของการ์ด | `show_border` (Y), `border_color` (`#E5E7EB`), `rounded_corners` (Y), `item_background` (`#FFFFFF`) — ดูตารางในหัวข้อ §3 บนสุด |

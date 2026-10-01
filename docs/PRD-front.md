@@ -204,7 +204,7 @@ prop `popups` ทุกหน้าที่ใช้ FrontLayout (ไม่ร�
 - rich text ผ่าน `App\Support\Front\HtmlSanitizer` (allowlist ด้วย DOMDocument — ตัด script/iframe/on*/style, ลิงก์เฉพาะ http(s)/mailto/tel/#/path,
   `_blank` ใส่ `rel="noopener noreferrer"`, h1 → h2) ก่อนส่งให้ `v-html`
 - URL ภายนอก (เมนู/banner/ปุ่ม intropage/อ่านทั้งหมด/social/popup) ผ่าน `FrontUrl::safeExternal()` (กัน `javascript:` ฯลฯ)
-- header `FrontSecurityHeaders` (nosniff, SAMEORIGIN, Referrer-Policy, Permissions-Policy) — ยังไม่ใส่ CSP (ดู roadmap)
+- header `SecurityHeaders` (ทุก route ในกลุ่ม web รวมหลังบ้าน/ไฟล์/sitemap — nosniff, SAMEORIGIN, Referrer-Policy, Permissions-Policy) — ยังไม่ใส่ CSP (ดู roadmap)
 - หน้าบ้านไม่ส่งข้อมูลผู้ใช้/สิทธิ์/เมนูหลังบ้าน (`HandleInertiaRequests` ส่งเฉพาะ `/admin/*`) และ Ziggy ส่งเฉพาะกลุ่ม route `front`
   (`config/ziggy.php`) — ไม่เปิดเผยรายชื่อ URL หลังบ้าน
 - Custom JS/CSS ของ template = เนื้อหาที่ผู้ดูแล (สิทธิ์ `system.template.manage`) ใส่เอง ถือว่าเชื่อถือได้

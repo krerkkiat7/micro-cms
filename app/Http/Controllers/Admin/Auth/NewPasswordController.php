@@ -37,7 +37,8 @@ class NewPasswordController extends Controller
         $request->validate([
             'token' => 'required',
             'email' => 'required|email',
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            // เงื่อนไขเดียวกับการตั้ง/เปลี่ยนรหัสผ่านจุดอื่นในระบบ (PasswordController/StoreUserRequest/UpdateUserPasswordRequest)
+            'password' => ['required', 'confirmed', Rules\Password::min(8)->mixedCase()->numbers()->symbols()],
         ]);
 
         // Here we will attempt to reset the user's password. If it is successful we

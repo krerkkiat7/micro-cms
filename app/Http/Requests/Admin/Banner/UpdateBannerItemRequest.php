@@ -16,7 +16,7 @@ class UpdateBannerItemRequest extends FormRequest
      */
     public function rules(): array
     {
-        return $this->commonRules() + $this->languageDetailRules();
+        return $this->commonRules((int) $this->route('item')) + $this->languageDetailRules();
     }
 
     /**

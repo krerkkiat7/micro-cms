@@ -81,7 +81,7 @@ const breadcrumbs = [
                 <PrimaryButton type="submit" :disabled="form.processing">
                     <Save class="mr-1.5 size-4" /> บันทึก
                 </PrimaryButton>
-                <BackToListButton :href="route('admin.system.template.index')" />
+                <BackToListButton :href="route('admin.system.template.index')" cancel />
             </div>
         </form>
     </AdminLayout>

@@ -26,11 +26,19 @@ class ArticleTagController extends FrontController
         $query = $this->listQuery($request, $listSetting);
         $perPage = $listSetting['per_page'];
 
-        $articles = FrontCache::remember(
-            "article.tag.{$lang}.{$perPage}.{$query['page']}.{$query['sort']}.".md5($tag),
-            (int) config('front.cache.content_ttl', 300),
-            fn () => ArticleReader::listForTags(ArticleReader::tagIdsByName($tag), $lang, $perPage, $query['page'], $query['sort']),
-        );
+        // หาแท็กก่อน (query เล็ก มี index lang+name) — cache เฉพาะแท็กที่มีอยู่จริง; ชื่อแท็กมั่ว ๆ ไม่สร้าง key ใหม่ใน cache
+        $tagIds = ArticleReader::tagIdsByName($tag);
+        $load = fn () => ArticleReader::listForTags($tagIds, $lang, $perPage, $query['page'], $query['sort']);
+
+        $articles = $tagIds === []
+            ? $load()
+            : FrontCache::remember(
+                "article.tag.{$lang}.{$perPage}.{$query['page']}.{$query['sort']}.".implode('-', $tagIds),
+                (int) config('front.cache.content_ttl', 300),
+                $load,
+            );
+
+        $this->abortIfPageOutOfRange($query['page'], $articles);
 
         $title = (string) trans('front.tag_title', ['tag' => $tag], $lang);
 

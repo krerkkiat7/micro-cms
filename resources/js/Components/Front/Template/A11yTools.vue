@@ -66,7 +66,7 @@ const buttonClass = 'inline-flex min-h-8 min-w-8 items-center justify-center rou
                     :aria-label="[t('font_normal'), t('font_larger'), `${t('font_larger')} +`][index]"
                     @click="prefs.setFontLevel(index)"
                 >
-                    <span aria-hidden="true">ก</span>
+                    <span aria-hidden="true">{{ t('font_sample') }}</span>
                 </button>
             </template>
         </div>

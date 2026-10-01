@@ -45,17 +45,15 @@ use App\Http\Controllers\Front\FileController as FrontFileController;
 use App\Http\Controllers\Front\Intropage\IntropageController;
 use App\Http\Controllers\Front\Page\PageItemController as FrontPageItemController;
 use App\Http\Controllers\Front\SitemapController;
-use App\Http\Middleware\FrontSecurityHeaders;
+use App\Http\Middleware\EnsureBackUserActive;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Support\ErrorStatus;
 use App\Support\Setting;
-use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Inertia\Inertia;
 
 /*
 |--------------------------------------------------------------------------
@@ -64,14 +62,8 @@ use Inertia\Inertia;
 */
 // หน้าแรก (/) — แสดง Intropage ของภาษาหลักทันที (ไม่มี Intropage ที่เผยแพร่อยู่ = redirect ไปหน้าแรกที่กำหนดในเมนู)
 Route::get('/', [IntropageController::class, 'root'])
-    ->middleware(['setLocale', FrontSecurityHeaders::class])
+    ->middleware('setLocale')
     ->name('front.root');
-
-// โลโก้/favicon สาธารณะของระบบ — ไม่ต้อง login, ไม่มี prefix ภาษา {lang} และไม่อยู่ใต้ /admin
-// เพราะเป็น asset ที่ทั้งฝั่งแอดมินและหน้าบ้านใช้ร่วมกัน (ดู App\Http\Controllers\AppAssetController)
-// ชื่อ route (app.logo/app.favicon) เป็นข้อยกเว้นของ convention front.*/admin.* ปกติ ตามที่กำหนดไว้โดยเฉพาะ
-Route::get('/apps/logo.png', [AppAssetController::class, 'logo'])->name('app.logo');
-Route::get('/apps/favicon.ico', [AppAssetController::class, 'favicon'])->name('app.favicon');
 
 // sitemap.xml (index + ไฟล์ย่อย) และ robots.txt — อิงตามเมนูหน้าบ้านที่เผยแพร่ (App\Support\Front\Sitemap)
 // ตัด session/CSRF/Inertia ออก: bot ไม่สร้าง session และ response ไม่มี Set-Cookie (cache ที่ CDN ได้)
@@ -88,13 +80,28 @@ Route::withoutMiddleware([
     Route::get('/robots.txt', 'robots')->name('front.robots');
 });
 
-// ไฟล์/รูปของเนื้อหาหน้าบ้าน (สาธารณะ อ้างอิงด้วย hash_name) — URL สร้างจาก App\Support\Front\FrontFile ที่เดียว
-Route::prefix('file')->controller(FrontFileController::class)->group(function () {
-    Route::get('/get/{hashname}', 'show')->name('front.file.get');
-    Route::get('/type/download/get/{hashname}', 'download')->name('front.file.download');
-    Route::get('/type/thumbnail/size/{size}/get/{hashname}', 'thumbnail')
-        ->name('front.file.thumbnail')
-        ->where('size', '[0-9]+');
+// ไฟล์สาธารณะ (โลโก้/favicon + ไฟล์/รูปของเนื้อหาหน้าบ้าน) — ตัด session/CSRF/Inertia ออกเหมือน sitemap:
+// รูปทุกรูปในหน้าไม่ต้องเปิด session (อ่าน/เขียน Redis/DB) และ response ไม่มี Set-Cookie จึง cache ที่ CDN/proxy ได้
+Route::withoutMiddleware([
+    StartSession::class,
+    ShareErrorsFromSession::class,
+    ValidateCsrfToken::class,
+    HandleInertiaRequests::class,
+    AddLinkHeadersForPreloadedAssets::class,
+])->group(function () {
+    // โลโก้/favicon สาธารณะของระบบ — ไม่มี prefix ภาษา {lang} และไม่อยู่ใต้ /admin เพราะทั้งหลังบ้านและหน้าบ้านใช้ร่วมกัน
+    // (ดู App\Http\Controllers\AppAssetController) ชื่อ route app.* เป็นข้อยกเว้นของ convention front.*/admin.* ตามที่กำหนดไว้
+    Route::get('/apps/logo.png', [AppAssetController::class, 'logo'])->name('app.logo');
+    Route::get('/apps/favicon.ico', [AppAssetController::class, 'favicon'])->name('app.favicon');
+
+    // ไฟล์/รูปของเนื้อหาหน้าบ้าน (อ้างอิงด้วย hash_name) — URL สร้างจาก App\Support\Front\FrontFile ที่เดียว
+    Route::prefix('file')->controller(FrontFileController::class)->group(function () {
+        Route::get('/get/{hashname}', 'show')->name('front.file.get');
+        Route::get('/type/download/get/{hashname}', 'download')->name('front.file.download');
+        Route::get('/type/thumbnail/size/{size}/get/{hashname}', 'thumbnail')
+            ->name('front.file.thumbnail')
+            ->where('size', '[0-9]+');
+    });
 });
 
 // keep-alive ของ log_front_access (ยกเว้น CSRF ใน bootstrap/app.php — sendBeacon ตั้ง header ไม่ได้)
@@ -113,7 +120,7 @@ Route::post('/front/banner/click', [FrontBannerItemController::class, 'click'])
 Route::group([
     'prefix' => '{lang}',
     'where' => ['lang' => Setting::languageRoutePattern()],
-    'middleware' => ['web', 'setLocale', FrontSecurityHeaders::class],
+    'middleware' => ['web', 'setLocale'],
 ], function () {
     // Intropage (ไม่มีที่เผยแพร่อยู่ = redirect ไปหน้าแรกที่กำหนดในเมนู)
     Route::get('/', [IntropageController::class, 'index'])->name('front.home');
@@ -164,7 +171,7 @@ Route::group([
 Route::prefix('admin')->group(function () {
 
     // 1. ดึงไฟล์ Auth Routes (Login, Register, Password Reset) มาไว้ภายใต้ /admin
-    // ทำให้ URL กลายเป็น /admin/login, /admin/register อัตโนมัติ
+    // ทำให้ URL กลายเป็น /admin/login, /admin/forgot-password อัตโนมัติ
     require __DIR__.'/auth_admin.php';
 
     // /admin เฉย ๆ — login แล้วไป dashboard, ยังไม่ login ไปหน้า login
@@ -178,7 +185,8 @@ Route::prefix('admin')->group(function () {
     }
 
     // 2. Route หน้าหลังบ้านที่ต้องผ่านการ Login ก่อน
-    Route::middleware(['auth', 'verified'])->group(function () {
+    // auth.session = เปลี่ยนรหัสผ่านแล้ว session อื่นของผู้ใช้คนนั้นหลุด, EnsureBackUserActive = ถูกระงับระหว่าง login อยู่ก็หลุด
+    Route::middleware(['auth', 'auth.session', EnsureBackUserActive::class, 'verified'])->group(function () {
 
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
@@ -523,24 +531,3 @@ Route::prefix('admin')->group(function () {
         });
     });
 });
-
-// Route::get('/', function () {
-//     return Inertia::render('Welcome', [
-//         'canLogin' => Route::has('login'),
-//         'canRegister' => Route::has('register'),
-//         'laravelVersion' => Application::VERSION,
-//         'phpVersion' => PHP_VERSION,
-//     ]);
-// });
-
-// Route::get('/dashboard', function () {
-//     return Inertia::render('Dashboard');
-// })->middleware(['auth', 'verified'])->name('dashboard');
-
-// Route::middleware('auth')->group(function () {
-//     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-//     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-//     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-// });
-
-// require __DIR__.'/auth.php';

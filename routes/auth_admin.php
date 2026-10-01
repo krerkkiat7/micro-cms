@@ -7,16 +7,10 @@ use App\Http\Controllers\Admin\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Admin\Auth\NewPasswordController;
 use App\Http\Controllers\Admin\Auth\PasswordController;
 use App\Http\Controllers\Admin\Auth\PasswordResetLinkController;
-use App\Http\Controllers\Admin\Auth\RegisteredUserController;
 use App\Http\Controllers\Admin\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
-    Route::get('register', [RegisteredUserController::class, 'create'])
-        ->name('admin.register');
-
-    Route::post('register', [RegisteredUserController::class, 'store']);
-
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('admin.login');
 
@@ -26,12 +20,14 @@ Route::middleware('guest')->group(function () {
         ->name('admin.password.request');
 
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
+        ->middleware('throttle:6,1')
         ->name('admin.password.email');
 
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
         ->name('admin.password.reset');
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])
+        ->middleware('throttle:6,1')
         ->name('admin.password.store');
 });
 
@@ -50,9 +46,12 @@ Route::middleware('auth')->group(function () {
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
         ->name('admin.password.confirm');
 
-    Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
+    // throttle กันเดารหัสผ่านปัจจุบันด้วย session ที่ถูกขโมยมา
+    Route::post('confirm-password', [ConfirmablePasswordController::class, 'store'])->middleware('throttle:6,1');
 
-    Route::put('password', [PasswordController::class, 'update'])->name('admin.password.update');
+    Route::put('password', [PasswordController::class, 'update'])
+        ->middleware('throttle:6,1')
+        ->name('admin.password.update');
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('admin.logout');

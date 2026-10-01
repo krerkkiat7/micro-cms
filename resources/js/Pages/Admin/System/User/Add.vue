@@ -12,13 +12,17 @@ import { Head, useForm } from '@inertiajs/vue3';
 import { Save } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { STATUS_OPTIONS } from '@/utils/options';
+import { userGroupSelectOptions } from '@/utils/userGroup';
 import type { FileItem, UserGroupOption } from '@/types';
 
 const props = defineProps<{
     userGroups: UserGroupOption[];
+    /** ข้อความแนะนำเรื่องกลุ่มระบบ (null = ผู้ใช้ปัจจุบันอยู่ในกลุ่มระบบ ไม่ต้องแสดง) */
+    systemGroupMessage: string | null;
 }>();
 
-const userGroupOptions = computed(() => props.userGroups.map((g) => ({ value: String(g.id), label: g.name })));
+const userGroupOptions = computed(() => userGroupSelectOptions(props.userGroups));
+const hasDisabledGroup = computed(() => props.userGroups.some((g) => g.disabled));
 
 const form = useForm({
     titlename: '',
@@ -100,6 +104,7 @@ const passwordHint =
                     <div class="sm:col-span-3">
                         <InputLabel for="usergroup_id" value="กลุ่มผู้ใช้งาน" required />
                         <SearchableSelect id="usergroup_id" v-model="form.usergroup_id" :options="userGroupOptions" placeholder="เลือกกลุ่มผู้ใช้งาน" />
+                        <p v-if="hasDisabledGroup && systemGroupMessage" class="mt-1.5 text-xs text-gray-500">{{ systemGroupMessage }}</p>
                         <InputError :message="form.errors.usergroup_id" />
                     </div>
 

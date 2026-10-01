@@ -120,6 +120,12 @@ return [
     'back_to_home' => 'Back to home',
     // popup
     'popup' => 'Popup',
+    'popup_image' => 'Announcement image',
+    // aria-roledescription of carousels / slides (screen readers announce this instead of the role name)
+    'carousel_role' => 'carousel',
+    'slide_role' => 'slide',
+    // sample letter on the text-size buttons
+    'font_sample' => 'A',
     'dont_show_today' => "Don't show again today",
     'close_and_dont_show_today' => "Close and don't show again today",
     // contact us

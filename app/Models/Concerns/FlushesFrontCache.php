@@ -17,7 +17,14 @@ trait FlushesFrontCache
     public static function bootFlushesFrontCache(): void
     {
         foreach (['saved', 'deleted', 'restored'] as $event) {
-            static::registerModelEvent($event, fn () => FrontCache::forgetAll());
+            static::registerModelEvent($event, function ($model) use ($event) {
+                // save() ที่ไม่มีอะไรเปลี่ยน (Eloquent ยิง saved ให้เสมอ) ไม่ต้องล้าง cache
+                if ($event === 'saved' && ! $model->wasRecentlyCreated && ! $model->wasChanged()) {
+                    return;
+                }
+
+                FrontCache::flushForChange();
+            });
         }
     }
 }

@@ -5,18 +5,21 @@ import TabNav from '@/Components/Admin/TabNav.vue';
 import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import PermissionTreeNode from '@/Components/Admin/PermissionTreeNode.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import BackToListButton from '@/Components/Admin/BackToListButton.vue';
+import { Head, useForm } from '@inertiajs/vue3';
 import { ChevronDown, Save } from 'lucide-vue-next';
 import { computed, reactive } from 'vue';
 import type { ActionGroupNode, ActionNode } from '@/types';
 
 const props = defineProps<{
     group: { id: number; name: string; can_edit: string };
+    /** กลุ่มของผู้ใช้ปัจจุบันเอง — ดูได้อย่างเดียว */
+    isOwnGroup: boolean;
     actionGroups: ActionGroupNode[];
     checkedIds: string[];
 }>();
 
-const readOnly = computed(() => props.group.can_edit === 'N');
+const readOnly = computed(() => props.group.can_edit === 'N' || props.isOwnGroup);
 
 // ---- การเลือกสิทธิ์ (reactive Set) ----
 const selected = reactive(new Set<string>(props.checkedIds));
@@ -143,8 +146,11 @@ const tabs = computed(() => [
                             {{ group.name }}
                         </span>
                     </p>
-                    <p v-if="readOnly" class="mt-1 text-sm text-amber-600">
+                    <p v-if="group.can_edit === 'N'" class="mt-1 text-sm text-amber-600">
                         กลุ่มนี้เป็นกลุ่มระบบ แสดงอย่างเดียว ไม่สามารถแก้ไขได้
+                    </p>
+                    <p v-else-if="isOwnGroup" class="mt-1 text-sm text-amber-600">
+                        กลุ่มนี้เป็นกลุ่มของคุณเอง แสดงอย่างเดียว — การกำหนดสิทธิ์ให้กลุ่มของตัวเองต้องให้ผู้ใช้งานกลุ่มอื่นที่มีสิทธิ์เป็นผู้ดำเนินการ
                     </p>
                 </div>
 
@@ -208,16 +214,11 @@ const tabs = computed(() => [
 
                 <InputError :message="form.errors.action_ids" />
 
-                <div v-if="!readOnly" class="flex flex-wrap items-center gap-3">
-                    <PrimaryButton type="submit" :disabled="form.processing">
+                <div class="flex flex-wrap items-center gap-3">
+                    <PrimaryButton v-if="!readOnly" type="submit" :disabled="form.processing">
                         <Save class="mr-1.5 size-4" /> บันทึก
                     </PrimaryButton>
-                    <Link
-                        :href="route('admin.system.usergroup.edit', group.id)"
-                        class="text-sm font-medium text-gray-500 hover:text-gray-700"
-                    >
-                        กลับไปหน้าข้อมูลทั่วไป
-                    </Link>
+                    <BackToListButton :href="route('admin.system.usergroup.index')" />
                 </div>
             </form>
         </div>

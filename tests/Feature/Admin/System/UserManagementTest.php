@@ -37,6 +37,14 @@ function superAdminGroupId(): int
     return UserGroup::where('name', 'Super Admin')->value('id');
 }
 
+/**
+ * กลุ่มทั่วไป (can_edit = Y) — ผู้ใช้ในเทสส่วนใหญ่ไม่ได้อยู่ในกลุ่มระบบ จึงย้ายผู้ใช้เข้ากลุ่มระบบไม่ได้ (UserController)
+ */
+function regularGroupId(): int
+{
+    return UserGroup::firstOrCreate(['name' => 'Editor'], ['status' => 'Y'])->id;
+}
+
 // ---------------------------------------------------------------- index
 
 test('index redirects to dashboard without system.user.view', function () {
@@ -169,7 +177,7 @@ test('store rejects a weak password', function () {
     actingAsUserWithPermissions(['system.user.manage']);
 
     $this->from(route('admin.system.user.add'))
-        ->post(route('admin.system.user.store'), validUserPayload(superAdminGroupId(), [
+        ->post(route('admin.system.user.store'), validUserPayload(regularGroupId(), [
             'password' => 'weakpassword',
             'password_confirmation' => 'weakpassword',
         ]))
@@ -179,7 +187,7 @@ test('store rejects a weak password', function () {
 test('store creates a back user and redirects to edit with a success flash', function () {
     $me = actingAsUserWithPermissions(['system.user.manage']);
 
-    $response = $this->post(route('admin.system.user.store'), validUserPayload(superAdminGroupId()));
+    $response = $this->post(route('admin.system.user.store'), validUserPayload(regularGroupId()));
 
     $user = User::where('email', 'newperson@example.com')->first();
 
@@ -196,7 +204,7 @@ test('store creates a back user and redirects to edit with a success flash', fun
 
 test('store scopes email uniqueness to non-deleted back users', function () {
     actingAsUserWithPermissions(['system.user.manage']);
-    $groupId = superAdminGroupId();
+    $groupId = regularGroupId();
 
     User::factory()->create(['email' => 'dupe@example.com']);
 
@@ -250,7 +258,7 @@ test('update saves the changes', function () {
         'firstname' => 'Updated',
         'lastname' => $target->lastname,
         'email' => $target->email,
-        'usergroup_id' => superAdminGroupId(),
+        'usergroup_id' => regularGroupId(),
         'status' => 'Y',
     ])
         ->assertRedirect(route('admin.system.user.edit', $target->id))
@@ -287,7 +295,7 @@ test('store accepts a profile image that belongs to the actor', function () {
     ]);
 
     $this->post(route('admin.system.user.store'), validUserPayload(
-        superAdminGroupId(),
+        regularGroupId(),
         ['profile_image_id' => $image->id]
     ));
 
@@ -304,7 +312,7 @@ test('store accepts a profile image that belongs to another user (only existence
     ]);
 
     $this->post(route('admin.system.user.store'), validUserPayload(
-        superAdminGroupId(),
+        regularGroupId(),
         ['profile_image_id' => $image->id]
     ))->assertSessionHasNoErrors();
 
@@ -316,7 +324,7 @@ test('store rejects a profile image id that does not exist', function () {
     actingAsUserWithPermissions(['system.user.manage']);
 
     $this->post(route('admin.system.user.store'), validUserPayload(
-        superAdminGroupId(),
+        regularGroupId(),
         ['profile_image_id' => 999999]
     ))->assertInvalid('profile_image_id');
 });
@@ -339,7 +347,7 @@ test('update replaces the profile image', function () {
         'firstname' => $target->firstname,
         'lastname' => $target->lastname,
         'email' => $target->email,
-        'usergroup_id' => superAdminGroupId(),
+        'usergroup_id' => regularGroupId(),
         'status' => 'Y',
         'profile_image_id' => $second->id,
     ])->assertSessionHasNoErrors();

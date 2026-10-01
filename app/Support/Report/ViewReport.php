@@ -423,11 +423,24 @@ final class ViewReport
             fputcsv($out, $headers);
 
             foreach ($rows as $row) {
-                fputcsv($out, $row);
+                fputcsv($out, array_map(self::csvCell(...), $row));
             }
 
             fclose($out);
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /**
+     * กัน CSV/formula injection — ข้อความที่ขึ้นต้นด้วย = + - @ tab หรือ CR (เช่น username/header ที่ผู้ชมกรอกเอง)
+     * Excel จะตีความเป็นสูตร จึงเติม ' นำหน้า; ตัวเลขจริง (รวมค่าติดลบ) ไม่แตะ
+     */
+    public static function csvCell(mixed $value): mixed
+    {
+        if (is_string($value) && $value !== '' && ! is_numeric($value) && in_array($value[0], ['=', '+', '-', '@', chr(9), chr(13)], true)) {
+            return "'".$value;
+        }
+
+        return $value;
     }
 
     /** ป้ายชื่อช่วงเวลาภาษาไทย (ปี พ.ศ.) */

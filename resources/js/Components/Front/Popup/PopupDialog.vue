@@ -119,7 +119,7 @@ onMounted(() => {
         >
             <div class="overflow-y-auto p-5">
                 <section
-                    :aria-roledescription="count > 1 ? 'carousel' : undefined"
+                    :aria-roledescription="count > 1 ? t('carousel_role') : undefined"
                     :aria-label="count > 1 ? t('popup') : undefined"
                     v-on="carousel.pauseHandlers"
                 >
@@ -129,7 +129,7 @@ onMounted(() => {
                                 v-for="(part, i) in popup.parts"
                                 :key="part.id"
                                 :role="count > 1 ? 'group' : undefined"
-                                :aria-roledescription="count > 1 ? 'slide' : undefined"
+                                :aria-roledescription="count > 1 ? t('slide_role') : undefined"
                                 :aria-label="count > 1 ? t('slide', { current: i + 1, total: count }) : undefined"
                                 :aria-hidden="i !== carousel.index.value ? 'true' : undefined"
                                 :inert="i !== carousel.index.value || undefined"
@@ -197,7 +197,7 @@ onMounted(() => {
         >
             <section
                 class="relative w-full"
-                :aria-roledescription="count > 1 ? 'carousel' : undefined"
+                :aria-roledescription="count > 1 ? t('carousel_role') : undefined"
                 :aria-label="count > 1 ? t('popup') : undefined"
                 v-on="carousel.pauseHandlers"
             >
@@ -206,7 +206,7 @@ onMounted(() => {
                         v-for="(part, i) in popup.parts"
                         :key="part.id"
                         :role="count > 1 ? 'group' : undefined"
-                        :aria-roledescription="count > 1 ? 'slide' : undefined"
+                        :aria-roledescription="count > 1 ? t('slide_role') : undefined"
                         :aria-label="count > 1 ? t('slide', { current: i + 1, total: count }) : undefined"
                         :aria-hidden="i !== carousel.index.value ? 'true' : undefined"
                         :inert="i !== carousel.index.value || undefined"
@@ -215,9 +215,9 @@ onMounted(() => {
                     >
                         <div v-if="part.image" class="flex justify-center" :style="{ width: FLOATING_WIDTH[part.image_size] ?? '100%' }">
                             <FrontLink v-if="part.url" :href="part.url" :target="part.link_target" class="inline-block max-w-full" @click="emit('close')">
-                                <img :src="part.image.thumb_url ?? part.image.url" :alt="part.image.name" class="floating-image" />
+                                <img :src="part.image.thumb_url ?? part.image.url" :alt="t('popup_image')" class="floating-image" />
                             </FrontLink>
-                            <img v-else :src="part.image.thumb_url ?? part.image.url" alt="" class="floating-image" />
+                            <img v-else :src="part.image.thumb_url ?? part.image.url" :alt="t('popup_image')" class="floating-image" />
                         </div>
                     </div>
                 </div>

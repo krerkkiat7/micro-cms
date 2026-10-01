@@ -112,7 +112,7 @@ const perRowModels = Object.fromEntries(SLIDESET_DEVICES.map((d) => [d.key, perR
                 <div>
                     <InputLabel value="จำนวนข้อมูลที่แสดงทั้งหมด" />
                     <TextInput v-model="maxItems" type="number" min="0" :max="SLIDESHOW_MAX_ITEMS_LIMIT" placeholder="0" />
-                    <p class="mt-1 text-xs text-gray-500">หากไม่กรอกหรือเป็น 0 จะแสดงทั้งหมด</p>
+                    <p class="mt-1 text-xs text-gray-500">หากไม่กรอกหรือเป็น 0 จะแสดงทั้งหมด (สูงสุด {{ SLIDESHOW_MAX_ITEMS_LIMIT }} รายการ)</p>
                     <InputError :message="errors.max_items" />
                 </div>
             </div>

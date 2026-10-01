@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Admin\System\FrontMenu;
 
+use App\Http\Requests\Admin\Concerns\OnlyEnabledLanguageDetails;
 use App\Models\FrontMenuInfo;
+use App\Rules\SafeUrl;
 use App\Support\FrontMenuType;
 use App\Support\PageTextStyle;
 use App\Support\Setting;
@@ -13,11 +15,16 @@ use Illuminate\Validation\Validator;
 
 class UpdateFrontMenuRequest extends FormRequest
 {
+    use OnlyEnabledLanguageDetails;
+
     /**
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
+        // ปลายทางเดิมของเมนูนี้ (บทความ/หมวดหมู่/หน้าเพจที่ถูกปิดใช้งานไปแล้ว) ยังบันทึกซ้ำได้ ไม่ต้องเลือกใหม่
+        $current = FrontMenuInfo::query()->find($this->route('menu'));
+
         $rules = [
             'parent_id' => [
                 'nullable', 'integer',
@@ -30,23 +37,26 @@ class UpdateFrontMenuRequest extends FormRequest
                 Rule::requiredIf(fn () => $this->input('menu_type') === FrontMenuType::ARTICLE_CATEGORY),
                 'nullable', 'integer',
                 Rule::exists('article_category_info', 'id')->where(fn ($query) => $query
-                    ->where('status', 'Y')->whereNull('deleted_at')),
+                    ->whereNull('deleted_at')
+                    ->where(fn ($w) => $w->where('status', 'Y')->when($current?->target_article_category_id, fn ($or, $id) => $or->orWhere('id', $id)))),
             ],
             'target_article_item_id' => [
                 Rule::requiredIf(fn () => $this->input('menu_type') === FrontMenuType::ARTICLE_ITEM),
                 'nullable', 'integer',
                 Rule::exists('article_item_info', 'id')->where(fn ($query) => $query
-                    ->where('status', 'Y')->whereNull('deleted_at')),
+                    ->whereNull('deleted_at')
+                    ->where(fn ($w) => $w->where('status', 'Y')->when($current?->target_article_item_id, fn ($or, $id) => $or->orWhere('id', $id)))),
             ],
             'target_page_item_id' => [
                 Rule::requiredIf(fn () => $this->input('menu_type') === FrontMenuType::PAGE),
                 'nullable', 'integer',
                 Rule::exists('page_item_info', 'id')->where(fn ($query) => $query
-                    ->where('status', 'Y')->whereNull('deleted_at')),
+                    ->whereNull('deleted_at')
+                    ->where(fn ($w) => $w->where('status', 'Y')->when($current?->target_page_item_id, fn ($or, $id) => $or->orWhere('id', $id)))),
             ],
             'url' => [
                 Rule::requiredIf(fn () => $this->input('menu_type') === FrontMenuType::EXTERNAL),
-                'nullable', 'string', 'max:500',
+                'nullable', 'string', 'max:500', new SafeUrl,
             ],
             'link_target' => ['required', Rule::in(['_self', '_blank'])],
             'is_home' => ['required', Rule::in(['Y', 'N'])],

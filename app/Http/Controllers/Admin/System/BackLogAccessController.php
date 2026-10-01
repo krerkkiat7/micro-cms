@@ -52,8 +52,8 @@ class BackLogAccessController extends Controller
                         ->orWhere('log_back_access.remote_ip', 'like', "%{$term}%");
                 });
             })
-            ->when($filters['date_from'] !== null, fn ($query) => $query->whereDate('log_back_access.created_at', '>=', $filters['date_from']))
-            ->when($filters['date_to'] !== null, fn ($query) => $query->whereDate('log_back_access.created_at', '<=', $filters['date_to']))
+            ->when($filters['date_from'] !== null, fn ($query) => $query->where('log_back_access.created_at', '>=', $filters['date_from']))
+            ->when($filters['date_to'] !== null, fn ($query) => $query->where('log_back_access.created_at', '<', $this->nextDay($filters['date_to'])))
             ->when($sort === 'name', fn ($query) => $query
                 ->orderBy('sys_user.firstname', $direction)
                 ->orderBy('sys_user.lastname', $direction))

@@ -5,8 +5,8 @@
 ## ภาพรวมโปรเจกต์
 
 Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้งานง่าย** พัฒนาบน Laravel 12 + Inertia.js + Vue 3
-โปรเจกต์อยู่ในช่วงเริ่มต้น โครงสร้างพื้นฐาน (auth หลังบ้าน, multi-language front, ระบบสิทธิ์)
-วางไว้แล้ว แต่ยังไม่มีโมเดลเนื้อหา CMS จริง (`app/Http/Controllers/Admin/PostController.php` ยังว่าง)
+Phase 1 ทำครบแล้ว (หลังบ้านจัดการระบบ + โมดูลเนื้อหา article/banner/page/intropage/popup/contactus + หน้าบ้าน)
+และผ่านการทวนสอบ functional + security + performance + cache + UX (branch `phase1-review`) — ขั้นถัดไป: ข้อมูลตัวอย่าง + เอกสารติดตั้ง/วิธีใช้
 
 ภาพรวมโมดูล/ส่วนจัดการระบบ + roadmap อยู่ที่ `docs/PRD-overview.md`
 รายละเอียดส่วนจัดการระบบ (users, สิทธิ์, เมนู, template, ประวัติ, settings, files) อยู่ที่ `docs/PRD-system.md`
@@ -59,7 +59,7 @@ npm run build                 # vue-tsc typecheck + vite build
 ## โครงสร้าง Routing (`routes/web.php`)
 
 - `/` (`front.root`) และ `/{lang}` (`front.home`) → แสดง Intropage ที่เผยแพร่อยู่ (ไม่มี → redirect ไปหน้าแรกตามเมนู `is_home`)
-- **Front-office**: prefix `{lang}` (ภาษาที่เปิดใช้ใน `sys_setting`), middleware `['web', 'setLocale', FrontSecurityHeaders]` — ดู `docs/PRD-front.md`
+- **Front-office**: prefix `{lang}` (ภาษาที่เปิดใช้ใน `sys_setting`), middleware `['web', 'setLocale']` (security header ทุก route ในกลุ่ม web ผ่าน `SecurityHeaders` ใน `bootstrap/app.php`) — ดู `docs/PRD-front.md`
   - `SetLocale` middleware อ่าน `lang` จาก route แล้ว `App::setLocale()` (default `th`)
   - ชื่อ route ขึ้นต้น `front.*`: `front.page.item`, `front.article.category`, `front.article.category.item`, `front.article.item`
     (`/{lang}/page/item/{id}/{slug?}` ฯลฯ — slug ไม่บังคับ); ไฟล์สาธารณะ `front.file.*` (`/file/get/{hash}`), `front.access.ping`;
@@ -129,12 +129,15 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 
 การเช็กสิทธิ์:
 - `$user->hasPermission('system.user.view')` — คืน `bool` (คืน `false` ถ้า user ไม่มี usergroup)
-- `$user->getPermissionsArray()` — คืน array ของ action codes (คืน `[]` ถ้าไม่มี usergroup)
+- `$user->getPermissionsArray()` — คืน array ของ action codes (คืน `[]` ถ้าไม่มี usergroup **หรือกลุ่มถูกปิดใช้งาน**)
+- กลุ่มระบบ = `sys_usergroup.can_edit = 'N'` (`UserGroup::isSystem()` / `User::isSystemUser()`) — เฉพาะผู้ใช้กลุ่มระบบจัดการผู้ใช้ในกลุ่มระบบ /
+  ย้ายผู้ใช้เข้ากลุ่มระบบได้; ห้ามกำหนดสิทธิ์ให้กลุ่มของตัวเอง (กันยกระดับสิทธิ์ — ดู `UserController`/`UsergroupController`)
 - share ไป frontend ผ่าน `HandleInertiaRequests::share()` → `auth.user.permissions`
 - ฝั่ง Controller: ส่ง `can` เป็น props แล้วเช็ก `v-if="can.xxx"` ใน Vue — ข้อมูลที่ต้องมีสิทธิ์ถึงจะเห็นได้ ให้ไม่ส่งไปเลย
   (ดู `App\Support\Report\DashboardReport`) ไม่ใช่ส่งไปแล้วซ่อนด้วย `v-if`
 
 > ยังไม่มี middleware/gate บังคับสิทธิ์แบบรวมศูนย์ — การเช็กทำใน controller/หน้า เป็นราย ๆ (โค้ด `abort(403)` ถูก comment ไว้)
+> ค่าอ้างอิงที่ถูกปิดใช้งานภายหลัง: validation รับ `status='Y'` **หรือค่าเดิมของรายการที่แก้ไข** — ดู `docs/PRD-overview.md` §5.2
 
 ## Convention
 
@@ -161,9 +164,7 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 - `config/app.php` locale default = `en` (จาก `APP_LOCALE` ใน `.env` เครื่อง dev) แต่ `.env.example`
   และ `SetLocale` middleware ใช้ `th` เป็นค่าเริ่มต้น
 - database มีไฟล์ `database/database.sqlite` ค้างอยู่ (gitignore แล้ว; ไม่ได้ใช้เมื่อรันบน MySQL)
-- `Admin/PostController.php` ยังเป็นไฟล์ว่าง (placeholder สำหรับโมดูลเนื้อหาที่จะทำ)
-- `sys_setting` มี seed ตัวอย่างกลุ่ม `site` (`site_name`/`site_email`/`site_description`) — ยังไม่มีหน้า UI จัดการ
-- การล็อกบัญชีอัตโนมัติเมื่อ `failed_login_count` เกินเกณฑ์ยังไม่ทำ — รอดึงเกณฑ์จาก `sys_setting` (ดู `docs/PRD-system.md` §5)
+- ข้อจำกัดที่ทราบและตั้งใจยังไม่แก้ (ไฟล์สาธารณะผ่าน hash, Custom JS ของ template, retention ของ log ฯลฯ) ดู `docs/PRD-overview.md` §9
 - Git remote: `https://github.com/krerkkiat7/micro-cms` (private) — branch `main`
 
 ### การเข้าสู่ระบบหลังบ้าน (auth)
@@ -179,8 +180,12 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   ผู้ใช้ `front` มี broker `front` + ตาราง `front_password_reset_tokens` แยก (เตรียมไว้ ยังไม่มี route);
   controller หลังบ้านใช้ `Password::broker('users')->sendResetLink($request->only('email') + ['user_type' => 'back'])`
 - `email` ไม่ unique ระดับ DB — เช็ก "ห้ามซ้ำกับ `user_type` เดียวกันที่ยังไม่ถูกลบ" ในโค้ดผ่าน
-  `Rule::unique(User::class)->where('user_type', …)->whereNull('deleted_at')` (`RegisteredUserController`,
+  `Rule::unique(User::class)->where('user_type', …)->whereNull('deleted_at')` (`StoreUserRequest`/`UpdateUserRequest`,
   `ProfileUpdateRequest`) — ถ้าเพิ่มจุดสมัคร/แก้ email ใหม่ ต้องใส่ scope นี้ด้วย
+- **ไม่มีหน้าสมัครสมาชิกหลังบ้าน** (`/admin/register` ของ Breeze ถูกลบแล้ว) — สร้างผู้ใช้หลังบ้านได้จากหน้าจัดการผู้ใช้งานเท่านั้น
+- group หลังบ้านที่ต้อง login ใช้ middleware `['auth', 'auth.session', EnsureBackUserActive::class, 'verified']` — ถูกระงับ (`status='N'`)
+  ระหว่าง login อยู่ = หลุดใน request ถัดไป, เปลี่ยนรหัสผ่านแล้ว session อื่นหลุด; ล็อกบัญชีอัตโนมัติตามตั้งค่า `login_back`
+  (เปิดบัญชีคืนที่หน้าแก้ไขผู้ใช้ = รีเซ็ต `failed_login_count`)
 - `User` ใช้ `SoftDeletes` — `$user->delete()` เป็น soft delete; เทสที่เกี่ยวข้องใช้ `assertSoftDeleted`
 
 ### ประเด็นที่แก้ไปแล้ว (ประวัติ อย่าทำซ้ำ)
@@ -370,7 +375,7 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   รับ `$lang` เพิ่ม), หมวดหมู่/รายละเอียดบทความ (`ArticleReader`, part ครบ 7 รูปแบบกลุ่มรูปใน `Components/Front/ContentPart/*`),
   SEO/AEO/GEO (`SeoMeta` → meta/hreflang/OG/JSON-LD ฝั่ง server ใน `app.blade.php` + `SeoHead.vue`), WCAG (skip link, landmark,
   เครื่องมือขนาดตัวอักษร/การแสดงสี, carousel หยุดได้, dialog focus trap), security (`HtmlSanitizer` สำหรับ rich text, `FrontUrl::safeExternal()`,
-  `FrontSecurityHeaders`, หน้าบ้านไม่ส่ง `auth.user`/`menu` และ Ziggy ส่งเฉพาะกลุ่ม `front` — `config/ziggy.php`),
+  `SecurityHeaders`, หน้าบ้านไม่ส่ง `auth.user`/`menu` และ Ziggy ส่งเฉพาะกลุ่ม `front` — `config/ziggy.php`),
   หน้า error หน้าบ้าน (`FrontErrorPage` ผูกใน `bootstrap/app.php`), ข้อความ UI `lang/{th,en}/front.php`.
   **ข้อมูล `is_temp='Y'` แสดงที่หน้าบ้านตามปกติ — ห้ามกรอง `is_temp` ใน query หน้าบ้าน**
 - **cache หน้าบ้าน** `App\Support\Front\FrontCache` (key มี version — `forgetAll()` เพิ่ม version แทน `Cache::flush()`), ล้างอัตโนมัติผ่าน
@@ -462,6 +467,19 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   (`App\Support\ErrorStatus`); **5xx บอกแค่ "เกิดข้อผิดพลาด" + รหัส `ERR-XXXXXXXX` ห้ามแสดง message ของ exception**; หน้าสำรอง Blade `resources/views/errors/*`
   (ไม่พึ่ง DB/Vite — ไฟล์รายสถานะ override ของ Laravel). log: `ErrorReference::context()` ใน `$exceptions->context()` + ไฟล์ error แยกฝั่ง (`ErrorReference::channel()`) × 2 รูปแบบ `text-error-{front,admin}-*.log` / `json-error-{front,admin}-*.log` รายวันเก็บ 90 วัน (`LOG_ERROR_DAYS`);
   หน้า **ตรวจสอบ Error** `admin.system.errorviewer.*` (สิทธิ์ `system.error.view`) อ่านไฟล์ json ผ่าน `App\Support\Report\ErrorLogReader` — ดู §10.2
+- **ทวนสอบระบบ phase 1 (branch `phase1-review`)** — ความปลอดภัย: ลบ register, `EnsureBackUserActive` + `auth.session`, กันยกระดับสิทธิ์ (กลุ่มระบบ),
+  ค่าลับในตั้งค่า (SMTP password/Turnstile secret) ไม่ส่งไปหน้าจอ (เว้นว่าง = ใช้ค่าเดิม), sanitize HTML ของ Custom Text ตอนบันทึก, `SecurityHeaders`
+  ครอบทุก route ในกลุ่ม web (เดิม `FrontSecurityHeaders` เฉพาะหน้าบ้าน), `trustHosts()` (production ต้องตั้ง `APP_URL` ให้ตรงโดเมนจริง),
+  CSV export กันสูตร (`ViewReport::csvCell()`), thumbnail หลังบ้านรับเฉพาะขนาดใน `config('filemanagement.admin_thumbnail_sizes')`,
+  `FileCache` ใช้ version key (**ห้ามใช้ `Cache::flush()`** — ล้าง rate limiter/ตั้งค่าไปด้วย), ช่องลิงก์ใช้ rule `App\Rules\SafeUrl`.
+  การทำงาน: ค่าอ้างอิงที่ถูกปิดใช้งาน (หมวดหมู่/แท็ก/กลุ่ม/ปลายทางเมนู) ยังบันทึกซ้ำได้, ลบบทความ/หมวดหมู่เคลียร์ slug, ลบหมวดหมู่ที่มีรายการไม่ได้,
+  ซ่อน/ยกเลิกเมนูหน้าแรกไม่ได้, หน้ารายการหลังบ้าน `leftJoin` ภาษาหลัก + `Controller::detailWithFallback()`, trait `OnlyEnabledLanguageDetails`.
+  performance: route ไฟล์/โลโก้ตัด session (เหมือน sitemap), `Setting::group()` ผ่าน `Cache::memo()` (ไม่มี `Schema::hasTable` ทุก request),
+  `Vite::prefetch` เฉพาะ `/admin`, `FlushesFrontCache` ข้าม save ที่ไม่เปลี่ยน + ล้าง 1 ครั้งทันที + 1 ครั้งหลังจบ request (`FrontCache::flushForChange()`),
+  ตัวกรองวันที่หน้ารายการ log ใช้ช่วงแทน `whereDate`, index ใหม่ (migration `2026_10_08_000001_*`), dashboard cache 5 นาทีต่อชุดสิทธิ์,
+  เมนู sidebar cache ต่อชุดสิทธิ์ (`MenuSeeder` เพิ่ม version), widget แสดงทั้งหมดสูงสุด 100 รายการ, หน้ารายการบทความเกินหน้าสุดท้าย = 404.
+  template: ซ่อนตัวเลือก "แสดงการค้นหา" ไว้ก่อน (ยังไม่มีหน้าค้นหา — `search_status` ยังอยู่ใน DB)
+
 ## ทดสอบ
 
 - เทสหน้าบ้านอยู่ `tests/Feature/Front/FrontSiteTest.php` (seed `DatabaseSeeder` แล้วใช้ข้อมูลตัวอย่าง)

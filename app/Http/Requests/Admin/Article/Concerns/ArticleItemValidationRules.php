@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\Article\Concerns;
 
+use App\Models\ArticleItemInfo;
 use App\Support\Setting;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
@@ -13,18 +14,24 @@ use Illuminate\Validation\Rule;
 trait ArticleItemValidationRules
 {
     /**
-     * กฎของฟิลด์ข้อมูลร่วม (ไม่แยกภาษา ไม่รวม part)
+     * กฎของฟิลด์ข้อมูลร่วม (ไม่แยกภาษา ไม่รวม part) — $itemId = บทความที่แก้ไข (หมวดหมู่เดิมที่ถูกปิดใช้งานไปแล้วยังบันทึกซ้ำได้)
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
-    protected function commonRules(): array
+    protected function commonRules(?int $itemId = null): array
     {
+        $currentCategoryId = $itemId
+            ? ArticleItemInfo::query()->whereKey($itemId)->value('article_category_info_id')
+            : null;
+
         return [
             'article_category_info_id' => [
                 'required', 'integer',
                 Rule::exists('article_category_info', 'id')->where(fn ($query) => $query
-                    ->where('status', 'Y')
-                    ->whereNull('deleted_at')),
+                    ->whereNull('deleted_at')
+                    ->where(fn ($w) => $w
+                        ->where('status', 'Y')
+                        ->when($currentCategoryId, fn ($or) => $or->orWhere('id', $currentCategoryId)))),
             ],
             'intro_image_id' => [
                 'nullable', 'integer',
@@ -36,11 +43,10 @@ trait ArticleItemValidationRules
             'publish_down' => ['nullable', 'date', 'after:publish_date'],
             'status' => ['required', Rule::in(['Y', 'N'])],
             'tags' => ['nullable', 'array'],
+            // แท็กที่ไม่ใช้งานก็เลือกได้ (TagPicker ค้นเจอแท็กทุกสถานะโดยตั้งใจ — หน้าบ้านกรองแท็กที่ไม่ใช้งานเอง)
             'tags.*' => [
                 'integer',
-                Rule::exists('article_tag_info', 'id')->where(fn ($query) => $query
-                    ->where('status', 'Y')
-                    ->whereNull('deleted_at')),
+                Rule::exists('article_tag_info', 'id')->where(fn ($query) => $query->whereNull('deleted_at')),
             ],
         ];
     }
@@ -60,9 +66,13 @@ trait ArticleItemValidationRules
             $rules["detail.{$lang}.title"] = [$lang === $defaultLang ? 'required' : 'nullable', 'string', 'max:500'];
             $rules["detail.{$lang}.intro_text"] = ['nullable', 'string', 'max:2000'];
             $rules["detail.{$lang}.slug"] = [
-                'nullable', 'string', 'max:250',
+                // / ใช้ใน path ไม่ได้ (URL หน้าบ้าน /{lang}/article/item/{id}/{slug}) — ตัวเลขล้วนกันไว้เหมือน slug ของหมวดหมู่
+                'nullable', 'string', 'max:250', 'not_regex:/^\d+$|\//',
+                // ไม่นับแถว detail ของบทความที่ถูกลบแล้ว (detail ไม่ถูก soft delete ตามพาเรนต์)
                 Rule::unique('article_item_detail', 'slug')
-                    ->where(fn ($query) => $query->where('lang', $lang))
+                    ->where(fn ($query) => $query
+                        ->where('lang', $lang)
+                        ->whereIn('id', fn ($sub) => $sub->select('id')->from('article_item_info')->whereNull('deleted_at')))
                     ->ignore($ignoreId, 'id'),
             ];
             $rules["detail.{$lang}.meta_title"] = ['nullable', 'string', 'max:250'];
