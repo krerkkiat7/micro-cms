@@ -3,6 +3,7 @@
 use App\Models\FileInfo;
 use App\Models\FolderInfo;
 use App\Models\User;
+use App\Support\FileDelivery;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -192,4 +193,50 @@ test('serving an unknown hash_name returns 404', function () {
 test('guests cannot access the file serving routes', function () {
     $this->get(route('admin.system.file.get', 'whatever.jpg'))
         ->assertRedirect(route('admin.login'));
+});
+
+// ---------------------------------------------------------------- thumbnail ล่วงหน้า
+
+test('uploading an image pre-generates the common thumbnail sizes', function () {
+    $user = User::factory()->create();
+
+    $hash = $this->actingAs($user)->postJson(route('admin.system.file.upload'), [
+        'file' => UploadedFile::fake()->image('wide.jpg', 2400, 1200),
+    ])->assertCreated()->json('data.hash_name');
+
+    $file = FileInfo::where('hash_name', $hash)->firstOrFail();
+
+    foreach (config('filemanagement.pregenerate_thumbnail_sizes') as $width) {
+        Storage::disk('local')->assertExists(FileDelivery::thumbnailPath($file, $width));
+    }
+
+    // ย่อจริง และไม่ขยายเกินต้นฉบับ
+    [$w640] = getimagesize(Storage::disk('local')->path(FileDelivery::thumbnailPath($file, 640)));
+    expect($w640)->toBe(640);
+});
+
+test('non-image uploads create no thumbnails and the backfill command fills in missing sizes', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user)->postJson(route('admin.system.file.upload'), [
+        'file' => UploadedFile::fake()->create('doc.pdf', 10, 'application/pdf'),
+    ])->assertCreated();
+
+    expect(Storage::disk('local')->allFiles('filemanager/thumbnails'))->toBe([]);
+
+    // รูปที่อัปโหลดก่อนมีระบบสร้างล่วงหน้า (ไม่มี thumbnail) → คำสั่ง files:thumbnails สร้างให้
+    $path = UploadedFile::fake()->image('old.png', 800, 600)->storeAs('filemanager/2026/01/01', 'old-image.png', 'local');
+    $old = FileInfo::create([
+        'user_id' => $user->id, 'name' => 'old.png', 'hash_name' => 'old-image.png', 'extension' => 'png',
+        'mime_type' => 'image/png', 'path' => $path, 'status' => 'Y',
+    ]);
+
+    $this->artisan('files:thumbnails')->assertSuccessful();
+
+    foreach (config('filemanagement.pregenerate_thumbnail_sizes') as $width) {
+        Storage::disk('local')->assertExists(FileDelivery::thumbnailPath($old, $width));
+    }
+
+    // รูปเล็กกว่าขนาดที่ขอ = ไม่ขยาย (คงความกว้างเดิม)
+    [$w1920] = getimagesize(Storage::disk('local')->path(FileDelivery::thumbnailPath($old, 1920)));
+    expect($w1920)->toBe(800);
 });

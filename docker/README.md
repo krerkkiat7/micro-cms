@@ -27,6 +27,9 @@ docker logs -f cms_app
 
 # 4) (ถ้าฐานข้อมูลยังว่าง) migrate + seed ผ่าน container
 docker exec cms_app php artisan migrate --seed
+
+# 5) (ถ้ามีรูปที่อัปโหลดไว้ก่อนแล้ว) สร้าง thumbnail ล่วงหน้า — รูปใหม่สร้างให้อัตโนมัติตอนอัปโหลด
+docker exec cms_app php artisan files:thumbnails
 ```
 
 เปิด http://localhost:8001 (หลังบ้าน http://localhost:8001/admin — admin@admin.com / password123)

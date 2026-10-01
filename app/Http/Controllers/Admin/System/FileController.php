@@ -10,6 +10,7 @@ use App\Models\FolderInfo;
 use App\Models\LogBackAccess;
 use App\Models\LogBackAction;
 use App\Support\FileCache;
+use App\Support\FileDelivery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -141,6 +142,11 @@ class FileController extends Controller
         $file->save();
 
         LogBackAction::record('system.file', 'upload', $file->name, $file->id);
+
+        // สร้าง thumbnail ขนาดที่ใช้บ่อยไว้ล่วงหน้า หลังส่ง response แล้ว (ผู้อัปโหลดไม่ต้องรอ — ไม่ต้องมี queue worker)
+        if ($file->isImage()) {
+            defer(fn () => FileDelivery::pregenerateThumbnails($file), 'thumbnails-'.$file->id);
+        }
 
         return response()->json(['data' => $this->fileToArray($file)], 201);
     }
