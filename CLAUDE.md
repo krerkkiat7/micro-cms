@@ -6,7 +6,8 @@
 
 Micro-CMS ที่เน้น **ติดตั้งง่าย ใช้งานง่าย** พัฒนาบน Laravel 12 + Inertia.js + Vue 3
 Phase 1 ทำครบแล้ว (หลังบ้านจัดการระบบ + โมดูลเนื้อหา article/banner/page/intropage/popup/contactus + หน้าบ้าน)
-และผ่านการทวนสอบ functional + security + performance + cache + UX (branch `phase1-review`) — ขั้นถัดไป: ข้อมูลตัวอย่าง + เอกสารติดตั้ง/วิธีใช้
+และผ่านการทวนสอบ functional + security + performance + cache + UX (branch `phase1-review`) + ข้อมูลตัวอย่างชุดสาธิต (branch `sample-data`,
+ดู `exampledata/README.md`) — ขั้นถัดไป: เอกสารติดตั้ง/วิธีใช้
 
 ภาพรวมโมดูล/ส่วนจัดการระบบ + roadmap อยู่ที่ `docs/PRD-overview.md`
 รายละเอียดส่วนจัดการระบบ (users, สิทธิ์, เมนู, template, ประวัติ, settings, files) อยู่ที่ `docs/PRD-system.md`
@@ -39,7 +40,7 @@ docker-compose up -d          # เปิด MySQL (my_cms) + Redis
 composer install
 cp .env.example .env          # แล้วปรับ DB_*, REDIS_*, SESSION_DRIVER, CACHE_STORE ให้ตรง (ดูหมายเหตุด้านล่าง)
 php artisan key:generate
-php artisan migrate --seed    # seed สร้าง user: admin@mycms.com / P@ssw0rd
+php artisan migrate --seed    # seed สร้าง user: admin@microcms.com / P@ssw0rd + ข้อมูลตัวอย่างทั้งชุด (ไฟล์จาก exampledata/)
 npm install
 
 # พัฒนา
@@ -50,6 +51,7 @@ php artisan schedule:work     # (dev) scheduler — front:flush-views ทุก�
 # หรือรันทั้งระบบใน Docker (nginx + PHP-FPM/OPcache + scheduler) ที่ http://localhost:8001 — ดู docker/README.md
 docker compose --profile app up -d --build   # vendor ของ container อยู่ใน volume (bind mount จาก Windows ช้ามาก)
 docker exec cms_app php artisan <คำสั่ง>     # ห้ามรัน config:cache บนเครื่องขณะใช้ container / ห้ามรัน schedule:work ซ้อนกับ cms_scheduler
+docker exec -u www-data cms_app php artisan migrate:fresh --seed   # seed ใน container ต้องเป็น www-data (ไฟล์ตัวอย่างที่ root สร้าง PHP-FPM อ่านไม่ได้)
 
 # ทดสอบ
 php artisan test              # หรือ `composer test`
@@ -494,6 +496,14 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
 - **ลิงก์ป้ายโฆษณาเลือกประเภทก่อน (branch `banner-link-type`)** — `banner_item_info.link_type` (`none`/`menu`/`custom`) + `front_menu_info_id`
   แบบเดียวกับปุ่ม "อ่านทั้งหมด"; เงื่อนไข "มีลิงก์" ใช้ `BannerItemInfo::HAS_LINK_SQL` ทั้ง widget และการนับคลิก, dropdown เมนูใช้
   `frontMenuSelectOptions()` (`utils/readAllButton.ts`) ร่วมกัน — ดู `docs/PRD-banner.md`
+
+- **ข้อมูลตัวอย่าง (branch `sample-data`) — ดู `exampledata/README.md`** — `DatabaseSeeder` (สิทธิ์/กลุ่ม/admin/เมนูหลังบ้าน — รันซ้ำได้) เรียก
+  `SampleDataSeeder` ซึ่ง seed ทั้งชุด**ครั้งเดียวต่อฐานข้อมูล** (พบบทความ `introducing-microcms` = ข้าม; เลี่ยง `updateOrCreate` บนตาราง `*_detail`
+  ที่ PK เป็น id+lang — Eloquent update ด้วย id อย่างเดียวจะทับทุกภาษา): `SiteSetting` → `Article` → `Page` → `FrontMenu` → `Banner` → `PageLayout`
+  → `Intropage` → `Template` → `Contactus` → `Popup`. ไฟล์จาก `exampledata/` นำเข้าโมดูลจัดการไฟล์ผ่าน `Database\Seeders\Support\SampleFiles`
+  (ตั้ง `hash_name` เอง เพราะ `WithoutModelEvents`; **ตอนเทสไม่คัดลอกไฟล์จริง**), ภาพ/PDF สร้างด้วยสคริปต์ `exampledata/_build/` (Edge headless).
+  ข้อมูลตัวอย่างตั้ง **คีย์ทดสอบของ Turnstile** ไว้ (แบบฟอร์มติดต่อเราแสดงทันที) — เทสที่ต้องเริ่มจาก "ยังไม่ตั้งค่า" ใช้ `forgetSampleSetting()` (`tests/Pest.php`).
+  ชื่อระบบเปลี่ยนเป็น **MicroCMS** (`APP_NAME`, `site_name`, admin `admin@microcms.com`) — ชื่อเชิงโครงสร้าง (DB `my_cms`, image/volume Docker) คงเดิม
 
 ## ทดสอบ
 

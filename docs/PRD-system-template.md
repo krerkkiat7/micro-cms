@@ -182,11 +182,9 @@ Migration: `database/migrations/2026_09_30_000001_create_sys_template_tables.php
 
 ## 6. ข้อมูลตัวอย่าง (`TemplateSeeder`)
 
-เรียกจาก `DatabaseSeeder` ต่อจาก `FrontMenuSeeder` — 3 รายการจากแม่แบบ: "Template องค์กร / หน่วยงาน" (`classic`, ใช้งาน),
-"Template แถวเมนูเด่น" (`corporate`), "Template เรียบง่าย" (`minimal`) — `updateOrCreate` ตามชื่อ รันซ้ำได้ (ค่าในโซนถูกรีเซ็ตเป็นค่าของแม่แบบ)
-และไม่แย่งสถานะใช้งานถ้ามี template อื่นที่ผู้ใช้เปิดใช้งานไว้แล้ว
-
-รันเดี่ยว: `php artisan db:seed --class=TemplateSeeder`
+เรียกผ่าน `SampleDataSeeder` — 1 รายการ "MicroCMS Blue" (ใช้งาน) ตั้งต้นจากแม่แบบ `classic` แล้วเปิดความสามารถให้เห็นมากที่สุด:
+แถบบน + ส่วนหัวติดด้านบน, โลโก้+ชื่อ, เมนู `pill`, เลือกภาษาแบบธง, social, ปรับขนาดตัวอักษร/ความคมชัด, ส่วนท้ายพร้อมเมนู,
+เมนูด้านข้าง drawer/accordion, หน้า Loading และ Custom CSS (Custom JS ปิด) — คีย์ที่ override ถูกตรวจกับทะเบียนฟิลด์ของโซนตอน seed
 
 ## Roadmap — การแสดงผลหน้าบ้าน (✅ ทำแล้วใน branch `front-init` ตามรายการด้านล่าง ยกเว้น "ค้นหา" ที่ยังซ่อนไว้ — ดู [PRD-front.md](PRD-front.md) §3)
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\BannerCategoryDetail;
 use App\Models\BannerCategoryInfo;
 use App\Models\BannerItemDetail;
 use App\Models\BannerItemInfo;
@@ -14,9 +15,10 @@ use Database\Seeders\DatabaseSeeder;
 use Inertia\Testing\AssertableInertia as Assert;
 
 beforeEach(function () {
-    // seed สร้างหมวดหมู่ banner ตัวอย่าง 3 หมวด (BannerSeeder) + หน้าเพจตัวอย่าง (PageSeeder)
+    // seed สร้างหมวดหมู่ banner ตัวอย่าง (Highlight พร้อมป้ายโฆษณา) — เทสใช้หมวดหมู่ว่างของตัวเอง
     $this->seed(DatabaseSeeder::class);
-    $this->category = BannerCategoryInfo::query()->firstOrFail();
+    $this->category = BannerCategoryInfo::create(['status' => 'Y']);
+    BannerCategoryDetail::create(['id' => $this->category->id, 'lang' => 'th', 'title' => 'หมวดของเทส', 'status' => 'Y']);
     $this->image = FileInfo::create([
         'name' => 'banner.jpg', 'hash_name' => 'banner-hash.jpg', 'extension' => 'jpg', 'path' => 'x', 'status' => 'Y',
     ]);
@@ -147,7 +149,7 @@ test('the layout page serves the saved slideshow setting and the banner category
             ->where('rows.0.columns.0.widgets.0.setting.banner_category_info_id', $this->category->id)
             ->where('rows.0.columns.0.widgets.0.setting.sort_by', 'order_desc')
             ->where('rows.0.columns.0.widgets.0.setting.autoplay_interval', 12)
-            ->has('widgetOptions.banner_categories', 3)
+            ->has('widgetOptions.banner_categories', 2)
             ->where('widgetOptions.banner_categories.0.id', fn ($id) => is_int($id))
         );
 });

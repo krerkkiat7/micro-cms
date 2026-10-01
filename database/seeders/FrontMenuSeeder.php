@@ -3,126 +3,146 @@
 namespace Database\Seeders;
 
 use App\Models\ArticleCategoryDetail;
+use App\Models\ArticleItemDetail;
 use App\Models\FrontMenuDetail;
 use App\Models\FrontMenuInfo;
-use App\Models\PageItemDetail;
 use App\Support\FrontMenuType;
-use App\Support\Setting;
+use Database\Seeders\Support\SampleFiles;
+use Database\Seeders\Support\SeedsSampleData;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 /**
- * ข้อมูลตัวอย่างเมนูหน้าบ้าน — ต้องรันหลัง ArticleSeeder และ PageSeeder (อ้าง id ของหมวดหมู่บทความ/หน้าเพจตัวอย่าง)
- * ทำเครื่องหมาย is_temp = 'Y' ทุกแถว เพื่อให้ลบออกได้ภายหลัง (หรือจะใช้ต่อไปก็ได้)
+ * ข้อมูลตัวอย่างเมนูหน้าบ้าน — ต้องรันหลัง ArticleSeeder/PageSeeder (อ้าง id หมวดหมู่/บทความ/หน้าเพจ)
  *
- * โครงตัวอย่าง: เมนูหัวข้อ "บทความ" (heading) มีลูก 3 รายการชี้หมวดหมู่บทความตัวอย่าง (news/activities/articles)
- * + เมนู "หน้าเพจตัวอย่าง" ชี้หน้าเพจตัวอย่างของ PageSeeder และตั้งเป็นหน้าหลัก (is_home)
+ *   หน้าแรก (page "หน้าแรก", is_home) / แนะนำระบบ (บทความ introducing-microcms) /
+ *   บทความ (heading) → ข่าวสาร, การใช้งานระบบ, การตั้งค่าบริการภายนอก (หมวดหมู่บทความ) / ติดต่อเรา
  *
- * รันเดี่ยว: php artisan db:seed --class=FrontMenuSeeder (ต้องรัน ArticleSeeder/PageSeeder มาก่อนแล้ว)
+ * เมนูเนื้อหามีรูปส่วนหัว + หัวเรื่อง/หัวเรื่องรองสองภาษา. เรียกผ่าน SampleDataSeeder เท่านั้น
  */
 class FrontMenuSeeder extends Seeder
 {
+    use SeedsSampleData;
     use WithoutModelEvents;
+
+    /** @var array<string, int> key → front_menu_info.id (ให้ seeder อื่นอ้างผ่าน FrontMenuSeeder::id()) */
+    private static array $ids = [];
 
     public function run(): void
     {
-        $languages = Setting::selectedLanguages();
-        if ($languages === []) {
-            $languages = ['th', 'en'];
-        }
+        self::$ids = [];
 
-        $defaultLang = Setting::defaultLanguage();
+        $this->menu('home', ['th' => 'หน้าแรก', 'en' => 'Home'], [
+            'menu_type' => FrontMenuType::PAGE,
+            'target_page_item_id' => PageSeeder::homeId(),
+            'is_home' => 'Y',
+            'show_title' => 'N',
+            'show_subtitle' => 'N',
+            'show_breadcrumb' => 'N',
+        ]);
 
-        $homeMenuId = $this->upsertMenu(
-            $languages,
-            $defaultLang,
-            name: ['th' => 'หน้าแรก', 'en' => 'Home'],
-            attributes: [
-                'parent_id' => null,
-                'menu_type' => FrontMenuType::PAGE,
-                'target_page_item_id' => $this->resolvePageId($defaultLang),
-                'is_home' => 'Y',
-                'sort_order' => 1,
-            ],
-        );
+        $this->menu('about', ['th' => 'แนะนำระบบ', 'en' => 'About'], [
+            'menu_type' => FrontMenuType::ARTICLE_ITEM,
+            'target_article_item_id' => ArticleItemDetail::where('slug', 'introducing-microcms')->value('id'),
+        ], header: [
+            'image' => 'images/menu/header-introducing.jpg',
+            'title' => ['th' => 'แนะนำระบบ', 'en' => 'About MicroCMS'],
+            'subtitle' => ['th' => 'ระบบจัดการเนื้อหาที่ติดตั้งง่าย ใช้งานง่าย', 'en' => 'An easy-to-install, easy-to-use content management system'],
+        ]);
 
-        $articleHeadingId = $this->upsertMenu(
-            $languages,
-            $defaultLang,
-            name: ['th' => 'บทความ', 'en' => 'Articles'],
-            attributes: [
-                'parent_id' => null,
-                'menu_type' => FrontMenuType::HEADING,
-                'sort_order' => 2,
-            ],
-        );
+        $heading = $this->menu('articles', ['th' => 'บทความ', 'en' => 'Articles'], [
+            'menu_type' => FrontMenuType::HEADING,
+        ]);
 
         $categories = [
-            ['key' => 'news', 'title' => ['th' => 'ข่าวสาร', 'en' => 'News']],
-            ['key' => 'activities', 'title' => ['th' => 'กิจกรรม', 'en' => 'Activities']],
-            ['key' => 'articles', 'title' => ['th' => 'บทความทั่วไป', 'en' => 'Articles']],
+            'news' => [
+                'name' => ['th' => 'ข่าวสาร', 'en' => 'News'],
+                'subtitle' => ['th' => 'ข่าวประชาสัมพันธ์และความเคลื่อนไหวล่าสุด', 'en' => 'Announcements and the latest updates'],
+            ],
+            'user-guide' => [
+                'name' => ['th' => 'การใช้งานระบบ', 'en' => 'User Guide'],
+                'subtitle' => ['th' => 'คู่มือการใช้งานแต่ละโมดูลทีละขั้นตอน', 'en' => 'Step-by-step guides to each module'],
+            ],
+            'external-services' => [
+                'name' => ['th' => 'การตั้งค่าบริการภายนอก', 'en' => 'External Services'],
+                'subtitle' => ['th' => 'Turnstile, Google Maps, Google Analytics และ SMTP', 'en' => 'Turnstile, Google Maps, Google Analytics and SMTP'],
+            ],
         ];
 
-        foreach ($categories as $index => $category) {
-            $categoryId = $this->resolveCategoryId($defaultLang, $category['title'][$defaultLang] ?? $category['title']['th']);
-
-            if ($categoryId === null) {
-                continue;
-            }
-
-            $this->upsertMenu(
-                $languages,
-                $defaultLang,
-                name: $category['title'],
-                attributes: [
-                    'parent_id' => $articleHeadingId,
-                    'menu_type' => FrontMenuType::ARTICLE_CATEGORY,
-                    'target_article_category_id' => $categoryId,
-                    'sort_order' => $index + 1,
-                ],
-            );
+        foreach ($categories as $slug => $category) {
+            $this->menu($slug, $category['name'], [
+                'parent_id' => $heading,
+                'menu_type' => FrontMenuType::ARTICLE_CATEGORY,
+                'target_article_category_id' => ArticleCategoryDetail::where('slug', $slug)->value('id'),
+            ], header: [
+                'image' => "images/menu/header-{$slug}.jpg",
+                'title' => $category['name'],
+                'subtitle' => $category['subtitle'],
+            ]);
         }
+
+        $this->menu('contactus', ['th' => 'ติดต่อเรา', 'en' => 'Contact Us'], [
+            'menu_type' => FrontMenuType::CONTACTUS,
+        ], header: [
+            'image' => 'images/menu/header-contactus.jpg',
+            'title' => ['th' => 'ติดต่อเรา', 'en' => 'Contact Us'],
+            'subtitle' => ['th' => 'สอบถามข้อมูลหรือส่งข้อเสนอแนะถึงทีมงาน', 'en' => 'Questions or feedback? Get in touch with the team'],
+        ]);
+    }
+
+    /** id ของเมนูตัวอย่างตาม key (home, about, articles, news, user-guide, external-services, contactus) */
+    public static function id(string $key): ?int
+    {
+        return self::$ids[$key] ?? null;
     }
 
     /**
-     * @param  list<string>  $languages
      * @param  array<string, string>  $name
      * @param  array<string, mixed>  $attributes
+     * @param  array{image: string, title: array<string, string>, subtitle: array<string, string>}|null  $header
      */
-    private function upsertMenu(array $languages, string $defaultLang, array $name, array $attributes): int
+    private function menu(string $key, array $name, array $attributes, ?array $header = null): int
     {
-        $defaultName = $name[$defaultLang] ?? $name['th'];
+        $siblings = FrontMenuInfo::where('parent_id', $attributes['parent_id'] ?? null)->count();
 
-        $existingId = FrontMenuDetail::where('lang', $defaultLang)->where('name', $defaultName)->value('id');
+        $headerAttributes = $header === null ? [] : [
+            'show_header_image' => 'Y',
+            'header_image_id' => SampleFiles::import($header['image'], 'ตัวอย่าง - เมนู'),
+            'header_image_aspect_ratio' => 'natural',
+            'header_image_fit' => 'cover',
+            'header_image_background' => '#1E3A8A',
+            'show_title' => 'Y',
+            'title_font_size' => 36,
+            'title_font_family' => 'Prompt',
+            'title_color' => '#FFFFFF',
+            'title_bold' => 'Y',
+            'show_subtitle' => 'Y',
+            'subtitle_font_size' => 18,
+            'subtitle_font_family' => 'Sarabun',
+            'subtitle_color' => '#DBEAFE',
+            'subtitle_bold' => 'N',
+            'header_content_align' => 'left',
+            'use_container' => 'Y',
+            'show_breadcrumb' => 'Y',
+        ];
 
-        $info = FrontMenuInfo::updateOrCreate(
-            ['id' => $existingId],
-            $attributes + ['status' => 'Y', 'is_temp' => 'Y'],
-        );
+        $info = FrontMenuInfo::create($attributes + $headerAttributes + [
+            'parent_id' => null,
+            'link_target' => '_self',
+            'is_home' => 'N',
+            'sort_order' => $siblings + 1,
+            'status' => 'Y',
+            'is_temp' => 'Y',
+            'created_by' => $this->adminId(),
+        ]);
 
-        foreach ($languages as $lang) {
-            $values = ['name' => $name[$lang] ?? $name['th'], 'status' => 'Y'];
+        $this->createDetails(FrontMenuDetail::class, $info->id, fn (string $lang) => [
+            'name' => $this->t($name, $lang),
+            'title' => $header !== null ? $this->t($header['title'], $lang) : null,
+            'subtitle' => $header !== null ? $this->t($header['subtitle'], $lang) : null,
+            'status' => 'Y',
+        ]);
 
-            $query = FrontMenuDetail::where('id', $info->id)->where('lang', $lang);
-            if ($query->exists()) {
-                $query->update($values);
-            } else {
-                FrontMenuDetail::create(['id' => $info->id, 'lang' => $lang] + $values);
-            }
-        }
-
-        return $info->id;
-    }
-
-    private function resolvePageId(string $defaultLang): ?int
-    {
-        $title = ['th' => 'หน้าเพจตัวอย่าง', 'en' => 'Sample Page'][$defaultLang] ?? 'หน้าเพจตัวอย่าง';
-
-        return PageItemDetail::where('lang', $defaultLang)->where('title', $title)->value('id');
-    }
-
-    private function resolveCategoryId(string $defaultLang, string $title): ?int
-    {
-        return ArticleCategoryDetail::where('lang', $defaultLang)->where('title', $title)->value('id');
+        return self::$ids[$key] = $info->id;
     }
 }

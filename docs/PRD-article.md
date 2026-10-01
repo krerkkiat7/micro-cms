@@ -125,9 +125,9 @@ part ที่เกี่ยวกับรูปภาพ/เอกสาร/�
 
 **Migration** — `database/migrations/2026_09_15_000001_create_article_category_tables.php`
 
-**Seeder** — `database/seeders/ArticleSeeder.php` (เรียกจาก `DatabaseSeeder`) สร้างหมวดหมู่ตัวอย่าง 3 รายการ
-(ข่าวสาร/News, กิจกรรม/Activities, บทความทั่วไป/Articles) ทำเครื่องหมาย `is_temp = 'Y'` ทุกแถว อ่านรายการภาษาจาก
-`Setting::selectedLanguages()` (fallback `th,en`) — รันซ้ำได้ (`updateOrCreate`)
+**Seeder** — `database/seeders/ArticleSeeder.php` (เรียกผ่าน `SampleDataSeeder`) สร้างหมวดหมู่ตัวอย่าง 4 หมวด
+(ข่าวสาร `news` / การใช้งานระบบ `user-guide` / การตั้งค่าบริการภายนอก `external-services` / ทั่วไป `general`) พร้อมรูปปก
+ทำเครื่องหมาย `is_temp = 'Y'` ทุกแถว — ข้อมูลตัวอย่างทั้งชุดอธิบายไว้ที่ `exampledata/README.md`
 
 **หน้าจอ** — เสร็จแล้ว (`Admin/Article/Category/{Index,Add,Edit}.vue`)
 - list หมวดหมู่ (ค้นหาชื่อ+ข้อความเกริ่นนำ, กรองสถานะ, เรียงลำดับได้ทุกคอลัมน์ default เรียงชื่อ, paging)
@@ -224,9 +224,8 @@ part ที่เกี่ยวกับรูปภาพ/เอกสาร/�
 > ตารางที่มี PK แบบ `id`+`lang` ต้อง query ด้วย `where('id', ...)->where('lang', ...)` เสมอ ห้ามใช้ `find()`/`save()`
 > กับแถวที่ดึงมา (bug composite key ที่เคยเจอตอนทำ `ArticleCategoryDetail::update()`)
 
-**Seeder** — ขยาย `database/seeders/ArticleSeeder.php` (ไฟล์เดิม) สร้างบทความตัวอย่าง 5 รายการกระจายในหมวดหมู่
-ตัวอย่างที่มีอยู่ ทำเครื่องหมาย `is_temp = 'Y'` แต่ละบทความมี part ประเภท `text` 1 อัน (ยังไม่มี part
-รูปภาพ/วิดีโอ/เอกสารตัวอย่าง เพราะไม่มีไฟล์ตัวอย่างใน `file_info` — โมดูลจัดการไฟล์เป็นพื้นที่ส่วนตัวต่อผู้ใช้)
+**Seeder** — `ArticleSeeder.php` สร้างบทความตัวอย่าง 15 เรื่องสองภาษา (เนื้อหาใน `database/seeders/data/articles.php`)
+มี part ข้อความ/รูปภาพ/กลุ่มรูปหลายรูปแบบ/เอกสาร ใช้ไฟล์จาก `exampledata/` ที่นำเข้าโมดูลจัดการไฟล์ของผู้ดูแล
 
 **หน้าจอ** — เสร็จแล้ว (`Admin/Article/Item/{Index,Add,Edit}.vue`)
 - list บทความ (ค้นหาชื่อ+ข้อความเกริ่นนำ, กรองหมวดหมู่+สถานะ, เรียงลำดับได้ทุกคอลัมน์ default เรียงชื่อ, paging)
@@ -288,7 +287,7 @@ part ที่เกี่ยวกับรูปภาพ/เอกสาร/�
 ไม่แยกสิทธิ์ `article.tag.*` ต่างหาก เพราะแท็กสร้างใหม่ได้จากในฟอร์มบทความอยู่แล้ว (ดู quickStore() ด้านล่าง)
 จึงต้องสัมพันธ์กับสิทธิ์ของบทความเสมอ
 
-**Seeder** — สร้างแท็กตัวอย่าง 4 แท็ก (ประชาสัมพันธ์/กิจกรรม/ความรู้/อัปเดต) ใน `ArticleSeeder.php`
+**Seeder** — สร้างแท็กตัวอย่าง 20 แท็ก (MicroCMS, ประชาสัมพันธ์, คู่มือ, Google ฯลฯ) ใน `ArticleSeeder.php`
 
 **หน้าจัดการแท็ก** (`Admin\Article\ArticleTagController` + `Pages/Admin/Article/Tag/{Index,Add,Edit}.vue`) —
 list/add/edit ตามต้นแบบหมวดหมู่บทความ แต่ตัดฟิลด์ที่ไม่มีในตาราง (รูปหน้าปก/ลำดับ) ออก และ **ไม่มีฟิลด์ slug
@@ -372,7 +371,8 @@ log action module_code = `article.tag`
 โมดูลนี้ เช่น รายละเอียดบทความ/รายการบทความที่ใช้ในหน้าบ้าน ให้เพิ่มแถวในนี้ + endpoint ล้างแคชของตัวเองด้วย)
 พร้อมปุ่ม "ล้างแคชทั้งหมดของบทความ"
 
-**Seeder** — ค่าเริ่มต้นเพิ่มใน `ArticleSeeder.php` (กลุ่ม `article` ใน `sys_setting`)
+**Seeder** — `ArticleSeeder.php` บันทึกกลุ่ม `article` ใน `sys_setting` จาก `ArticleSetting::defaults()` แล้วปรับให้เห็นความสามารถ
+(9 รายการต่อหน้า, แสดงเกริ่นนำ/รายละเอียดหมวดหมู่, รูปปก+ปุ่มพิมพ์ในหน้ารายละเอียด)
 
 **การลงทะเบียนแคชร่วมกับตั้งค่าระบบ** — เพิ่ม `'article'` เข้า `App\Support\Setting::GROUPS` (ทะเบียนกลุ่ม
 `sys_setting` ทั้งหมดที่มีแคช ไม่ใช่แค่ของตั้งค่าระบบ) ทำให้:

@@ -166,16 +166,15 @@ Page ตรง ๆ (รายชื่อฟอนต์ไทยเป็น re
 
 ## 6. ข้อมูลตัวอย่าง (`FrontMenuSeeder`)
 
-`database/seeders/FrontMenuSeeder.php` — เรียกจาก `DatabaseSeeder` **ต่อจาก** `ArticleSeeder`/`PageSeeder` เพราะต้อง
-อ้าง id ของหมวดหมู่บทความ/หน้าเพจตัวอย่าง (resolve ผ่านชื่อภาษาหลักที่ทั้งสอง seeder สร้างไว้ ไม่ใช่ slug ตรง ๆ
-เพราะลำดับภาษาที่ไม่มี suffix ใน `ArticleSeeder` ไม่ได้การันตีว่าเป็นภาษาหลักเสมอไป) สร้าง:
+`database/seeders/FrontMenuSeeder.php` — เรียกผ่าน `SampleDataSeeder` **ต่อจาก** `ArticleSeeder`/`PageSeeder` (อ้าง id หมวดหมู่/บทความ/หน้าเพจ
+ผ่าน slug) สร้าง:
 
-- เมนู "หน้าแรก" ตั้งเป็น `is_home='Y'` ประเภท `page` ชี้หน้าเพจตัวอย่างของ `PageSeeder`
-- เมนูหัวข้อ (`heading`) "บทความ" มีลูก 3 รายการประเภท `article_category` ชี้หมวดหมู่ตัวอย่างของ `ArticleSeeder`
-  (news/activities/articles)
+- "หน้าแรก" (`page` → หน้าแรกตัวอย่าง, `is_home='Y'`) / "แนะนำระบบ" (`article_item` → บทความ `introducing-microcms`)
+- "บทความ" (`heading`) → ข่าวสาร / การใช้งานระบบ / การตั้งค่าบริการภายนอก (`article_category`)
+- "ติดต่อเรา" (`contactus`)
 
-ทุกแถว `is_temp='Y'`, ใช้ `updateOrCreate` โดย resolve id เดิมผ่านชื่อเมนูภาษาหลัก (เทียบเคียง `PageSeeder`) — รันซ้ำได้
-(`php artisan db:seed --class=FrontMenuSeeder` ต้องรัน `ArticleSeeder`/`PageSeeder` มาก่อนแล้ว)
+เมนูเนื้อหามีรูปส่วนหัว + หัวเรื่อง/หัวเรื่องรองสองภาษา, ทุกแถว `is_temp='Y'` — seeder อื่นอ้าง id ผ่าน `FrontMenuSeeder::id('news')` ฯลฯ
+ข้อมูลตัวอย่างทั้งชุดอธิบายไว้ที่ `exampledata/README.md`
 
 ## Roadmap — การแสดงผลหน้าบ้าน (✅ ทำแล้วใน branch `front-init` — ดู [PRD-front.md](PRD-front.md) §3, `App\Support\Front\FrontMenuResolver`)
 

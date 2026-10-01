@@ -25,14 +25,15 @@ docker compose --profile app up -d --build
 # 3) ดู log ว่าพร้อมแล้ว (เห็น "ready to handle connections")
 docker logs -f cms_app
 
-# 4) (ถ้าฐานข้อมูลยังว่าง) migrate + seed ผ่าน container
-docker exec cms_app php artisan migrate --seed
+# 4) (ถ้าฐานข้อมูลยังว่าง) migrate + seed ผ่าน container — รันในนาม www-data
+#    (seed นำเข้าไฟล์ตัวอย่างลง storage — ถ้ารันเป็น root โฟลเดอร์จะเป็น 0700 ของ root, PHP-FPM อ่านไม่ได้ → รูป 404)
+docker exec -u www-data cms_app php artisan migrate --seed
 
 # 5) (ถ้ามีรูปที่อัปโหลดไว้ก่อนแล้ว) สร้าง thumbnail ล่วงหน้า — รูปใหม่สร้างให้อัตโนมัติตอนอัปโหลด
 docker exec cms_app php artisan files:thumbnails
 ```
 
-เปิด http://localhost:8001 (หลังบ้าน http://localhost:8001/admin — admin@mycms.com / P@ssw0rd)
+เปิด http://localhost:8001 (หลังบ้าน http://localhost:8001/admin — admin@microcms.com / P@ssw0rd)
 
 ## ใช้งานประจำวัน
 

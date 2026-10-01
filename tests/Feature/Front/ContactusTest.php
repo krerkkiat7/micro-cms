@@ -22,6 +22,11 @@ use Inertia\Testing\AssertableInertia as Assert;
  */
 beforeEach(function () {
     $this->seed(DatabaseSeeder::class);
+    // เริ่มจากสถานะ "ยังไม่ตั้งค่า Turnstile / ไม่มีเมนูติดต่อเรา / ตั้งค่าติดต่อเราเป็นค่าเริ่มต้น" — ข้อมูลตัวอย่างตั้งไว้ครบ
+    forgetSampleSetting('turnstile');
+    forgetSampleSetting('contactus');
+    FrontMenuInfo::query()->where('menu_type', FrontMenuType::CONTACTUS)->delete();
+    FrontCache::forgetAll();
     RateLimiter::clear(StoreContactusRequest::throttleKey('127.0.0.1'));
 });
 

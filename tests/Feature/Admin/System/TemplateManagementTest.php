@@ -6,12 +6,14 @@ use App\Models\SysTemplateAside;
 use App\Models\SysTemplateBody;
 use App\Models\SysTemplateFooter;
 use App\Models\SysTemplateHeader;
+use App\Support\Template\TemplatePreset;
+use App\Support\Template\TemplateZone;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\TemplateSeeder;
 use Inertia\Testing\AssertableInertia as Assert;
 
 beforeEach(function () {
-    // seed สร้าง template ตัวอย่าง 3 รายการ (TemplateSeeder) — "Template องค์กร / หน่วยงาน" เป็นรายการที่ใช้งาน
+    // seed สร้าง template ตัวอย่าง 1 รายการ (TemplateSeeder) — "MicroCMS Blue" เป็นรายการที่ใช้งาน
     $this->seed(DatabaseSeeder::class);
 });
 
@@ -20,26 +22,38 @@ function activeTemplate(): SysTemplate
     return SysTemplate::where('status', 'Y')->firstOrFail();
 }
 
+/** template ที่ไม่ได้ใช้งาน — ข้อมูลตัวอย่างมีแค่รายการที่ใช้งาน จึงสร้างเพิ่มจากแม่แบบ minimal เมื่อยังไม่มี */
 function inactiveTemplate(): SysTemplate
 {
-    return SysTemplate::where('status', 'N')->orderBy('id')->firstOrFail();
+    $template = SysTemplate::where('status', 'N')->orderBy('id')->first();
+    if ($template) {
+        return $template;
+    }
+
+    $template = SysTemplate::create(['name' => 'Template สำรอง', 'preset' => 'minimal', 'status' => 'N']);
+    foreach (TemplatePreset::zones('minimal') as $zone => $values) {
+        TemplateZone::MODELS[$zone]::create(['sys_template_id' => $template->id] + $values);
+    }
+
+    return $template;
 }
 
 // ---------------------------------------------------------------- seeder
 
-test('seeder creates sample templates with all zones and exactly one active', function () {
-    expect(SysTemplate::count())->toBe(3)
-        ->and(SysTemplate::where('status', 'Y')->count())->toBe(1)
-        ->and(SysTemplateHeader::count())->toBe(3)
-        ->and(SysTemplateBody::count())->toBe(3)
-        ->and(SysTemplateFooter::count())->toBe(3)
-        ->and(SysTemplateAside::count())->toBe(3);
+test('seeder creates one active blue sample template with all zones and its showcase settings', function () {
+    $template = activeTemplate();
 
-    // รันซ้ำไม่สร้างแถวเพิ่ม
-    $this->seed(TemplateSeeder::class);
-
-    expect(SysTemplate::count())->toBe(3)
-        ->and(SysTemplate::where('status', 'Y')->count())->toBe(1);
+    expect(SysTemplate::count())->toBe(1)
+        ->and($template->name)->toBe(TemplateSeeder::NAME)
+        ->and(SysTemplateHeader::count())->toBe(1)
+        ->and(SysTemplateBody::count())->toBe(1)
+        ->and(SysTemplateFooter::count())->toBe(1)
+        ->and(SysTemplateAside::count())->toBe(1)
+        ->and($template->header->sticky)->toBe('Y')
+        ->and($template->header->layout_type)->toBe('topbar_main')
+        ->and($template->footer->show_menu)->toBe('Y')
+        ->and($template->loading_status)->toBe('Y')
+        ->and($template->custom_css_status)->toBe('Y');
 });
 
 // ---------------------------------------------------------------- index
@@ -53,16 +67,17 @@ test('index redirects to dashboard without system.template.view', function () {
 
 test('index lists templates and filters by name and status', function () {
     actingAsUserWithPermissions(['system.template.view']);
+    inactiveTemplate();
 
     $this->get(route('admin.system.template.index'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('Admin/System/Template/Index')
-            ->has('items.data', 3)
+            ->has('items.data', 2)
             ->where('can.manage', false)
         );
 
-    $this->get(route('admin.system.template.index', ['q' => 'เรียบง่าย']))
+    $this->get(route('admin.system.template.index', ['q' => 'สำรอง']))
         ->assertInertia(fn (Assert $page) => $page->has('items.data', 1));
 
     $this->get(route('admin.system.template.index', ['status' => 'Y']))
@@ -91,7 +106,7 @@ test('store creates a template with all four zones from the chosen preset', func
         ->and($template->body)->not->toBeNull()
         ->and($template->footer->layout_type)->toBe('site_contact_center')
         ->and($template->aside->display_type)->toBe('fullscreen')
-        ->and(activeTemplate()->name)->toBe('Template องค์กร / หน่วยงาน');
+        ->and(activeTemplate()->name)->toBe(TemplateSeeder::NAME);
 
     expect(LogBackAction::where('module_code', 'system.template')->where('action_type', 'create')->where('ref_id', $template->id)->exists())->toBeTrue();
 });

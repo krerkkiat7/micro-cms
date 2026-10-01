@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\BannerCategoryDetail;
 use App\Models\BannerCategoryInfo;
 use App\Models\BannerItemDetail;
 use App\Models\BannerItemInfo;
@@ -25,7 +26,7 @@ function validBannerItemPayload(int $categoryId, array $overrides = []): array
 {
     return array_replace_recursive([
         'banner_category_info_id' => $categoryId,
-        'intro_image_id' => FileInfo::query()->value('id'),
+        'intro_image_id' => FileInfo::query()->where('hash_name', 'banner-hash.jpg')->value('id'),
         'link_type' => 'custom',
         'front_menu_info_id' => null,
         'url' => 'https://example.com',
@@ -98,7 +99,9 @@ test('index includes the intro image hash_name for the thumbnail column', functi
 test('index filters by category', function () {
     actingAsUserWithPermissions(['banner.item.view', 'banner.item.manage']);
 
-    $otherCategory = BannerCategoryInfo::query()->where('id', '!=', $this->category->id)->first();
+    // ข้อมูลตัวอย่างมีหมวดหมู่เดียว (Highlight) — สร้างหมวดที่สองเอง
+    $otherCategory = BannerCategoryInfo::create(['status' => 'Y']);
+    BannerCategoryDetail::create(['id' => $otherCategory->id, 'lang' => 'th', 'title' => 'หมวดที่สอง', 'status' => 'Y']);
 
     $this->post(route('admin.banner.item.store'), validBannerItemPayload($this->category->id, [
         'detail' => ['th' => ['title' => 'ป้ายหมวดแรก'], 'en' => ['title' => 'First Cat']],

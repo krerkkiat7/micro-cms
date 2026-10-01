@@ -1,10 +1,10 @@
 <?php
 
+use App\Models\ArticleItemInfo;
 use App\Models\LogBackAction;
 use App\Models\SysSetting;
 use App\Support\ArticleSetting;
 use App\Support\Setting;
-use Database\Seeders\ArticleSeeder;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -39,21 +39,20 @@ test('index renders the seeded defaults', function () {
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('Admin/Article/Setting/Index')
-            ->where('settings.list_per_page', '10')
+            ->where('settings.list_per_page', '9')
             ->where('settings.list_display_mode', 'card')
         );
 });
 
-test('re-running ArticleSeeder overwrites a changed setting value instead of erroring', function () {
-    // sys_setting มี primary key แบบ composite (group, name) ไม่มีคอลัมน์ id ของตัวเอง — ต้อง seed ด้วย
-    // DB::table()->upsert() ตรง ๆ ไม่ใช่ SysSetting::updateOrCreate() (Eloquent) มิฉะนั้นตอน "update" แถวที่มี
-    // อยู่แล้วจริง ๆ (ค่าต่างจากเดิม) จะพังด้วย query ที่มี WHERE id = ... ซึ่งไม่มีคอลัมน์นี้อยู่จริง
+test('re-running the database seeder keeps changed article settings and does not duplicate the sample data', function () {
+    // ข้อมูลตัวอย่าง (รวมตั้งค่าบทความ) seed ครั้งเดียวต่อฐานข้อมูล — รันซ้ำต้องไม่ทับค่าที่ผู้ใช้แก้ และไม่สร้างบทความซ้ำ
     DB::table('sys_setting')->where('group', 'article')->where('name', 'list_per_page')->update(['value' => '99']);
+    $articles = ArticleItemInfo::count();
+
+    $this->seed(DatabaseSeeder::class);
+
     $this->assertDatabaseHas('sys_setting', ['group' => 'article', 'name' => 'list_per_page', 'value' => '99']);
-
-    $this->seed(ArticleSeeder::class);
-
-    $this->assertDatabaseHas('sys_setting', ['group' => 'article', 'name' => 'list_per_page', 'value' => '10']);
+    expect(ArticleItemInfo::count())->toBe($articles);
 });
 
 // ---------------------------------------------------------------- update
@@ -115,7 +114,7 @@ test('index fills keys that were never saved with their defaults', function () {
     $this->get(route('admin.article.setting.index'))
         ->assertInertia(fn (Assert $page) => $page
             ->where('settings.detail_share_position', 'bottom')
-            ->where('settings.list_show_category_intro', 'N')
+            ->where('settings.list_show_category_intro', 'Y') // ค่าที่ข้อมูลตัวอย่างบันทึกไว้ (ไม่ใช่ค่าเริ่มต้น)
             ->where('settings.list_default_sort', 'newest')
             ->where('settings.card_image_background', '#F3F4F6')
         );

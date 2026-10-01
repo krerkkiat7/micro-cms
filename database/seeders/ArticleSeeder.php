@@ -8,325 +8,289 @@ use App\Models\ArticleItemDetail;
 use App\Models\ArticleItemInfo;
 use App\Models\ArticleItemPart;
 use App\Models\ArticleItemPartDetail;
+use App\Models\ArticleItemPartFile;
 use App\Models\ArticleTagDetail;
 use App\Models\ArticleTagInfo;
 use App\Support\ArticleSetting;
-use App\Support\Setting;
+use Database\Seeders\Support\SampleFiles;
+use Database\Seeders\Support\SeedsSampleData;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 /**
- * ข้อมูลตัวอย่างโมดูลบทความ (ตั้งค่าโมดูล + หมวดหมู่ + แท็ก + บทความ) หมวดหมู่/แท็ก/บทความทำเครื่องหมาย
- * is_temp = 'Y' ไว้ทุกแถว เพื่อให้ลบออกได้ภายหลัง (หรือจะใช้ต่อไปก็ได้) บทความตัวอย่างมีแค่ part ประเภทข้อความ
- * เพราะยังไม่มีไฟล์ตัวอย่างใน file_info ให้ผูก (โมดูลจัดการไฟล์เป็นพื้นที่ส่วนตัวต่อผู้ใช้ ไม่มี seed ไฟล์กลาง)
- *
- * รันเดี่ยว: php artisan db:seed --class=ArticleSeeder
+ * ข้อมูลตัวอย่างโมดูลบทความ — ตั้งค่าโมดูล + หมวดหมู่ 4 หมวด + แท็ก + บทความ 15 เรื่อง (เนื้อหาใน data/articles.php)
+ * ทุกแถว is_temp = 'Y' (แสดงที่หน้าบ้านตามปกติ — แก้ไขต่อหรือลบออกได้). เรียกผ่าน SampleDataSeeder เท่านั้น
  */
 class ArticleSeeder extends Seeder
 {
+    use SeedsSampleData;
     use WithoutModelEvents;
+
+    private const FOLDER = 'ตัวอย่าง - บทความ';
+
+    /** หมวดหมู่ — key = slug */
+    private const CATEGORIES = [
+        'news' => [
+            'cover' => 'images/article/cat-news.jpg',
+            'title' => ['th' => 'ข่าวสาร', 'en' => 'News'],
+            'intro' => ['th' => 'ข่าวประชาสัมพันธ์และความเคลื่อนไหวล่าสุดของ MicroCMS', 'en' => 'Announcements and the latest updates from MicroCMS'],
+            'detail' => [
+                'th' => '<p>ติดตามการเปิดตัวฟีเจอร์ใหม่ เคล็ดลับการใช้งาน และแผนพัฒนาของ MicroCMS ได้ที่นี่</p>',
+                'en' => '<p>Follow new feature releases, tips and the MicroCMS roadmap here.</p>',
+            ],
+        ],
+        'user-guide' => [
+            'cover' => 'images/article/cat-user-guide.jpg',
+            'title' => ['th' => 'การใช้งานระบบ', 'en' => 'User Guide'],
+            'intro' => ['th' => 'คู่มือการใช้งานแต่ละโมดูลของ MicroCMS ทีละขั้นตอน', 'en' => 'Step-by-step guides to each MicroCMS module'],
+            'detail' => [
+                'th' => '<p>เรียนรู้การจัดการบทความ หน้าเพจ Intropage ป้ายโฆษณา และ Popup พร้อมภาพหน้าจอจากระบบจริง</p>',
+                'en' => '<p>Learn how to manage articles, pages, the intro page, banners and popups, with screenshots from the real system.</p>',
+            ],
+        ],
+        'external-services' => [
+            'cover' => 'images/article/cat-external-services.jpg',
+            'title' => ['th' => 'การตั้งค่าบริการภายนอก', 'en' => 'External Services'],
+            'intro' => ['th' => 'เชื่อมต่อ MicroCMS กับ Cloudflare Turnstile, Google Maps, Google Analytics และ SMTP', 'en' => 'Connect MicroCMS to Cloudflare Turnstile, Google Maps, Google Analytics and SMTP'],
+            'detail' => [
+                'th' => '<p>บริการเหล่านี้ไม่บังคับ แต่ช่วยให้เว็บไซต์ปลอดภัยและใช้งานได้ครบขึ้น ตั้งค่าทั้งหมดได้ที่ <strong>จัดการระบบ → ตั้งค่าระบบ</strong></p>',
+                'en' => '<p>These services are optional but make your website safer and more complete. Configure them all in <strong>System → Settings</strong>.</p>',
+            ],
+        ],
+        'general' => [
+            'cover' => 'images/article/cat-general.jpg',
+            'title' => ['th' => 'ทั่วไป', 'en' => 'General'],
+            'intro' => ['th' => 'เรื่องทั่วไปเกี่ยวกับ MicroCMS', 'en' => 'General information about MicroCMS'],
+            'detail' => ['th' => '', 'en' => ''],
+        ],
+    ];
+
+    /** แท็ก — key = slug */
+    private const TAGS = [
+        'microcms' => ['th' => 'MicroCMS', 'en' => 'MicroCMS'],
+        'announcement' => ['th' => 'ประชาสัมพันธ์', 'en' => 'Announcement'],
+        'release' => ['th' => 'อัปเดตเวอร์ชัน', 'en' => 'Release'],
+        'security' => ['th' => 'ความปลอดภัย', 'en' => 'Security'],
+        'seo' => ['th' => 'SEO', 'en' => 'SEO'],
+        'language' => ['th' => 'หลายภาษา', 'en' => 'Multilingual'],
+        'guide' => ['th' => 'คู่มือ', 'en' => 'Guide'],
+        'getting-started' => ['th' => 'เริ่มต้นใช้งาน', 'en' => 'Getting Started'],
+        'article' => ['th' => 'บทความ', 'en' => 'Articles'],
+        'page' => ['th' => 'หน้าเพจ', 'en' => 'Pages'],
+        'intropage' => ['th' => 'Intropage', 'en' => 'Intro Page'],
+        'banner' => ['th' => 'ป้ายโฆษณา', 'en' => 'Banners'],
+        'popup' => ['th' => 'Popup', 'en' => 'Popups'],
+        'cloudflare' => ['th' => 'Cloudflare', 'en' => 'Cloudflare'],
+        'turnstile' => ['th' => 'Turnstile', 'en' => 'Turnstile'],
+        'google' => ['th' => 'Google', 'en' => 'Google'],
+        'google-maps' => ['th' => 'Google Maps', 'en' => 'Google Maps'],
+        'google-analytics' => ['th' => 'Google Analytics', 'en' => 'Google Analytics'],
+        'smtp' => ['th' => 'SMTP', 'en' => 'SMTP'],
+        'gmail' => ['th' => 'Gmail', 'en' => 'Gmail'],
+    ];
+
+    /** ค่าเริ่มต้นของ setting ในแต่ละประเภท part (เหมือน resources/js/utils/articleParts.ts) */
+    private const PART_SETTINGS = [
+        'text' => [],
+        'image' => ['alignment' => 'center', 'size' => 'large', 'show_caption' => true],
+        'images' => ['columns' => '3', 'autoplay' => false, 'interval_ms' => '4000'],
+        'documents' => [],
+    ];
 
     public function run(): void
     {
-        $languages = Setting::selectedLanguages();
-        if ($languages === []) {
-            $languages = ['th', 'en'];
-        }
+        $this->seedSettings();
+        $categoryIds = $this->seedCategories();
+        $tagIds = $this->seedTags();
 
-        // ตั้งค่าโมดูลบทความ (sys_setting group = article) — ดู Admin\Article\ArticleSettingController
-        // ใช้ DB::table()->upsert() ตรง ๆ ไม่ใช่ SysSetting::updateOrCreate() — sys_setting มี primary key
-        // แบบ composite (group, name) ไม่มีคอลัมน์ id เอง Eloquent ที่ไม่รู้จัก key นี้จะพัง (WHERE id = ...)
-        // ทันทีที่ต้อง UPDATE แถวที่มีอยู่แล้วจริง ๆ (ต่างจากตอน insert ใหม่ที่ไม่มีปัญหา จึงไม่เคยเจอตอนเทส)
-        // ค่าเริ่มต้นทุกคีย์มาจาก ArticleSetting::defaults() (ทะเบียนเดียวกับฟอร์มตั้งค่า/หน้าบ้าน)
-        $settings = [];
-        foreach (ArticleSetting::defaults() as $name => $value) {
-            $settings[] = ['group' => 'article', 'name' => $name, 'value' => $value];
+        foreach (require __DIR__.'/data/articles.php' as $article) {
+            $this->seedArticle($article, $categoryIds, $tagIds);
         }
+    }
+
+    /**
+     * ตั้งค่าโมดูลบทความ (sys_setting group = article) — ค่าเริ่มต้นจาก ArticleSetting::defaults() แล้วปรับให้เห็นความสามารถ
+     * (upsert ตรง ๆ — sys_setting เป็น composite PK ใช้ Eloquent update ไม่ได้)
+     */
+    private function seedSettings(): void
+    {
+        $values = array_merge(ArticleSetting::defaults(), [
+            'list_show_category_intro' => 'Y',
+            'list_show_category_detail' => 'Y',
+            'list_per_page' => '9',
+            'list_display_mode' => 'card',
+            'card_title_lines' => '2',
+            'detail_show_cover' => 'Y',
+            'detail_show_print' => 'Y',
+            'detail_share_position' => 'bottom',
+        ]);
 
         DB::table('sys_setting')->upsert(
-            array_map(fn (array $s) => $s + ['created_at' => now(), 'updated_at' => now()], $settings),
+            collect($values)->map(fn ($value, $name) => [
+                'group' => 'article',
+                'name' => $name,
+                'value' => (string) $value,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ])->values()->all(),
             ['group', 'name'],
             ['value', 'updated_at'],
         );
+    }
 
-        // หมวดหมู่ตัวอย่าง — key = สำหรับ derive slug ภาษาอังกฤษ, title/intro_text ต่อภาษา (th/en)
-        // ภาษาอื่นที่ระบบเปิดใช้นอกเหนือจากนี้ จะ fallback ไปใช้ข้อมูลชุด th
-        $categories = [
-            [
-                'key' => 'news',
-                'sort_order' => 1,
-                'title' => ['th' => 'ข่าวสาร', 'en' => 'News'],
-                'intro_text' => [
-                    'th' => 'ข่าวสารและความเคลื่อนไหวล่าสุดขององค์กร',
-                    'en' => 'Latest news and updates from the organization',
-                ],
-            ],
-            [
-                'key' => 'activities',
-                'sort_order' => 2,
-                'title' => ['th' => 'กิจกรรม', 'en' => 'Activities'],
-                'intro_text' => [
-                    'th' => 'กิจกรรมและโครงการต่าง ๆ ที่จัดขึ้น',
-                    'en' => 'Activities and projects we have organized',
-                ],
-            ],
-            [
-                'key' => 'articles',
-                'sort_order' => 3,
-                'title' => ['th' => 'บทความทั่วไป', 'en' => 'Articles'],
-                'intro_text' => [
-                    'th' => 'บทความความรู้และสาระทั่วไป',
-                    'en' => 'General knowledge articles',
-                ],
-            ],
-        ];
+    /**
+     * @return array<string, int> slug → id
+     */
+    private function seedCategories(): array
+    {
+        $ids = [];
+        $order = 0;
 
-        foreach ($categories as $category) {
-            $info = ArticleCategoryInfo::updateOrCreate(
-                ['id' => $this->resolveId($category['key'])],
-                [
-                    'sort_order' => $category['sort_order'],
-                    'status' => 'Y',
-                    'is_temp' => 'Y',
-                ],
-            );
+        foreach (self::CATEGORIES as $slug => $category) {
+            $info = ArticleCategoryInfo::create([
+                'intro_image_id' => SampleFiles::import($category['cover'], self::FOLDER),
+                'sort_order' => ++$order,
+                'status' => 'Y',
+                'is_temp' => 'Y',
+                'created_by' => $this->adminId(),
+            ]);
 
-            foreach ($languages as $lang) {
-                $title = $category['title'][$lang] ?? $category['title']['th'];
-                $introText = $category['intro_text'][$lang] ?? $category['intro_text']['th'];
-                $slug = $category['key'].($lang !== $languages[0] ? '-'.$lang : '');
+            $this->createDetails(ArticleCategoryDetail::class, $info->id, fn (string $lang) => [
+                'title' => $this->t($category['title'], $lang),
+                'intro_text' => $this->t($category['intro'], $lang),
+                'detail' => $this->t($category['detail'], $lang) ?: null,
+                'slug' => $slug,
+                'meta_title' => $this->t($category['title'], $lang),
+                'meta_description' => $this->t($category['intro'], $lang),
+                'status' => 'Y',
+            ]);
 
-                ArticleCategoryDetail::updateOrCreate(
-                    ['id' => $info->id, 'lang' => $lang],
-                    [
-                        'title' => $title,
-                        'intro_text' => $introText,
-                        'slug' => $slug,
-                        'meta_title' => $title,
-                        'meta_description' => $introText,
-                        'status' => 'Y',
-                    ],
-                );
-            }
+            $ids[$slug] = $info->id;
         }
 
-        // แท็กตัวอย่าง
-        $tags = [
-            ['key' => 'announcement', 'name' => ['th' => 'ประชาสัมพันธ์', 'en' => 'Announcement']],
-            ['key' => 'event', 'name' => ['th' => 'กิจกรรม', 'en' => 'Event']],
-            ['key' => 'knowledge', 'name' => ['th' => 'ความรู้', 'en' => 'Knowledge']],
-            ['key' => 'update', 'name' => ['th' => 'อัปเดต', 'en' => 'Update']],
-        ];
+        return $ids;
+    }
 
-        $tagIds = [];
+    /**
+     * @return array<string, int> slug → id
+     */
+    private function seedTags(): array
+    {
+        $ids = [];
 
-        foreach ($tags as $tag) {
-            $tagInfo = ArticleTagInfo::updateOrCreate(
-                ['id' => $this->resolveTagId($tag['key'])],
-                [
-                    'status' => 'Y',
-                    'is_temp' => 'Y',
-                ],
-            );
+        foreach (self::TAGS as $slug => $name) {
+            $info = ArticleTagInfo::create(['status' => 'Y', 'is_temp' => 'Y', 'created_by' => $this->adminId()]);
 
-            foreach ($languages as $lang) {
-                $name = $tag['name'][$lang] ?? $tag['name']['th'];
-                $slug = $tag['key'].($lang !== $languages[0] ? '-'.$lang : '');
+            $this->createDetails(ArticleTagDetail::class, $info->id, fn (string $lang) => [
+                'name' => $this->t($name, $lang),
+                'slug' => $slug,
+                'status' => 'Y',
+            ]);
 
-                ArticleTagDetail::updateOrCreate(
-                    ['id' => $tagInfo->id, 'lang' => $lang],
-                    [
-                        'name' => $name,
-                        'slug' => $slug,
-                        'status' => 'Y',
-                    ],
-                );
-            }
-
-            $tagIds[$tag['key']] = $tagInfo->id;
+            $ids[$slug] = $info->id;
         }
 
-        // บทความตัวอย่าง — key = สำหรับ derive slug ภาษาอังกฤษ, category = key ของหมวดหมู่ด้านบน,
-        // tags = key ของแท็กด้านบนที่จะผูกกับบทความนี้
-        $articles = [
-            [
-                'key' => 'welcome-website',
-                'category' => 'news',
-                'tags' => ['announcement'],
-                'publish_days_ago' => 5,
-                'title' => ['th' => 'เปิดตัวเว็บไซต์ใหม่', 'en' => 'Launching Our New Website'],
-                'intro_text' => [
-                    'th' => 'ยินดีต้อนรับสู่เว็บไซต์ใหม่ของเรา ออกแบบมาให้ใช้งานง่ายและรวดเร็วยิ่งขึ้น',
-                    'en' => 'Welcome to our brand-new website, redesigned to be easier and faster to use.',
-                ],
-                'detail' => [
-                    'th' => 'เราภูมิใจนำเสนอเว็บไซต์เวอร์ชันใหม่ที่ปรับปรุงทั้งหน้าตาและประสบการณ์การใช้งาน '
-                        .'พร้อมเนื้อหาข่าวสารและกิจกรรมที่จะอัปเดตอย่างสม่ำเสมอ',
-                    'en' => 'We are proud to present our redesigned website with an improved look and feel, '
-                        .'along with news and activity updates published regularly.',
-                ],
-            ],
-            [
-                'key' => 'annual-meeting-2026',
-                'category' => 'activities',
-                'tags' => ['event'],
-                'publish_days_ago' => 3,
-                'title' => ['th' => 'ประชุมใหญ่สามัญประจำปี 2569', 'en' => 'Annual General Meeting 2026'],
-                'intro_text' => [
-                    'th' => 'กำหนดการประชุมใหญ่สามัญประจำปี พร้อมวาระสำคัญที่สมาชิกไม่ควรพลาด',
-                    'en' => 'Schedule for this year\'s annual general meeting, with important agenda items.',
-                ],
-                'detail' => [
-                    'th' => 'ขอเชิญสมาชิกทุกท่านเข้าร่วมประชุมใหญ่สามัญประจำปี เพื่อรับฟังรายงานผลการดำเนินงาน '
-                        .'และร่วมพิจารณาวาระสำคัญต่าง ๆ ขององค์กร',
-                    'en' => 'All members are invited to attend the annual general meeting to review the year\'s '
-                        .'performance report and discuss key organizational agenda items.',
-                ],
-            ],
-            [
-                'key' => 'workshop-recap',
-                'category' => 'activities',
-                'tags' => ['event', 'knowledge'],
-                'publish_days_ago' => 10,
-                'title' => ['th' => 'สรุปกิจกรรมอบรมเชิงปฏิบัติการ', 'en' => 'Workshop Recap'],
-                'intro_text' => [
-                    'th' => 'รวมภาพบรรยากาศและสิ่งที่ได้เรียนรู้จากกิจกรรมอบรมเชิงปฏิบัติการที่ผ่านมา',
-                    'en' => 'A recap of the highlights and key takeaways from our recent hands-on workshop.',
-                ],
-                'detail' => [
-                    'th' => 'กิจกรรมอบรมเชิงปฏิบัติการที่ผ่านมาได้รับความสนใจจากผู้เข้าร่วมเป็นอย่างมาก '
-                        .'ทีมงานขอขอบคุณทุกท่านที่ร่วมกิจกรรมและหวังว่าจะได้พบกันอีกในครั้งถัดไป',
-                    'en' => 'Our recent hands-on workshop received great engagement from participants. '
-                        .'Thank you to everyone who joined, and we look forward to seeing you at the next one.',
-                ],
-            ],
-            [
-                'key' => 'productivity-tips',
-                'category' => 'articles',
-                'tags' => ['knowledge'],
-                'publish_days_ago' => 15,
-                'title' => [
-                    'th' => '5 เคล็ดลับการทำงานอย่างมีประสิทธิภาพ',
-                    'en' => '5 Tips for Working More Efficiently',
-                ],
-                'intro_text' => [
-                    'th' => 'รวมเคล็ดลับง่าย ๆ ที่ช่วยให้การทำงานในแต่ละวันมีประสิทธิภาพมากขึ้น',
-                    'en' => 'A collection of simple tips to help make your daily work more efficient.',
-                ],
-                'detail' => [
-                    'th' => 'ตั้งแต่การจัดลำดับความสำคัญของงาน ไปจนถึงการพักสมองระหว่างวัน '
-                        .'บทความนี้รวบรวมเคล็ดลับที่นำไปปรับใช้ได้จริงในชีวิตการทำงานประจำวัน',
-                    'en' => 'From prioritizing tasks to taking mindful breaks throughout the day, this article '
-                        .'gathers practical tips you can apply to your everyday work routine.',
-                ],
-            ],
-            [
-                'key' => 'system-update',
-                'category' => 'news',
-                'tags' => ['update'],
-                'publish_days_ago' => 1,
-                'title' => ['th' => 'อัปเดตระบบเวอร์ชันล่าสุด', 'en' => 'Latest System Update'],
-                'intro_text' => [
-                    'th' => 'รายละเอียดฟีเจอร์ใหม่และการปรับปรุงในเวอร์ชันล่าสุดของระบบ',
-                    'en' => 'Details on new features and improvements in the latest system release.',
-                ],
-                'detail' => [
-                    'th' => 'เวอร์ชันล่าสุดมาพร้อมการปรับปรุงประสิทธิภาพและแก้ไขปัญหาที่ผู้ใช้งานแจ้งเข้ามา '
-                        .'ขอบคุณทุกท่านที่ช่วยแจ้งข้อเสนอแนะเพื่อพัฒนาระบบให้ดียิ่งขึ้น',
-                    'en' => 'The latest release includes performance improvements and fixes reported by our '
-                        .'users. Thank you for your feedback that helps us keep improving the system.',
-                ],
-            ],
-        ];
+        return $ids;
+    }
 
-        foreach ($articles as $article) {
-            $categoryId = ArticleCategoryDetail::where('slug', $article['category'])->value('id');
+    /**
+     * @param  array<string, mixed>  $article
+     * @param  array<string, int>  $categoryIds
+     * @param  array<string, int>  $tagIds
+     */
+    private function seedArticle(array $article, array $categoryIds, array $tagIds): void
+    {
+        $adminId = $this->adminId();
 
-            $itemInfo = ArticleItemInfo::updateOrCreate(
-                ['id' => $this->resolveItemId($article['key'])],
-                [
-                    'article_category_info_id' => $categoryId,
-                    'publish_date' => now()->subDays($article['publish_days_ago']),
-                    'status' => 'Y',
-                    'is_temp' => 'Y',
-                ],
-            );
+        $info = ArticleItemInfo::create([
+            'article_category_info_id' => $categoryIds[$article['category']],
+            'intro_image_id' => SampleFiles::import($article['cover'], self::FOLDER),
+            'publish_date' => now()->subDays($article['days_ago'])->setTime(9, 0),
+            'view_amount' => $article['views'],
+            'status' => 'Y',
+            'is_temp' => 'Y',
+            'created_by' => $adminId,
+        ]);
 
-            foreach ($languages as $lang) {
-                $title = $article['title'][$lang] ?? $article['title']['th'];
-                $introText = $article['intro_text'][$lang] ?? $article['intro_text']['th'];
-                $slug = $article['key'].($lang !== $languages[0] ? '-'.$lang : '');
+        $this->createDetails(ArticleItemDetail::class, $info->id, fn (string $lang) => [
+            'title' => $this->t($article['title'], $lang),
+            'intro_text' => $this->t($article['intro'], $lang),
+            'slug' => $article['key'],
+            'meta_title' => $this->t($article['title'], $lang),
+            'meta_description' => $this->t($article['intro'], $lang),
+            'status' => 'Y',
+        ]);
 
-                ArticleItemDetail::updateOrCreate(
-                    ['id' => $itemInfo->id, 'lang' => $lang],
-                    [
-                        'title' => $title,
-                        'intro_text' => $introText,
-                        'slug' => $slug,
-                        'meta_title' => $title,
-                        'meta_description' => $introText,
-                        'status' => 'Y',
-                    ],
-                );
-            }
+        foreach ($article['parts'] as $index => $part) {
+            $this->seedPart($info->id, $index, $part);
+        }
 
-            // เนื้อหาเริ่มต้นด้วย part ข้อความเสมอ
-            $part = ArticleItemPart::updateOrCreate(
-                ['id' => $this->resolvePartId($itemInfo->id)],
-                [
-                    'article_item_info_id' => $itemInfo->id,
-                    'sort_order' => 0,
-                    'part_type' => 'text',
-                ],
-            );
+        $info->tags()->attach(collect($article['tags'])->mapWithKeys(fn (string $slug) => [
+            $tagIds[$slug] => ['created_by' => $adminId, 'updated_by' => $adminId],
+        ])->all());
+    }
 
-            foreach ($languages as $lang) {
-                $detail = $article['detail'][$lang] ?? $article['detail']['th'];
+    /**
+     * @param  array<int|string, mixed>  $part
+     */
+    private function seedPart(int $itemId, int $index, array $part): void
+    {
+        $type = $part[0];
+        $setting = self::PART_SETTINGS[$type];
+        if ($type === 'image' && isset($part['size'])) {
+            $setting['size'] = $part['size'];
+        }
+        if ($type === 'images' && in_array($part['display'], ['grid_lightbox', 'masonry_grid', 'justified_grid'], true)) {
+            $setting['columns'] = count($part['files']) >= 4 ? '3' : '2';
+        }
 
-                ArticleItemPartDetail::updateOrCreate(
-                    ['id' => $part->id, 'lang' => $lang],
-                    ['detail' => $detail],
-                );
-            }
+        $model = ArticleItemPart::create([
+            'article_item_info_id' => $itemId,
+            'sort_order' => $index,
+            'part_type' => $type,
+            'images_display_type' => $type === 'images' ? $part['display'] : null,
+            'show_title' => isset($part['title']) ? 'Y' : 'N',
+            'status' => 'Y',
+            'setting' => $setting,
+            'created_by' => $this->adminId(),
+        ]);
 
-            $itemInfo->tags()->syncWithoutDetaching(
-                array_map(fn (string $key) => $tagIds[$key], $article['tags']),
-            );
+        if ($type === 'text' || isset($part['title'])) {
+            $this->createDetails(ArticleItemPartDetail::class, $model->id, fn (string $lang) => [
+                'title' => $this->t($part['title'] ?? null, $lang),
+                'detail' => $type === 'text' ? $this->t($part['html'], $lang) : null,
+            ]);
+        }
+
+        $files = match ($type) {
+            'image' => [[$part['file'], $part['alt']]],
+            'images' => $part['files'],
+            'documents' => array_map(fn (string $path) => [$path, null], $part['files']),
+            default => [],
+        };
+
+        foreach ($files as $fileIndex => [$path, $alt]) {
+            ArticleItemPartFile::create([
+                'article_item_part_id' => $model->id,
+                'sort_order' => $fileIndex,
+                'file_id' => SampleFiles::import($path, $this->folderFor($path)),
+                'video_type' => null,
+                'description' => $type === 'documents'
+                    ? ['pdf_preview' => false, 'show_file_size' => true]
+                    : $alt,
+                'created_by' => $this->adminId(),
+            ]);
         }
     }
 
-    /**
-     * หา id ของหมวดหมู่ตัวอย่างจาก key (เทียบจาก slug ของภาษาแรกที่เคย seed ไว้) เพื่อให้ updateOrCreate
-     * อ้างแถวเดิมได้ (ไม่สร้างซ้ำ) โดยไม่ต้องกำหนด id ตายตัว — ถ้ายังไม่เคยมี ให้สร้างแถวใหม่
-     */
-    private function resolveId(string $key): ?int
+    private function folderFor(string $path): string
     {
-        return ArticleCategoryDetail::where('slug', $key)->value('id');
-    }
-
-    /**
-     * หา id ของแท็กตัวอย่างจาก key (เทียบจาก slug) — เทียบเคียง resolveId()
-     */
-    private function resolveTagId(string $key): ?int
-    {
-        return ArticleTagDetail::where('slug', $key)->value('id');
-    }
-
-    /**
-     * หา id ของบทความตัวอย่างจาก key (เทียบจาก slug ของภาษาแรกที่เคย seed ไว้) — เทียบเคียง resolveId()
-     */
-    private function resolveItemId(string $key): ?int
-    {
-        return ArticleItemDetail::where('slug', $key)->value('id');
-    }
-
-    /**
-     * หา id ของ part ข้อความแรก (sort_order = 0) ของบทความที่ระบุ — ใช้ตอน re-seed ให้ updateOrCreate
-     * อ้างแถวเดิมได้แทนที่จะสร้าง part ซ้ำ
-     */
-    private function resolvePartId(int $itemId): ?int
-    {
-        return ArticleItemPart::where('article_item_info_id', $itemId)->where('sort_order', 0)->value('id');
+        return match (true) {
+            str_starts_with($path, 'images/guide/') => 'ตัวอย่าง - ภาพหน้าจอ',
+            str_starts_with($path, 'files/') => 'ตัวอย่าง - เอกสาร',
+            str_starts_with($path, 'images/banner/') => 'ตัวอย่าง - ป้ายโฆษณา',
+            default => self::FOLDER,
+        };
     }
 }

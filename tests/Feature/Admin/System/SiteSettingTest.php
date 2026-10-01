@@ -37,6 +37,7 @@ test('saving the site settings with a valid png logo persists logo_id and is ser
     actingAsUserWithPermissions(['system.setting.manage']);
 
     $logo = fakeFileInfo('logo.png', 'l.png', 'png', 'image/png');
+    forgetSampleSetting('site', ['logo_id']); // ข้อมูลตัวอย่างตั้งโลโก้ไว้ (ไฟล์ไม่ได้ถูกคัดลอกตอนเทส)
 
     // เข้าหน้าตั้งค่าครั้งแรก (ยังไม่ตั้งค่า) เพื่อ warm แคชของกลุ่ม 'site' ก่อน — จำลองเคสจริงที่มัก
     // เปิดหน้านี้ก่อนแล้วค่อยบันทึก
@@ -91,14 +92,14 @@ test('re-running the database seeder overwrites an existing sys_setting value in
     // sys_setting มี primary key แบบ composite (group, name) ไม่มีคอลัมน์ id ของตัวเอง — seeder ต้องใช้
     // DB::table()->upsert() ตรง ๆ ไม่ใช่ SysSetting::updateOrCreate() (Eloquent) มิฉะนั้นตอน "update" แถวที่มี
     // อยู่แล้วจริง ๆ (ค่าต่างจากเดิม) จะพังด้วย query ที่มี WHERE id = ... ซึ่งไม่มีคอลัมน์นี้อยู่จริง
-    $this->assertDatabaseHas('sys_setting', ['group' => 'site', 'name' => 'site_name', 'value' => 'My CMS']);
+    $this->assertDatabaseHas('sys_setting', ['group' => 'site', 'name' => 'site_name', 'value' => 'MicroCMS']);
 
     DB::table('sys_setting')->where('group', 'site')->where('name', 'site_name')->update(['value' => 'Changed Name']);
     $this->assertDatabaseHas('sys_setting', ['group' => 'site', 'name' => 'site_name', 'value' => 'Changed Name']);
 
     $this->seed(DatabaseSeeder::class);
 
-    $this->assertDatabaseHas('sys_setting', ['group' => 'site', 'name' => 'site_name', 'value' => 'My CMS']);
+    $this->assertDatabaseHas('sys_setting', ['group' => 'site', 'name' => 'site_name', 'value' => 'MicroCMS']);
 });
 
 test('saving lang_selected stores it as a single comma-separated record, not one row per language', function () {

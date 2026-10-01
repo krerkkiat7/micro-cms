@@ -58,7 +58,7 @@ test('index renders the seeded sample page and filters by search term', function
         ->assertInertia(fn (Assert $page) => $page
             ->component('Admin/Page/Item/Index')
             ->has('items.data', 1)
-            ->where('items.data.0.title', 'หน้าเพจตัวอย่าง')
+            ->where('items.data.0.title', 'หน้าแรก')
             ->has('items.data.0.created_at')
         );
 
@@ -171,7 +171,7 @@ test('edit renders the page data and logs a view action', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('Admin/Page/Item/Edit')
             ->where('item.id', $item->id)
-            ->where('details.th.title', 'หน้าเพจตัวอย่าง')
+            ->where('details.th.title', 'หน้าแรก')
             ->where('can.manage', false)
         );
 

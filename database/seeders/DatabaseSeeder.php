@@ -131,9 +131,9 @@ class DatabaseSeeder extends Seeder
 
         $adminGroup->actions()->sync($actionIds);
 
-        // ผู้ใช้สำหรับเข้าสู่ระบบหลังบ้าน (admin@mycms.com / P@ssw0rd)
+        // ผู้ใช้สำหรับเข้าสู่ระบบหลังบ้าน (admin@microcms.com / P@ssw0rd)
         User::updateOrCreate(
-            ['email' => 'admin@mycms.com', 'user_type' => 'back'],
+            ['email' => 'admin@microcms.com', 'user_type' => 'back'],
             [
                 'titlename' => 'คุณ',
                 'firstname' => 'System',
@@ -144,13 +144,13 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
-        // ตัวอย่างการตั้งค่าเว็บไซต์ (กลุ่ม site) — เติมเพิ่มเองได้ภายหลัง
+        // ตั้งค่าเว็บไซต์พื้นฐาน (กลุ่ม site) — โลโก้/ข้อมูลติดต่อตัวอย่างอยู่ใน SiteSettingSeeder
         // ใช้ DB::table()->upsert() ตรง ๆ ไม่ใช่ SysSetting::updateOrCreate() — sys_setting มี primary key
         // แบบ composite (group, name) ไม่มีคอลัมน์ id เอง Eloquent ที่ไม่รู้จัก key นี้จะพัง (WHERE id = ...)
         // ทันทีที่ต้อง UPDATE แถวที่มีอยู่แล้วจริง ๆ (ต่างจากตอน insert ใหม่ที่ไม่มีปัญหา จึงไม่เคยเจอตอนเทส)
         $settings = [
-            ['group' => 'site', 'name' => 'site_name', 'value' => 'My CMS'],
-            ['group' => 'site', 'name' => 'site_email', 'value' => 'admin@mycms.com'],
+            ['group' => 'site', 'name' => 'site_name', 'value' => 'MicroCMS'],
+            ['group' => 'site', 'name' => 'site_email', 'value' => 'admin@microcms.com'],
             ['group' => 'site', 'name' => 'site_description', 'value' => 'Micro-CMS ติดตั้งง่าย ใช้งานง่าย'],
             // ภาษาในระบบ — เก็บรวมเป็น 1 record คั่นด้วย , (ไม่แยกเก็บทีละภาษา) ดู App\Support\Setting::selectedLanguages()
             ['group' => 'site', 'name' => 'lang_selected', 'value' => 'th,en'],
@@ -166,25 +166,7 @@ class DatabaseSeeder extends Seeder
         // เมนูหลังบ้าน (ข้อมูลตัวอย่าง — แยกไฟล์)
         $this->call(MenuSeeder::class);
 
-        // หมวดหมู่บทความตัวอย่าง (ข้อมูลตัวอย่าง — แยกไฟล์)
-        $this->call(ArticleSeeder::class);
-
-        // หมวดหมู่ป้ายโฆษณาตัวอย่าง (ข้อมูลตัวอย่าง — แยกไฟล์)
-        $this->call(BannerSeeder::class);
-
-        // Intropage ตัวอย่าง (ข้อมูลตัวอย่าง — แยกไฟล์)
-        $this->call(IntropageSeeder::class);
-
-        // หน้าเพจตัวอย่าง พร้อมโครงสร้างแถว/คอลัมน์/widget (ข้อมูลตัวอย่าง — แยกไฟล์)
-        $this->call(PageSeeder::class);
-
-        // เมนูหน้าบ้านตัวอย่าง (ข้อมูลตัวอย่าง — แยกไฟล์ ต้องรันหลัง ArticleSeeder/PageSeeder)
-        $this->call(FrontMenuSeeder::class);
-
-        // Template หน้าบ้านตัวอย่าง จากแม่แบบตั้งต้น (ข้อมูลตัวอย่าง — แยกไฟล์)
-        $this->call(TemplateSeeder::class);
-
-        // ค่าตั้งต้นของตั้งค่าโมดูลติดต่อเรา (ไม่มีข้อมูลตัวอย่าง — แยกไฟล์)
-        $this->call(ContactusSeeder::class);
+        // ข้อมูลตัวอย่างทั้งชุด (บทความ/ป้ายโฆษณา/หน้าเพจ/เมนู/template/intropage/popup/ติดต่อเรา + ไฟล์จาก exampledata/)
+        $this->call(SampleDataSeeder::class);
     }
 }

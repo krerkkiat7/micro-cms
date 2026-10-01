@@ -109,10 +109,10 @@ hasMany; `rows()` hasMany เรียง `sort_order`), `App\Models\PageItemDet
 **Migration** — `database/migrations/2026_09_20_000001_create_page_item_tables.php` (สร้างทั้ง 8 ตารางของโมดูล) และ
 `2026_09_20_000002_add_text_style_to_page_item_layout_tables.php` (เพิ่มหัวเรื่องรอง + การจัดรูปแบบตัวอักษร + พื้นหลังของ widget — §2)
 
-**Seeder** — `database/seeders/PageSeeder.php` (เรียกจาก `DatabaseSeeder`) สร้างหน้าเพจตัวอย่าง 1 หน้า (`is_temp='Y'`,
-slug `sample-page`) พร้อมโครงสร้าง 3 แถว: hero (คอลัมน์ 12, เต็มความกว้าง + สีพื้นหลัง), เนื้อหา (คอลัมน์ 8 + 4 ใน container),
-ส่วนท้ายมีสีพื้นหลัง (คอลัมน์ 4 + 4 + 4) — สองแถวแรกเปิด "แสดงหัวเรื่อง" พร้อมหัวเรื่องรอง/ข้อความเกริ่นนำ, ทุกคอลัมน์มี widget `slideshowbanner` 1 ตัว (หมวดหมู่ banner ตัวอย่างจาก `BannerSeeder` — ไม่มี banner ตัวอย่าง จึงเห็นสถานะว่างในตัวอย่าง); `updateOrCreate` resolve หน้าเดิมจากชื่อ
-ของภาษาหลัก และสร้างโครงสร้างเฉพาะเมื่อหน้านั้นยังไม่มีแถว จึงรันซ้ำได้ (`php artisan db:seed --class=PageSeeder`)
+**Seeder** — `database/seeders/PageSeeder.php` (ข้อมูลหน้า) + `PageLayoutSeeder.php` (โครงสร้าง) เรียกผ่าน `SampleDataSeeder`
+สร้างหน้า "หน้าแรก" (`is_temp='Y'`, slug `home`) 5 แถว: Slideshow ป้ายโฆษณา Highlight / Custom Text แนะนำระบบ (7+5) /
+Slideset ข่าวสาร / Grid การ์ดการใช้งานระบบ / Grid แถวแสดงวันที่บริการภายนอก — widget บันทึกผ่าน `PageWidgetRegistry::find()->save()`
+— ข้อมูลตัวอย่างทั้งชุดอธิบายไว้ที่ `exampledata/README.md`
 
 ---
 
