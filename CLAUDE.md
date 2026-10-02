@@ -171,7 +171,7 @@ Controller ใน `Admin/` render ด้วยชื่อ page แบบ `Admin
   และ `SetLocale` middleware ใช้ `th` เป็นค่าเริ่มต้น
 - database มีไฟล์ `database/database.sqlite` ค้างอยู่ (gitignore แล้ว; ไม่ได้ใช้เมื่อรันบน MySQL)
 - ข้อจำกัดที่ทราบและตั้งใจยังไม่แก้ (ไฟล์สาธารณะผ่าน hash, Custom JS ของ template, retention ของ log ฯลฯ) ดู `docs/PRD-overview.md` §9
-- Git remote: `https://github.com/krerkkiat7/micro-cms` (private) — branch `main`
+- Git remote: `https://github.com/krerkkiat7/micro-cms` (public, MIT — `LICENSE`) — branch `main`, release ใช้ tag `vX.Y.Z` (ดู `CHANGELOG.md`)
 
 ### การเข้าสู่ระบบหลังบ้าน (auth)
 

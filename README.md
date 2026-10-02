@@ -23,6 +23,7 @@
 10. [ความปลอดภัยก่อนเปิดใช้งานจริง](#10-ความปลอดภัยก่อนเปิดใช้งานจริง)
 11. [แก้ปัญหาที่พบบ่อย](#11-แก้ปัญหาที่พบบ่อย)
 12. [เอกสารอื่น](#12-เอกสารอื่น)
+13. [สัญญาอนุญาต](#13-สัญญาอนุญาต)
 
 ---
 
@@ -598,9 +599,16 @@ docker run --rm -v microcms_storage:/data -v "$PWD":/backup alpine tar -czf /bac
 
 | เอกสาร | เนื้อหา |
 |-------|--------|
+| [`CHANGELOG.md`](CHANGELOG.md) | การเปลี่ยนแปลงของแต่ละเวอร์ชัน |
 | [`exampledata/README.md`](exampledata/README.md) | ข้อมูลตัวอย่าง: มีอะไรบ้าง, ที่มาของรูป, สร้างใหม่ |
 | [`docker/README.md`](docker/README.md) | Docker สำหรับนักพัฒนา (http://localhost:8001) |
 | [`CLAUDE.md`](CLAUDE.md) | ภาพรวมโค้ด/convention สำหรับนักพัฒนา |
 | [`docs/`](docs) | PRD ของแต่ละโมดูล (`PRD-overview.md` เริ่มที่นี่) |
 
 พัฒนาด้วย Laravel 12, Inertia.js 2, Vue 3, Tailwind CSS 4
+
+---
+
+## 13. สัญญาอนุญาต
+
+MicroCMS เผยแพร่ภายใต้ [MIT License](LICENSE) — ใช้ แก้ไข และนำไปใช้เชิงพาณิชย์ได้ โดยคงข้อความลิขสิทธิ์และสัญญาอนุญาตไว้
